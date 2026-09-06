@@ -130,6 +130,19 @@
       "selectionRule": "Include all nine adult fiction titles in the official 2022 Selfies shortlist release, with no provider-result filtering. The release states that the judges were selecting the best indie-published books of 2021. Normalize the shortlist's singular Menai Bridge Killing label to the author's canonical title The Menai Bridge Killings."
     },
     {
+      "id": "selfies_2021_adult_fiction_shortlist",
+      "label": "Complete 2021 Selfies Book Awards adult fiction shortlist",
+      "expectedCases": 8,
+      "strata": [],
+      "publicationYear": 2020,
+      "publicationPath": "independent",
+      "source": {
+        "kind": "platform_award",
+        "url": "https://theselfies.co.uk/wp-content/uploads/2021/03/Selfies-2021-shortlist-press-release-FINAL.pdf"
+      },
+      "selectionRule": "Include all eight adult fiction titles in the official 2021 Selfies shortlist release, with no provider-result filtering. The release describes the category as independently published adult fiction. Normalize Adrian Wills to his current author name A. J. Wills."
+    },
+    {
       "id": "selfies_2025_general_nonfiction_shortlist",
       "label": "Complete 2025 Selfies Book Awards general non-fiction shortlist",
       "expectedCases": 6,

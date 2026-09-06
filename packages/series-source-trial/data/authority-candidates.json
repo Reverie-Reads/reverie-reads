@@ -2442,6 +2442,80 @@
         "sources": []
       },
       "reviewNote": "Selected without provider-result filtering from the complete 2022 Selfies adult fiction shortlist. The author's exact-title page calls it his second novel but makes no affirmative bibliographic-series or standalone claim; ordinal authorship is not relationship evidence."
+    },
+    {
+      "id": "selfies-2021-fiction-his-wifes-sister",
+      "title": "His Wife's Sister",
+      "authors": ["A. J. Wills"],
+      "sampleOrigin": "external_sample",
+      "strata": [],
+      "publicationYear": 2020,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2021_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2021/03/Selfies-2021-shortlist-press-release-FINAL.pdf"
+        },
+        { "kind": "author", "url": "https://www.ajwillsauthor.com/about" }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2021 Selfies adult fiction shortlist, which lists the author as Adrian Wills. The author's site establishes the exact work as his second psychological thriller but makes no affirmative bibliographic-series or standalone claim; author-work ordinal is not series position."
+    },
+    {
+      "id": "selfies-2021-fiction-fitting-in",
+      "title": "Fitting In",
+      "authors": ["Amanda Radley"],
+      "sampleOrigin": "external_sample",
+      "strata": [],
+      "publicationYear": 2020,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2021_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2021/03/Selfies-2021-shortlist-press-release-FINAL.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2021 Selfies adult fiction shortlist. Current catalogs and author-profile surfaces establish the exact independently published work, but the reviewed first-party evidence does not affirm either a bibliographic series or standalone status."
+    },
+    {
+      "id": "selfies-2021-fiction-at-the-stroke-of-nine-oclock",
+      "title": "At the Stroke of Nine O'Clock",
+      "authors": ["Jane Davis"],
+      "sampleOrigin": "external_sample",
+      "strata": [],
+      "publicationYear": 2020,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2021_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2021/03/Selfies-2021-shortlist-press-release-FINAL.pdf"
+        },
+        {
+          "kind": "author",
+          "url": "https://jane-davis.co.uk/books/at-the-stroke-of-nine-oclock/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2021 Selfies adult fiction shortlist. The author's exact-title page establishes the work and groups it into a three-novel London Collection box set, but does not describe that retail collection as a bibliographic series or affirm that the work is standalone."
     }
   ]
 }
