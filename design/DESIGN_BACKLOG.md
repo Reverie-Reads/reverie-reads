@@ -11,26 +11,25 @@
 Outputs land in design/from-design-tool/<set>/ (code export + screenshots). coding agent implements
 against them on the token system (no hardcoded colors from the mockup).
 
-## Current design queue — 2026-09-05
+## Current design queue — 2026-09-06
 
-The owner approved the Midnight & Lamplight brand, nine authored reading rooms, and working guest
-library in public PR #418. That public change is merged; production release and signed-in visual
-verification are in progress. The older landing entry below is historical context, not a request
-to begin another landing redesign. Current execution order lives in `ROADMAP.md`.
+The approved Midnight & Lamplight brand, authored reading rooms, working guest library, and
+account arrangements are on public main. This queue was refreshed against public `dc24877`;
+the historical sections below retain their own verification dates. Current execution order
+lives in `ROADMAP.md`.
 
-1. **MODULAR LIBRARY ARRANGEMENTS — DESIGN TO DO, P1.** Design personalized navigation docks/rails
-   and Home module arrangements around keeping a library, choosing a next read, and remembering
-   reading. The landing already offers three temporary dock arrangements; account-level
-   customization has not shipped. Define defaults, accessible reorder/hide/restore, preview/reset,
-   mobile/desktop behavior, persistence, and the guest-to-account handoff. Hiding a destination
-   must not delete its data or make it impossible to find again. Keep the room's atmosphere
-   independent of the arrangement and of recommendation scope. Deliver a reviewed interaction
-   specification before implementation. See
-   `docs/backlog/task-modular-library-arrangements.md`.
-2. **DISCOVER AS A READING DECISION — P1 after the first-use handoff.** Book details now open from
-   Discover. Design a small set of useful paths, with credible descriptions and reasons, visible
-   library/copy relationships, and reliable return to the previous browse. Follow catalog quality
-   work; do not draw a feed that needs data the corpus does not contain.
+1. **MODULAR LIBRARY ARRANGEMENTS — IMPLEMENTED.** Public PR #441 (`ab732ee`) adds account
+   persistence and **Settings → Arrange Reverie**, with accessible navigation/Home ordering,
+   hide/restore, preview/reset and the deliberate guest handoff. See
+   `MODULAR_LIBRARY_ARRANGEMENTS.md` and `docs/backlog/task-modular-library-arrangements.md`.
+   Keep atmosphere and recommendation scope independent of arrangement preferences.
+2. **DISCOVER AS A READING DECISION — APPROVED, IMPLEMENTED IN PR #444.** The authenticated
+   page now follows the study's three guided paths, bounded catalog choices, book details,
+   independent copy relationships, dismiss/undo, and private saved shortlists. The original
+   [interaction specification](studies/discover/DISCOVER_READING_DECISION.md) remains the design
+   reference. [Implementation notes](../docs/tasks/discover-implementation.md) record the source
+   evidence, account/backup boundaries, and release checks. Future matching improvements should
+   be measured against useful selections, not a larger feed or unverified explanations.
 3. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
    icons, onboarding material, and one accurate demonstration. Preserve each room's own interface
    language. Do not reopen the chosen palette as a new concept exercise.

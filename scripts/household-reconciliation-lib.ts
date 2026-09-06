@@ -9,6 +9,7 @@ import type { ImportRecord } from './corpus-import-lib'
  * PostgREST pagination over only the owner column is nondeterministic when one owner has more than
  * one page of rows. These are the real primary-key columns, so every page boundary is repeatable. */
 export const RECONCILIATION_BACKUP_PRIMARY_KEYS: Record<string, readonly string[]> = {
+  discovery_sessions: ['owner_id', 'id'],
   books: ['id'],
   reads: ['id'],
   lists: ['id'],

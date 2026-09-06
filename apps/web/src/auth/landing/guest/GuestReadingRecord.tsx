@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Stars } from '../../../components/Stars'
 import { useGuestLibrary } from './context'
-import { field, primary } from './styles'
+import { writingField, primary } from './styles'
 
 export function GuestReadingRecord() {
   const { state, dispatch } = useGuestLibrary()
@@ -79,7 +79,8 @@ function RecordForm({
       <label className="block text-sm font-semibold">
         A thought to return to
         <textarea
-          className={`${field} min-h-32`}
+          className={writingField}
+          rows={5}
           maxLength={5000}
           value={notes}
           onChange={(e) => {

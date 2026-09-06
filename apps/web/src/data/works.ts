@@ -30,6 +30,7 @@ export interface WorkRow {
   series: string | null
   position: number | null
   cover_url: string | null
+  description?: string | null
   genre: string | null
   tags: string[]
   pub_y: number | null
@@ -95,8 +96,12 @@ export function workToHit(w: WorkRow, preferredIsbn = ''): DiscoverHit {
   return {
     corpusWorkId: w.id,
     title: w.title,
-    authors: (w.contributors ?? []).map((c) => c.name).filter(Boolean),
+    authors: (w.contributors ?? []).filter(c => c.role === 'author' || c.role === 'co_author').map((c) => c.name).filter(Boolean),
     cover: w.cover_url ?? '',
+    genre: w.genre ?? '',
+    tags: w.tags ?? [],
+    description: w.description ?? undefined,
+    catalogSource: 'corpus',
     // A work may describe several editions. When this pick began as a catalog result, preserve
     // that result's edition instead of silently replacing it with the work array's first member.
     isbn: normalizeIsbn(preferredIsbn) || w.isbns[0] || '',
@@ -262,5 +267,7 @@ export function useWorksLookup(term: string, catalogIsbns: readonly string[] = [
     data: mergeWorkRows(byTerm.data, byEdition.data),
     isPending: byTerm.isPending || (editions.length > 0 && byEdition.isPending),
     error: byTerm.error ?? byEdition.error,
+    isFetching: byTerm.isFetching || byEdition.isFetching,
+    refetch: () => Promise.all([byTerm.refetch(), ...(editions.length ? [byEdition.refetch()] : [])]),
   }
 }

@@ -1,3 +1,4 @@
+import { parseDiscoverySession, DISCOVERY_SAVED_LIMIT } from '@reverie/core'
 import { nextListSortOrderFor, ORDER_STEP as LIST_ORDER_STEP } from './lists'
 import { nextItemPositionFor, ITEM_POSITION_STEP } from './listItems'
 import {
@@ -462,7 +463,7 @@ export function seriesRulingRows(
 }
 
 /**
- * Serialize the WHOLE account to a JSON backup (v8): books (incl. genre/tags/intensity/owned
+ * Serialize the WHOLE account to a JSON backup (v9): books (incl. genre/tags/intensity/owned
  * formats), per-book contributors, assigned tropes (with emphasis) and moods, reads, lists +
  * memberships, the user's reviews, merge verdicts, followed/muted authors,
  * the reader's REFUSALS (removed series slots and dismissed trope suggestions), and the profile
@@ -499,7 +500,7 @@ export async function buildBackup(): Promise<string> {
   // here it is both true and the first thing a reader needs to know, because the alternative they
   // will assume is a half-written file.
   return backupAborted(async () => {
-  const [books, contribs, bookTropes, bookMoods, reads, lists, items, reviews, verdicts, follows, rulings, seriesRows, seriesEntries, tombstones, dismissals, profile] =
+  const [books, contribs, bookTropes, bookMoods, reads, lists, items, reviews, verdicts, follows, rulings, seriesRows, seriesEntries, tombstones, dismissals, discoveries, profile] =
     await Promise.all([
       pageAll<BookRow>('books', (from, to) =>
         supabase.from('books').select('*', { count: 'exact' }).order('id').range(from, to),
@@ -611,6 +612,9 @@ export async function buildBackup(): Promise<string> {
           .order('trope_id')
           .range(from, to) as unknown as PromiseLike<{ data: DismissalJoinRow[] | null; error: unknown; count: number | null }>,
       ),
+      pageAll<NonNullable<BackupShape['discovery_sessions']>[number]>('discovery_sessions', (from, to) =>
+        supabase.from('discovery_sessions').select('id, document', { count: 'exact' }).eq('owner_id', ownerId).order('id').range(from, to),
+      ),
       supabase
         .from('profiles')
         .select('display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, arrangement')
@@ -634,13 +638,14 @@ export async function buildBackup(): Promise<string> {
   const trope_dismissals = dismissalsByBook(dismissals)
 
   return JSON.stringify({
-    v: 8,
+    v: 9,
     app: 'reverie',
     exportedAt: new Date().toISOString(),
     // The file's own completeness check — see BackupCounts. Written LAST in spirit: every number
     // is taken from the value actually being serialized on the line above it, never from the
     // query that produced it, so a section that lost rows between fetch and write is still caught.
     counts: {
+      discovery_sessions: discoveries.length,
       books: books.length,
       contributors: nested(contributorsByBook),
       tropes: nested(tropes),
@@ -657,6 +662,7 @@ export async function buildBackup(): Promise<string> {
       series_tombstones: series_tombstones.length,
       trope_dismissals: nested(trope_dismissals),
     } satisfies BackupCounts,
+    discovery_sessions: discoveries.map(({ id, document }) => ({ id, document })),
     books,
     contributors: contributorsByBook,
     tropes,
@@ -702,6 +708,7 @@ export function countMismatches(data: BackupShape): string[] {
   const counts = data.counts
   if (!counts) return []
   const actual: Record<string, number> = {
+    discovery_sessions: (data.discovery_sessions ?? []).length,
     books: (data.books ?? []).length,
     contributors: nested(data.contributors ?? {}),
     tropes: nested(data.tropes ?? {}),
@@ -730,6 +737,7 @@ export function countMismatches(data: BackupShape): string[] {
 }
 
 interface BackupShape {
+  discovery_sessions?: { id: string; document: unknown }[]
   /** v6+. Row counts as written — see BackupCounts and countMismatches. Absent in v5 and earlier,
    *  which restore unchecked rather than being refused. */
   counts?: BackupCounts
@@ -1108,6 +1116,20 @@ export async function restoreBackup(
         `Re-export from the account it came from.`,
     )
 
+  // Validate all saved snapshots before any restore write. Never copy a source owner id.
+  const discoveries = (data.discovery_sessions ?? []).map(row => {
+    const document = parseDiscoverySession(row.document)
+    if (!document || document.id !== row.id || !document.picks.length)
+      throw new Error('That backup contains an unreadable shortlist. Nothing was restored.')
+    return { owner_id: ownerId, id: document.id, document }
+  })
+  if (discoveries.length) {
+    const existing = await pageAll<{ id: string }>('discovery_sessions', (from, to) =>
+      supabase.from('discovery_sessions').select('id', { count: 'exact' }).eq('owner_id', ownerId).order('id').range(from, to))
+    if (new Set([...existing, ...discoveries].map(row => row.id)).size > DISCOVERY_SAVED_LIMIT)
+      throw new Error('This restore would exceed 50 saved shortlists. Remove some saved shortlists first. Nothing was restored.')
+  }
+
   // Lists first, mapping old → new ids.
   //
   // sort_order POLICY (the lists sort_order incident): the export has always captured it
@@ -1291,6 +1313,11 @@ export async function restoreBackup(
   const tombstoneCount = data.series_entries?.length
     ? structuredSeries.tombstones
     : await restoreTombstones(data.series_tombstones ?? [], ownerId)
+
+  if (discoveries.length) {
+    const { error } = await supabase.from('discovery_sessions').upsert(discoveries, { onConflict: 'owner_id,id' })
+    if (error) throw error
+  }
 
   // Profile: restore appearance + adaptive taste state + goal + arrangement onto the account.
   if (data.profile) {

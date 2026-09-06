@@ -182,7 +182,7 @@ test('Discover search: results dedupe against library, add owned + add-to-shelf,
   await stubBackends(page)
   try {
     await signIn(page, c.session)
-    await page.goto('/discover')
+    await page.goto('/discover?browse=true')
 
     // The taste rail is present before searching (genre chips visible).
     await expect(page.getByRole('group', { name: /browse a genre/i })).toBeVisible()
@@ -242,7 +242,7 @@ test('Discover search: add a result to a shelf as unowned via the shelf chooser'
   await stubBackends(page)
   try {
     await signIn(page, c.session)
-    await page.goto('/discover')
+    await page.goto('/discover?browse=true')
     await page.getByLabel('Search the wider catalog').fill('wildfire')
     await expect(page.getByText('Wildfire Vow')).toBeVisible({ timeout: 15_000 })
 

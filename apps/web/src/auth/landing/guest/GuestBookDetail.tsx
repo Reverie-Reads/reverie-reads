@@ -4,7 +4,7 @@ import { CoverImage } from '../../../components/CoverImage'
 import { Nameplate } from '../../../components/Nameplate'
 import { Stars } from '../../../components/Stars'
 import { useGuestLibrary } from './context'
-import { field, primary, quiet } from './styles'
+import { field, primary, quiet, writingField } from './styles'
 
 function today() {
   const date = new Date()
@@ -194,7 +194,8 @@ export function GuestBookDetail({ book }: { book: Book }) {
         <label className="block text-sm font-semibold">
           A note to keep
           <textarea
-            className={`${field} min-h-28 resize-y`}
+            className={writingField}
+            rows={4}
             maxLength={5000}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

@@ -123,6 +123,7 @@ export function ReviewsPanel({ workKey, reviewerName }: { workKey: string; revie
         </div>
         <Stars value={rating} onChange={setRating} />
         <textarea
+          aria-label="Write your review"
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={2}

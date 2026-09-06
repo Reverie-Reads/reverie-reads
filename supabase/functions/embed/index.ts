@@ -1,5 +1,5 @@
 // Tier 2 embeddings (owner-approved): gte-small runs IN the edge runtime (Supabase.ai) — no
-// external API, no key, the reader's library never leaves the stack. Two modes:
+// external API, no key, the reader's library never leaves the stack. Four modes:
 //
 //   { mode: 'sweep' }                 embed the caller's missing/stale books (sig-gated, capped
 //                                     per call) → { embedded, remaining }
@@ -7,12 +7,17 @@
 //                                     via the vibe_books RPC → { hits: [{ book_id, similarity }] }
 //   { mode: 'rank', items }           score EXTERNAL candidates ([{ key, text }]) against the
 //                                     reader's taste centroid → { hasTaste, scores: [{key,score}] }
+//   { mode: 'intent', query, items }  score catalog descriptions against a chosen starting book
+//                                     or mood; no personal library read or write
 //
 // The caller is identified ONLY from their own access token (delete-account pattern), and every
-// REST call runs WITH that token — RLS scopes reads and writes to their rows; no service role.
+// library REST call runs WITH that token — RLS scopes personal reads and writes.
+// The intent limiter alone uses the shared service-role rate-limit helper.
 
 import { captureEdgeError } from '../_shared/observe.ts'
 import { embeddingSig, embeddingText, type EmbedSource } from './signature.ts'
+import { cosineScore, parseIntentRankInput } from './intent.ts'
+import { rateLimit, tooMany } from '../_shared/ratelimit.ts'
 
 declare const Supabase: {
   ai: {
@@ -92,12 +97,32 @@ Deno.serve(async (req: Request) => {
 
   let body: { mode?: string; query?: string; count?: number; items?: unknown[] }
   try {
-    body = await req.json()
+    const raw = await req.text()
+    if (raw.length > 64_000) return json({ error: 'request too large' }, 413)
+    body = JSON.parse(raw)
+    if (!body || typeof body !== 'object' || Array.isArray(body))
+      return json({ error: 'bad request' }, 400)
   } catch {
     return json({ error: 'bad json' }, 400)
   }
 
   try {
+    if (body.mode === 'intent') {
+      const input = parseIntentRankInput(body)
+      if (!input) return json({ error: 'invalid intent ranking request' }, 400)
+      const limit = await rateLimit(req, 'discover-intent', 120, 60)
+      if (!limit.allowed) return tooMany(limit.retryAfter, cors)
+      const started = Date.now()
+      const query = await embed(input.query)
+      const scores: { key: string; score: number }[] = []
+      for (const item of input.items) {
+        if (scores.length && Date.now() - started > SWEEP_WALL_MS) break
+        const score = cosineScore(query, await embed(item.text))
+        if (score != null) scores.push({ key: item.key, score })
+      }
+      return json({ scores })
+    }
+
     if (body.mode === 'sweep') {
       const cols = 'id,title,author_first,author_last,series,subgenre,genre,genres,tags,intensity'
       const [booksRes, embRes] = await Promise.all([

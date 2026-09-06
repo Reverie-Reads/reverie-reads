@@ -220,6 +220,15 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   marking the current read finished; retrying only a failed status update must not append again.
   Mood search returns a bounded shortlist, so label supplemental library picks honestly and apply
   saved feedback to semantic ordering too. Appearance never supplies a Discover genre filter.
+- **Discover chooses a few books beyond the personal library.** The guided page uses a chosen
+  book, one or two moods, or an explicit genre; appearance never supplies intent. Corpus identity,
+  canonical ISBN, and unambiguous exact title/contributors determine personal relationships.
+  Reasons must be supported by actual author/genre/description evidence; semantic ordering cannot
+  invent themes or ignore a selected mood. Preserve shortlist order through detail/Add navigation.
+  Deliberately saved sessions belong to `discovery_sessions`, with owner RLS, bounded snapshots,
+  backup/restore coverage, and account-deletion cascade. Opening a preview or saving a shortlist
+  never creates a personal book. Series invitations require active personal membership and confirmed
+  shared work/order evidence, suppressing removed categories, uncertain order, and private reordering.
 - **No aggregate rating.** Never compute or display an averaged star rating anywhere.
   Keep the reader's own rating (`rating` on the book + per-read). Others' opinions appear only
   as an opt-in list of **individual** reviews on the book screen — never a single number.

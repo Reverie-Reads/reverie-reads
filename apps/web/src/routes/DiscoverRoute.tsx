@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createRoute, useNavigate } from '@tanstack/react-router'
+import { createRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { genreKey, SKINS, SKIN_ORDER, splitName, type Book, type TasteAnchors } from '@reverie/core'
 import { rootRoute } from './RootRoute'
@@ -30,6 +30,7 @@ import { useWorksBrowse, workToHit } from '../data/works'
 import { TasteTier } from '../components/TasteTier'
 import { useTasteCalibration } from '../data/taste'
 import { Surface } from '../components/Surface'
+import { DiscoverExperience } from '../components/discovery/DiscoverExperience'
 
 // Browse every catalog genre by default. A genre is a deliberate content filter, independent
 // of the current room; changing appearance never changes this selection.
@@ -271,7 +272,7 @@ function SearchSection({
   )
 }
 
-export function DiscoverScreen() {
+function DiscoverCatalog() {
   const voice = useVoice()
   const search = discoverRoute.useSearch()
   const navigate = useNavigate()
@@ -423,7 +424,7 @@ export function DiscoverScreen() {
               onClick={() =>
                 void navigate({
                   to: '/discover',
-                  search: { ...search, genre: undefined },
+                  search: { ...search, browse: true, genre: undefined },
                   replace: true,
                 })
               }
@@ -437,7 +438,7 @@ export function DiscoverScreen() {
                 onClick={() =>
                   void navigate({
                     to: '/discover',
-                    search: { ...search, genre: g.key },
+                    search: { ...search, browse: true, genre: g.key },
                     replace: true,
                   })
                 }
@@ -692,13 +693,50 @@ export function DiscoverScreen() {
   )
 }
 
+export function DiscoverScreen() {
+  const search = discoverRoute.useSearch()
+  return search.browse || search.genre || search.query ? (
+    <>
+      <div className="mx-auto max-w-5xl px-4 pt-6">
+        <Link
+          to="/discover"
+          search={{}}
+          className="inline-flex min-h-11 items-center text-sm text-ink underline"
+        >
+          ← Guided discovery
+        </Link>
+      </div>
+      <DiscoverCatalog />
+    </>
+  ) : (
+    <DiscoverExperience />
+  )
+}
+
+export interface DiscoverSearch {
+  genre?: string
+  query?: string
+  browse?: boolean
+  saved?: boolean
+  session?: string
+  detail?: string
+  find?: string
+}
 export const discoverRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'discover',
   component: DiscoverScreen,
   // Fails CLOSED for both params — a non-string (a doubled query string arrives as an array)
   // resolves to undefined rather than throwing the screen away.
-  validateSearch: (s: Record<string, unknown>): { genre?: string; query?: string } => ({
+  validateSearch: (s: Record<string, unknown>): DiscoverSearch => ({
+    browse: s.browse === true || s.browse === 'true' ? true : undefined,
+    saved: s.saved === true || s.saved === 'true' ? true : undefined,
+    session:
+      typeof s.session === 'string' && /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(s.session)
+        ? s.session
+        : undefined,
+    detail: typeof s.detail === 'string' ? s.detail.slice(0, 1200) : undefined,
+    find: typeof s.find === 'string' ? s.find.slice(0, 160) : undefined,
     genre: typeof s.genre === 'string' && s.genre.trim() ? genreKey(s.genre) : undefined,
     query: typeof s.query === 'string' && s.query.trim() ? s.query : undefined,
   }),

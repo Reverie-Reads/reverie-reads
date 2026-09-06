@@ -165,7 +165,7 @@ test.describe('/discover keeps its search text', () => {
     await signIn(page, c.session)
     await stub(page)
 
-    await page.goto('/discover')
+    await page.goto('/discover?browse=true')
     await page.getByLabel(FIELD).fill('dragons')
     await expect.poll(() => page.url(), { timeout: 10_000 }).toContain('query=dragons')
   })
@@ -203,10 +203,30 @@ test.describe('/discover keeps its search text', () => {
     await signIn(page, c.session)
     await stub(page)
 
-    await page.goto('/discover?query[]=a&query[]=b')
+    await page.goto('/discover?browse=true&query[]=a&query[]=b')
     await expect(page.locator('main')).toBeVisible()
     await expect(page.getByLabel(FIELD)).toHaveValue('')
   })
+})
+
+test('guided Discover restores its search after a library visit and refresh, and rejects malformed input', async ({
+  page,
+}) => {
+  const c = await client()
+  await signIn(page, c.session)
+  await stub(page)
+  const field = page.getByRole('textbox', { name: 'Search by title, author, or ISBN' })
+  await page.goto('/discover')
+  await field.fill('dragons')
+  await expect.poll(() => new URL(page.url()).searchParams.get('find')).toBe('dragons')
+  await page.goto('/library')
+  await expect(page.locator('main')).toBeVisible()
+  await page.goBack()
+  await expect(field).toHaveValue('dragons')
+  await page.reload()
+  await expect(field).toHaveValue('dragons')
+  await page.goto('/discover?find[]=a&find[]=b')
+  await expect(field).toHaveValue('')
 })
 
 // ── /match · vibeQ ─────────────────────────────────────────────────────────────────────────────

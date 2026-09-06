@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SKIN_VOICE, type SkinId } from '@reverie/core'
 
 const state = vi.hoisted(() => ({
-  search: {} as { genre?: string; query?: string },
+  search: {} as { genre?: string; query?: string; browse?: boolean },
   skin: 'tryst' as SkinId,
   browse: vi.fn(),
   fetchDiscover: vi.fn(async () => []),
@@ -14,6 +15,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@tanstack/react-router')>()),
   createRoute: (options: object) => ({ ...options, useSearch: () => state.search }),
   useNavigate: () => state.navigate,
+  Link: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
 }))
 vi.mock('./RootRoute', () => ({ rootRoute: {} }))
 vi.mock('../skin/labels', () => ({
@@ -38,7 +40,7 @@ const { DiscoverScreen } = await import('./DiscoverRoute')
 
 beforeEach(() => {
   vi.clearAllMocks()
-  state.search = {}
+  state.search = { browse: true }
   state.skin = 'tryst'
   state.navigate.mockImplementation(({ search }: { search: typeof state.search }) => {
     state.search = search
@@ -57,7 +59,7 @@ function mount() {
 }
 
 describe('Discover content is independent of appearance', () => {
-  it('opens the full corpus without fetching a skin-selected genre and stays neutral after a room change', async () => {
+  it('catalog browse opens the full corpus without fetching a skin-selected genre and stays neutral after a room change', async () => {
     const view = mount()
     expect(screen.getByRole('button', { name: 'All genres' })).toHaveAttribute(
       'aria-pressed',

@@ -670,3 +670,26 @@ invalidates the snapshot while a later insert waits until the reviewed transacti
 - **CSV import** — `csv.ts` / `importMap.ts` map Goodreads/StoryGraph headers, merging by
   title+author and bringing ratings, shelves and real read dates.
 - **Spoiler gate** — `spoiler.ts`, `comment.unit <= myProgress`.
+
+## Saved discovery shortlists
+
+`discovery_sessions` holds deliberate saved selections, separate from `books` and personal lists.
+The composite primary key is `(owner_id, id)`, with `owner_id → profiles(id) ON DELETE CASCADE`.
+The database permits at most 50 saved shortlists per reader and one to five picks per snapshot,
+with a 64 KB document limit. A serialized quota check allows updating an existing snapshot at the
+limit. Owner and identity cannot change through UPDATE. Explicit ACLs deny anonymous access;
+authenticated SELECT/INSERT/UPDATE/DELETE are all restricted to the owner through RLS.
+
+The version-1 document is `DiscoverySession` in `packages/core/src/discovery.ts`: its UUID,
+creation time, chosen book/moods/genre, ordered public catalog identities, reasons, and dismissal
+keys. It contains no personal book-row IDs, notes, ratings, or reading logs. Opening details,
+saving a shortlist, or removing a saved shortlist changes no possession or reading history.
+Snapshot book metadata can become stale; missing corpus records retain their saved identity and
+cannot silently resolve to a different book. A missing record's detail preview disables Add.
+
+Unsaved sessions and detail context use account-keyed TanStack Query entries and the existing
+account-scoped offline cache. Saving requires connectivity and a current matching account;
+there is no deferred offline write queue. Backup v9 adds counted `discovery_sessions` entries
+containing only `id` and `document`. Restore validates snapshots before any writes, checks the
+combined saved-session limit, and writes only under the receiving account. Older backups without
+this section remain supported. Account deletion cascades the rows.

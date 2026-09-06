@@ -903,8 +903,9 @@ function BulkAdd({ addToHousehold }: { addToHousehold: boolean }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={5}
+        aria-label="Books to add, one title or ISBN per line"
         placeholder={'Iron Flame\n9781649374172\nThe Love Hypothesis'}
-        className="w-full skin-card border border-line p-3 text-[13px] text-ink outline-none"
+        className="w-full skin-field border border-line text-ink outline-none"
         style={{ background: 'var(--field)' }}
       />
       <div className="mt-2 flex items-center gap-3">
@@ -1411,13 +1412,26 @@ function AddScreen() {
         </div>
       )}
 
+      {prefill.discoverSession && (
+        <Link
+          to="/discover"
+          search={{ session: prefill.discoverSession }}
+          className="my-4 inline-flex min-h-11 items-center text-ink underline"
+        >
+          Return to your shortlist
+        </Link>
+      )}
       {picked &&
         (householdOnly ? (
           <HouseholdAddForm
             hit={picked}
             targetMemberId={targetMemberId}
             targetMemberName={targetMember?.displayName}
-            onAdded={() => void navigate({ to: '/library', search: { scope: 'household' } })}
+            onAdded={() =>
+              prefill.discoverSession
+                ? void navigate({ to: '/discover', search: { session: prefill.discoverSession } })
+                : void navigate({ to: '/library', search: { scope: 'household' } })
+            }
           />
         ) : (
           <AddForm
@@ -1425,10 +1439,12 @@ function AddScreen() {
             defaultUnowned={!!prefill.want}
             addToHousehold={destination === 'both'}
             onAdded={() =>
-              void navigate({
-                to: '/library',
-                search: destination === 'both' ? { scope: 'household' } : {},
-              })
+              prefill.discoverSession
+                ? void navigate({ to: '/discover', search: { session: prefill.discoverSession } })
+                : void navigate({
+                    to: '/library',
+                    search: destination === 'both' ? { scope: 'household' } : {},
+                  })
             }
           />
         ))}
@@ -1443,6 +1459,7 @@ const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim
 /** All-optional prefill params — the explicit optional-key type keeps plain `to="/add"` links
  *  valid everywhere (no required `search` prop). */
 interface AddPrefill {
+  discoverSession?: string
   /** add to the collective household library without creating a personal book */
   scope?: 'household'
   /** exact shared-work identity when the pick came from the Reverie corpus */
@@ -1473,6 +1490,11 @@ export function pickedFromAddPrefill(prefill: AddPrefill): Picked | null {
 
 export const validateAddSearch = (s: Record<string, unknown>): AddPrefill => {
   const out: AddPrefill = {}
+  if (
+    typeof s.discoverSession === 'string' &&
+    /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(s.discoverSession)
+  )
+    out.discoverSession = s.discoverSession
   if (s.scope === 'household') out.scope = 'household'
   if (str(s.work)) out.work = str(s.work)
   if (str(s.title)) out.title = str(s.title)
