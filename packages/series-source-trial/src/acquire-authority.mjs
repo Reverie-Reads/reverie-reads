@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadTrialCases } from './cases.mjs'
+import samplePlan from '../data/authority-sample-plan.json' with { type: 'json' }
 import { loadLocalEnvironment } from './env.mjs'
 import {
   authorityAcquisitionCacheMaterial,
@@ -10,9 +11,10 @@ import {
   buildAuthorityTarget,
   canonicalizeAuthorityAcquisition,
   scoreAuthorityAcquisition,
+  shouldRepairAuthorityAcquisition,
   validateAuthorityAcquisition,
 } from './authority/evidence.mjs'
-import { acquireAuthorityEvidence } from './authority/openai.mjs'
+import { acquireAuthorityEvidence, repairAuthorityEvidence } from './authority/openai.mjs'
 import { interpretRetrievedAuthorityEvidenceWithCache } from './authority/retrieval/cache.mjs'
 import { augmentAuthorityAcquisition } from './authority/retrieval/pipeline.mjs'
 import {
@@ -69,6 +71,7 @@ const renderMarkdown = (score) =>
     `| ${percent(score.capability.validResponseRate)} | ${percent(score.capability.policySafeResponseRate)} | ${percent(score.capability.sourceGroundingRate)} | ${percent(score.capability.resolutionRate)} | ${percent(score.capability.resolvedAccuracy)} | ${percent(score.capability.effectiveAccuracy)} | ${percent(score.capability.membershipPrecision)} | ${percent(score.capability.membershipRecall)} | ${percent(score.capability.falseStandaloneRate)} | ${percent(score.capability.falseSeriesRate)} |`,
     '',
     `Model calls: ${score.operations.modelCalls}; cached: ${score.operations.cached}; web-search calls: ${score.operations.webSearchCalls}; input/output tokens: ${score.operations.inputTokens}/${score.operations.outputTokens}; errors: ${score.operations.errors}.`,
+    `Structural repair: ${score.operations.repairCalls} calls; ${score.operations.repairInputTokens}/${score.operations.repairOutputTokens} input/output tokens.`,
     `Retrieval: ${score.operations.retrievalAttempts} attempted; ${score.operations.retrievalSucceeded} retrieved; ${score.operations.retrievalSelected} selected; ${score.operations.retrievalRequests} HTTP requests; ${score.operations.retrievalEncodedBytes} encoded bytes; ${score.operations.secondModelCalls} second model calls; ${score.operations.secondCached} cached; ${score.operations.secondInputTokens}/${score.operations.secondOutputTokens} second-pass input/output tokens.`,
     ...(score.scope.candidateCases
       ? [
@@ -109,7 +112,7 @@ const cacheKey = (target) =>
   createHash('sha256')
     .update(
       JSON.stringify({
-        cacheVersion: 1,
+        cacheVersion: 3,
         model,
         promptVersion: AUTHORITY_ACQUISITION_PROMPT_VERSION,
         target: authorityAcquisitionCacheMaterial(target),
@@ -128,7 +131,7 @@ const interpretWithCache = async (target, retrieval, interpretOptions) => {
 
 const runOne = async (testCase) => {
   const target = buildAuthorityTarget(testCase)
-  const policy = authorityPolicyForCase(testCase)
+  const policy = authorityPolicyForCase(testCase, samplePlan)
   const finalize = (firstPass) =>
     options.retrieval
       ? augmentAuthorityAcquisition(target, firstPass, {
@@ -162,16 +165,41 @@ const runOne = async (testCase) => {
 
   try {
     const acquired = await acquireAuthorityEvidence(target, { model })
-    const { output: rawOutput, ...acquiredMetadata } = acquired
-    const output = canonicalizeAuthorityAcquisition(rawOutput, acquired.consultedUrls, policy)
-    await writeFile(cachePath, `${JSON.stringify({ ...acquiredMetadata, rawOutput }, null, 2)}\n`)
+    const { output: firstRawOutput, ...acquiredMetadata } = acquired
+    let rawOutput = firstRawOutput
+    let output = canonicalizeAuthorityAcquisition(rawOutput, acquired.consultedUrls, policy)
+    let validation = validateAuthorityAcquisition(target, output, acquired.consultedUrls, policy)
+    let repair = null
+    if (shouldRepairAuthorityAcquisition(validation)) {
+      repair = await repairAuthorityEvidence(target, output, validation.errors, { model })
+      rawOutput = repair.output
+      output = canonicalizeAuthorityAcquisition(rawOutput, acquired.consultedUrls, policy)
+      validation = validateAuthorityAcquisition(target, output, acquired.consultedUrls, policy)
+    }
+    const usage = {
+      input_tokens:
+        Number(acquired.usage?.input_tokens ?? 0) + Number(repair?.usage?.input_tokens ?? 0),
+      output_tokens:
+        Number(acquired.usage?.output_tokens ?? 0) + Number(repair?.usage?.output_tokens ?? 0),
+      total_tokens:
+        Number(acquired.usage?.total_tokens ?? 0) + Number(repair?.usage?.total_tokens ?? 0),
+    }
+    const cacheRecord = {
+      ...acquiredMetadata,
+      usage,
+      primaryUsage: acquired.usage,
+      repair,
+      modelCallCount: repair ? 2 : 1,
+      rawOutput,
+    }
+    await writeFile(cachePath, `${JSON.stringify(cacheRecord, null, 2)}\n`)
     return await finalize({
       caseId: target.caseId,
       status: 'completed',
-      ...acquiredMetadata,
+      ...cacheRecord,
       output,
       cached: false,
-      validation: validateAuthorityAcquisition(target, output, acquired.consultedUrls, policy),
+      validation,
     })
   } catch (error) {
     return {

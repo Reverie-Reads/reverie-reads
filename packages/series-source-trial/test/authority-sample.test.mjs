@@ -62,16 +62,16 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 195,
-    reviewed: 128,
-    candidate: 67,
-    reviewedPositive: 102,
+    selected: 201,
+    reviewed: 129,
+    candidate: 72,
+    reviewedPositive: 103,
     reviewedStandalone: 26,
     selectionTarget: 200,
-    selectionGap: 5,
+    selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 72,
+    reviewed_cases: 71,
     reviewed_positive_cases: 0,
     reviewed_standalone_cases: 24,
   })
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 128, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 129, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -115,10 +115,10 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
         .map(({ id, reviewed, gap }) => [id, { reviewed, gap }]),
     ),
     {
-      recent_independent_or_kindle_first: { reviewed: 35, gap: 15 },
+      recent_independent_or_kindle_first: { reviewed: 36, gap: 14 },
       recent_traditional: { reviewed: 34, gap: 16 },
       multi_series_or_connected_universe: { reviewed: 18, gap: 2 },
-      standalone_control: { reviewed: 32, gap: 18 },
+      standalone_control: { reviewed: 33, gap: 17 },
     },
   )
 })
@@ -323,6 +323,31 @@ test('keeps the complete 2025 Selfies fiction frame and readable standalone seri
 
   assert.equal(byId.get('selfies-2025-fiction-echoing-shore')?.truth.status, 'candidate')
   assert.equal(byId.get('selfies-2025-fiction-unravelling')?.truth.status, 'candidate')
+})
+
+test('keeps the complete 2025 Selfies general non-fiction frame and direct numbered-series truth', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('selfies_2025_general_nonfiction_shortlist'),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 6)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 1)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 5)
+  assert.equal(
+    frame.every(
+      (testCase) =>
+        testCase.strata.includes('recent_independent_or_kindle_first') &&
+        testCase.strata.includes('standalone_control'),
+    ),
+    true,
+  )
+  const confusables = byId.get('selfies-2025-nonfiction-confusables-2')
+  assert.deepEqual(confusables?.riskFeatures, ['numbered_title'])
+  assert.equal(confusables?.truth.standalone, false)
+  assert.equal(confusables?.truth.memberships[0]?.series, 'The Little Book of Confusables')
+  assert.equal(confusables?.truth.memberships[0]?.positions[0]?.value, 2)
 })
 
 test('keeps both complete Fern Michaels matching-year frames and direct relationship truth', async () => {

@@ -1575,6 +1575,107 @@
         "sources": []
       },
       "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "selfies-2025-nonfiction-can-i-speak-to-josephine-please",
+      "title": "Can I speak to Josephine please?",
+      "authors": ["Sheila Brill"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_general_nonfiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author_post",
+          "url": "https://www.sense.org.uk/blog/being-enabled-to-love-and-cherish-my-daughter/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete 2025 Selfies general non-fiction shortlist. The exact-work article confirms the 2024 memoir identity but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "selfies-2025-nonfiction-just-run",
+      "title": "Just Run: Discovering my love for running and how the impossible becomes possible",
+      "authors": ["Merili Freear"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_general_nonfiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        { "kind": "author", "url": "https://meriliruns.co.uk/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete 2025 Selfies general non-fiction shortlist. The author's site identifies the exact memoir and a later poetry collection, but does not affirm either a bibliographic relationship or standalone status."
+    },
+    {
+      "id": "selfies-2025-nonfiction-theyre-all-barking",
+      "title": "They're All Barking, A Dog's Guide to Human Behaviour",
+      "authors": ["Ruth McDonagh"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_general_nonfiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete 2025 Selfies general non-fiction shortlist. The frame establishes identity and independent-publication sampling provenance, not series classification."
+    },
+    {
+      "id": "selfies-2025-nonfiction-knocked-sideways",
+      "title": "Knocked Sideways",
+      "authors": ["Sarah McGeough"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_general_nonfiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        { "kind": "author", "url": "https://writenowcoaching.co.uk/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete 2025 Selfies general non-fiction shortlist. The author's site identifies the exact work alongside separate children's books but supplies no classification claim."
+    },
+    {
+      "id": "selfies-2025-nonfiction-squid-horse",
+      "title": "The Weird & Wonderful Surviveries of Squid Horse",
+      "authors": ["The Mollusc Dimension"],
+      "identifiers": { "isbn13": ["9781805177234"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_general_nonfiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.themolluscdimension.com/the-weird-wonderful-surviveries-of-squid-horse-british-chinese-comic-book"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete 2025 Selfies general non-fiction shortlist. The author's exact-work page calls the book a collection and uses series colloquially in a testimonial; neither establishes a bibliographic relationship or standalone status."
     }
   ]
 }

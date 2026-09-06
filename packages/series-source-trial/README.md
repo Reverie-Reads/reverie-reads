@@ -203,13 +203,20 @@ This remains a shadow evaluation. The model receives only title, author, and an 
 year; existing truth labels, authority URLs, sample sources, and provider packets are withheld.
 Deterministic validation rejects an unconsulted URL, an unsupported membership or position, and a
 standalone conclusion without affirmative author/publisher evidence. A separate source-policy check
-prevents a selection-frame page from validating the case it selected and quarantines known
+prevents the exact selection-frame page from validating the case it selected while allowing an
+independently rediscovered first-party identity page to supply evidence, and quarantines known
 conflicting source taxonomies such as Hachette's standalone marketing lists. It also strips
 membership support inferred only from spin-off/companion context, trigger-warning or trope
 taxonomies, and unlabelled headings. “Valid” therefore means well-formed and grounded;
 “policy-safe” additionally means the proposed evidence survived those deterministic source rules.
 Even a policy-safe result is always review-only and cannot write authority gold, Supabase, or the
 corpus.
+
+If the only structural failure is a `series` result with no membership object, the trial may make
+one bounded no-tools repair call. That call can only reorganize facts and URLs already present in
+the proposal or fall back to unresolved; every ordinary grounding and source-policy check runs
+again afterward. Cached evidence retains its historical usage metadata, but score reports count
+tokens only for calls made in the current run.
 
 Hosted search can miss a first-party page that is visible only through site navigation. Do not add
 an arbitrary URL fetcher to compensate. The bounded follow-up is the trial-only, single-hop
@@ -339,6 +346,10 @@ The complete 47-title Kiersten Modglin standalone-label challenge frame, its exa
 Industries correction, and the deterministic catalog-family quarantine are recorded in
 `reports/authority-development-frame-kiersten-modglin-2026-09-06.md`.
 
+The complete 2025 Selfies general non-fiction frame, numbered-sequence correction, selection-source
+boundary fix, structural repair path, and cache-cost accounting are recorded in
+`reports/authority-development-frame-selfies-2025-nonfiction-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
@@ -347,8 +358,8 @@ Audit the sample before running another provider or resolver comparison:
 pnpm series:sample:audit
 ```
 
-The audit reports selection coverage and authority-review coverage separately. The current one
-Reverie seed candidate and seventeen external candidates count as selected works, but never as truth
+The audit reports selection coverage and authority-review coverage separately. The current 72
+candidates count as selected works, but never as truth
 and never toward an accuracy gate. It also validates that every reviewed result has
 affirmative author or publisher evidence, that a reviewed standalone has no memberships, and that
 a reviewed series work has at least one.

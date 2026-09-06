@@ -1,7 +1,9 @@
 import { performance } from 'node:perf_hooks'
 import {
   AUTHORITY_ACQUISITION_PROMPT_VERSION,
+  AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION,
   authorityAcquisitionInstructions,
+  authorityAcquisitionRepairInstructions,
   authorityAcquisitionOutputSchema,
 } from './schema.mjs'
 
@@ -113,5 +115,66 @@ export async function acquireAuthorityEvidence(
     usage: body.usage ?? null,
     latencyMs: Math.round(performance.now() - started),
     promptVersion: AUTHORITY_ACQUISITION_PROMPT_VERSION,
+  }
+}
+
+export async function repairAuthorityEvidence(
+  target,
+  originalOutput,
+  validationErrors,
+  {
+    apiKey = process.env.OPENAI_API_KEY,
+    apiUrl = process.env.BOOK_AUTHORITY_API_URL ?? 'https://api.openai.com/v1/responses',
+    model = process.env.BOOK_AUTHORITY_MODEL ?? 'gpt-5.6-luna',
+    reasoningEffort = process.env.BOOK_AUTHORITY_REASONING ?? 'low',
+    fetchImpl = fetch,
+  } = {},
+) {
+  if (!apiKey) throw new Error('OPENAI_API_KEY is required for the authority acquisition trial')
+  const started = performance.now()
+  const response = await fetchImpl(apiUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      store: false,
+      reasoning: { effort: reasoningEffort },
+      max_output_tokens: 1000,
+      instructions: authorityAcquisitionRepairInstructions,
+      input: JSON.stringify({ target, originalOutput, validationErrors }),
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'reverie_authority_source_proposal_repair',
+          strict: true,
+          schema: authorityAcquisitionOutputSchema,
+        },
+      },
+      metadata: {
+        prompt_version: AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION,
+        case_id: target.caseId,
+      },
+    }),
+  })
+  const body = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(
+      `Authority acquisition repair API ${response.status}: ${body?.error?.message ?? response.statusText}`,
+    )
+  }
+  const content = outputContent(body)
+  const text = content.map((entry) => entry.text).join('')
+  if (!text) throw new Error('Authority acquisition repair API returned no structured output text')
+
+  return {
+    output: JSON.parse(text),
+    responseId: body.id ?? null,
+    responseModel: body.model ?? model,
+    usage: body.usage ?? null,
+    latencyMs: Math.round(performance.now() - started),
+    promptVersion: AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION,
   }
 }

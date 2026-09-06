@@ -1,5 +1,7 @@
 export const AUTHORITY_ACQUISITION_PROMPT_VERSION =
-  'authority-acquisition-v4-membership-object-contract'
+  'authority-acquisition-v5-numbered-sequence-evidence'
+export const AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION =
+  'authority-acquisition-repair-v1-structure-only'
 
 export const authorityAcquisitionInstructions = `You are Reverie's authority-source scout.
 Find attributable evidence for one exact book. Your output is a review proposal, never a database
@@ -20,6 +22,11 @@ Rules:
   collection, trilogy, or duology, or explicitly number the work inside the named grouping. Merely
   listing several books under a genre, trope, trigger-warning, world, or marketing heading is
   insufficient, as is a title pattern, retailer breadcrumb, or provider label.
+- A first-party source that directly compares the exact target as a distinctly named work 2 with
+  the correspondingly named work 1 is explicit numbered-sequence evidence. Use their shared
+  distinctive name as the bibliographic series and report position 2. Do not apply this rule to a
+  lone numeral, a numbered edition, a generic volume label, or titles not directly compared by the
+  author or publisher.
 - A standalone classification requires an author or publisher source that affirmatively calls the
   exact work standalone or explicitly places it in a complete standalone bibliography. Silence,
   absence from a series list, or failure to find a series is not standalone evidence.
@@ -44,6 +51,15 @@ Rules:
 - evidenceSummary must be a short paraphrase, not a quotation, and must state what the page supports.
 - If no qualifying source is found, return unresolved with no invented source.
 - Keep note under 240 characters.`
+
+export const authorityAcquisitionRepairInstructions = `Repair one Reverie authority-source proposal
+that failed a structural consistency check. Do not search the web and do not add a URL, source,
+evidence fact, series name, or position that is absent from the original proposal. You may move an
+explicit relationship already stated in an authority source summary or note into memberships and
+supports. If the original proposal does not contain enough information for a complete membership,
+change classification to unresolved. The repaired output must obey every structured-output rule:
+series requires at least one complete membership and its source must support series_membership;
+standalone and unresolved require an empty memberships array.`
 
 const stringArray = { type: 'array', items: { type: 'string' } }
 
