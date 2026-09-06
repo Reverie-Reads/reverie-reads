@@ -94,7 +94,9 @@ for (const width of [1440, 390]) {
       await expect(entry).toContainText('A question I want to sit with.')
       await expect(entry.getByRole('img', { name: 'Rated 4.5 stars of 5' })).toBeVisible()
       await demo.getByRole('button', { name: 'Arrange dock' }).click()
-      await expect(demo).toContainText('customizable docks are planned for the full app')
+      await expect(
+        demo.getByRole('heading', { name: 'Make room for the way you read.' }),
+      ).toBeVisible()
       await demo.getByRole('button', { name: /Remember my reading/ }).click()
       await demo.getByRole('button', { name: 'Hide Next read', exact: true }).click()
       await demo.getByRole('button', { name: 'Move Library earlier', exact: true }).click()

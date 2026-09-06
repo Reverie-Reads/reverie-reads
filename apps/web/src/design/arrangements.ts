@@ -29,6 +29,14 @@ export interface ArrangementConfig {
   homeModules: HomeModuleId[]
 }
 
+/** Stable account document. Keep the storage shape versioned and separate from the editor shape so
+ * a future build can reject a document it does not understand without overwriting it on read. */
+export interface ArrangementDocument {
+  version: 1
+  priorityDestinations: ArrangementDestinationId[]
+  homeModules: HomeModuleId[]
+}
+
 export interface ArrangementPreset {
   id: ArrangementPresetId
   label: string
@@ -108,6 +116,67 @@ export const ARRANGEMENT_PRESETS: readonly ArrangementPreset[] = [
 ]
 
 export const DEFAULT_ARRANGEMENT_PRESET = ARRANGEMENT_PRESETS[1]!
+
+const DESTINATION_IDS = new Set<ArrangementDestinationId>(
+  ARRANGEMENT_DESTINATIONS.map((destination) => destination.id),
+)
+const HOME_MODULE_IDS = new Set<HomeModuleId>(HOME_MODULES.map((module) => module.id))
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const uniqueKnown = <T extends string>(value: unknown, known: ReadonlySet<T>): T[] => {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<T>()
+  const result: T[] = []
+  for (const candidate of value) {
+    if (typeof candidate !== 'string' || !known.has(candidate as T) || seen.has(candidate as T)) {
+      continue
+    }
+    seen.add(candidate as T)
+    result.push(candidate as T)
+  }
+  return result
+}
+
+/** Read an account value without mutating it. Unknown keys from a newer catalog are ignored; a
+ * corrupt document or future version falls back locally and remains untouched until Save. */
+export function arrangementFromUnknown(value: unknown): ArrangementConfig {
+  if (!isRecord(value) || value.version !== 1) {
+    return cloneArrangement(DEFAULT_ARRANGEMENT_PRESET.config)
+  }
+  const destinations = uniqueKnown(value.priorityDestinations, DESTINATION_IDS).slice(
+    0,
+    MAX_PRIORITY_DESTINATIONS,
+  )
+  const homeModules = uniqueKnown(value.homeModules, HOME_MODULE_IDS)
+  if (!destinations.includes('library') || destinations.length !== MAX_PRIORITY_DESTINATIONS) {
+    return cloneArrangement(DEFAULT_ARRANGEMENT_PRESET.config)
+  }
+  return { destinations, homeModules }
+}
+
+export function arrangementDocument(config: ArrangementConfig): ArrangementDocument {
+  const parsed = arrangementFromUnknown({
+    version: 1,
+    priorityDestinations: config.destinations,
+    homeModules: config.homeModules,
+  })
+  return {
+    version: 1,
+    priorityDestinations: parsed.destinations,
+    homeModules: parsed.homeModules,
+  }
+}
+
+export function arrangementsEqual(a: ArrangementConfig, b: ArrangementConfig): boolean {
+  return (
+    a.destinations.length === b.destinations.length &&
+    a.homeModules.length === b.homeModules.length &&
+    a.destinations.every((value, index) => value === b.destinations[index]) &&
+    a.homeModules.every((value, index) => value === b.homeModules[index])
+  )
+}
 
 export function cloneArrangement(config: ArrangementConfig): ArrangementConfig {
   return { destinations: [...config.destinations], homeModules: [...config.homeModules] }

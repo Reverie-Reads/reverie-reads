@@ -48,6 +48,7 @@ import { Surface } from '../components/Surface'
 import { useHouseholdLibraryAuthorization } from '../data/household'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import type { AddDestination } from '../components/addDestination'
+import { ArrangementEditor } from '../components/ArrangementEditor'
 
 const YEAR = new Date().getFullYear()
 
@@ -605,6 +606,10 @@ function SettingsScreen() {
               </span>
             </span>
           </label>
+        </Section>
+
+        <Section title="Arrange Reverie">
+          <ArrangementEditor />
         </Section>
 
         <Section title="Library tools">

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   ARRANGEMENT_PRESETS,
   MAX_PRIORITY_DESTINATIONS,
+  arrangementDocument,
+  arrangementFromUnknown,
   cloneArrangement,
   hideDestination,
   moveItem,
@@ -38,5 +40,40 @@ describe('modular arrangement design contract', () => {
   it('keeps a move within the list bounds', () => {
     expect(moveItem(['a', 'b', 'c'], 1, -1)).toEqual(['b', 'a', 'c'])
     expect(moveItem(['a', 'b', 'c'], 0, -1)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('reads a versioned account document and removes duplicate module ids', () => {
+    expect(
+      arrangementFromUnknown({
+        version: 1,
+        priorityDestinations: ['library', 'home', 'stats'],
+        homeModules: ['reading', 'reading', 'year', 'unknown'],
+      }),
+    ).toEqual({ destinations: ['library', 'home', 'stats'], homeModules: ['reading', 'year'] })
+  })
+
+  it('falls back without trying to understand corrupt or future documents', () => {
+    const expected = ARRANGEMENT_PRESETS[1]!.config
+    expect(arrangementFromUnknown({ version: 2, priorityDestinations: [] })).toEqual(expected)
+    expect(
+      arrangementFromUnknown({
+        version: 1,
+        priorityDestinations: ['home', 'match'],
+        homeModules: ['reading'],
+      }),
+    ).toEqual(expected)
+  })
+
+  it('serializes only a complete, valid priority trio', () => {
+    expect(
+      arrangementDocument({
+        destinations: ['home', 'home', 'library'],
+        homeModules: ['year', 'year'],
+      }),
+    ).toEqual({
+      version: 1,
+      priorityDestinations: ['home', 'match', 'library'],
+      homeModules: ['next-read', 'reading', 'priority'],
+    })
   })
 })

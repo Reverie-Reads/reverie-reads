@@ -7,7 +7,9 @@ import {
   MORE_NAVIGATION_ITEMS,
   NAVIGATION_GROUPS,
   NAVIGATION_ITEMS,
+  moreNavigationItems,
   navigationLabelForPath,
+  priorityNavigationItems,
 } from './navigation'
 
 describe('navigation contract', () => {
@@ -57,5 +59,24 @@ describe('navigation contract', () => {
     expect(navigationLabelForPath('/book/abc-123')).toBe('Book record')
     expect(navigationLabelForPath('/add')).toBe('Add a book')
     expect(navigationLabelForPath('/something-new')).toBe('Reading room')
+  })
+
+  it('uses the saved priority order and keeps every other destination in More', () => {
+    const priority = priorityNavigationItems(['library', 'home', 'stats'])
+    expect(priority.map((item) => item.label)).toEqual(['Library', 'Home', 'Stats'])
+
+    const more = moreNavigationItems(['library', 'home', 'stats'])
+    expect(more.map((item) => item.label)).toEqual([
+      'Next read',
+      'Shelves',
+      'Series',
+      'Planner',
+      'Tropes',
+      'Discover',
+      'Clubs',
+      'Bookshops',
+      'Appearance',
+      'Settings',
+    ])
   })
 })

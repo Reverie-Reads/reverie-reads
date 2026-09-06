@@ -19,8 +19,8 @@ export function GuestConfigure() {
           Make room for the way you read.
         </h4>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Try a starting arrangement, then move or hide destinations. It changes this guest dock
-          now; customizable docks are planned for the full app.
+          Try a starting arrangement, then move or hide destinations. It changes this guest dock now
+          and comes with your books only if you choose to bring this library into an account.
         </p>
       </div>
       <div className="grid gap-2">

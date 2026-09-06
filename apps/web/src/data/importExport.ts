@@ -466,7 +466,7 @@ export function seriesRulingRows(
  * formats), per-book contributors, assigned tropes (with emphasis) and moods, reads, lists +
  * memberships, the user's reviews, merge verdicts, followed/muted authors,
  * the reader's REFUSALS (removed series slots and dismissed trope suggestions), and the profile
- * (skin/mode + adaptive taste state + goal).
+ * (skin/mode + adaptive taste state + goal + arrangement).
  *
  * The bar is the one deletion sets: `delete-account` removes the auth user and every owned row
  * cascades with it (verified against a live database, not just read off the migrations — tropes,
@@ -613,7 +613,7 @@ export async function buildBackup(): Promise<string> {
       ),
       supabase
         .from('profiles')
-        .select('display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked')
+        .select('display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, arrangement')
         .eq('id', ownerId)
         .maybeSingle(),
     ])
@@ -634,7 +634,7 @@ export async function buildBackup(): Promise<string> {
   const trope_dismissals = dismissalsByBook(dismissals)
 
   return JSON.stringify({
-    v: 7,
+    v: 8,
     app: 'reverie',
     exportedAt: new Date().toISOString(),
     // The file's own completeness check — see BackupCounts. Written LAST in spirit: every number
@@ -1292,7 +1292,7 @@ export async function restoreBackup(
     ? structuredSeries.tombstones
     : await restoreTombstones(data.series_tombstones ?? [], ownerId)
 
-  // Profile: restore appearance + adaptive taste state + goal onto the current account.
+  // Profile: restore appearance + adaptive taste state + goal + arrangement onto the account.
   if (data.profile) {
     const { error } = await supabase.from('profiles').update(data.profile).eq('id', ownerId)
     if (error) throw error

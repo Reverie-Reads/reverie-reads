@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
   setSkin: vi.fn(),
   setMode: vi.fn(),
   guestImport: vi.fn(),
+  updateProfile: vi.fn(),
   authorized: false,
 }))
 vi.mock('@tanstack/react-router', () => ({
@@ -39,6 +40,10 @@ vi.mock('../data/readerBooks', () => ({
 }))
 vi.mock('../data/importLibrary', () => ({ importDetectedExport: state.importFile }))
 vi.mock('../data/guestHandoff', () => ({ importGuestHandoff: state.guestImport }))
+vi.mock('../data/profile', () => ({
+  profileKey: ['profile'],
+  useUpdateProfile: () => ({ mutateAsync: state.updateProfile }),
+}))
 vi.mock('../data/importEnrich', () => ({ enrichImported: vi.fn() }))
 vi.mock('../data/xlsxAdapter', () => ({ fileToCsvText: state.convert }))
 vi.mock('../skin/controls', () => ({
@@ -159,11 +164,17 @@ describe('book-first onboarding', () => {
       screen.getByRole('heading', { name: 'Bring this little library home.' }),
     ).toBeInTheDocument()
     expect(state.guestImport).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Add these books to my account' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add books and this arrangement' }))
     expect(await screen.findByRole('heading', { name: 'Your books are here.' })).toBeInTheDocument()
     expect(state.guestImport).toHaveBeenCalledWith(expect.any(Object), [], { autoMerge: true })
     expect(state.setSkin).toHaveBeenCalledWith('aphelion')
     expect(state.setMode).toHaveBeenCalledWith('dark')
+    expect(state.updateProfile).toHaveBeenCalledWith({
+      arrangement: {
+        destinations: ['library', 'match', 'home'],
+        homeModules: ['priority', 'next-read'],
+      },
+    })
     expect(localStorage.getItem('reverie.guest-handoff.v1')).toBeNull()
   })
 

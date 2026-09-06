@@ -98,7 +98,8 @@ export function guestReducer(state: GuestState, action: GuestAction): GuestState
       dock,
       page: dock[0]!,
       selected: null,
-      notice: 'Your guest dock is arranged. These settings preview planned personalization.',
+      notice:
+        'Your guest dock is arranged. It can follow these books into an account when you choose.',
     }
   }
   if (action.type === 'add') {
