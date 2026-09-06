@@ -326,6 +326,15 @@ The complete 2025 Selfies adult fiction shortlist, its readable-standalone and c
 controls, and two unresolved author-catalog cases are recorded in
 `reports/authority-development-frame-selfies-2025-fiction-2026-09-06.md`.
 
+The complete Fern Michaels 2024 and 2025 matching-year release frames, six direct series
+relationships, one direct standalone ruling, one connected-universe crossover, and three
+conservatively unresolved collection/title cases are recorded in
+`reports/authority-development-frame-fern-michaels-2024-2025-2026-09-06.md`.
+
+The no-write scout pass across the prior 18-candidate queue, including its token cost, quarantine
+rate, and the human rejection of its sole standalone proposal, is recorded in
+`reports/authority-candidate-scout-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:

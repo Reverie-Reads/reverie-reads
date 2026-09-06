@@ -62,18 +62,18 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 138,
-    reviewed: 120,
-    candidate: 18,
-    reviewedPositive: 95,
-    reviewedStandalone: 25,
+    selected: 148,
+    reviewed: 127,
+    candidate: 21,
+    reviewedPositive: 101,
+    reviewedStandalone: 26,
     selectionTarget: 200,
-    selectionGap: 62,
+    selectionGap: 52,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 80,
-    reviewed_positive_cases: 5,
-    reviewed_standalone_cases: 25,
+    reviewed_cases: 73,
+    reviewed_positive_cases: 0,
+    reviewed_standalone_cases: 24,
   })
   assert.deepEqual(audit.qualification.counts, {
     selected: 0,
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 120, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 127, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -116,9 +116,9 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     ),
     {
       recent_independent_or_kindle_first: { reviewed: 35, gap: 15 },
-      recent_traditional: { reviewed: 27, gap: 23 },
-      multi_series_or_connected_universe: { reviewed: 17, gap: 3 },
-      standalone_control: { reviewed: 30, gap: 20 },
+      recent_traditional: { reviewed: 34, gap: 16 },
+      multi_series_or_connected_universe: { reviewed: 18, gap: 2 },
+      standalone_control: { reviewed: 31, gap: 19 },
     },
   )
 })
@@ -299,6 +299,51 @@ test('keeps the complete 2025 Selfies fiction frame and readable standalone seri
 
   assert.equal(byId.get('selfies-2025-fiction-echoing-shore')?.truth.status, 'candidate')
   assert.equal(byId.get('selfies-2025-fiction-unravelling')?.truth.status, 'candidate')
+})
+
+test('keeps both complete Fern Michaels matching-year frames and direct relationship truth', async () => {
+  const caseSet = await loadTrialCases()
+  const frame2024 = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('fern_michaels_2024_matching_year_releases'),
+  )
+  const frame2025 = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('fern_michaels_2025_matching_year_releases'),
+  )
+  const byId = new Map([...frame2024, ...frame2025].map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame2024.length, 5)
+  assert.equal(frame2025.length, 5)
+  assert.equal(frame2024.filter((testCase) => testCase.truth.status === 'reviewed').length, 4)
+  assert.equal(frame2025.filter((testCase) => testCase.truth.status === 'reviewed').length, 3)
+
+  const memberships = new Map([
+    ['fern-michaels-2024-proof', ['Lost & Found', 4]],
+    ['fern-michaels-2024-santas-secret', ["Santa's Crew", 3]],
+    ['fern-michaels-2024-backwater-justice', ['Sisterhood', 36]],
+    ['fern-michaels-2025-smugglers-cove', ['Twin Lights', 1]],
+    ['fern-michaels-2025-santas-holiday-spectacular', ["Santa's Crew", 4]],
+    ['fern-michaels-2025-code-blue', ['Sisterhood', 37]],
+  ])
+  for (const [id, [series, position]] of memberships) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, false)
+    assert.equal(testCase?.truth.memberships[0]?.series, series)
+    assert.equal(testCase?.truth.memberships[0]?.positions[0]?.value, position)
+  }
+
+  const wildSide = byId.get('fern-michaels-2024-the-wild-side')
+  assert.equal(wildSide?.truth.standalone, true)
+  assert.deepEqual(wildSide?.truth.memberships, [])
+  assert.ok(wildSide?.strata.includes('standalone_control'))
+
+  const crossover = byId.get('fern-michaels-2025-santas-holiday-spectacular')
+  assert.deepEqual(crossover?.riskFeatures, ['connected_universe'])
+  assert.equal(crossover?.truth.membershipsComplete, true)
+  assert.equal(crossover?.truth.memberships.length, 1)
+
+  assert.equal(byId.get('fern-michaels-2024-tiny-blessings')?.truth.status, 'candidate')
+  assert.equal(byId.get('fern-michaels-2025-fight-or-flight')?.truth.status, 'candidate')
+  assert.equal(byId.get('fern-michaels-2025-lilac-time')?.truth.status, 'candidate')
 })
 
 test('derives exact zero-event sample minimums for the production rate bounds', () => {
