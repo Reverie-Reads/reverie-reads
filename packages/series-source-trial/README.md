@@ -18,8 +18,8 @@ useful for measuring coverage and discovering disagreements, but they do not con
 accuracy until an authority source has been reviewed.
 
 The current development sample contains one difficult work from each of Reverie's 69 distinct
-seeded series plus external sampling frames: 263 selected works, of which 163 are
-authority-reviewed. The reviewed set contains 136 positive series cases and 27 confirmed standalone
+seeded series plus external sampling frames: 263 selected works, of which 164 are
+authority-reviewed. The reviewed set contains 137 positive series cases and 27 confirmed standalone
 controls. Some reviewed cases replace seed references, so the final distinct-case count is printed
 at runtime.
 
@@ -379,6 +379,10 @@ The complete 2021 Selfies adult fiction frame, four first-party series rulings, 
 standalone, three unresolved works, and the scout's discovery and name-normalization gaps are
 recorded in `reports/authority-development-frame-selfies-2021-fiction-2026-09-06.md`.
 
+The first-party evidence refresh that promotes _Swimming with Manatees_ from unresolved to Ava
+Martinez book one, without rerunning the scout or trusting retail metadata, is recorded in
+`reports/authority-evidence-refresh-bill-bennett-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
@@ -387,7 +391,7 @@ Audit the sample before running another provider or resolver comparison:
 pnpm series:sample:audit
 ```
 
-The audit reports selection coverage and authority-review coverage separately. The current 97
+The audit reports selection coverage and authority-review coverage separately. The current 99
 candidates count as selected works, but never as truth and never toward an accuracy gate. It also
 validates that every reviewed result has
 affirmative author or publisher evidence, that a reviewed standalone has no memberships, and that

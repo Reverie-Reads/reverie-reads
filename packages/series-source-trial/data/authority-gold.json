@@ -3372,6 +3372,48 @@
       }
     },
     {
+      "id": "selfies-2026-fiction-swimming-with-manatees",
+      "title": "Swimming with Manatees",
+      "authors": ["Bill Bennett"],
+      "identifiers": { "isbn13": ["9781970628005", "9781970628111"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2025,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2026_fiction_shortlist",
+      "sampleSources": [
+        { "kind": "platform_award", "url": "https://theselfies.co.uk/2026shortlist/" },
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/frequently-asked-questions-faq/"
+        },
+        { "kind": "author", "url": "https://www.billbenn.com/" },
+        {
+          "kind": "author_post",
+          "url": "https://www.goodreads.com/author/show/64464831.Bill_Bennett/blog"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Ava Martinez",
+            "aliases": ["Ava Martinez series", "Ava Martinez thrillers"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author_post",
+            "url": "https://www.goodreads.com/author/show/64464831.Bill_Bennett/blog"
+          }
+        ],
+        "reviewNote": "The author's verified Goodreads blog explicitly names the Ava Martinez series, describes Swimming with Manatees, Borealis, and The Lambeau Directive as the first three Ava Martinez thrillers, and calls Swimming with Manatees Ava's first case. This establishes exact-work membership and publication position one without relying on retail or community metadata."
+      }
+    },
+    {
       "id": "selfies-2026-fiction-hunting-the-sun",
       "title": "Hunting the Sun",
       "authors": ["Jean Gill"],

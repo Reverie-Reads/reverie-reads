@@ -283,27 +283,6 @@
       "reviewNote": "Selected from Hachette's standalone SFF horror section. The exact publisher and author pages identify It Rides a Pale Horse as a 2022 adult horror novel, but do not independently affirm standalone status, so the negative claim remains unresolved."
     },
     {
-      "id": "selfies-2026-fiction-swimming-with-manatees",
-      "title": "Swimming with Manatees",
-      "authors": ["Bill Bennett"],
-      "identifiers": { "isbn13": ["9781970628005", "9781970628111"] },
-      "sampleOrigin": "external_sample",
-      "strata": ["recent_independent_or_kindle_first"],
-      "publicationYear": 2025,
-      "publicationPath": "independent",
-      "selectionFrame": "selfies_2026_fiction_shortlist",
-      "sampleSources": [
-        { "kind": "platform_award", "url": "https://theselfies.co.uk/2026shortlist/" },
-        {
-          "kind": "platform_award",
-          "url": "https://theselfies.co.uk/frequently-asked-questions-faq/"
-        },
-        { "kind": "author", "url": "https://www.billbenn.com/" }
-      ],
-      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
-      "reviewNote": "The complete award frame establishes a 2025 independently published work. Retail and platform metadata currently group it with later Ava Martinez thrillers, but the author's site blocks automated review and no accessible author-controlled or publisher-controlled page exposes an exact bibliographic relationship."
-    },
-    {
       "id": "selfies-2026-fiction-the-silver-tide",
       "title": "The Silver Tide",
       "authors": ["J. H. Mann"],
