@@ -78,6 +78,19 @@
       "selectionRule": "Include all five shortlisted titles, with no provider-result filtering."
     },
     {
+      "id": "selfies_2026_fiction_shortlist",
+      "label": "Complete 2026 Selfies Book Awards fiction shortlist",
+      "expectedCases": 6,
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2025,
+      "publicationPath": "independent",
+      "source": {
+        "kind": "platform_award",
+        "url": "https://theselfies.co.uk/2026shortlist/"
+      },
+      "selectionRule": "Include all six fiction titles on the official 2026 Selfies results page, with no provider-result filtering. The award FAQ limits the 2026 prize to English-language books self-published during 2025."
+    },
+    {
       "id": "prh_standalone_scifi_fantasy_2026_09_04",
       "label": "Complete Penguin Random House stand-alone science fiction and fantasy list observed 2026-09-04",
       "expectedCases": 16,

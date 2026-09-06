@@ -512,6 +512,11 @@ test('sends a bounded, stateless web-search request and captures all consulted U
   assert.deepEqual(requestBody.include, ['web_search_call.action.sources'])
   assert.equal(requestBody.text.format.type, 'json_schema')
   assert.equal(requestBody.text.format.strict, true)
+  assert.match(requestBody.instructions, /Never return a series classification with an empty/)
+  assert.match(
+    requestBody.text.format.schema.properties.memberships.description,
+    /Must be non-empty when classification is series/,
+  )
   assert.equal(requestBody.input.includes('"truth"'), false)
   assert.deepEqual(result.consultedUrls, [publisherUrl, 'https://discovery.example/result'])
   assert.equal(result.webSearchCalls, 1)

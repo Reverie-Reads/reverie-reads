@@ -3370,6 +3370,147 @@
         ],
         "reviewNote": "Orbit's exact page places the target and The Boy on the Bridge together inside a relational module explicitly titled The Girl With All the Gifts series. Orbit separately calls The Boy on the Bridge a stand-alone novel in the same world, demonstrating that readable-standalone and connected-world wording cannot erase the publisher-assigned bibliographic relationship. No order is inferred from carousel layout."
       }
+    },
+    {
+      "id": "selfies-2026-fiction-hunting-the-sun",
+      "title": "Hunting the Sun",
+      "authors": ["Jean Gill"],
+      "identifiers": { "isbn13": ["9791096459483", "9798227366030"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2025,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2026_fiction_shortlist",
+      "sampleSources": [
+        { "kind": "platform_award", "url": "https://theselfies.co.uk/2026shortlist/" },
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/frequently-asked-questions-faq/"
+        },
+        { "kind": "author", "url": "https://jeangill.com/books/hunting-the-sun/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Midwinter Dragon",
+            "aliases": ["The Midwinter Dragon"],
+            "role": "primary",
+            "positions": [{ "value": 3, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://jeangill.com/books/hunting-the-sun/" }
+        ],
+        "reviewNote": "The author's exact-title page identifies Hunting the Sun as book 3 of the Midwinter Dragon series. The order comes from that explicit statement, not from display order or retailer metadata."
+      }
+    },
+    {
+      "id": "selfies-2026-fiction-flint-in-the-bones",
+      "title": "Flint in the Bones",
+      "authors": ["Eva St. John"],
+      "identifiers": { "isbn13": ["9781913628185"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2025,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2026_fiction_shortlist",
+      "sampleSources": [
+        { "kind": "platform_award", "url": "https://theselfies.co.uk/2026shortlist/" },
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/frequently-asked-questions-faq/"
+        },
+        { "kind": "publisher", "url": "https://mudlarkspress.com/pages/eva-st-john" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Norwich Map Runners",
+            "aliases": ["Norwich Map Runners"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "publisher", "url": "https://mudlarkspress.com/pages/eva-st-john" }
+        ],
+        "reviewNote": "The author's publishing imprint names The Norwich Map Runners as a continuing series and lists Flint in the Bones first, followed by books 2 and 3."
+      }
+    },
+    {
+      "id": "selfies-2026-fiction-death-valley",
+      "title": "Death Valley",
+      "authors": ["J. F. Penn"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "publicationYear": 2025,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2026_fiction_shortlist",
+      "sampleSources": [
+        { "kind": "platform_award", "url": "https://theselfies.co.uk/2026shortlist/" },
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/frequently-asked-questions-faq/"
+        },
+        { "kind": "author", "url": "https://jfpenn.com/book/death-valley/" },
+        { "kind": "author", "url": "https://jfpenn.com/worlds/death-valley/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "memberships": [],
+        "sources": [
+          { "kind": "author", "url": "https://jfpenn.com/worlds/death-valley/" },
+          { "kind": "author", "url": "https://jfpenn.com/faq/" }
+        ],
+        "reviewNote": "The author's exact story-world page affirmatively says Death Valley is a standalone with no shared characters, and the author's FAQ independently includes it in the standalone list. A thematic set of nature thrillers is not promoted into bibliographic membership."
+      }
+    },
+    {
+      "id": "selfies-2026-fiction-the-butterfly-witch",
+      "title": "The Butterfly Witch",
+      "authors": ["E. L. Williams"],
+      "identifiers": { "isbn13": ["9781068667336"] },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_independent_or_kindle_first",
+        "multi_series_or_connected_universe",
+        "standalone_control"
+      ],
+      "riskFeatures": ["connected_universe"],
+      "publicationYear": 2025,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2026_fiction_shortlist",
+      "sampleSources": [
+        { "kind": "platform_award", "url": "https://theselfies.co.uk/2026shortlist/" },
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/frequently-asked-questions-faq/"
+        },
+        { "kind": "author", "url": "https://elwilliamsauthor.com/pages/books" },
+        {
+          "kind": "author",
+          "url": "https://elwilliamsauthor.com/products/the-butterfly-witch-paperback"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          { "kind": "author", "url": "https://elwilliamsauthor.com/pages/books" },
+          {
+            "kind": "author",
+            "url": "https://elwilliamsauthor.com/products/the-butterfly-witch-paperback"
+          }
+        ],
+        "reviewNote": "The author's catalog distinguishes a two-book duology from two standalone Ethereal World prequels, and the exact product page calls The Butterfly Witch a standalone Ethereal World novel. Gold therefore records no bibliographic series membership while retaining the connected-world risk."
+      }
     }
   ],
   "sharedSources": {
