@@ -63,17 +63,17 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
     selected: 306,
-    reviewed: 177,
-    candidate: 129,
+    reviewed: 178,
+    candidate: 128,
     reviewedPositive: 141,
-    reviewedStandalone: 36,
+    reviewedStandalone: 37,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 23,
+    reviewed_cases: 22,
     reviewed_positive_cases: 0,
-    reviewed_standalone_cases: 14,
+    reviewed_standalone_cases: 13,
   })
   assert.deepEqual(audit.qualification.counts, {
     selected: 0,
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 177, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 178, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -118,7 +118,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
       recent_independent_or_kindle_first: { reviewed: 49, gap: 1 },
       recent_traditional: { reviewed: 59, gap: 0 },
       multi_series_or_connected_universe: { reviewed: 21, gap: 0 },
-      standalone_control: { reviewed: 44, gap: 6 },
+      standalone_control: { reviewed: 45, gap: 5 },
     },
   )
 })
@@ -367,8 +367,8 @@ test('keeps the complete Hachette science fiction frame and exposes false relati
   const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
 
   assert.equal(frame.length, 18)
-  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 5)
-  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 13)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 6)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 12)
 
   for (const testCase of frame) {
     assert.ok(testCase.sampleSources.some(({ url }) => url === selectionUrl))
@@ -384,6 +384,7 @@ test('keeps the complete Hachette science fiction frame and exposes false relati
     'hachette-standalone-sff-scifi-century-rain',
     'hachette-standalone-sff-scifi-ymir',
     'hachette-standalone-sff-scifi-eversion',
+    'hachette-standalone-sff-scifi-goldilocks',
   ]) {
     const testCase = byId.get(id)
     assert.equal(testCase?.truth.standalone, true)
@@ -402,6 +403,10 @@ test('keeps the complete Hachette science fiction frame and exposes false relati
   )
   assert.deepEqual(ymir?.truth.sources, [
     { kind: 'author', url: 'https://www.patreon.com/richlarson/about' },
+  ])
+
+  assert.deepEqual(byId.get('hachette-standalone-sff-scifi-goldilocks')?.truth.sources, [
+    { kind: 'author', url: 'https://lrlam.co.uk/work-1/goldilocks' },
   ])
 
   assert.equal(byId.get('hachette-standalone-sff-scifi-six-wakes')?.truth.status, 'candidate')
