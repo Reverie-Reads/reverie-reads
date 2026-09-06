@@ -120,6 +120,33 @@ test('selects an approved shallow author URL deterministically', () => {
   assert.equal(selected.profile.sourceKind, 'author')
 })
 
+test('prefers a consulted navigation hub over the same origin homepage and detail pages', () => {
+  const selected = selectRetrievalParent(
+    [
+      'https://author.example/books/ruthless-rival',
+      parentUrl,
+      'https://author.example/all-books/',
+      'https://author.example/about',
+    ],
+    [profile],
+    now,
+  )
+
+  assert.equal(selected.status, 'selected')
+  assert.equal(selected.consultedUrl, 'https://author.example/all-books/')
+})
+
+test('does not mistake a detail page nested under books for a navigation hub', () => {
+  const selected = selectRetrievalParent(
+    ['https://author.example/books/ruthless-rival', parentUrl],
+    [profile],
+    now,
+  )
+
+  assert.equal(selected.status, 'selected')
+  assert.equal(selected.consultedUrl, parentUrl)
+})
+
 test('retrieves only for unresolved or quarantined first-pass proposals', () => {
   assert.equal(shouldAttemptAuthorityRetrieval(firstPass), true)
   assert.equal(
@@ -219,6 +246,25 @@ test('keeps only a position and role explicitly present in the packet', () => {
   assert.equal(cleaned.memberships[0].position, 2)
   assert.equal(cleaned.memberships[0].role, 'secondary')
   assert.ok(cleaned.authoritySources[0].supports.includes('position'))
+})
+
+test('keeps a hash-numbered position in a same-line title and series metadata field', () => {
+  const numbered = structuredClone(directOutput)
+  numbered.memberships[0].series = 'Cruel Castaways'
+  numbered.memberships[0].position = 1
+  numbered.authoritySources[0].supports.push('position')
+  const metadataText = 'META: Title: Pyg | Series: Cruel Castaways #1 | Author: Pip Landers-Letts'
+  const metadataRetrieval = { ...retrieval, evidenceText: metadataText }
+
+  const cleaned = canonicalizeRetrievedAuthoritySemantics(target, numbered, metadataRetrieval)
+  const validation = validateRetrievedAuthoritySemantics(target, cleaned, metadataRetrieval, {
+    valid: true,
+    policySafe: true,
+    policyViolations: [],
+  })
+
+  assert.equal(cleaned.memberships[0].position, 1)
+  assert.equal(validation.policySafe, true)
 })
 
 test('does not hide a structurally invalid membership role', () => {
@@ -363,22 +409,28 @@ test('rejects parent citations and keeps an unsafe second pass out of selection'
   assert.equal(result.retrievalInterpretation.validation.valid, false)
 })
 
-test('keeps the real origin pending and performs no retrieval', async () => {
+test('keeps non-approved real origins out of retrieval', async () => {
   let calls = 0
-  const realOriginPass = {
-    ...firstPass,
-    consultedUrls: ['https://www.pipwritesfiction.com/'],
-  }
-  const result = await augmentAuthorityAcquisition(target, realOriginPass, {
-    profiles: authorityRetrievalProfiles,
-    now,
-    retrieve: async () => {
-      calls += 1
-    },
-  })
+  for (const url of [
+    'https://www.pipwritesfiction.com/',
+    'https://www.authorljshen.com/all-books/',
+    'https://www.penguin.co.uk/series/ATTV/assistant-to-the-villain',
+  ]) {
+    const result = await augmentAuthorityAcquisition(
+      target,
+      { ...firstPass, consultedUrls: [url] },
+      {
+        profiles: authorityRetrievalProfiles,
+        now,
+        retrieve: async () => {
+          calls += 1
+        },
+      },
+    )
 
-  assert.equal(result.retrieval.reason, 'origin_pending')
-  assert.equal(result.selectedPass, 'first')
+    assert.equal(result.retrieval.reason, 'origin_pending')
+    assert.equal(result.selectedPass, 'first')
+  }
   assert.equal(calls, 0)
 })
 

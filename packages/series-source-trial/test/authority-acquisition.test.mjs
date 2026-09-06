@@ -176,6 +176,54 @@ test('drops unconsulted redundant sources but never salvages an unsupported clai
   )
 })
 
+test('drops a demoted membership without discarding an independently supported claim', () => {
+  const blockedUrl = 'https://publisher.example/books/conflicting-name'
+  const mixed = structuredClone(seriesOutput)
+  mixed.memberships.push({
+    series: 'Conflicting Sequence',
+    position: 2,
+    role: 'unknown',
+    evidenceUrls: [blockedUrl],
+  })
+  mixed.authoritySources.push({
+    url: blockedUrl,
+    kind: 'publisher',
+    supports: ['identity', 'series_membership', 'position'],
+    evidenceSummary: 'The selection-frame page proposes a conflicting series name.',
+  })
+  const policy = authorityPolicyForCase({ sampleSources: [{ url: blockedUrl }] })
+
+  const cleaned = canonicalizeAuthorityAcquisition(mixed, [publisherUrl, blockedUrl], policy)
+  const validation = validateAuthorityAcquisition(
+    buildAuthorityTarget(testCase),
+    cleaned,
+    [publisherUrl, blockedUrl],
+    policy,
+  )
+
+  assert.deepEqual(
+    cleaned.memberships.map((membership) => membership.series),
+    ['The Sequence'],
+  )
+  assert.deepEqual(cleaned.authoritySources[1].supports, ['identity'])
+  assert.equal(validation.valid, true)
+  assert.equal(validation.policySafe, true)
+})
+
+test('keeps an originally unsupported membership visible to validation', () => {
+  const unsupported = structuredClone(seriesOutput)
+  unsupported.memberships[0].evidenceUrls = []
+
+  const cleaned = canonicalizeAuthorityAcquisition(unsupported, [publisherUrl])
+  const validation = validateAuthorityAcquisition(buildAuthorityTarget(testCase), cleaned, [
+    publisherUrl,
+  ])
+
+  assert.equal(cleaned.memberships.length, 1)
+  assert.equal(validation.valid, false)
+  assert.ok(validation.errors.includes('membership 0 requires authority evidence'))
+})
+
 test('leaves malformed source entries for validation instead of throwing during cleanup', () => {
   const malformed = structuredClone(seriesOutput)
   malformed.authoritySources.push(null, { url: 'https://publisher.example/books/no-supports' })
@@ -322,7 +370,7 @@ test('quarantines series claims inferred only from a spin-off relationship', () 
 
   const cleaned = canonicalizeAuthorityAcquisition(output, [authorUrl])
   assert.deepEqual(cleaned.authoritySources[0].supports, ['identity'])
-  assert.deepEqual(cleaned.memberships[0].evidenceUrls, [])
+  assert.deepEqual(cleaned.memberships, [])
   assert.equal(
     validateAuthorityAcquisition(buildAuthorityTarget(testCase), cleaned, [authorUrl]).valid,
     false,

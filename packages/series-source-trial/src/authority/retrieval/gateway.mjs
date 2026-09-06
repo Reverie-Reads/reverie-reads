@@ -5,7 +5,7 @@ import { parseRobots, robotsAccess } from './robots.mjs'
 
 export const RETRIEVAL_GATEWAY_VERSION = 'authority-retrieval-gateway-v1'
 export const RETRIEVAL_POLICY_VERSION = 'authority-retrieval-policy-v1'
-export const RETRIEVAL_EXTRACTOR_VERSION = 'authority-evidence-extractor-v1'
+export const RETRIEVAL_EXTRACTOR_VERSION = 'authority-evidence-extractor-v2'
 export const RETRIEVAL_USER_AGENT =
   'ReverieAuthorityScout/0.1 (+https://reveriereads.app/data-sources)'
 const ROBOTS_TTL_MS = 24 * 60 * 60 * 1_000

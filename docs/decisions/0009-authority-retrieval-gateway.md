@@ -32,6 +32,12 @@ fetch that page, and reduce it to a small, inert evidence packet. A second stric
 may interpret the packet. Existing deterministic validation and human review remain the only path
 from model output to a usable proposal.
 
+When the same reviewed origin contributed several consulted URLs, the gateway prefers a shallow
+catalog-style hub such as `books`, `series`, `bibliography`, or `reading-order` over both the
+homepage and a detail page. This preserves the one-hop budget for the exact-title child instead of
+spending it merely reaching the site's catalog. Source-kind priority, shallow depth, and lexical
+order remain deterministic tie-breakers; the model never chooses the parent.
+
 The first implementation belongs only in `packages/series-source-trial`. It has no database client,
 service-role credential, corpus writer, browser engine, JavaScript runtime for fetched content, or
 production route.
@@ -46,6 +52,12 @@ deterministic post-validation finds packet support for the claimed author identi
 standalone language, and position. Unsupported position becomes null and unsupported membership
 role becomes unknown without discarding a direct relationship. No real origin is approved by the
 repository.
+
+Before validation, a membership that originally cited evidence but loses every citation because
+all of its sources were deterministically demoted is removed. This permits a separately supported
+membership in the same proposal to survive without laundering the risky source. An originally
+uncited membership remains visible and invalid, and a series classification with no remaining
+membership still fails closed.
 
 ## Retrieval contract
 
@@ -189,6 +201,19 @@ not directly place _Pyg_ inside it. A `PYG, GOODREADS` control label and an outb
 not exact-work relational evidence. The correct result is therefore unresolved. The limit and
 extractor are unchanged: a future decision to accommodate Wix-sized pages or treat accessible
 control labels as evidence needs separate justification, tests, and security review.
+
+`https://www.authorljshen.com` is also `pending`. A bounded delegated probe reached the public
+_Ruthless Rival_ title page from `/all-books/` within the ordinary three-request path and extracted
+the exact `Cruel Castaways #1` metadata, but that title URL is the case's declared selection frame.
+The anti-leakage policy correctly demoted it to identity-only, so it did not count as a successful
+classification. The site exposed a permissive robots rule outside `/wp-admin/` and linked a privacy
+page but no site-specific terms; that is still not an affirmative rights review or an activation.
+
+`https://www.penguin.co.uk` is `manual_only`. Its public title and series pages contain strong
+bibliographic relationships, but its current terms prohibit copying, storing, downloading, or
+other use of site content without prior approval and prohibit commercial use without a licence.
+Reverie therefore does not automate the site through this gateway without written permission or a
+supported licensed feed.
 
 ## Trial acceptance gates
 

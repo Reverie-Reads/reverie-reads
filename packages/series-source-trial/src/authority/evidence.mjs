@@ -213,16 +213,23 @@ export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, p
               : identityUrls,
         }
       : output.identity,
-    memberships: asArray(output.memberships).map((membership) => {
-      if (!isObject(membership)) return membership
-      const evidenceUrls = filterFor(membership.evidenceUrls, 'series_membership')
-      const positionSupported = evidenceUrls.some((url) => citedSource(sources, url, 'position'))
-      return {
-        ...membership,
-        position: positionSupported ? membership.position : null,
-        evidenceUrls,
-      }
-    }),
+    memberships: asArray(output.memberships)
+      .map((membership) => {
+        if (!isObject(membership)) return membership
+        const evidenceUrls = filterFor(membership.evidenceUrls, 'series_membership')
+        const positionSupported = evidenceUrls.some((url) => citedSource(sources, url, 'position'))
+        return {
+          ...membership,
+          position: positionSupported ? membership.position : null,
+          evidenceUrls,
+        }
+      })
+      .filter(
+        (membership, index) =>
+          !isObject(membership) ||
+          !asArray(output.memberships[index]?.evidenceUrls).length ||
+          membership.evidenceUrls.length,
+      ),
   }
 }
 

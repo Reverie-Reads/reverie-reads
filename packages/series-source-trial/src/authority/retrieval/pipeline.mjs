@@ -20,6 +20,29 @@ const pathDepth = (value) => {
   return url.pathname.split('/').filter(Boolean).length
 }
 
+const navigationHubPaths = new Set([
+  'all-books',
+  'bibliography',
+  'book-list',
+  'books',
+  'catalog',
+  'publications',
+  'reading-order',
+  'series',
+  'titles',
+  'works',
+])
+
+const navigationParentPriority = (value) => {
+  const segments = new URL(value).pathname
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => normalize(segment).replace(/ /g, '-'))
+  if (segments.length === 1 && navigationHubPaths.has(segments[0])) return 0
+  if (segments.length === 0) return 1
+  return 2
+}
+
 const phraseOccurs = (text, value) => {
   const haystack = ` ${normalize(text)} `
   const needle = normalize(value)
@@ -74,16 +97,19 @@ const ordinalWords = new Map([
 
 const explicitPositionOccurs = (text, position) => {
   const forms = [String(position), ...(ordinalWords.get(position) ?? [])].map(normalize)
-  return forms.some((form) =>
-    [
-      `book ${form}`,
-      `book number ${form}`,
-      `volume ${form}`,
-      `volume number ${form}`,
-      `${form} book`,
-      `${form} novel`,
-      `${form} volume`,
-    ].some((phrase) => phraseOccurs(text, phrase)),
+  return (
+    (Number.isInteger(position) && new RegExp(`#\\s*${position}\\b`).test(text)) ||
+    forms.some((form) =>
+      [
+        `book ${form}`,
+        `book number ${form}`,
+        `volume ${form}`,
+        `volume number ${form}`,
+        `${form} book`,
+        `${form} novel`,
+        `${form} volume`,
+      ].some((phrase) => phraseOccurs(text, phrase)),
+    )
   )
 }
 
@@ -183,6 +209,7 @@ export function selectRetrievalParent(consultedUrls, profiles, now = new Date())
     (left, right) =>
       (kindPriority.get(left.profile.sourceKind) ?? 99) -
         (kindPriority.get(right.profile.sourceKind) ?? 99) ||
+      navigationParentPriority(left.consultedUrl) - navigationParentPriority(right.consultedUrl) ||
       pathDepth(left.consultedUrl) - pathDepth(right.consultedUrl) ||
       left.consultedUrl.localeCompare(right.consultedUrl),
   )
