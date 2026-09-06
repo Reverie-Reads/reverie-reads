@@ -3683,6 +3683,285 @@
         ],
         "reviewNote": "The author's reading-order and dedicated series pages place House of Crimson Hearts first in Kingdom of Immortal Lovers. The wider author catalog explicitly separates four interconnected series, so their shared universe is not converted into additional memberships."
       }
+    },
+    {
+      "id": "fern-michaels-2024-the-wild-side",
+      "title": "The Wild Side",
+      "authors": ["Fern Michaels"],
+      "identifiers": { "isbn13": ["9781496746801"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "standalone_control"],
+      "publicationYear": 2024,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2024_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2024-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/739101/the-wild-side-by-fern-michaels/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "memberships": [],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/739101/the-wild-side-by-fern-michaels/"
+          }
+        ],
+        "reviewNote": "The exact publisher page affirmatively calls The Wild Side a standalone page-turner. The annual author page independently selects it in the complete matching-year frame and confirms its 2024 Kensington publication."
+      }
+    },
+    {
+      "id": "fern-michaels-2024-proof",
+      "title": "Proof",
+      "authors": ["Fern Michaels"],
+      "identifiers": { "isbn13": ["9781420155617"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2024,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2024_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2024-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/747843/proof-by-fern-michaels/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Lost & Found",
+            "aliases": ["Lost and Found", "A Lost and Found Novel"],
+            "role": "primary",
+            "positions": [{ "value": 4, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/747843/proof-by-fern-michaels/"
+          },
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/series/LFN/a-lost-and-found-novel/"
+          }
+        ],
+        "reviewNote": "The author bibliography and exact publisher relationship both identify Proof as book 4 of Lost & Found. The publisher's series page independently preserves the order and its alternate display name."
+      }
+    },
+    {
+      "id": "fern-michaels-2024-santas-secret",
+      "title": "Santa's Secret",
+      "authors": ["Fern Michaels"],
+      "identifiers": { "isbn13": ["9781496746825", "9781420158212"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2024,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2024_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2024-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/762802/santas-secret-by-fern-michaels/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Santa's Crew",
+            "aliases": ["Santa’s Crew"],
+            "role": "primary",
+            "positions": [{ "value": 3, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/series/G4Q/santas-crew/"
+          }
+        ],
+        "reviewNote": "The author bibliography and publisher series page both place Santa's Secret third in Santa's Crew. The title page confirms the original 2024 edition and identity."
+      }
+    },
+    {
+      "id": "fern-michaels-2024-backwater-justice",
+      "title": "Backwater Justice",
+      "authors": ["Fern Michaels"],
+      "identifiers": { "isbn13": ["9781496749949", "9781420157161"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2024,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2024_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2024-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.kensingtonbooks.com/9781420157161/backwater-justice/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Sisterhood",
+            "aliases": ["The Sisterhood"],
+            "role": "primary",
+            "positions": [{ "value": 36, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+          {
+            "kind": "publisher",
+            "url": "https://www.kensingtonbooks.com/9781420157161/backwater-justice/"
+          }
+        ],
+        "reviewNote": "The author bibliography and Kensington product page independently identify Backwater Justice as Sisterhood book 36. The publisher page also confirms the 2024 edition and publication path."
+      }
+    },
+    {
+      "id": "fern-michaels-2025-smugglers-cove",
+      "title": "Smuggler's Cove",
+      "authors": ["Fern Michaels"],
+      "identifiers": { "isbn13": ["9781496741318"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2025,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2025_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2025-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/770345/smugglers-cove-by-fern-michaels/9781496741318/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Twin Lights",
+            "aliases": ["Twin Lights series"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/770345/smugglers-cove-by-fern-michaels/9781496741318/"
+          }
+        ],
+        "reviewNote": "The author bibliography and exact publisher page independently identify Smuggler's Cove as book 1 of Twin Lights. Both also support its 2025 traditional publication."
+      }
+    },
+    {
+      "id": "fern-michaels-2025-santas-holiday-spectacular",
+      "title": "Santa's Holiday Spectacular",
+      "authors": ["Fern Michaels"],
+      "identifiers": { "isbn13": ["9781496746832", "9781496759580"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "multi_series_or_connected_universe"],
+      "riskFeatures": ["connected_universe"],
+      "publicationYear": 2025,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2025_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2025-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/790090/santas-holiday-spectacular-by-fern-michaels/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "membershipsComplete": true,
+        "memberships": [
+          {
+            "series": "Santa's Crew",
+            "aliases": ["Santa’s Crew"],
+            "role": "primary",
+            "positions": [{ "value": 4, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/series/G4Q/santas-crew/"
+          },
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/790090/santas-holiday-spectacular-by-fern-michaels/"
+          }
+        ],
+        "reviewNote": "The author bibliography and publisher series page place Santa's Holiday Spectacular fourth in Santa's Crew. The title page describes Sisterhood characters joining the Santa's Crew cast, establishing a connected-universe crossover but not an additional Sisterhood bibliographic membership."
+      }
+    },
+    {
+      "id": "fern-michaels-2025-code-blue",
+      "title": "Code Blue",
+      "authors": ["Fern Michaels"],
+      "identifiers": { "isbn13": ["9781496760517"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2025,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2025_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2025-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/790143/code-blue-by-fern-michaels/paperback/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Sisterhood",
+            "aliases": ["The Sisterhood"],
+            "role": "primary",
+            "positions": [{ "value": 37, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/790143/code-blue-by-fern-michaels/paperback/"
+          },
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/series/621/sisterhood/"
+          }
+        ],
+        "reviewNote": "The author bibliography labels Code Blue as Sisterhood book 37, while the publisher title and series pages independently establish its Sisterhood relationship and 2025 publication."
+      }
     }
   ],
   "sharedSources": {

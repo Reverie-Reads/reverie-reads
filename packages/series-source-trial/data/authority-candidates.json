@@ -362,6 +362,69 @@
       ],
       "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
       "reviewNote": "The author's site identifies Unravelling as her fourth novel and confirms its September 2024 independent publication, but does not affirm either a bibliographic series relationship or standalone status. Missing series language remains unknown."
+    },
+    {
+      "id": "fern-michaels-2024-tiny-blessings",
+      "title": "Tiny Blessings",
+      "authors": ["Fern Michaels", "Carolyn Brown", "Stacy Finz"],
+      "identifiers": { "isbn13": ["9781420155822", "9781420155839"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2024,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2024_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2024-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.kensingtonbooks.com/9781420155839/tiny-blessings/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "The complete matching-year frame and publisher page establish a 2024 traditionally published anthology containing three named stories. Neither authority page affirmatively states whether the anthology title itself has a bibliographic series relationship, so it remains unresolved rather than becoming a negative from missing metadata."
+    },
+    {
+      "id": "fern-michaels-2025-fight-or-flight",
+      "title": "Fight or Flight",
+      "authors": ["Fern Michaels"],
+      "identifiers": { "isbn13": ["9781496746818", "9781496758378"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2025,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2025_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2025-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.kensingtonbooks.com/shop/fight-or-flight/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "The annual release page and bibliography establish the 2025 traditionally published work. The exact publisher page carries a generic praise section for Fern Michaels' standalone novels but does not directly classify Fight or Flight itself, so the heading is not promoted into negative truth."
+    },
+    {
+      "id": "fern-michaels-2025-lilac-time",
+      "title": "Lilac Time",
+      "authors": ["Fern Michaels", "Carolyn Brown", "Lori Foster"],
+      "identifiers": { "isbn13": ["9781496754479", "9781496754486"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2025,
+      "publicationPath": "traditional",
+      "selectionFrame": "fern_michaels_2025_matching_year_releases",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.fernmichaels.com/2025-releases/" },
+        { "kind": "author", "url": "https://www.fernmichaels.com/complete-book-list/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.kensingtonbooks.com/9781496754486/lilac-time/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "The complete matching-year frame and publisher page establish a 2025 traditionally published collection containing three named stories. The authority pages do not affirm standalone status or a bibliographic series relationship for the collection title, so the case remains unresolved."
     }
   ]
 }
