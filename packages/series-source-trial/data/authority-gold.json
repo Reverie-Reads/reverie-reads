@@ -3962,6 +3962,39 @@
         ],
         "reviewNote": "The author bibliography labels Code Blue as Sisterhood book 37, while the publisher title and series pages independently establish its Sisterhood relationship and 2025 publication."
       }
+    },
+    {
+      "id": "kiersten-modglin-the-nannys-secret",
+      "title": "The Nanny's Secret",
+      "authors": ["Kiersten Modglin"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Locke Industries Series",
+            "aliases": ["Locke Industries"],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.kierstenmodglinauthor.com/thenannyssecret"
+          }
+        ],
+        "reviewNote": "The exact author page calls The Nanny's Secret an installment of the standalone Locke Industries Series. Standalone describes independent readability, not absence of a bibliographic relationship; no position is asserted."
+      }
     }
   ],
   "sharedSources": {

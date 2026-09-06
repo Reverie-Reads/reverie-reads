@@ -90,6 +90,19 @@ const knownClassificationRisk = (source) => {
   ) {
     return 'known_marketing_taxonomy_conflict'
   }
+  if (
+    (rootHost === 'kierstenmodglinauthor.com' &&
+      (/\/(?:uploads\/.*)?[^/]*(?:booklist|reading[_-]age[_-]guide)[^/]*\.pdf$/i.test(
+        url.pathname,
+      ) ||
+        url.pathname === '/books')) ||
+    ((rootHost === 'squarespace.com' || rootHost.endsWith('.squarespace.com')) &&
+      /kiersten[^/]*modglin[^/]*booklist\.pdf$/i.test(url.pathname))
+  ) {
+    // The catalog labels The Nanny's Secret standalone while its exact author page calls it a
+    // Locke Industries Series installment. Treat revisions and mirrors as one profiled taxonomy.
+    return 'known_author_catalog_taxonomy_conflict'
+  }
   return null
 }
 

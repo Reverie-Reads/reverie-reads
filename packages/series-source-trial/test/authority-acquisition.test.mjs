@@ -314,6 +314,65 @@ test('keeps selection frames and known marketing taxonomies out of truth evidenc
   )
 })
 
+test('quarantines revisions of a known-conflicting author catalog without blocking exact pages', () => {
+  const catalogUrls = [
+    'https://www.kierstenmodglinauthor.com/uploads/5/7/1/7/57171133/new_3_25_kiersten_modglin_booklist.pdf',
+    'https://www.kierstenmodglinauthor.com/uploads/5/7/1/7/57171133/new_3_25_kiersten_modglin_reading_age_guide.pdf',
+    'https://static1.squarespace.com/static/690cdade4570e05ae301c1a5/t/69f42aeba18c541ebe4fff12/1777609451082/53%2BKIERSTEN%2BMODGLIN%2BBOOKLIST.pdf',
+    'https://www.kierstenmodglinauthor.com/books',
+  ]
+
+  for (const catalogUrl of catalogUrls) {
+    const output = structuredClone(seriesOutput)
+    output.classification = 'standalone'
+    output.memberships = []
+    output.identity.evidenceUrls = [catalogUrl]
+    output.authoritySources = [
+      {
+        url: catalogUrl,
+        kind: 'author',
+        supports: ['identity', 'standalone'],
+        evidenceSummary: 'The author catalog places the title under Standalones.',
+      },
+    ]
+
+    const validation = validateAuthorityAcquisition(buildAuthorityTarget(testCase), output, [
+      catalogUrl,
+    ])
+    assert.equal(validation.valid, true)
+    assert.equal(validation.policySafe, false)
+    assert.ok(
+      validation.policyViolations.some((error) =>
+        error.includes('known_author_catalog_taxonomy_conflict'),
+      ),
+    )
+
+    const cleaned = canonicalizeAuthorityAcquisition(output, [catalogUrl])
+    assert.deepEqual(cleaned.authoritySources[0].supports, ['identity'])
+  }
+
+  const exactUrl = 'https://www.kierstenmodglinauthor.com/thenannyssecret'
+  const exactPage = structuredClone(seriesOutput)
+  exactPage.identity.evidenceUrls = [exactUrl]
+  exactPage.memberships[0].series = 'Locke Industries Series'
+  exactPage.memberships[0].position = null
+  exactPage.memberships[0].evidenceUrls = [exactUrl]
+  exactPage.authoritySources = [
+    {
+      url: exactUrl,
+      kind: 'author',
+      supports: ['identity', 'series_membership'],
+      evidenceSummary:
+        "The author identifies The Nanny's Secret as an installment of the Locke Industries Series.",
+    },
+  ]
+
+  assert.equal(
+    validateAuthorityAcquisition(buildAuthorityTarget(testCase), exactPage, [exactUrl]).policySafe,
+    true,
+  )
+})
+
 test('demotes blocked sources to identity without withholding independent membership evidence', () => {
   const authorUrl = 'https://author.example/books/second-book'
   const output = structuredClone(seriesOutput)

@@ -166,6 +166,18 @@
         "url": "https://www.fernmichaels.com/2025-releases/"
       },
       "selectionRule": "Include every distinct title on the author's complete 2025 releases page whose matching entry in her complete bibliography records 2025, with no provider-result filtering. The intersection yields Fight or Flight, Lilac Time, Smuggler's Cove, Santa's Holiday Spectacular, and Code Blue while excluding reissues whose bibliography year predates 2025."
+    },
+    {
+      "id": "kiersten_modglin_current_standalones_2026_09_06",
+      "label": "Complete current Kiersten Modglin standalone catalog frame",
+      "expectedCases": 47,
+      "strata": ["standalone_control"],
+      "observedOn": "2026-09-06",
+      "source": {
+        "kind": "author",
+        "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+      },
+      "selectionRule": "Include all 47 distinct titles under Standalones and Standalones (continued) in the author's current complete book-list PDF, in listed publication order, with no provider-result filtering. Do not include the separately labelled Arrangement Novels or The Messes Series. The selection heading is a challenge label, not gold truth; every title remains unresolved until exact-work authority evidence confirms or contradicts it."
     }
   ],
   "strata": [

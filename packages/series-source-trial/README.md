@@ -335,6 +335,10 @@ The no-write scout pass across the prior 18-candidate queue, including its token
 rate, and the human rejection of its sole standalone proposal, is recorded in
 `reports/authority-candidate-scout-2026-09-06.md`.
 
+The complete 47-title Kiersten Modglin standalone-label challenge frame, its exact-page Locke
+Industries correction, and the deterministic catalog-family quarantine are recorded in
+`reports/authority-development-frame-kiersten-modglin-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
@@ -395,6 +399,10 @@ This makes selection reproducible without pretending that the list organizer is 
 series truth. Use the legacy singular `selectionFrame` for one list or `selectionFrames` when the
 same work occurs in multiple complete lists; the audit counts the shared work in each frame while
 retaining one stable truth record.
+
+Different dated exports or mirrors of the same catalog taxonomy are not independent evidence. If
+human review proves that taxonomy internally contradictory, its profiled catalog pages become
+identity-only for classification while direct exact-work author or publisher pages remain eligible.
 
 An authority source is an author page, a verified author-controlled post, a publisher page, or a
 publisher catalog. A shared authority page may be declared under the gold file's `sharedSources`
