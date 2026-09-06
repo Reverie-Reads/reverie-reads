@@ -2320,6 +2320,128 @@
         "sources": []
       },
       "reviewNote": "Selected without provider-result filtering from the complete 2023 Selfies adult fiction shortlist. The author's catalog lists the exact title among his thrillers but makes no affirmative bibliographic-series or standalone claim; a community-profile standalone label is insufficient for gold truth."
+    },
+    {
+      "id": "selfies-2022-fiction-so-many-ways-of-loving",
+      "title": "So Many Ways of Loving",
+      "authors": ["Christine Webber"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2022_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2022/03/Selfies-2022-shortlist-announced.pdf"
+        },
+        { "kind": "author", "url": "https://christinewebber.com/books/" }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2022 Selfies adult fiction shortlist. The author's catalog establishes the exact work and 2021 publication but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "selfies-2022-fiction-the-big-fix",
+      "title": "The Big Fix",
+      "authors": ["Jill Morris"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2022_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2022/03/Selfies-2022-shortlist-announced.pdf"
+        },
+        { "kind": "author", "url": "https://jillmorrisauthor.co.uk/" }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2022 Selfies adult fiction shortlist. The author's site establishes the exact debut and mentions a work-in-progress sequel, but does not name or affirm a bibliographic series; a sequel prospect is not yet a structured relationship claim."
+    },
+    {
+      "id": "selfies-2022-fiction-white-heron",
+      "title": "White Heron",
+      "authors": ["J. J. Marsh"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2022_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2022/03/Selfies-2022-shortlist-announced.pdf"
+        },
+        { "kind": "author", "url": "https://www.jjmarshauthor.com/run-and-hide/" }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2022 Selfies adult fiction shortlist, which lists the author by her Jill Marsh name. The author's Run and Hide page establishes White Heron, while distributor and national-library catalogs label the relationship; the current first-party page does not unambiguously state a bibliographic series or position, so the case remains unresolved."
+    },
+    {
+      "id": "selfies-2022-fiction-breathe",
+      "title": "Breathe",
+      "authors": ["Elena Kravchenko"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2022_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2022/03/Selfies-2022-shortlist-announced.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2022 Selfies adult fiction shortlist. Current search surfaces establish the exact debut through review and catalog pages but expose no qualifying first-party bibliographic-series or standalone claim."
+    },
+    {
+      "id": "selfies-2022-fiction-the-other-times-of-caroline-tangent",
+      "title": "The Other Times of Caroline Tangent",
+      "authors": ["Ivan D. Wainewright"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2022_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2022/03/Selfies-2022-shortlist-announced.pdf"
+        },
+        {
+          "kind": "author",
+          "url": "https://ivanwainewright.com/the-other-times-of-caroline-tangent/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2022 Selfies adult fiction shortlist. The author's exact-title page calls it his second novel but makes no affirmative bibliographic-series or standalone claim; ordinal authorship is not relationship evidence."
     }
   ]
 }
