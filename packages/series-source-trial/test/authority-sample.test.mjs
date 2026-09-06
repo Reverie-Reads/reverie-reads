@@ -62,18 +62,18 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 288,
-    reviewed: 172,
-    candidate: 116,
+    selected: 306,
+    reviewed: 177,
+    candidate: 129,
     reviewedPositive: 141,
-    reviewedStandalone: 31,
+    reviewedStandalone: 36,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 28,
+    reviewed_cases: 23,
     reviewed_positive_cases: 0,
-    reviewed_standalone_cases: 19,
+    reviewed_standalone_cases: 14,
   })
   assert.deepEqual(audit.qualification.counts, {
     selected: 0,
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 172, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 177, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -116,9 +116,9 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     ),
     {
       recent_independent_or_kindle_first: { reviewed: 49, gap: 1 },
-      recent_traditional: { reviewed: 58, gap: 0 },
-      multi_series_or_connected_universe: { reviewed: 20, gap: 0 },
-      standalone_control: { reviewed: 39, gap: 11 },
+      recent_traditional: { reviewed: 59, gap: 0 },
+      multi_series_or_connected_universe: { reviewed: 21, gap: 0 },
+      standalone_control: { reviewed: 44, gap: 6 },
     },
   )
 })
@@ -354,6 +354,61 @@ test('keeps the complete Hachette fantasy frame and rejects uncorroborated stand
   assert.deepEqual(byId.get('hachette-standalone-sff-fantasy-wildwood-whispers')?.riskFeatures, [
     'connected_universe',
   ])
+})
+
+test('keeps the complete Hachette science fiction frame and exposes false relationships', async () => {
+  const caseSet = await loadTrialCases()
+  const selectionUrl = 'https://www.hachettebookgroup.com/landing-page/standalone-sff-books/'
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes(
+      'hachette_standalone_sff_science_fiction_2026_09_06',
+    ),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 18)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 5)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 13)
+
+  for (const testCase of frame) {
+    assert.ok(testCase.sampleSources.some(({ url }) => url === selectionUrl))
+    assert.equal(
+      testCase.truth.sources.some(({ url }) => url === selectionUrl),
+      false,
+    )
+  }
+
+  for (const id of [
+    'hachette-standalone-sff-scifi-the-doors-of-eden',
+    'hachette-standalone-sff-scifi-provenance',
+    'hachette-standalone-sff-scifi-century-rain',
+    'hachette-standalone-sff-scifi-ymir',
+    'hachette-standalone-sff-scifi-eversion',
+  ]) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, true)
+    assert.equal(testCase?.truth.membershipsComplete, true)
+    assert.deepEqual(testCase?.truth.memberships, [])
+  }
+
+  const provenance = byId.get('hachette-standalone-sff-scifi-provenance')
+  assert.deepEqual(provenance?.riskFeatures, ['connected_universe'])
+
+  const ymir = byId.get('hachette-standalone-sff-scifi-ymir')
+  assert.ok(
+    ymir?.sampleSources.some(
+      ({ url }) => url === 'https://www.hachettebookgroup.com/series/rich-larson/the-violet-wars/',
+    ),
+  )
+  assert.deepEqual(ymir?.truth.sources, [
+    { kind: 'author', url: 'https://www.patreon.com/richlarson/about' },
+  ])
+
+  assert.equal(byId.get('hachette-standalone-sff-scifi-six-wakes')?.truth.status, 'candidate')
+  assert.equal(
+    byId.get('hachette-standalone-sff-scifi-the-last-astronaut')?.truth.status,
+    'candidate',
+  )
 })
 
 test('keeps the complete 2026 Selfies fiction frame and separates connected worlds from series', async () => {
