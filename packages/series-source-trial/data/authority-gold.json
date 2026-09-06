@@ -5301,6 +5301,157 @@
         ],
         "reviewNote": "The author's exact-title page calls the work an instalment in The Secret series. Her three-book collection explicitly calls the group The Secret Diary series and labels The Secret Diary of a Bengali Newlywed book three, establishing the normalized series identity and publication position."
       }
+    },
+    {
+      "id": "selfies-2022-fiction-the-menai-bridge-killings",
+      "title": "The Menai Bridge Killings",
+      "authors": ["Simon McCleave"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2022_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2022/03/Selfies-2022-shortlist-announced.pdf"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.simonmccleave.com/books/the-menai-bridge-killings/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "DI Ruth Hunter Crime Thrillers",
+            "aliases": [],
+            "role": "primary",
+            "positions": [{ "value": 8, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.simonmccleave.com/books/the-menai-bridge-killings/"
+          }
+        ],
+        "reviewNote": "The author's exact-title page gives the canonical plural title, labels the work Book 8, and places it directly in DI Ruth Hunter Crime Thrillers. This corrects the official shortlist release's singular title without using the shortlist as relationship evidence."
+      }
+    },
+    {
+      "id": "selfies-2022-fiction-death-in-the-last-reel",
+      "title": "Death in the Last Reel",
+      "authors": ["Paula Harmon"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2022_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2022/03/Selfies-2022-shortlist-announced.pdf"
+        },
+        {
+          "kind": "author",
+          "url": "https://paulaharmon.com/books-by-paula-harmon/the-margaret-demeray-series/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Margaret Demeray Series",
+            "aliases": ["Margaret Demeray"],
+            "role": "primary",
+            "positions": [{ "value": 2, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://paulaharmon.com/books-by-paula-harmon/the-margaret-demeray-series/"
+          }
+        ],
+        "reviewNote": "The author's dedicated Margaret Demeray series page explicitly labels Death in the Last Reel book two and lists it between books one and three."
+      }
+    },
+    {
+      "id": "selfies-2022-fiction-sealfinger",
+      "title": "Sealfinger",
+      "authors": ["Heide Goody", "Iain Grant"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2022_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2022/03/Selfies-2022-shortlist-announced.pdf"
+        },
+        { "kind": "author", "url": "https://goodyandgrant.com/" },
+        { "kind": "publisher_catalog", "url": "https://www.pigeonparkpress.com/sam-applewhite/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Sam Applewhite",
+            "aliases": ["Sam Applewhite mysteries"],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://goodyandgrant.com/" },
+          {
+            "kind": "publisher_catalog",
+            "url": "https://www.pigeonparkpress.com/sam-applewhite/"
+          }
+        ],
+        "reviewNote": "The co-authors' site names the Sam Applewhite mysteries, and their publisher catalog's dedicated Sam Applewhite page includes Sealfinger with the recurring protagonist and the other related works. Those sources establish membership but do not explicitly number Sealfinger, so position remains unset."
+      }
+    },
+    {
+      "id": "selfies-2022-fiction-none-stood-taller",
+      "title": "None Stood Taller",
+      "authors": ["Peter Turnham"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2022_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2022/03/Selfies-2022-shortlist-announced.pdf"
+        },
+        { "kind": "author", "url": "https://www.peterturnhamauthor.com/" },
+        { "kind": "author_post", "url": "https://www.peterturnhamauthor.com/blog/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "None Stood Taller",
+            "aliases": ["None Stood Taller series"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.peterturnhamauthor.com/" },
+          { "kind": "author_post", "url": "https://www.peterturnhamauthor.com/blog/" }
+        ],
+        "reviewNote": "The author's catalog explicitly calls the group the None Stood Taller series and presents None Stood Taller before The Final Year, whose description says the story continues. His blog separately calls The Final Year the sequel and identifies a later work as the third novel in the series, establishing publication position one."
+      }
     }
   ],
   "sharedSources": {

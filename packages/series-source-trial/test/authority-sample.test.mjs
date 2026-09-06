@@ -62,16 +62,16 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 246,
-    reviewed: 154,
-    candidate: 92,
-    reviewedPositive: 128,
+    selected: 255,
+    reviewed: 158,
+    candidate: 97,
+    reviewedPositive: 132,
     reviewedStandalone: 26,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 46,
+    reviewed_cases: 42,
     reviewed_positive_cases: 0,
     reviewed_standalone_cases: 24,
   })
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 154, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 158, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -115,7 +115,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
         .map(({ id, reviewed, gap }) => [id, { reviewed, gap }]),
     ),
     {
-      recent_independent_or_kindle_first: { reviewed: 44, gap: 6 },
+      recent_independent_or_kindle_first: { reviewed: 48, gap: 2 },
       recent_traditional: { reviewed: 51, gap: 0 },
       multi_series_or_connected_universe: { reviewed: 20, gap: 0 },
       standalone_control: { reviewed: 34, gap: 16 },
@@ -387,6 +387,48 @@ test('keeps the complete 2023 Selfies fiction frame without promoting catalog ab
     'selfies-2023-fiction-small-eden',
     'selfies-2023-fiction-the-maids-of-biddenden',
     'selfies-2023-fiction-the-secrets-we-keep',
+  ]) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.status, 'candidate')
+    assert.equal(testCase?.truth.standalone, null)
+    assert.deepEqual(testCase?.truth.memberships, [])
+  }
+})
+
+test('keeps the complete 2022 Selfies fiction frame and preserves ambiguous catalog cases', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('selfies_2022_adult_fiction_shortlist'),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 9)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 4)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 5)
+
+  const numberedMemberships = new Map([
+    ['selfies-2022-fiction-the-menai-bridge-killings', ['DI Ruth Hunter Crime Thrillers', 8]],
+    ['selfies-2022-fiction-death-in-the-last-reel', ['The Margaret Demeray Series', 2]],
+    ['selfies-2022-fiction-none-stood-taller', ['None Stood Taller', 1]],
+  ])
+  for (const [id, [series, position]] of numberedMemberships) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, false)
+    assert.equal(testCase?.truth.memberships[0]?.series, series)
+    assert.equal(testCase?.truth.memberships[0]?.positions[0]?.value ?? null, position)
+  }
+
+  const sealfinger = byId.get('selfies-2022-fiction-sealfinger')
+  assert.equal(sealfinger?.truth.standalone, false)
+  assert.equal(sealfinger?.truth.memberships[0]?.series, 'Sam Applewhite')
+  assert.deepEqual(sealfinger?.truth.memberships[0]?.positions, [])
+
+  for (const id of [
+    'selfies-2022-fiction-so-many-ways-of-loving',
+    'selfies-2022-fiction-the-big-fix',
+    'selfies-2022-fiction-white-heron',
+    'selfies-2022-fiction-breathe',
+    'selfies-2022-fiction-the-other-times-of-caroline-tangent',
   ]) {
     const testCase = byId.get(id)
     assert.equal(testCase?.truth.status, 'candidate')

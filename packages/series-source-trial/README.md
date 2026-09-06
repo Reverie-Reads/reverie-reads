@@ -18,8 +18,8 @@ useful for measuring coverage and discovering disagreements, but they do not con
 accuracy until an authority source has been reviewed.
 
 The current development sample contains one difficult work from each of Reverie's 69 distinct
-seeded series plus external sampling frames: 246 selected works, of which 154 are
-authority-reviewed. The reviewed set contains 128 positive series cases and 26 confirmed standalone
+seeded series plus external sampling frames: 255 selected works, of which 158 are
+authority-reviewed. The reviewed set contains 132 positive series cases and 26 confirmed standalone
 controls. Some reviewed cases replace seed references, so the final distinct-case count is printed
 at runtime.
 
@@ -371,6 +371,10 @@ The complete 2023 Selfies adult fiction frame, three first-party series rulings,
 works, and the scout's conservative archive-boundary result are recorded in
 `reports/authority-development-frame-selfies-2023-fiction-2026-09-06.md`.
 
+The complete 2022 Selfies adult fiction frame, four first-party series rulings, five unresolved
+works, and the scout's third-party source-authority overreach signals are recorded in
+`reports/authority-development-frame-selfies-2022-fiction-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
@@ -379,7 +383,7 @@ Audit the sample before running another provider or resolver comparison:
 pnpm series:sample:audit
 ```
 
-The audit reports selection coverage and authority-review coverage separately. The current 92
+The audit reports selection coverage and authority-review coverage separately. The current 97
 candidates count as selected works, but never as truth and never toward an accuracy gate. It also
 validates that every reviewed result has
 affirmative author or publisher evidence, that a reviewed standalone has no memberships, and that
