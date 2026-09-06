@@ -5,6 +5,7 @@ import {
   GUEST_HANDOFF_TTL_MS,
   clearGuestHandoff,
   createGuestHandoff,
+  guestDockArrangement,
   loadGuestHandoff,
   saveGuestHandoff,
   summarizeGuestHandoff,
@@ -18,6 +19,18 @@ describe('guest library handoff', () => {
     expect(localStorage.getItem(GUEST_HANDOFF_STORAGE_ID)).toBeNull()
     expect(saveGuestHandoff(handoff)).toBe(true)
     expect(loadGuestHandoff(101)).toEqual(handoff)
+    expect(handoff.arrangement).toEqual({
+      version: 1,
+      priorityDestinations: ['library', 'home', 'shelves'],
+      homeModules: ['priority', 'reading', 'releases'],
+    })
+  })
+
+  it('maps a custom guest dock into a complete account arrangement', () => {
+    expect(guestDockArrangement(['history', 'library'])).toEqual({
+      destinations: ['stats', 'library', 'home'],
+      homeModules: ['year', 'priority'],
+    })
   })
 
   it('keeps reading records and unfinished drafts distinct', () => {

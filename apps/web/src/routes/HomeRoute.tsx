@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
 import {
   authorOf,
@@ -34,6 +34,7 @@ import { useVoice } from '../skin/labels'
 import { BookmarkGlyph } from '../components/BookmarkGlyph'
 import { Surface } from '../components/Surface'
 import { PageHeader } from '../components/PageHeader'
+import { DEFAULT_ARRANGEMENT_PRESET, type HomeModuleId } from '../design/arrangements'
 
 const YEAR = new Date().getFullYear()
 
@@ -69,6 +70,8 @@ function HomeScreen() {
   const yearReads = (reads ?? []).filter((r) => r.read_on?.slice(0, 4) === String(YEAR))
   const uniqueThisYear = new Set(yearReads.map((r) => r.book_id)).size
   const goalTarget = profile?.goalYear === YEAR ? (profile?.goalTarget ?? 0) : 0
+  const homeModules =
+    profile?.arrangement?.homeModules ?? DEFAULT_ARRANGEMENT_PRESET.config.homeModules
 
   // Reading Now: mid-read books minus the display-only hidden ones, in the reader's manual order.
   const reading = all
@@ -180,287 +183,371 @@ function HomeScreen() {
         </Surface>
       )}
 
-      {/* reading now — editable in place: add a current read, set one aside, reorder */}
-      {reading.length > 0 && (
-        <div className="mt-8">
-          <div className="flex items-end justify-between gap-3">
-            <SectionHeader className="flex-1" label="Reading now" readout={reading.length} />
-            <button
-              type="button"
-              onClick={() => setReadingPickerOpen(true)}
-              className="skin-control skin-btn-secondary mb-0.5 min-h-11 flex-none px-3 text-[13px] font-semibold"
-            >
-              ＋ Add
-            </button>
-          </div>
-          <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            {reading.map((b, i) => (
-              <Surface
-                key={b.id}
-                tone="card"
-                radius="card"
-                pad={2}
-                raised={i === 0}
-                className={`flex gap-3 ${i === 0 ? 'sm:col-span-2 sm:grid sm:grid-cols-[112px_minmax(0,1fr)] sm:p-5' : ''}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => openBook(b.id)}
-                  className={`aspect-[2/3] flex-none self-start overflow-hidden rounded-md border border-line ${i === 0 ? 'w-20 sm:w-[112px]' : 'w-16'}`}
-                  style={{ background: 'var(--field)' }}
-                  aria-label={`Open ${b.title}`}
-                >
-                  <CoverImage book={b} />
-                </button>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-[12ch] flex-1">
-                      <h3
-                        className={`break-words font-semibold leading-[1.3] text-ink ${i === 0 ? 'text-[22px] sm:text-[26px]' : 'text-[19px]'}`}
-                        style={{ fontFamily: 'var(--font-display)' }}
-                      >
-                        {b.title}
-                      </h3>
-                      <div className="break-words text-[13px] leading-[1.45] text-ink">
-                        {authorOf(b)}
-                      </div>
-                    </div>
-                    <span className="flex flex-none flex-wrap items-center justify-end gap-0.5">
-                      {reading.length > 1 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => moveReading(i, -1)}
-                            aria-label={`Move ${b.title} earlier`}
-                            className="grid h-11 w-11 place-items-center text-[12px] leading-none text-ink hover:text-ink"
-                          >
-                            ▲
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moveReading(i, 1)}
-                            aria-label={`Move ${b.title} later`}
-                            className="grid h-11 w-11 place-items-center text-[12px] leading-none text-ink hover:text-ink"
-                          >
-                            ▼
-                          </button>
-                        </>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setRemoving(b)}
-                        aria-label={`Remove ${b.title} from Reading now`}
-                        className="grid h-11 w-11 place-items-center text-[13px] leading-none text-ink hover:text-primary"
-                      >
-                        ✕
-                      </button>
-                    </span>
-                  </div>
-                  <ProgressMeter value={b.progress} max={100} className="mt-2" />
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    <span className="text-[13px] font-semibold text-ink">{b.progress}%</span>
-                    <div className="ml-auto flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => nudge(b, -5)}
-                        aria-label={`Less progress for ${b.title}`}
-                        className="skin-control skin-btn-icon grid h-11 w-11 place-items-center text-ink"
-                      >
-                        −
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => nudge(b, 5)}
-                        aria-label={`Update progress for ${b.title}`}
-                        className="skin-control skin-btn-secondary min-h-11 px-3 text-[14px] text-ink"
-                      >
-                        ＋ 5%
-                      </button>
-                    </div>
+      {homeModules.map((homeModule: HomeModuleId) => (
+        <Fragment key={homeModule}>
+          {/* reading now — editable in place: add a current read, set one aside, reorder */}
+          {homeModule === 'reading' && (
+            <div data-home-module="reading">
+              {reading.length > 0 ? (
+                <div className="mt-8">
+                  <div className="flex items-end justify-between gap-3">
+                    <SectionHeader
+                      className="flex-1"
+                      label="Reading now"
+                      readout={reading.length}
+                    />
                     <button
                       type="button"
-                      onClick={() => setFinishing(b)}
-                      className="skin-control min-h-11 px-3 py-1 text-[13px] font-semibold"
-                      style={{ background: 'var(--chip)', color: 'var(--ink)' }}
+                      onClick={() => setReadingPickerOpen(true)}
+                      className="skin-control skin-btn-secondary mb-0.5 min-h-11 flex-none px-3 text-[13px] font-semibold"
                     >
-                      Finish ✓
+                      ＋ Add
                     </button>
                   </div>
+                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                    {reading.map((b, i) => (
+                      <Surface
+                        key={b.id}
+                        tone="card"
+                        radius="card"
+                        pad={2}
+                        raised={i === 0}
+                        className={`flex gap-3 ${i === 0 ? 'sm:col-span-2 sm:grid sm:grid-cols-[112px_minmax(0,1fr)] sm:p-5' : ''}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => openBook(b.id)}
+                          className={`aspect-[2/3] flex-none self-start overflow-hidden rounded-md border border-line ${i === 0 ? 'w-20 sm:w-[112px]' : 'w-16'}`}
+                          style={{ background: 'var(--field)' }}
+                          aria-label={`Open ${b.title}`}
+                        >
+                          <CoverImage book={b} />
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-[12ch] flex-1">
+                              <h3
+                                className={`break-words font-semibold leading-[1.3] text-ink ${i === 0 ? 'text-[22px] sm:text-[26px]' : 'text-[19px]'}`}
+                                style={{ fontFamily: 'var(--font-display)' }}
+                              >
+                                {b.title}
+                              </h3>
+                              <div className="break-words text-[13px] leading-[1.45] text-ink">
+                                {authorOf(b)}
+                              </div>
+                            </div>
+                            <span className="flex flex-none flex-wrap items-center justify-end gap-0.5">
+                              {reading.length > 1 && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveReading(i, -1)}
+                                    aria-label={`Move ${b.title} earlier`}
+                                    className="grid h-11 w-11 place-items-center text-[12px] leading-none text-ink hover:text-ink"
+                                  >
+                                    ▲
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveReading(i, 1)}
+                                    aria-label={`Move ${b.title} later`}
+                                    className="grid h-11 w-11 place-items-center text-[12px] leading-none text-ink hover:text-ink"
+                                  >
+                                    ▼
+                                  </button>
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setRemoving(b)}
+                                aria-label={`Remove ${b.title} from Reading now`}
+                                className="grid h-11 w-11 place-items-center text-[13px] leading-none text-ink hover:text-primary"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          </div>
+                          <ProgressMeter value={b.progress} max={100} className="mt-2" />
+                          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                            <span className="text-[13px] font-semibold text-ink">
+                              {b.progress}%
+                            </span>
+                            <div className="ml-auto flex gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => nudge(b, -5)}
+                                aria-label={`Less progress for ${b.title}`}
+                                className="skin-control skin-btn-icon grid h-11 w-11 place-items-center text-ink"
+                              >
+                                −
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => nudge(b, 5)}
+                                aria-label={`Update progress for ${b.title}`}
+                                className="skin-control skin-btn-secondary min-h-11 px-3 text-[14px] text-ink"
+                              >
+                                ＋ 5%
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setFinishing(b)}
+                              className="skin-control min-h-11 px-3 py-1 text-[13px] font-semibold"
+                              style={{ background: 'var(--chip)', color: 'var(--ink)' }}
+                            >
+                              Finish ✓
+                            </button>
+                          </div>
+                        </div>
+                      </Surface>
+                    ))}
+                  </div>
                 </div>
-              </Surface>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {books && (
-        <Frame className="mt-6 p-5 sm:p-6" style={{ boxShadow: 'var(--shadow)' }}>
-          <h2
-            className="text-[25px] font-semibold leading-tight text-ink sm:text-[30px]"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            {all.length ? 'Choose a next read' : 'Start with a book you want to read.'}
-          </h2>
-          <p className="mt-2 max-w-[60ch] text-[16px] leading-relaxed text-ink">
-            {available.length
-              ? `${available.length} unread ${available.length === 1 ? 'book is' : 'books are'} marked owned or borrowed. Choose what fits now, or try a random pick.`
-              : all.length
-                ? 'No new unread books are marked owned or borrowed. Browse your library to check what you have, or explore other choices in Next read.'
-                : 'Add one book or bring an existing file. You can choose a room and set a goal later.'}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void navigate({ to: all.length ? '/match' : '/add' })}
-              className="skin-control skin-btn-primary min-h-11 px-4 text-[14px]"
-            >
-              {all.length ? 'Choose a next read' : 'Add a book'}
-            </button>
-            {available.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  const pick = available[Math.floor(Math.random() * available.length)]
-                  if (pick) openBook(pick.id)
-                }}
-                className="skin-control skin-btn-secondary min-h-11 px-4 text-[14px]"
-              >
-                Surprise me
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void navigate({ to: all.length ? '/library' : '/onboarding' })}
-                className="skin-control skin-btn-secondary min-h-11 px-4 text-[14px]"
-              >
-                {all.length ? 'Review your library' : 'Import a file'}
-              </button>
-            )}
-          </div>
-        </Frame>
-      )}
-
-      {/* priority shelves — every flagged shelf/TBR, in the reader's manual order */}
-      {priorityLists.map((l) => {
-        const shelfBooks = booksFor(l.id)
-        return (
-          <div key={l.id} className="mt-8">
-            <button
-              type="button"
-              onClick={() => void navigate({ to: '/shelf/$listId', params: { listId: l.id } })}
-              className="block w-full text-left"
-            >
-              <SectionHeader
-                label={
-                  <>
-                    <BookmarkGlyph size={13} /> {l.name} <span aria-hidden>›</span>
-                  </>
-                }
-                readout={shelfBooks.length}
-              />
-            </button>
-            {shelfBooks.length > 0 && (
-              <p className="mb-3 mt-1 text-[13px] leading-[1.5] text-muted">
-                Your hand-picked next reads. Swipe the shelf and open one when it feels right.
-              </p>
-            )}
-            <SpineShelf
-              books={shelfBooks}
-              onOpen={openBook}
-              onAdd={() => setRailPickerFor(l)}
-              addLabel={`Add a book to ${l.name}`}
-            />
-          </div>
-        )
-      })}
-
-      {/* coming soon */}
-      {soon.length > 0 && (
-        <div className="mt-8">
-          <SectionHeader label="Coming soon" readout={soon.length} />
-          <p className="mb-3 mt-1 text-[13px] leading-[1.5] text-muted">
-            Releases you’re tracking over the next four months.
-          </p>
-          <div
-            className="flex snap-x gap-4 overflow-x-auto pb-2"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {soon.map(({ b }) => (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => openBook(b.id)}
-                className="w-28 flex-none snap-start text-left"
-                aria-label={`Open ${b.title}`}
-              >
-                <div
-                  className="skin-card aspect-[2/3] overflow-hidden border border-line"
-                  style={{ background: 'var(--field)', boxShadow: 'var(--shadow)' }}
-                >
-                  <CoverImage book={b} />
+              ) : books ? (
+                <div className="mt-8">
+                  <SectionHeader label="Reading now" readout={0} />
+                  <Surface tone="card" radius="card" pad={4} className="mt-3">
+                    <p className="text-[14px] leading-relaxed text-muted">
+                      Nothing is underway. Start a book from your library when you are ready.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setReadingPickerOpen(true)}
+                      className="skin-control skin-btn-secondary mt-3 min-h-11 px-4 text-[13px] font-semibold"
+                    >
+                      Start reading
+                    </button>
+                  </Surface>
                 </div>
-                <div className="mt-2 break-words text-[13px] font-semibold leading-[1.35] text-ink">
-                  {b.title}
-                </div>
-                <div className="mt-0.5 text-[12px] text-primary">
-                  {b.pub.m ? `${MONTHS[b.pub.m - 1]} ` : ''}
-                  {b.pub.y}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {goalTarget > 0 || yearReads.length > 0 ? (
-        <Frame className="mt-8 flex flex-wrap items-center gap-5 p-5">
-          {goalTarget > 0 && (
-            <button type="button" onClick={setGoal} aria-label={`Set your ${YEAR} reading goal`}>
-              <SignatureRing value={uniqueThisYear} max={goalTarget} size={96} />
-            </button>
+              ) : null}
+            </div>
           )}
-          <div className="min-w-0 flex-1">
-            <h2 className="text-[20px] font-semibold text-ink">Your reading year</h2>
-            <p className="mt-1 text-[14px] leading-relaxed text-ink">
-              {yearReads.length} read{yearReads.length !== 1 ? 's' : ''} logged in {YEAR}
-              {yearReads.length !== uniqueThisYear ? ` across ${uniqueThisYear} books` : ''}.
-              {goalTarget > 0 ? ` ${uniqueThisYear} of ${goalTarget} books in your goal.` : ''}
-            </p>
-            {goalTarget > 0 && uniqueThisYear >= goalTarget && (
-              <p className="mt-2 text-[14px] italic text-[color:var(--accent-ink)]">
-                {voice.milestone}
-              </p>
-            )}
-            {goalTarget > 0 && uniqueThisYear > 0 && uniqueThisYear < goalTarget && (
-              <p className="mt-2 text-[14px] italic text-[color:var(--accent-ink)]">
-                {voice.season}
-              </p>
-            )}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <StatusTag tone="muted">{all.filter(isPossessed).length} owned or borrowed</StatusTag>
-              <StatusTag glyph="♥">{all.filter((b) => b.fave).length} faves</StatusTag>
-              {priorityLists.length > 0 && (
-                <StatusTag glyph={<BookmarkGlyph />}>{priorityTotal} priority</StatusTag>
+
+          {homeModule === 'next-read' && (
+            <div data-home-module="next-read">
+              {books && (
+                <Frame className="mt-6 p-5 sm:p-6" style={{ boxShadow: 'var(--shadow)' }}>
+                  <h2
+                    className="text-[25px] font-semibold leading-tight text-ink sm:text-[30px]"
+                    style={{ fontFamily: 'var(--font-display)' }}
+                  >
+                    {all.length ? 'Choose a next read' : 'Start with a book you want to read.'}
+                  </h2>
+                  <p className="mt-2 max-w-[60ch] text-[16px] leading-relaxed text-ink">
+                    {available.length
+                      ? `${available.length} unread ${available.length === 1 ? 'book is' : 'books are'} marked owned or borrowed. Choose what fits now, or try a random pick.`
+                      : all.length
+                        ? 'No new unread books are marked owned or borrowed. Browse your library to check what you have, or explore other choices in Next read.'
+                        : 'Add one book or bring an existing file. You can choose a room and set a goal later.'}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void navigate({ to: all.length ? '/match' : '/add' })}
+                      className="skin-control skin-btn-primary min-h-11 px-4 text-[14px]"
+                    >
+                      {all.length ? 'Choose a next read' : 'Add a book'}
+                    </button>
+                    {available.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const pick = available[Math.floor(Math.random() * available.length)]
+                          if (pick) openBook(pick.id)
+                        }}
+                        className="skin-control skin-btn-secondary min-h-11 px-4 text-[14px]"
+                      >
+                        Surprise me
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void navigate({ to: all.length ? '/library' : '/onboarding' })
+                        }
+                        className="skin-control skin-btn-secondary min-h-11 px-4 text-[14px]"
+                      >
+                        {all.length ? 'Review your library' : 'Import a file'}
+                      </button>
+                    )}
+                  </div>
+                </Frame>
               )}
             </div>
-          </div>
-          <button
-            type="button"
-            onClick={setGoal}
-            className="skin-control skin-btn-secondary min-h-11 px-4 text-[14px]"
-          >
-            {goalTarget > 0 ? 'Edit goal' : 'Set a reading goal'}
-          </button>
-        </Frame>
-      ) : books ? (
-        <button
-          type="button"
-          onClick={setGoal}
-          className="skin-control mt-8 min-h-11 px-3 text-[14px] text-muted"
-        >
-          Set a reading goal
-        </button>
-      ) : null}
+          )}
+
+          {/* priority shelves — every flagged shelf/TBR, in the reader's manual order */}
+          {homeModule === 'priority' && (
+            <div data-home-module="priority">
+              {priorityLists.map((l) => {
+                const shelfBooks = booksFor(l.id)
+                return (
+                  <div key={l.id} className="mt-8">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void navigate({ to: '/shelf/$listId', params: { listId: l.id } })
+                      }
+                      className="block w-full text-left"
+                    >
+                      <SectionHeader
+                        label={
+                          <>
+                            <BookmarkGlyph size={13} /> {l.name} <span aria-hidden>›</span>
+                          </>
+                        }
+                        readout={shelfBooks.length}
+                      />
+                    </button>
+                    {shelfBooks.length > 0 && (
+                      <p className="mb-3 mt-1 text-[13px] leading-[1.5] text-muted">
+                        Your hand-picked next reads. Swipe the shelf and open one when it feels
+                        right.
+                      </p>
+                    )}
+                    <SpineShelf
+                      books={shelfBooks}
+                      onOpen={openBook}
+                      onAdd={() => setRailPickerFor(l)}
+                      addLabel={`Add a book to ${l.name}`}
+                    />
+                  </div>
+                )
+              })}
+              {books && priorityLists.length === 0 && (
+                <div className="mt-8">
+                  <SectionHeader label="Priority shelves" readout={0} />
+                  <Surface tone="card" radius="card" pad={4} className="mt-3">
+                    <p className="text-[14px] leading-relaxed text-muted">
+                      Keep a shelf close by marking it as a priority in Shelves.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void navigate({ to: '/shelves' })}
+                      className="skin-control skin-btn-secondary mt-3 min-h-11 px-4 text-[13px] font-semibold"
+                    >
+                      Open shelves
+                    </button>
+                  </Surface>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* coming soon */}
+          {homeModule === 'releases' && (
+            <div data-home-module="releases">
+              {soon.length > 0 ? (
+                <div className="mt-8">
+                  <SectionHeader label="Coming soon" readout={soon.length} />
+                  <p className="mb-3 mt-1 text-[13px] leading-[1.5] text-muted">
+                    Releases you’re tracking over the next four months.
+                  </p>
+                  <div
+                    className="flex snap-x gap-4 overflow-x-auto pb-2"
+                    style={{ scrollbarWidth: 'none' }}
+                  >
+                    {soon.map(({ b }) => (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => openBook(b.id)}
+                        className="w-28 flex-none snap-start text-left"
+                        aria-label={`Open ${b.title}`}
+                      >
+                        <div
+                          className="skin-card aspect-[2/3] overflow-hidden border border-line"
+                          style={{ background: 'var(--field)', boxShadow: 'var(--shadow)' }}
+                        >
+                          <CoverImage book={b} />
+                        </div>
+                        <div className="mt-2 break-words text-[13px] font-semibold leading-[1.35] text-ink">
+                          {b.title}
+                        </div>
+                        <div className="mt-0.5 text-[12px] text-primary">
+                          {b.pub.m ? `${MONTHS[b.pub.m - 1]} ` : ''}
+                          {b.pub.y}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : books ? (
+                <div className="mt-8">
+                  <SectionHeader label="Coming soon" readout={0} />
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                    No releases from your library fall within the next four months.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {homeModule === 'year' && (
+            <div data-home-module="year">
+              {goalTarget > 0 || yearReads.length > 0 ? (
+                <Frame className="mt-8 flex flex-wrap items-center gap-5 p-5">
+                  {goalTarget > 0 && (
+                    <button
+                      type="button"
+                      onClick={setGoal}
+                      aria-label={`Set your ${YEAR} reading goal`}
+                    >
+                      <SignatureRing value={uniqueThisYear} max={goalTarget} size={96} />
+                    </button>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-[20px] font-semibold text-ink">Your reading year</h2>
+                    <p className="mt-1 text-[14px] leading-relaxed text-ink">
+                      {yearReads.length} read{yearReads.length !== 1 ? 's' : ''} logged in {YEAR}
+                      {yearReads.length !== uniqueThisYear ? ` across ${uniqueThisYear} books` : ''}
+                      .
+                      {goalTarget > 0
+                        ? ` ${uniqueThisYear} of ${goalTarget} books in your goal.`
+                        : ''}
+                    </p>
+                    {goalTarget > 0 && uniqueThisYear >= goalTarget && (
+                      <p className="mt-2 text-[14px] italic text-[color:var(--accent-ink)]">
+                        {voice.milestone}
+                      </p>
+                    )}
+                    {goalTarget > 0 && uniqueThisYear > 0 && uniqueThisYear < goalTarget && (
+                      <p className="mt-2 text-[14px] italic text-[color:var(--accent-ink)]">
+                        {voice.season}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <StatusTag tone="muted">
+                        {all.filter(isPossessed).length} owned or borrowed
+                      </StatusTag>
+                      <StatusTag glyph="♥">{all.filter((b) => b.fave).length} faves</StatusTag>
+                      {priorityLists.length > 0 && (
+                        <StatusTag glyph={<BookmarkGlyph />}>{priorityTotal} priority</StatusTag>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={setGoal}
+                    className="skin-control skin-btn-secondary min-h-11 px-4 text-[14px]"
+                  >
+                    {goalTarget > 0 ? 'Edit goal' : 'Set a reading goal'}
+                  </button>
+                </Frame>
+              ) : books ? (
+                <button
+                  type="button"
+                  onClick={setGoal}
+                  className="skin-control mt-8 min-h-11 px-3 text-[14px] text-muted"
+                >
+                  Set a reading goal
+                </button>
+              ) : null}
+            </div>
+          )}
+        </Fragment>
+      ))}
 
       {finishing && <LogReadForm book={finishing} onClose={() => setFinishing(null)} />}
 

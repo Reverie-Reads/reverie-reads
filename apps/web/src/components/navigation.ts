@@ -1,3 +1,5 @@
+import type { ArrangementDestinationId } from '../design/arrangements'
+
 export type NavigationIconName =
   | 'home'
   | 'library'
@@ -53,6 +55,38 @@ export const MORE_NAVIGATION_ITEMS = [
   { label: 'Appearance', to: '/skins', icon: 'skins' },
   { label: 'Settings', to: '/settings', icon: 'settings' },
 ] as const satisfies readonly NavigationItem[]
+
+const DESTINATION_PATHS: Record<ArrangementDestinationId, string> = {
+  home: '/',
+  library: '/library',
+  match: '/match',
+  shelves: '/shelves',
+  series: '/series',
+  planner: '/planner',
+  stats: '/stats',
+  discover: '/discover',
+}
+
+/** The saved priority trio drives both shells. Invalid ids cannot reach here because the profile
+ * parser falls back before rendering, but the filter also keeps this function total in tests. */
+export function priorityNavigationItems(
+  destinations: readonly ArrangementDestinationId[],
+): NavigationItem[] {
+  return destinations
+    .map((id) => NAVIGATION_ITEMS.find((item) => item.to === DESTINATION_PATHS[id]))
+    .filter((item): item is (typeof NAVIGATION_ITEMS)[number] => !!item)
+}
+
+export function moreNavigationItems(
+  destinations: readonly ArrangementDestinationId[],
+): NavigationItem[] {
+  const priorityPaths = new Set(priorityNavigationItems(destinations).map((item) => item.to))
+  return [
+    ...NAVIGATION_ITEMS.filter((item) => !priorityPaths.has(item.to)),
+    { label: 'Appearance', to: '/skins', icon: 'skins' as const },
+    { label: 'Settings', to: '/settings', icon: 'settings' as const },
+  ]
+}
 
 const DETAIL_DESTINATIONS = [
   ['/book/', 'Book record'],

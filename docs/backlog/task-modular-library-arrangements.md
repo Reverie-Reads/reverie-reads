@@ -1,9 +1,9 @@
 # Modular library arrangements
 
-Status: **interactive design ready for owner review**, added by owner request on 2026-09-05. Open
-`/lab/arrangements`; the full decision and persistence contract live in
-`design/MODULAR_LIBRARY_ARRANGEMENTS.md`. This brief authorizes a design handoff, not implementation
-of account-level customization before review.
+Status: **approved and implemented for account persistence** on 2026-09-06. Open
+`/lab/arrangements` for the original study or **Settings → Arrange Reverie** for the signed-in
+editor. The full decision and persistence contract live in
+`design/MODULAR_LIBRARY_ARRANGEMENTS.md`.
 
 ## Reader outcome
 
@@ -34,8 +34,8 @@ and Next read; the goal is reader choice, not another replacement of the core re
 - Define whether device layouts share one logical order or allow deliberate device overrides.
   Saved account preferences need a versioned default and an understandable fallback for a newly
   introduced or removed destination.
-- Guest-to-account mapping: carry an arrangement only by explicit choice when the account
-  implementation exists. Until then the landing continues to label this as planned personalization.
+- Guest-to-account mapping: carry an arrangement only when the reader explicitly accepts the guest
+  handoff during onboarding.
 
 ## Constraints
 
@@ -63,6 +63,7 @@ multiple active reads, or a long navigation label.
 5. An observed walkthrough in which a reader can change their starting arrangement, find an action
    they hid, and restore the default without coaching. Record any assistance as a design finding.
 
-Implement only after this specification is reviewed and after the guest-to-account handoff has a
-clear data boundary. A screenshot or working guest preset is not evidence that account preference
-synchronization exists.
+The approved implementation stores a versioned document on the reader's profile, updates it only
+through an explicit Save, and maps the guest dock during the explicit onboarding handoff. Release
+verification must prove the saved value survives a reload and drives both navigation and Home DOM
+order.

@@ -380,7 +380,18 @@ function seedOldAccount() {
       // surviving_series_id can't be remapped onto the new account's regenerated series ids).
       { id: 'smd-same', owner_id: OWNER, name_key_a: 'acotar', name_key_b: 'a court of thorns and roses', ruling: 'same', surviving_series_id: 'ser1', alias_name: 'ACOTAR' },
     ],
-    profiles: [{ id: OWNER, display_name: 'Reader', skin: 'tryst' }],
+    profiles: [
+      {
+        id: OWNER,
+        display_name: 'Reader',
+        skin: 'tryst',
+        arrangement: {
+          version: 1,
+          priorityDestinations: ['library', 'home', 'stats'],
+          homeModules: ['reading', 'year'],
+        },
+      },
+    ],
   }
   // A PERSONAL mood too, so the mood-coining write path is covered like the trope one.
   db.moods.push({ id: 'm-mine', owner_id: OWNER, name: 'Unhinged In A Good Way' })
@@ -724,17 +735,23 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
     }
   })
 
-  it('exports v7 with taxonomy and complete structured series authority', async () => {
+  it('exports v8 with taxonomy, structured series authority, and the account arrangement', async () => {
     const parsed = JSON.parse(await buildBackup()) as {
       v: number
       tropes: Record<string, { name: string; emphasis: string }[]>
       moods: Record<string, { name: string }[]>
       author_follows: { author_name: string; state: string }[]
+      profile: Record<string, unknown>
     }
-    expect(parsed.v).toBe(7)
+    expect(parsed.v).toBe(8)
     expect((parsed.tropes['book-a'] ?? []).map((t) => t.name).sort()).toEqual(['Dragons With Opinions', 'Enemies to Lovers'])
     expect(parsed.moods['book-a']).toEqual([{ name: 'Devastating' }])
     expect(parsed.author_follows).toHaveLength(2)
+    expect(parsed.profile.arrangement).toEqual({
+      version: 1,
+      priorityDestinations: ['library', 'home', 'stats'],
+      homeModules: ['reading', 'year'],
+    })
   })
 })
 

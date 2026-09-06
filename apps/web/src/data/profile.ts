@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isActiveSkin, isMode, type ActiveSkin, type AdaptiveBundle, type AdaptivePending, type Mode } from '@reverie/core'
 import { supabase } from '../lib/supabase'
+import {
+  arrangementDocument,
+  arrangementFromUnknown,
+  type ArrangementConfig,
+} from '../design/arrangements'
 
 export interface DefaultStore {
   id: string
@@ -29,6 +34,8 @@ export interface Profile {
   hideIntensity: boolean
   /** Give DNF its own shelf instead of showing those books within Read. Default off. */
   shelfBreakdownDnf: boolean
+  /** The reader's versioned navigation priorities and independently ordered Home modules. */
+  arrangement: ArrangementConfig
 }
 
 interface ProfileRow {
@@ -49,6 +56,7 @@ interface ProfileRow {
   shelf_breakdown_format: boolean | null
   hide_intensity: boolean | null
   shelf_breakdown_dnf: boolean | null
+  arrangement: unknown
 }
 
 export const profileKey = ['profile'] as const
@@ -73,6 +81,7 @@ const toProfile = (row: ProfileRow): Profile => ({
   shelfBreakdownFormat: row.shelf_breakdown_format ?? false,
   hideIntensity: row.hide_intensity ?? false,
   shelfBreakdownDnf: row.shelf_breakdown_dnf ?? false,
+  arrangement: arrangementFromUnknown(row.arrangement),
 })
 
 /** The signed-in user's own profile (RLS returns only their row). */
@@ -82,7 +91,7 @@ export function useProfile() {
     queryFn: async (): Promise<Profile | null> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, adaptive_pending, adaptive_dismissed, shelf_breakdown_format, shelf_breakdown_dnf, hide_intensity')
+        .select('id, display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, adaptive_pending, adaptive_dismissed, shelf_breakdown_format, shelf_breakdown_dnf, hide_intensity, arrangement')
         .limit(1)
         .maybeSingle()
       if (error) throw error
@@ -110,6 +119,7 @@ export function useUpdateProfile() {
       shelfBreakdownFormat?: boolean
       hideIntensity?: boolean
       shelfBreakdownDnf?: boolean
+      arrangement?: ArrangementConfig
     }): Promise<void> => {
       const { data: auth } = await supabase.auth.getUser()
       const id = auth.user?.id
@@ -129,6 +139,7 @@ export function useUpdateProfile() {
         row.shelf_breakdown_format = patch.shelfBreakdownFormat
       if (patch.hideIntensity !== undefined) row.hide_intensity = patch.hideIntensity
       if (patch.shelfBreakdownDnf !== undefined) row.shelf_breakdown_dnf = patch.shelfBreakdownDnf
+      if (patch.arrangement !== undefined) row.arrangement = arrangementDocument(patch.arrangement)
       if (patch.defaultStore !== undefined) {
         row.default_store_id = patch.defaultStore?.id ?? null
         row.default_store_name = patch.defaultStore?.name ?? null

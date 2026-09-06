@@ -1,8 +1,9 @@
 # Modular library arrangements
 
-Status: **interactive design ready for review**. Open `/lab/arrangements` in the web app. The study
-uses the real room materials, controls, typography, navigation glyphs, cover renderer, structural
-frames, and Home modules. It is synthetic and writes no account or browser data.
+Status: **approved and implemented for account persistence** on 2026-09-06. The original study
+remains available at `/lab/arrangements`; the signed-in editor lives at **Settings → Arrange
+Reverie**. Both use the real room materials, controls, typography, navigation glyphs, cover
+renderer, structural frames, and Home modules.
 
 ## Product decision
 
@@ -77,7 +78,7 @@ Loading keeps the module's heading and a bounded skeleton. A failed module gives
 does not block other Home content. A capability unavailable under the current entitlement keeps its
 saved position, renders a short explanation in the editor, and returns when access resumes.
 
-## Persistence contract for implementation
+## Persistence contract
 
 Account persistence should store a versioned preference document, separate from the profile's room
 selection:
@@ -108,13 +109,14 @@ selection:
 - **Corrupt or future version:** fall back to the default without overwriting the stored document until
   the reader saves.
 
-## Review protocol
+## Release review protocol
 
 Review the study at 320px, 390px, and 1440px in Tryst, Marginalia, Aphelion, and Hearth, in Day and
 Night. Verify that a reader can choose a preset, move a destination, hide and restore it, modify Home
 independently, cancel, save, and restore the default without explanation. Then run the registry-wide
 contrast and focus checks before account persistence begins.
 
-The design is accepted when an observed reader can change their starting arrangement, find a hidden
-action through More or the desktop complete rail, and restore the default without coaching. Record
-any prompt as a finding rather than explaining the interface during the walkthrough.
+The implementation is accepted when an observed reader can change their starting arrangement,
+reload into the same account value, find a hidden action through More or the desktop complete rail,
+and restore the default without coaching. Record any prompt as a finding rather than explaining the
+interface during the walkthrough.

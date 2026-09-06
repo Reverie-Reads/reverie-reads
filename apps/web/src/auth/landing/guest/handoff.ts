@@ -7,6 +7,17 @@ import {
   type SkinId,
 } from '@reverie/core'
 import type { GuestState, GuestView } from './state'
+import { GUEST_PRESETS } from './state'
+import {
+  ARRANGEMENT_PRESETS,
+  DEFAULT_ARRANGEMENT_PRESET,
+  arrangementDocument,
+  cloneArrangement,
+  type ArrangementConfig,
+  type ArrangementDestinationId,
+  type ArrangementDocument,
+  type HomeModuleId,
+} from '../../../design/arrangements'
 
 export const GUEST_HANDOFF_STORAGE_ID = 'reverie.guest-handoff.v1'
 export const GUEST_HANDOFF_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -25,6 +36,7 @@ export interface GuestHandoff {
   skin: SkinId
   mode: ResolvedMode
   dock: GuestView[]
+  arrangement?: ArrangementDocument
   books: GuestHandoffBook[]
 }
 
@@ -45,6 +57,36 @@ const allowedCover = (cover: string): string => {
   } catch {
     return ''
   }
+}
+
+const GUEST_DESTINATION: Record<GuestView, ArrangementDestinationId> = {
+  library: 'library',
+  reading: 'home',
+  next: 'match',
+  history: 'stats',
+}
+const GUEST_MODULE: Record<GuestView, HomeModuleId> = {
+  library: 'priority',
+  reading: 'reading',
+  next: 'next-read',
+  history: 'year',
+}
+
+/** Translate the deliberately arranged guest dock into the richer signed-in model. Exact guest
+ * presets retain the corresponding full-app preset; a custom dock keeps its order and fills the
+ * three-slot navigation contract predictably. */
+export function guestDockArrangement(dock: readonly GuestView[]): ArrangementConfig {
+  const presetIndex = GUEST_PRESETS.findIndex((preset) => preset.dock.join() === dock.join())
+  if (presetIndex >= 0) return cloneArrangement(ARRANGEMENT_PRESETS[presetIndex]!.config)
+
+  const destinations = [...new Set(dock.map((view) => GUEST_DESTINATION[view]))]
+  if (!destinations.includes('library')) destinations.unshift('library')
+  for (const fallback of DEFAULT_ARRANGEMENT_PRESET.config.destinations) {
+    if (destinations.length >= 3) break
+    if (!destinations.includes(fallback)) destinations.push(fallback)
+  }
+  const homeModules = [...new Set(dock.map((view) => GUEST_MODULE[view]))]
+  return { destinations: destinations.slice(0, 3), homeModules }
 }
 
 /** Copy only reader-owned and bibliographic fields that the ordinary intake path understands.
@@ -99,6 +141,7 @@ export function createGuestHandoff(
     skin: room.skin,
     mode: room.mode,
     dock: [...state.dock],
+    arrangement: arrangementDocument(guestDockArrangement(state.dock)),
     books: state.books.slice(0, 60).map((book) => {
       const draft = state.pendingNotes[book.id]?.trim()
       return { incoming: guestBookToIncoming(book), ...(draft ? { draftNote: draft } : {}) }

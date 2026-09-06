@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Book } from '@reverie/core'
 import { makeBook } from '../../../../packages/core/src/book.fixture'
+import type { HomeModuleId } from '../design/arrangements'
 
 const state = vi.hoisted(() => ({
   books: [] as Book[] | undefined,
@@ -13,6 +14,7 @@ const state = vi.hoisted(() => ({
   refetch: vi.fn(),
   update: vi.fn(),
   goalTarget: 0,
+  homeModules: ['next-read', 'reading', 'priority'] as HomeModuleId[],
 }))
 vi.mock('@tanstack/react-router', () => ({
   createRoute: (options: unknown) => ({ options }),
@@ -50,6 +52,10 @@ vi.mock('../data/profile', () => ({
       displayName: 'private-email-prefix',
       goalYear: new Date().getFullYear(),
       goalTarget: state.goalTarget,
+      arrangement: {
+        destinations: ['home', 'match', 'library'],
+        homeModules: state.homeModules,
+      },
     },
   }),
   useUpdateProfile: () => ({ mutate: vi.fn() }),
@@ -102,6 +108,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   state.books = []
   state.goalTarget = 0
+  state.homeModules = ['next-read', 'reading', 'priority']
   state.isPending = false
   state.isError = false
   state.update.mockImplementation(({ id, patch }: { id: string; patch: Partial<Book> }) => {
@@ -111,11 +118,12 @@ beforeEach(() => {
 })
 
 describe('Home reading flow', () => {
-  it('puts current reading before next selection and the optional goal', () => {
+  it('renders modules in the saved order', () => {
     state.books = [
       makeBook({ id: 'current', title: 'Current Book', readStatus: 'Reading', progress: 20 }),
     ]
     state.goalTarget = 20
+    state.homeModules = ['reading', 'next-read', 'year']
     render(<Home />)
     const reading = screen.getByText('Reading now')
     const next = screen.getByRole('heading', { name: 'Choose a next read' })
@@ -124,6 +132,21 @@ describe('Home reading flow', () => {
     expect(next.compareDocumentPosition(goal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Welcome back.')
     expect(screen.queryByText(/private-email-prefix/)).not.toBeInTheDocument()
+  })
+
+  it('omits hidden Home modules without changing their underlying books', () => {
+    state.books = [
+      makeBook({ id: 'current', title: 'Current Book', readStatus: 'Reading', progress: 20 }),
+    ]
+    state.goalTarget = 20
+    state.homeModules = ['year']
+
+    render(<Home />)
+
+    expect(screen.getByRole('heading', { name: 'Your reading year' })).toBeInTheDocument()
+    expect(screen.queryByText('Reading now')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Choose a next read' })).not.toBeInTheDocument()
+    expect(state.books[0]).toMatchObject({ id: 'current', readStatus: 'Reading', progress: 20 })
   })
 
   it('updates visible progress and removes a finished book from Reading now', async () => {
@@ -135,7 +158,7 @@ describe('Home reading flow', () => {
     expect(await screen.findByText('25%')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Finish ✓' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save completed read' }))
-    await waitFor(() => expect(screen.queryByText('Reading now')).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/Nothing is underway/)).toBeInTheDocument())
     expect(screen.getByRole('heading', { name: 'Choose a next read' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Surprise me' })).not.toBeInTheDocument()
   })

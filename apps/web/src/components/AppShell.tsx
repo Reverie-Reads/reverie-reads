@@ -14,12 +14,14 @@ import { isHouseholdAddContext } from './appShellScope'
 import { NavigationGlyph } from './NavigationGlyph'
 import { ReverieMark } from './ReverieMark'
 import {
-  MOBILE_TAB_ITEMS,
-  MORE_NAVIGATION_ITEMS,
-  NAVIGATION_GROUPS,
+  NAVIGATION_ITEMS,
+  moreNavigationItems,
   navigationLabelForPath,
+  priorityNavigationItems,
   type NavigationItem,
 } from './navigation'
+import { useProfile } from '../data/profile'
+import { DEFAULT_ARRANGEMENT_PRESET, type ArrangementConfig } from '../design/arrangements'
 
 const COLLAPSE_KEY = 'reverie.sidebar.collapsed'
 
@@ -41,13 +43,28 @@ function useSkinLabel(): string {
 const navBase =
   'rv-nav-item relative flex min-h-11 items-center gap-3 px-3 py-2.5 text-[14px] font-medium'
 
-function NavLinks({ collapsed }: { collapsed: boolean }) {
+function NavLinks({
+  collapsed,
+  arrangement,
+}: {
+  collapsed: boolean
+  arrangement: ArrangementConfig
+}) {
+  const priority = priorityNavigationItems(arrangement.destinations)
+  const priorityPaths = new Set(priority.map((item) => item.to))
+  const groups = [
+    { label: 'Close at hand', items: priority },
+    {
+      label: 'Everything else',
+      items: NAVIGATION_ITEMS.filter((item) => !priorityPaths.has(item.to)),
+    },
+  ]
   return (
     <nav
       className="rv-primary-nav flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden"
       aria-label="Primary"
     >
-      {NAVIGATION_GROUPS.map((group) => (
+      {groups.map((group) => (
         <div key={group.label} className="rv-nav-group flex flex-col gap-0.5">
           {!collapsed ? (
             <div className="rv-nav-group-label skin-label px-3 pb-1 text-[12px] leading-[1.35] text-muted">
@@ -84,7 +101,13 @@ function NavLinks({ collapsed }: { collapsed: boolean }) {
 }
 
 /** Persistent desktop rail: brand, primary nav, and skin / theme / account controls. */
-function Sidebar({ householdAdd }: { householdAdd: boolean }) {
+function Sidebar({
+  householdAdd,
+  arrangement,
+}: {
+  householdAdd: boolean
+  arrangement: ArrangementConfig
+}) {
   const { signOut } = useAuth()
   const skinLabel = useSkinLabel()
   const effective = useEffectiveSkin()
@@ -157,7 +180,7 @@ function Sidebar({ householdAdd }: { householdAdd: boolean }) {
         {!collapsed && <span>{householdAdd ? 'Add to household' : 'Add a book'}</span>}
       </Link>
 
-      <NavLinks collapsed={collapsed} />
+      <NavLinks collapsed={collapsed} arrangement={arrangement} />
 
       {/* Footer controls */}
       <div
@@ -279,10 +302,18 @@ function TabLink({ item }: { item: NavigationItem }) {
 
 /** Bottom tab bar for narrow screens — the app-like navigation a PWA install expects. The old
  *  scrollable pill row clipped nine of ten destinations invisibly behind the Add button. */
-function MobileTabBar({ householdAdd }: { householdAdd: boolean }) {
+function MobileTabBar({
+  householdAdd,
+  arrangement,
+}: {
+  householdAdd: boolean
+  arrangement: ArrangementConfig
+}) {
   const { signOut } = useAuth()
   const [moreOpen, setMoreOpen] = useState(false)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const tabItems = priorityNavigationItems(arrangement.destinations)
+  const moreItems = moreNavigationItems(arrangement.destinations)
 
   // navigating anywhere closes the sheet; Escape closes it too
   useEffect(() => setMoreOpen(false), [pathname])
@@ -295,7 +326,7 @@ function MobileTabBar({ householdAdd }: { householdAdd: boolean }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [moreOpen])
 
-  const moreActive = MORE_NAVIGATION_ITEMS.some(
+  const moreActive = moreItems.some(
     (item) => pathname === item.to || pathname.startsWith(`${item.to}/`),
   )
 
@@ -331,7 +362,7 @@ function MobileTabBar({ householdAdd }: { householdAdd: boolean }) {
             className="grid grid-cols-2 gap-1 min-[480px]:grid-cols-3"
             aria-label="More destinations"
           >
-            {MORE_NAVIGATION_ITEMS.map((item) => (
+            {moreItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -371,8 +402,8 @@ function MobileTabBar({ householdAdd }: { householdAdd: boolean }) {
         }}
       >
         <div className="rv-mobile-dock-grid grid grid-cols-5">
-          <TabLink item={MOBILE_TAB_ITEMS[0]} />
-          <TabLink item={MOBILE_TAB_ITEMS[1]} />
+          <TabLink item={tabItems[0]!} />
+          <TabLink item={tabItems[1]!} />
           <div className="relative flex min-h-[58px] items-start justify-center">
             <Link
               to="/add"
@@ -390,7 +421,7 @@ function MobileTabBar({ householdAdd }: { householdAdd: boolean }) {
               Add
             </span>
           </div>
-          <TabLink item={MOBILE_TAB_ITEMS[2]} />
+          <TabLink item={tabItems[2]!} />
           <button
             type="button"
             onClick={() => setMoreOpen((v) => !v)}
@@ -412,6 +443,7 @@ function MobileTabBar({ householdAdd }: { householdAdd: boolean }) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   useSkinSync() // reconcile skin/mode from the signed-in profile (cross-device)
+  const arrangement = useProfile().data?.arrangement ?? DEFAULT_ARRANGEMENT_PRESET.config
   const mainRef = useRef<HTMLElement>(null)
   const location = useRouterState({ select: (s) => s.location })
   const pathname = location.pathname
@@ -432,7 +464,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
 
-      <Sidebar householdAdd={householdAdd} />
+      <Sidebar householdAdd={householdAdd} arrangement={arrangement} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileBar pathname={pathname} />
@@ -449,7 +481,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      <MobileTabBar householdAdd={householdAdd} />
+      <MobileTabBar householdAdd={householdAdd} arrangement={arrangement} />
     </div>
   )
 }

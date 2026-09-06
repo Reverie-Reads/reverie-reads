@@ -18,9 +18,10 @@ import { ImportSummary } from '../components/ImportSummary'
 import { Surface } from '../components/Surface'
 import { useAuth } from '../auth/AuthProvider'
 import { useHouseholdLibraryAuthorization } from '../data/household'
-import { profileKey, type Profile } from '../data/profile'
+import { profileKey, useUpdateProfile, type Profile } from '../data/profile'
 import {
   clearGuestHandoff,
+  guestDockArrangement,
   loadGuestHandoff,
   summarizeGuestHandoff,
   type GuestHandoff,
@@ -28,6 +29,7 @@ import {
 import { importGuestHandoff, type GuestHandoffResult } from '../data/guestHandoff'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import type { AddDestination } from '../components/addDestination'
+import { arrangementFromUnknown } from '../design/arrangements'
 
 // First-run flag — honor-based / client-side (the project's v1 default), so a finished or skipped
 // onboarding never reappears. The trigger that sends a brand-new reader here lives in HomeRoute.
@@ -72,6 +74,7 @@ function OnboardingFlow() {
   const { session } = useAuth()
   const household = useHouseholdLibraryAuthorization()
   const booksQuery = useReaderBooks()
+  const updateProfile = useUpdateProfile()
   const existing = booksQuery.data ?? []
   const currentRead = existing.find((book) => book.readStatus === 'Reading')
   const available = nextReadCandidates(existing)
@@ -119,6 +122,11 @@ function OnboardingFlow() {
         })
         setSkin(pending.skin)
         setMode(pending.mode)
+        await updateProfile.mutateAsync({
+          arrangement: pending.arrangement
+            ? arrangementFromUnknown(pending.arrangement)
+            : guestDockArrangement(pending.dock),
+        })
         markOnboarded()
         void qc.invalidateQueries()
         setGuestImp({ phase: 'done', r })
@@ -207,6 +215,10 @@ function OnboardingFlow() {
               }}
             />
           </div>
+          <p className="mt-3 text-[13px] leading-relaxed text-muted">
+            The reading room and dock arrangement you chose will come with these books. You can
+            change either later in Settings.
+          </p>
         </div>
       </Stage>
     )
@@ -382,7 +394,7 @@ function OnboardingFlow() {
         )}
         <div className="mt-6 flex flex-wrap gap-2">
           <Button disabled={!booksQuery.data || booksQuery.isError} onClick={bringGuestLibraryIn}>
-            Add these books to my account
+            Add books and this arrangement
           </Button>
           <Button
             variant="ghost"
