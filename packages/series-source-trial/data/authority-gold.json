@@ -5452,6 +5452,182 @@
         ],
         "reviewNote": "The author's catalog explicitly calls the group the None Stood Taller series and presents None Stood Taller before The Final Year, whose description says the story continues. His blog separately calls The Final Year the sequel and identifies a later work as the third novel in the series, establishing publication position one."
       }
+    },
+    {
+      "id": "selfies-2021-fiction-odd-numbers",
+      "title": "Odd Numbers",
+      "authors": ["J. J. Marsh"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2020,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2021_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2021/03/Selfies-2021-shortlist-press-release-FINAL.pdf"
+        },
+        { "kind": "author", "url": "https://www.jjmarshauthor.com/single-books/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "memberships": [],
+        "sources": [
+          { "kind": "author", "url": "https://www.jjmarshauthor.com/single-books/" }
+        ],
+        "reviewNote": "The author's own books navigation labels the section Standalones and lists Odd Numbers inside it. This is affirmative first-party standalone evidence, not an inference from a missing series label."
+      }
+    },
+    {
+      "id": "selfies-2021-fiction-murder-your-darlings",
+      "title": "Murder Your Darlings",
+      "authors": ["Debbie Young"],
+      "sampleOrigin": "external_sample",
+      "strata": [],
+      "publicationYear": 2020,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2021_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2021/03/Selfies-2021-shortlist-press-release-FINAL.pdf"
+        },
+        {
+          "kind": "author",
+          "url": "https://authordebbieyoung.com/books/fiction/sophie-sayers-village-mysteries/murder-your-darlings-sophie-sayers-village-mysteries-6/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Sophie Sayers Village Mysteries",
+            "aliases": ["Sophie Sayers Cozy Mysteries"],
+            "role": "primary",
+            "positions": [{ "value": 6, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://authordebbieyoung.com/books/fiction/sophie-sayers-village-mysteries/murder-your-darlings-sophie-sayers-village-mysteries-6/"
+          }
+        ],
+        "reviewNote": "The author's exact-title page explicitly names Sophie Sayers Village Mysteries and labels Murder Your Darlings number six. The current navigation's Cozy wording is retained as an alias rather than treated as a separate series."
+      }
+    },
+    {
+      "id": "selfies-2021-fiction-the-snowdonia-killings",
+      "title": "The Snowdonia Killings",
+      "authors": ["Simon McCleave"],
+      "sampleOrigin": "external_sample",
+      "strata": [],
+      "publicationYear": 2020,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2021_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2021/03/Selfies-2021-shortlist-press-release-FINAL.pdf"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.simonmccleave.com/books/the-snowdonia-killings/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "DI Ruth Hunter Crime Thrillers",
+            "aliases": [],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.simonmccleave.com/books/the-snowdonia-killings/"
+          }
+        ],
+        "reviewNote": "The author's exact-title page labels The Snowdonia Killings book one in DI Ruth Hunter Crime Thrillers, establishing both membership and publication position."
+      }
+    },
+    {
+      "id": "selfies-2021-fiction-how-to-buy-a-planet",
+      "title": "How to Buy a Planet",
+      "authors": ["D. A. Holdsworth"],
+      "sampleOrigin": "external_sample",
+      "strata": [],
+      "publicationYear": 2020,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2021_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2021/03/Selfies-2021-shortlist-press-release-FINAL.pdf"
+        },
+        { "kind": "publisher_catalog", "url": "https://www.squirrelandacorn.co.uk/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Cleremont Conjectures",
+            "aliases": ["Cleremont Conjectures"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "publisher_catalog", "url": "https://www.squirrelandacorn.co.uk/" }
+        ],
+        "reviewNote": "The author's publishing-company catalog explicitly labels How to Buy a Planet Book 1 of The Cleremont Conjectures and the related Zoo of Intelligent Animals Book 2, establishing the relationship and publication position."
+      }
+    },
+    {
+      "id": "selfies-2021-fiction-the-secret-diary-of-an-arranged-marriage",
+      "title": "The Secret Diary of an Arranged Marriage",
+      "authors": ["Halima Khatun"],
+      "sampleOrigin": "external_sample",
+      "strata": [],
+      "publicationYear": 2020,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2021_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2021/03/Selfies-2021-shortlist-press-release-FINAL.pdf"
+        },
+        {
+          "kind": "author",
+          "url": "https://halimakhatun.co.uk/the-secret-diary-of-a-bengali-woman-books-1-3/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Secret Diary",
+            "aliases": ["The Secret Diary series", "The Secret series"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://halimakhatun.co.uk/the-secret-diary-of-a-bengali-woman-books-1-3/"
+          }
+        ],
+        "reviewNote": "The author's three-book collection explicitly names The Secret Diary series and labels The Secret Diary of an Arranged Marriage book one, establishing the normalized series identity and publication position."
+      }
     }
   ],
   "sharedSources": {
