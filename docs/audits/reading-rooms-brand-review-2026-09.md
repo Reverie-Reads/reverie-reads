@@ -68,7 +68,7 @@ Hand of Darkness. The visitor can:
   deliberately include rereads. These are honest eligibility examples, not a simulated personalized
   taste or mood score.
 - Try three dock arrangements, reorder destinations with accessible buttons, or hide/restore them.
-  This is explicitly labeled a preview: customizable docks are planned for the signed-in app.
+  The chosen guest dock now carries into the signed-in account during onboarding.
 - Write a note in the lower landing example and open the same saved note in either library view.
 
 The two library workspaces and the note example use the same state. Room selection changes their
