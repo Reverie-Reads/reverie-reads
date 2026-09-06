@@ -572,7 +572,11 @@ function ArrangementLab() {
                 type="button"
                 onClick={() => {
                   setDraft(cloneArrangement(DEFAULT_ARRANGEMENT_PRESET.config))
-                  setAnnouncement('Default arrangement restored in the preview. Save to keep it.')
+                  setAnnouncement(
+                    JSON.stringify(saved) === JSON.stringify(DEFAULT_ARRANGEMENT_PRESET.config)
+                      ? 'Default arrangement restored.'
+                      : 'Default arrangement restored in the preview. Save to keep it.',
+                  )
                 }}
                 className="min-h-11 px-2 text-[10px] font-semibold text-muted underline underline-offset-4"
               >
