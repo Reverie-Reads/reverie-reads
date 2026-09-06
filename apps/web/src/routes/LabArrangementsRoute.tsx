@@ -367,7 +367,6 @@ function ArrangementLab() {
   const [skin, setSkin] = useState<SkinId>('tryst')
   const [mode, setMode] = useState<ResolvedMode>('dark')
   const [viewport, setViewport] = useState<PreviewWidth>('phone')
-  const [presetId, setPresetId] = useState<ArrangementPresetId>(DEFAULT_ARRANGEMENT_PRESET.id)
   const [saved, setSaved] = useState<ArrangementConfig>(() =>
     cloneArrangement(DEFAULT_ARRANGEMENT_PRESET.config),
   )
@@ -379,6 +378,9 @@ function ArrangementLab() {
   useEffect(() => loadAllSkinFonts(), [])
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
+  const matchingPresetId = ARRANGEMENT_PRESETS.find(
+    (preset) => JSON.stringify(preset.config) === JSON.stringify(draft),
+  )?.id
   const hiddenDestinations = useMemo(
     () => ARRANGEMENT_DESTINATIONS.filter((item) => !draft.destinations.includes(item.id)),
     [draft.destinations],
@@ -390,7 +392,6 @@ function ArrangementLab() {
 
   const choosePreset = (id: ArrangementPresetId) => {
     const preset = ARRANGEMENT_PRESETS.find((item) => item.id === id)!
-    setPresetId(id)
     setDraft(cloneArrangement(preset.config))
     setAnnouncement(`Previewing ${preset.label}. Save to keep this arrangement.`)
   }
@@ -444,9 +445,9 @@ function ArrangementLab() {
                   <button
                     key={preset.id}
                     type="button"
-                    aria-pressed={presetId === preset.id}
+                    aria-pressed={matchingPresetId === preset.id}
                     onClick={() => choosePreset(preset.id)}
-                    className={`skin-control min-h-11 px-3 py-2 text-left ${presetId === preset.id ? 'skin-btn-primary' : 'skin-btn-secondary'}`}
+                    className={`skin-control min-h-11 px-3 py-2 text-left ${matchingPresetId === preset.id ? 'skin-btn-primary' : 'skin-btn-secondary'}`}
                   >
                     <span className="block text-[12px] font-semibold">{preset.label}</span>
                     <span className="mt-0.5 block text-[10px] leading-relaxed opacity-80">
@@ -570,7 +571,6 @@ function ArrangementLab() {
               <button
                 type="button"
                 onClick={() => {
-                  setPresetId(DEFAULT_ARRANGEMENT_PRESET.id)
                   setDraft(cloneArrangement(DEFAULT_ARRANGEMENT_PRESET.config))
                   setAnnouncement('Default arrangement restored in the preview. Save to keep it.')
                 }}
