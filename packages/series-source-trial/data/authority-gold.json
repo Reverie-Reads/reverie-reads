@@ -3511,6 +3511,178 @@
         ],
         "reviewNote": "The author's catalog distinguishes a two-book duology from two standalone Ethereal World prequels, and the exact product page calls The Butterfly Witch a standalone Ethereal World novel. Gold therefore records no bibliographic series membership while retaining the connected-world risk."
       }
+    },
+    {
+      "id": "selfies-2025-fiction-sizar",
+      "title": "Sizar",
+      "authors": ["Susan Grossey"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://susangrossey.com/books-by-susan/cambridge-hardiman-mysteries/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Cambridge Hardiman Mysteries",
+            "aliases": [],
+            "role": "primary",
+            "positions": [{ "value": 2, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://susangrossey.com/books-by-susan/cambridge-hardiman-mysteries/"
+          }
+        ],
+        "reviewNote": "The author's dedicated series page labels Sizar as Cambridge Hardiman Mysteries book two and lists it between books one and three."
+      }
+    },
+    {
+      "id": "selfies-2025-fiction-secret-diary-bengali-mum",
+      "title": "The Secret Diary of a Bengali Mum",
+      "authors": ["Halima Khatun"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://halimakhatun.co.uk/the-secret-diary-of-a-bengali-mum/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Diverse Romcom",
+            "aliases": [],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://halimakhatun.co.uk/the-secret-diary-of-a-bengali-mum/"
+          }
+        ],
+        "reviewNote": "The author's exact-title page directly calls The Secret Diary of a Bengali Mum the latest entry in the award-winning Diverse Romcom series. It supplies no reliable numeric position, so order remains unknown."
+      }
+    },
+    {
+      "id": "selfies-2025-fiction-pride-and-perjury",
+      "title": "Pride and Perjury",
+      "authors": ["Alice McVeigh"],
+      "identifiers": { "asin": ["B0D3C72WVS"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.alicemcveigh.com/books/pride-and-perjury/"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.alicemcveigh.com/a-note-on-the-warleigh-hall-jane-austen-series/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Warleigh Hall Jane Austen",
+            "aliases": ["Austenesque"],
+            "role": "primary",
+            "positions": [{ "value": 4, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.alicemcveigh.com/books/pride-and-perjury/"
+          },
+          {
+            "kind": "author",
+            "url": "https://www.alicemcveigh.com/a-note-on-the-warleigh-hall-jane-austen-series/"
+          }
+        ],
+        "reviewNote": "The author's exact-title page calls Pride and Perjury the fourth work in her award-winning standalone series and links the Warleigh Hall Jane Austen series note. Standalone describes independent readability here; the same first-party page affirmatively assigns bibliographic membership."
+      }
+    },
+    {
+      "id": "selfies-2025-fiction-house-of-crimson-hearts",
+      "title": "House of Crimson Hearts",
+      "authors": ["Ruby Roe"],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_independent_or_kindle_first",
+        "multi_series_or_connected_universe"
+      ],
+      "riskFeatures": ["connected_universe"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        { "kind": "author", "url": "https://www.rubyroe.co.uk/pages/reading-order" },
+        {
+          "kind": "author",
+          "url": "https://www.rubyroe.co.uk/collections/kingdom-of-immortal-lovers?view=no-usf"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "membershipsComplete": true,
+        "memberships": [
+          {
+            "series": "Kingdom of Immortal Lovers",
+            "aliases": [],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.rubyroe.co.uk/pages/reading-order" },
+          {
+            "kind": "author",
+            "url": "https://www.rubyroe.co.uk/collections/kingdom-of-immortal-lovers?view=no-usf"
+          }
+        ],
+        "reviewNote": "The author's reading-order and dedicated series pages place House of Crimson Hearts first in Kingdom of Immortal Lovers. The wider author catalog explicitly separates four interconnected series, so their shared universe is not converted into additional memberships."
+      }
     }
   ],
   "sharedSources": {
