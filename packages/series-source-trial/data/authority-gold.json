@@ -5670,6 +5670,212 @@
         ],
         "reviewNote": "The author's three-book collection explicitly names The Secret Diary series and labels The Secret Diary of an Arranged Marriage book one, establishing the normalized series identity and publication position."
       }
+    },
+    {
+      "id": "crimereads-2023-barbacoa-bomba-and-betrayal",
+      "title": "Barbacoa, Bomba, and Betrayal",
+      "authors": ["Raquel V. Reyes"],
+      "identifiers": { "isbn13": ["9781639105243"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/729812/barbacoa-bomba-and-betrayal-by-raquel-v-reyes/"
+        },
+        {
+          "kind": "publisher_catalog",
+          "url": "https://www.penguinrandomhouse.com/series/HKC/a-caribbean-kitchen-mystery/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "A Caribbean Kitchen Mystery",
+            "aliases": ["Caribbean Kitchen Mystery", "Caribbean Kitchen mysteries"],
+            "role": "primary",
+            "positions": [{ "value": 3, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/729812/barbacoa-bomba-and-betrayal-by-raquel-v-reyes/"
+          },
+          {
+            "kind": "publisher_catalog",
+            "url": "https://www.penguinrandomhouse.com/series/HKC/a-caribbean-kitchen-mystery/"
+          }
+        ],
+        "reviewNote": "The exact publisher page calls the work the third installment of the Caribbean Kitchen mysteries, while the publisher's relational series roster names A Caribbean Kitchen Mystery and labels this exact title Book 3."
+      }
+    },
+    {
+      "id": "crimereads-2023-blood-betrayal",
+      "title": "Blood Betrayal",
+      "authors": ["Ausma Zehanat Khan"],
+      "identifiers": { "isbn13": ["9781250822413"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://us.macmillan.com/books/9781250822413/bloodbetrayal/"
+        },
+        { "kind": "author", "url": "https://www.ausmazehanatkhan.com/books.html" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Blackwater Falls",
+            "aliases": ["Blackwater Falls Series", "Inaya Rahman Series"],
+            "role": "primary",
+            "positions": [{ "value": 2, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://us.macmillan.com/books/9781250822413/bloodbetrayal/"
+          },
+          { "kind": "author", "url": "https://www.ausmazehanatkhan.com/books.html" }
+        ],
+        "reviewNote": "The exact publisher page labels Blood Betrayal volume two of the Blackwater Falls series. The author's books page independently places Blackwater Falls as Book 1 and Blood Betrayal as Book 2 under the Inaya Rahman Series, establishing the normalized relationship and publication position."
+      }
+    },
+    {
+      "id": "crimereads-2023-resurrection-walk",
+      "title": "Resurrection Walk",
+      "authors": ["Michael Connelly"],
+      "identifiers": { "isbn13": ["9781538767153"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        {
+          "kind": "publisher_catalog",
+          "url": "https://www.hachettebookgroup.com/series/michael-connelly-2/a-lincoln-lawyer-novel/"
+        },
+        { "kind": "author", "url": "https://www.michaelconnelly.com/lincoln-lawyer-tv/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "A Lincoln Lawyer Novel",
+            "aliases": ["The Lincoln Lawyer", "Lincoln Lawyer series"],
+            "role": "primary",
+            "positions": [{ "value": 7, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher_catalog",
+            "url": "https://www.hachettebookgroup.com/series/michael-connelly-2/a-lincoln-lawyer-novel/"
+          },
+          { "kind": "author", "url": "https://www.michaelconnelly.com/lincoln-lawyer-tv/" }
+        ],
+        "reviewNote": "The publisher's A Lincoln Lawyer Novel relationship page includes Resurrection Walk in its exact-title roster. The author's official site independently identifies Resurrection Walk as the seventh book in the Lincoln Lawyer series, establishing publication position seven without turning Harry Bosch's appearance into a second membership."
+      }
+    },
+    {
+      "id": "crimereads-2023-kennedy-35",
+      "title": "Kennedy 35",
+      "authors": ["Charles Cumming"],
+      "identifiers": { "isbn13": ["9781613164556"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.simonandschuster.com/books/Kennedy-35/Charles-Cumming/Box-88/9781613164556"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Box 88",
+            "aliases": ["BOX 88"],
+            "role": "primary",
+            "positions": [{ "value": 3, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.simonandschuster.com/books/Kennedy-35/Charles-Cumming/Box-88/9781613164556"
+          }
+        ],
+        "reviewNote": "The official publisher-distributor page labels Kennedy 35 Book #3 of Box 88 and exposes additional books in that series, directly establishing membership and publication position."
+      }
+    },
+    {
+      "id": "crimereads-2023-sweet-thing",
+      "title": "Sweet Thing",
+      "authors": ["David Swinson"],
+      "identifiers": { "isbn13": ["9780316528610"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/david-swinson/sweet-thing/9780316528610/?lens=little-brown"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.hachettebookgroup.com/titles/david-swinson/sweet-thing/9780316528610/?lens=little-brown"
+          }
+        ],
+        "reviewNote": "The exact publisher page affirmatively describes Sweet Thing as a DC-set standalone. This is direct work-level standalone evidence, not an inference from the absence of a series label."
+      }
     }
   ],
   "sharedSources": {

@@ -2495,6 +2495,114 @@
         "sources": []
       },
       "reviewNote": "Selected without provider-result filtering from the complete 2021 Selfies adult fiction shortlist. The author's exact-title page establishes the work and groups it into a three-novel London Collection box set, but does not describe that retail collection as a bibliographic series or affirm that the work is standalone."
+    },
+    {
+      "id": "crimereads-2023-the-manor-house",
+      "title": "The Manor House",
+      "authors": ["Gilly Macmillan"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        { "kind": "author", "url": "https://www.gillymacmillan.com/book/the-manor-house/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete CrimeReads featured release list. The author's exact-title page establishes the work and its UK title The Fall, but makes no affirmative bibliographic-series or standalone claim; alternate-market titling is not relationship evidence."
+    },
+    {
+      "id": "crimereads-2023-the-cliff-house",
+      "title": "The Cliff House",
+      "authors": ["Chris Brookmyre"],
+      "identifiers": { "isbn13": ["9781613164426"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.simonandschuster.com/books/The-Cliff-House/Chris-Brookmyre/9781613164426"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete CrimeReads featured release list. The official publisher-distributor page establishes the exact work but makes no affirmative bibliographic-series or standalone claim; its separate author-biography references to other series do not classify this title."
+    },
+    {
+      "id": "crimereads-2023-the-twelve-days-of-murder",
+      "title": "The Twelve Days of Murder",
+      "authors": ["Andreina Cordani"],
+      "identifiers": { "isbn13": ["9781639366187"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.simonandschuster.com/books/The-Twelve-Days-of-Murder/Andreina-Cordani/9781639366187"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete CrimeReads featured release list. The official publisher-distributor page establishes the exact work but provides no affirmative bibliographic-series or standalone claim; the generic subtitle A Novel is not standalone evidence."
+    },
+    {
+      "id": "crimereads-2023-last-night-at-the-hollywood-canteen",
+      "title": "Last Night at the Hollywood Canteen",
+      "authors": ["Sarah James"],
+      "identifiers": { "isbn13": ["9781728252254"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        { "kind": "author", "url": "https://www.thesarahjames.com/about.html" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete CrimeReads featured release list, whose Sara James byline is normalized to the author's first-party name Sarah James. Her site identifies this exact work as her second novel but makes no affirmative bibliographic-series or standalone claim; author-work ordinal is not series position."
+    },
+    {
+      "id": "crimereads-2023-a-death-in-malta",
+      "title": "A Death in Malta",
+      "authors": ["Paul Caruana Galizia"],
+      "identifiers": { "isbn13": ["9780593543733"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional"],
+      "publicationYear": 2023,
+      "publicationPath": "traditional",
+      "selectionFrame": "crimereads_2023_11_06_new_releases",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/717774/a-death-in-malta-by-paul-caruana-galizia/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected without provider-result filtering from the complete CrimeReads featured release list, whose Paul Garuana Galizia byline is normalized to the publisher's Paul Caruana Galizia. The exact publisher page establishes the work but makes no affirmative bibliographic-series or standalone claim; nonfiction subject continuity cannot be inferred as a series relationship."
     }
   ]
 }
