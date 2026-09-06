@@ -47,7 +47,10 @@ const GOOGLE = {
     pageCount: 348,
     categories: ['Fiction / Romance / Contemporary'],
     description: '<p>Enemies <b>to</b> lovers.</p>',
-    imageLinks: { thumbnail: 'http://g/c.jpg&edge=curl' },
+    imageLinks: {
+      thumbnail: 'http://g/c.jpg&edge=curl',
+      large: 'http://g/c-large.jpg&edge=curl',
+    },
     industryIdentifiers: [
       { type: 'ISBN_13', identifier: '9781735056258' },
       { type: 'ISBN_10', identifier: '1735056251' },

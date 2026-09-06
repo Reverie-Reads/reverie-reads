@@ -9,6 +9,7 @@
 // so drift fails CI. Keep both in sync.
 
 import { cleanIsbn, isbn10to13, normalizeIsbn } from './match'
+import { bestGoogleCoverLink } from './covers'
 
 export type EnrichSource = 'openlibrary' | 'google' | 'hardcover' | 'isbndb' | 'manual'
 
@@ -240,7 +241,7 @@ export function normalizeGoogle(volume: any): SourceRecord {
   const ids: any[] = v.industryIdentifiers ?? []
   const isbn13 = ids.find((x) => x.type === 'ISBN_13')?.identifier ?? ''
   const isbn10 = ids.find((x) => x.type === 'ISBN_10')?.identifier ?? ''
-  const cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || ''
+  const cover = bestGoogleCoverLink(v.imageLinks)
   const categories = (v.categories ?? [])
     .flatMap((c: string) => String(c).split(/\s*\/\s*/))
     .filter((g: string) => g && !/^fiction$/i.test(g))

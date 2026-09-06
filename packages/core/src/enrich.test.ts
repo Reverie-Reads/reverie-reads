@@ -198,7 +198,10 @@ describe('source normalizers (captured fixtures)', () => {
         pageCount: 348,
         categories: ['Fiction / Romance / Contemporary'],
         description: '<p>An <b>enemies</b> to lovers story.</p>',
-        imageLinks: { thumbnail: 'http://books.google.com/cover.jpg&edge=curl' },
+        imageLinks: {
+          thumbnail: 'http://books.google.com/cover.jpg&edge=curl',
+          large: 'http://books.google.com/large.jpg&edge=curl',
+        },
         industryIdentifiers: [
           { type: 'ISBN_13', identifier: '9781735056258' },
           { type: 'ISBN_10', identifier: '1735056251' },
@@ -213,7 +216,7 @@ describe('source normalizers (captured fixtures)', () => {
     expect(r.isbn13).toBe('9781735056258')
     expect(r.categories).toEqual(['Romance', 'Contemporary']) // split on '/', drops bare "Fiction"
     expect(r.description).toBe('An enemies to lovers story.') // html stripped
-    expect(r.cover).toBe('https://books.google.com/cover.jpg') // https + edge=curl stripped
+    expect(r.cover).toBe('https://books.google.com/large.jpg') // strongest returned tier, cleaned
     expect(r.ids).toEqual({ volume: 'vol123' })
   })
 
