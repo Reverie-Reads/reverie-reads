@@ -100,6 +100,18 @@
         "url": "https://www.hachettebookgroup.com/book-list/best-books-for-romantasy-fans/"
       },
       "selectionRule": "Include all eight titles under the publisher's standalone heading at the observation date, including any label contradicted by stronger current relational evidence, with no provider-result filtering."
+    },
+    {
+      "id": "hachette_standalone_sff_horror_2026_09_06",
+      "label": "Complete Hachette standalone SFF horror section observed 2026-09-06",
+      "expectedCases": 9,
+      "strata": ["standalone_control"],
+      "observedOn": "2026-09-06",
+      "source": {
+        "kind": "publisher",
+        "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+      },
+      "selectionRule": "Include all nine titles under the publisher list's Horror heading at the observation date, including ambiguous labels and any label contradicted by stronger current relational evidence, with no provider-result filtering."
     }
   ],
   "strata": [
