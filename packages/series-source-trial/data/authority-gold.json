@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-09-05",
+  "reviewedAt": "2026-09-06",
   "cases": [
     {
       "id": "gold-a-court-of-silver-flames",
@@ -2910,6 +2910,338 @@
           { "kind": "author", "url": "https://www.pipwritesfiction.com/series" }
         ],
         "reviewNote": "The author's dedicated series page says The Leamington Bloom brings together two standalone sapphic novels and presents Pyg within that catalog. Here standalone means independently readable: the same first-party source affirmatively assigns the bibliographic series. No sequence number is stated, so order remains unknown."
+      }
+    },
+    {
+      "id": "reverie-lords-the-sacrifice",
+      "title": "The Sacrifice",
+      "authors": ["Shantel Tessier"],
+      "sampleOrigin": "reverie",
+      "stratum": "authority_positive",
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "A Dark College Romance",
+            "aliases": [],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://shanteltessier.com/the-sacrifice/" },
+          { "kind": "author", "url": "https://shanteltessier.com/trigger-warnings/" }
+        ],
+        "reviewNote": "The author's exact title page establishes the work, and the author's trigger-warning catalog directly groups The Sacrifice beneath the A Dark College Romance heading. The seed's LORDS name and position 3 are not carried into gold because the cited first-party text does not explicitly establish either claim."
+      }
+    },
+    {
+      "id": "kindle-storyteller-2021-escape-to-the-hummingbird-hotel",
+      "title": "Escape to the Hummingbird Hotel",
+      "authors": ["Daisy James"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2021_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://channelx.world/2021/09/2021-kindle-storyteller-award-shortlist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Hummingbird Hotel",
+            "aliases": ["Hummingbird Hotel", "The Hummingbird Hotel Series"],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [{ "kind": "author", "url": "https://daisyjames.co.uk/my-books" }],
+        "reviewNote": "The author's catalog has a dedicated Hummingbird Hotel Series section and includes the exact title. It does not explicitly number the work, so gold truth records membership without inferring order from page layout."
+      }
+    },
+    {
+      "id": "kindle-storyteller-2021-stranger-at-the-villa",
+      "title": "Stranger at the Villa",
+      "authors": ["Mary Kingswood"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2021_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://channelx.world/2021/09/2021-kindle-storyteller-award-shortlist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Strangers",
+            "aliases": ["Strangers series"],
+            "role": "primary",
+            "positions": [{ "value": 3, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://marykingswood.co.uk/index.php/series-strangers/" }
+        ],
+        "reviewNote": "The author's dedicated Strangers page explicitly labels Stranger at the Villa as book 3."
+      }
+    },
+    {
+      "id": "kindle-storyteller-2021-an-isolated-incident",
+      "title": "An Isolated Incident",
+      "authors": ["JD Kirk"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2021_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://channelx.world/2021/09/2021-kindle-storyteller-award-shortlist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "DCI Logan",
+            "aliases": ["DCI Logan Series", "DCI Logan Scottish Crime Fiction"],
+            "role": "primary",
+            "positions": [{ "value": 11, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://jdkirk.com/project/an-isolated-incident/" },
+          { "kind": "author", "url": "https://jdkirk.com/readingorder/" }
+        ],
+        "reviewNote": "The author's exact title page explicitly labels An Isolated Incident as DCI Logan book 11, and the author's reading-order page independently places it in the same sequence."
+      }
+    },
+    {
+      "id": "kindle-storyteller-2021-the-corfe-castle-murders",
+      "title": "The Corfe Castle Murders",
+      "authors": ["Rachel McLean"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2021_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://channelx.world/2021/09/2021-kindle-storyteller-award-shortlist/"
+        },
+        {
+          "kind": "platform_award",
+          "url": "https://www.aboutamazon.co.uk/news/small-businesses/the-corfe-castle-murders-by-rachel-mclean-crowned-winner-of-the-2021-kindle-storyteller-award"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Dorset Crime",
+            "aliases": ["Dorset Crime series"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author_post",
+            "url": "https://www.rachelmclean.com/post/the-corfe-castle-murders-by-rachel-mclean-dorset-crime-book-1"
+          },
+          { "kind": "author", "url": "https://www.rachelmclean.com/books" }
+        ],
+        "reviewNote": "The author's exact-title post names the Dorset Crime series and labels the work book 1; the author's book catalog independently groups the exact title in that series."
+      }
+    },
+    {
+      "id": "kindle-storyteller-2021-a-thousand-li-the-second-sect",
+      "title": "A Thousand Li: The Second Sect",
+      "authors": ["Tao Wong"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2021_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://channelx.world/2021/09/2021-kindle-storyteller-award-shortlist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "A Thousand Li",
+            "aliases": ["A Thousand Li series"],
+            "role": "primary",
+            "positions": [{ "value": 5, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://starlitpublishing.com/products/the-second-sect"
+          },
+          {
+            "kind": "publisher_catalog",
+            "url": "https://starlitpublishing.com/collections/a-thousand-li"
+          }
+        ],
+        "reviewNote": "The publisher's exact product page identifies The Second Sect as A Thousand Li number 5 and calls it the fifth novel; the publisher's series catalog independently includes the work."
+      }
+    },
+    {
+      "id": "kindle-storyteller-2024-stateside",
+      "title": "Stateside",
+      "authors": ["JD Kirk"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2024_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://www.thebookseller.com/news/kindle-storyteller-award-2024-shortlist-announced"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Robert Hoon Thrillers",
+            "aliases": ["Robert Hoon", "Robert Hoon series", "Hoon Series"],
+            "role": "primary",
+            "positions": [{ "value": 5, "orderType": "publication" }]
+          }
+        ],
+        "sources": [{ "kind": "author", "url": "https://jdkirk.com/project/stateside/" }],
+        "reviewNote": "The author's exact title page labels Stateside as Robert Hoon Thriller book 5. Readable-standalone marketing does not negate that explicit bibliographic relationship."
+      }
+    },
+    {
+      "id": "kindle-storyteller-2024-bitter-enemies",
+      "title": "Bitter Enemies",
+      "authors": ["Kerry Barnes"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2024_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://www.thebookseller.com/news/kindle-storyteller-award-2024-shortlist-announced"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Carrie Verne",
+            "aliases": ["Carrie Verne Series"],
+            "role": "primary",
+            "positions": [{ "value": 2, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.authorkerrybarnes.co.uk/books-in-order/"
+          }
+        ],
+        "reviewNote": "The author's books-in-order page places Bitter Enemies at book 2 in the Carrie Verne Series."
+      }
+    },
+    {
+      "id": "kindle-storyteller-2024-hopes-and-dreams-on-foxglove-street",
+      "title": "Hopes and Dreams on Foxglove Street",
+      "authors": ["Alix Kelso"],
+      "identifiers": { "isbn13": ["9781913098186"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2024_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://www.thebookseller.com/news/kindle-storyteller-award-2024-shortlist-announced"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Foxglove Street",
+            "aliases": ["Foxglove Street Series"],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.alixkelso.com/foxglovestreet-series" }
+        ],
+        "reviewNote": "The author's dedicated Foxglove Street Series page includes the exact title. The page does not explicitly number it, so gold truth records membership without inferring order from page sequence."
+      }
+    },
+    {
+      "id": "kindle-storyteller-2024-jennifer",
+      "title": "Jennifer",
+      "authors": ["Beverley Watts"],
+      "identifiers": { "isbn13": ["9798328295253"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2024_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://www.thebookseller.com/news/kindle-storyteller-award-2024-shortlist-announced"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Shackleford Legacies",
+            "aliases": ["Shackleford Legacies"],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.beverleywatts.com/copy-of-the-shackleford-legacies"
+          }
+        ],
+        "reviewNote": "The author's dedicated Shackleford Legacies page includes Jennifer as the first displayed work, but does not explicitly number it. Gold truth therefore records the direct series membership and leaves order unknown."
       }
     }
   ],

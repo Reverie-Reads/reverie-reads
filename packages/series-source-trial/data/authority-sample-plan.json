@@ -8,9 +8,23 @@
     "author_post",
     "publisher",
     "publisher_catalog",
-    "platform_award"
+    "platform_award",
+    "industry_press"
   ],
   "selectionFrames": [
+    {
+      "id": "kindle_storyteller_2021_shortlist",
+      "label": "Complete 2021 Kindle Storyteller Award shortlist",
+      "expectedCases": 5,
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2021,
+      "publicationPath": "kindle_first",
+      "source": {
+        "kind": "industry_press",
+        "url": "https://channelx.world/2021/09/2021-kindle-storyteller-award-shortlist/"
+      },
+      "selectionRule": "Include all five shortlisted titles reported by the independent ecommerce trade publication, with no provider-result filtering. Amazon's winner announcement independently confirms that the award was open to eligible KDP-published English-language works."
+    },
     {
       "id": "kindle_storyteller_2022_shortlist",
       "label": "Complete 2022 Kindle Storyteller Award shortlist",
@@ -36,6 +50,19 @@
         "url": "https://www.aboutamazon.co.uk/news/books-and-authors/amazon-self-publishing-awards-2023"
       },
       "selectionRule": "Include all five shortlisted titles, with no provider-result filtering."
+    },
+    {
+      "id": "kindle_storyteller_2024_shortlist",
+      "label": "Complete 2024 Kindle Storyteller Award shortlist",
+      "expectedCases": 5,
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "kindle_first",
+      "source": {
+        "kind": "industry_press",
+        "url": "https://www.thebookseller.com/news/kindle-storyteller-award-2024-shortlist-announced"
+      },
+      "selectionRule": "Include all five shortlisted titles reported by the publishing trade press, with no provider-result filtering. Amazon's winner announcement independently confirms that the award covered KDP-published works."
     },
     {
       "id": "kindle_storyteller_2025_shortlist",
