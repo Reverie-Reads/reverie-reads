@@ -91,6 +91,19 @@
       "selectionRule": "Include all six adult fiction titles on the official 2025 Selfies shortlist, with no provider-result filtering."
     },
     {
+      "id": "selfies_2024_adult_fiction_shortlist",
+      "label": "Complete 2024 Selfies Book Awards adult fiction shortlist",
+      "expectedCases": 7,
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2023,
+      "publicationPath": "independent",
+      "source": {
+        "kind": "platform_award",
+        "url": "https://theselfies.co.uk/uncategorised/2024winners/"
+      },
+      "selectionRule": "Include all seven adult fiction titles on the official 2024 Selfies winners page, with no provider-result filtering. The page states that the category covers books self-published in the UK in 2023."
+    },
+    {
       "id": "selfies_2025_general_nonfiction_shortlist",
       "label": "Complete 2025 Selfies Book Awards general non-fiction shortlist",
       "expectedCases": 6,
