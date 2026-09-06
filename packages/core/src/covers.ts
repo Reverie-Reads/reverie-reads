@@ -194,8 +194,10 @@ export function upgradeCoverUrl(url: string, size: 'full' | 'thumb' = 'full'): s
   }
 
   // Open Library cover ids carry a trailing size suffix: -S (small) · -M (medium) · -L (large).
-  const ol = /^(https?:\/\/covers\.openlibrary\.org\/b\/id\/\d+)-[SML](\.\w+)$/i.exec(url)
-  if (ol) return `${ol[1]}-${size === 'thumb' ? 'M' : 'L'}${ol[2]}`
+  const ol = /^(https?:\/\/covers\.openlibrary\.org\/b\/id\/\d+)-[SML](\.\w+)((?:[?#].*)?)$/i.exec(
+    url,
+  )
+  if (ol) return `${ol[1]}-${size === 'thumb' ? 'M' : 'L'}${ol[2]}${ol[3]}`
 
   return url
 }

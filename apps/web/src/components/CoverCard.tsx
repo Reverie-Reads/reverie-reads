@@ -24,6 +24,7 @@ export function CoverCard({
   onAddCover,
   selected = false,
   hideIntensity = false,
+  coverSize = 'thumb',
 }: {
   book: Book
   reportCoverErrors?: boolean
@@ -35,6 +36,8 @@ export function CoverCard({
   selected?: boolean
   /** hide the intensity mark — the reader's profile flag, passed down (this is a leaf: no query) */
   hideIntensity?: boolean
+  /** Prominent previews can ask for the provider's largest image; library grids stay economical. */
+  coverSize?: 'thumb' | 'full'
 }) {
   const author =
     formatAuthors(book.contributors) || [book.first, book.last].filter(Boolean).join(' ')
@@ -100,7 +103,7 @@ export function CoverCard({
             onExhausted={() => setFailedCover(book.cover)}
             reportErrors={reportCoverErrors}
             book={book}
-            thumb
+            thumb={coverSize === 'thumb'}
             ghost={ghost}
           />
         </button>

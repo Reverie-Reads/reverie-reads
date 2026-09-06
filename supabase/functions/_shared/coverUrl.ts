@@ -50,8 +50,10 @@ export function upgradeCoverUrl(url: string, size: 'full' | 'thumb' = 'full'): s
     return u
   }
 
-  const ol = /^(https?:\/\/covers\.openlibrary\.org\/b\/id\/\d+)-[SML](\.\w+)$/i.exec(url)
-  if (ol) return `${ol[1]}-${size === 'thumb' ? 'M' : 'L'}${ol[2]}`
+  const ol = /^(https?:\/\/covers\.openlibrary\.org\/b\/id\/\d+)-[SML](\.\w+)((?:[?#].*)?)$/i.exec(
+    url,
+  )
+  if (ol) return `${ol[1]}-${size === 'thumb' ? 'M' : 'L'}${ol[2]}${ol[3]}`
 
   return url
 }

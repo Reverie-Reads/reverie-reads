@@ -1,9 +1,11 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
+import { SKINS } from '@reverie/core'
 import { useAuth, type OAuthProvider } from './AuthProvider'
 import { supabase } from '../lib/supabase'
 import { Wordmark } from './Wordmark'
 import { Surface } from '../components/Surface'
+import { clearGuestHandoff, loadGuestHandoff, summarizeGuestHandoff } from './landing/guest/handoff'
 
 /** Social sign-in is wired but inert until the owner provisions Google/Apple client id + secret in
  *  Supabase auth settings. Flip VITE_SOCIAL_AUTH_ENABLED=true after provisioning. Password is the
@@ -37,7 +39,9 @@ const inputStyle = { background: 'var(--field)' } as const
 
 export function AuthScreen() {
   const { signInWithPassword, signUpWithPassword, signInWithProvider } = useAuth()
-  const search = useRouterState({ select: (s) => s.location.search as { mode?: Mode } })
+  const search = useRouterState({
+    select: (s) => s.location.search as { mode?: Mode; guest?: boolean },
+  })
   const [mode, setMode] = useState<Mode>(search.mode === 'signup' ? 'signup' : 'signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -45,6 +49,8 @@ export function AuthScreen() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<'verify' | 'reset-sent' | null>(null)
+  const [guestHandoff, setGuestHandoff] = useState(() => loadGuestHandoff())
+  const guestSummary = guestHandoff ? summarizeGuestHandoff(guestHandoff) : null
 
   const emailValid = EMAIL_RE.test(email)
   const pwStrong = reqs(password).every((r) => r.ok)
@@ -114,6 +120,12 @@ export function AuthScreen() {
               ? '. Open it to finish setting up — verification is required before your first sign-in.'
               : ', a reset link is on its way.'}
           </p>
+          {verify && guestSummary && (
+            <p className="mt-3 text-[14px] leading-relaxed text-ink">
+              Your {guestSummary.books}-book guest library will stay in this browser while you
+              verify your email.
+            </p>
+          )}
           <button
             type="button"
             onClick={() => go('signin')}
@@ -146,6 +158,34 @@ export function AuthScreen() {
         {title}
       </h1>
       <p className="mt-2 text-[14px] text-muted">{sub}</p>
+
+      {guestHandoff && guestSummary && (
+        <Surface tone="field" radius="card" pad={0} className="mt-5 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-[14px] font-semibold text-ink">Your guest library is waiting</h2>
+              <p className="mt-1 text-[13px] leading-relaxed text-muted">
+                {guestSummary.books} books · {guestSummary.completedReads} finished reads ·{' '}
+                {SKINS[guestHandoff.skin].label} room
+              </p>
+            </div>
+            <button
+              type="button"
+              className="min-h-11 shrink-0 text-[12px] font-semibold text-muted underline underline-offset-4"
+              onClick={() => {
+                clearGuestHandoff()
+                setGuestHandoff(null)
+              }}
+            >
+              Let it go
+            </button>
+          </div>
+          <p className="mt-2 text-[12px] leading-relaxed text-muted">
+            It is stored only in this browser. After you sign in, you’ll review it before anything
+            is added to your account.
+          </p>
+        </Surface>
+      )}
 
       <form onSubmit={submit} className="mt-6 flex flex-col gap-3.5" noValidate>
         <Field label="Email">

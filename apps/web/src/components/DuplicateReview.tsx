@@ -73,9 +73,12 @@ const taken = (o: MergeFieldOption, picks: MergeFieldPicks | undefined) => picks
 export function DuplicateReview({
   candidates,
   onDone,
+  requireAll = false,
 }: {
   candidates: ReviewCandidate[]
-  onDone?: () => void
+  onDone?: (remaining: number) => void
+  /** A transfer cannot quietly leave books behind. Hide the early exit until every pair is ruled. */
+  requireAll?: boolean
 }) {
   const qc = useQueryClient()
   const { data: books } = useBooks()
@@ -120,7 +123,20 @@ export function DuplicateReview({
   }
 
   if (!queue.length) {
-    return <p className="text-[13px] text-muted">All set — no duplicates left to review ✨</p>
+    return (
+      <div>
+        <p className="text-[13px] text-muted">All set — no duplicates left to review ✨</p>
+        {onDone && (
+          <button
+            type="button"
+            onClick={() => onDone(0)}
+            className="mt-3 text-[12.5px] font-semibold text-primary"
+          >
+            Continue →
+          </button>
+        )}
+      </div>
+    )
   }
 
   const selectedItems = queue.filter((c) => selected.has(keyOf(c)))
@@ -319,8 +335,12 @@ export function DuplicateReview({
         )
       })}
 
-      {onDone && (
-        <button type="button" onClick={onDone} className="self-start text-[12.5px] text-primary">
+      {onDone && !requireAll && (
+        <button
+          type="button"
+          onClick={() => onDone(queue.length)}
+          className="self-start text-[12.5px] text-primary"
+        >
           Done reviewing
         </button>
       )}

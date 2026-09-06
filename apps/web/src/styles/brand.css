@@ -148,6 +148,7 @@
    content above the reader. Longer add/configuration views scroll inside the specimen. */
 .guest-library-compact-viewport {
   block-size: clamp(640px, 52vw, 734px);
+  padding-block-start: 2px;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;

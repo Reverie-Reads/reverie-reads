@@ -16,6 +16,8 @@ const state = vi.hoisted(() => ({
   invalidate: vi.fn(),
   refetch: vi.fn(),
   setSkin: vi.fn(),
+  setMode: vi.fn(),
+  guestImport: vi.fn(),
   authorized: false,
 }))
 vi.mock('@tanstack/react-router', () => ({
@@ -23,7 +25,7 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => state.navigate,
 }))
 vi.mock('@tanstack/react-query', () => ({
-  useQueryClient: () => ({ invalidateQueries: state.invalidate }),
+  useQueryClient: () => ({ invalidateQueries: state.invalidate, getQueryData: () => undefined }),
 }))
 vi.mock('./RootRoute', () => ({ rootRoute: {} }))
 vi.mock('../data/readerBooks', () => ({
@@ -36,9 +38,12 @@ vi.mock('../data/readerBooks', () => ({
   }),
 }))
 vi.mock('../data/importLibrary', () => ({ importDetectedExport: state.importFile }))
+vi.mock('../data/guestHandoff', () => ({ importGuestHandoff: state.guestImport }))
 vi.mock('../data/importEnrich', () => ({ enrichImported: vi.fn() }))
 vi.mock('../data/xlsxAdapter', () => ({ fileToCsvText: state.convert }))
-vi.mock('../skin/controls', () => ({ useSkinControls: () => ({ setSkin: state.setSkin }) }))
+vi.mock('../skin/controls', () => ({
+  useSkinControls: () => ({ setSkin: state.setSkin, setMode: state.setMode }),
+}))
 vi.mock('../skin/labels', () => ({
   useEffectiveSkin: () => 'folio',
   useVoice: () => ({ loading: 'Bringing in your books.' }),
@@ -115,9 +120,73 @@ beforeEach(() => {
   state.convert.mockResolvedValue('Title\nNew')
   state.invalidate.mockResolvedValue(undefined)
   state.importFile.mockResolvedValue(result())
+  state.guestImport.mockResolvedValue({
+    added: 2,
+    merged: 0,
+    unchanged: 0,
+    review: [],
+    bookIds: ['guest-a', 'guest-b'],
+    draftNotes: 0,
+  })
 })
 
 describe('book-first onboarding', () => {
+  it('reviews an explicit guest handoff before importing and applies its room', async () => {
+    localStorage.setItem(
+      'reverie.guest-handoff.v1',
+      JSON.stringify({
+        version: 1,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 60_000,
+        skin: 'aphelion',
+        mode: 'dark',
+        dock: ['library', 'next'],
+        books: [
+          { incoming: { title: 'Jane Eyre', first: 'Charlotte', last: 'Brontë', reads: [] } },
+          {
+            incoming: {
+              title: 'The Left Hand of Darkness',
+              first: 'Ursula',
+              last: 'Le Guin',
+              reads: [],
+            },
+          },
+        ],
+      }),
+    )
+    render(<Onboarding />)
+    expect(
+      screen.getByRole('heading', { name: 'Bring this little library home.' }),
+    ).toBeInTheDocument()
+    expect(state.guestImport).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Add these books to my account' }))
+    expect(await screen.findByRole('heading', { name: 'Your books are here.' })).toBeInTheDocument()
+    expect(state.guestImport).toHaveBeenCalledWith(expect.any(Object), [], { autoMerge: true })
+    expect(state.setSkin).toHaveBeenCalledWith('aphelion')
+    expect(state.setMode).toHaveBeenCalledWith('dark')
+    expect(localStorage.getItem('reverie.guest-handoff.v1')).toBeNull()
+  })
+
+  it('lets the reader cancel a pending guest handoff without writing', () => {
+    localStorage.setItem(
+      'reverie.guest-handoff.v1',
+      JSON.stringify({
+        version: 1,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 60_000,
+        skin: 'folio',
+        mode: 'light',
+        dock: ['library'],
+        books: [{ incoming: { title: 'Jane Eyre', reads: [] } }],
+      }),
+    )
+    render(<Onboarding />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start without them' }))
+    expect(screen.getByRole('heading', { name: 'Start with some books.' })).toBeInTheDocument()
+    expect(state.guestImport).not.toHaveBeenCalled()
+    expect(localStorage.getItem('reverie.guest-handoff.v1')).toBeNull()
+  })
+
   it('acknowledges a saved import while refresh is pending and waits for actual reading choices', async () => {
     state.invalidate.mockReturnValue(new Promise(() => {}))
     const view = render(<Onboarding />)

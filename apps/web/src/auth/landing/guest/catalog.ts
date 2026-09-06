@@ -1,49 +1,57 @@
 import { splitName, type Book, type Incoming } from '@reverie/core'
 
-/** Public bibliographic facts from the landing's existing catalog examples. Covers keep their
- * original source URLs; no reader seed, account, private notes, or provider credentials are used. */
+/** Public bibliographic facts from the landing's existing catalog examples. Each Google Books
+ * URL points at a verified edition whose zoom=0 render is at least 800px wide. CoverImage chooses
+ * that full tier for the prominent landing demo and the lighter tier inside ordinary app grids.
+ * No reader seed, account, private notes, or provider credentials are used. */
 export const GUEST_CATALOG = [
   {
     key: 'jane-eyre',
     title: 'Jane Eyre',
     author: 'Charlotte Brontë',
     genre: 'literary',
-    cover: 'https://covers.openlibrary.org/b/id/109090-M.jpg?default=false',
+    cover:
+      'https://books.google.com/books/content?id=VIdMOzpFBgoC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
   },
   {
     key: 'left-hand-of-darkness',
     title: 'The Left Hand of Darkness',
     author: 'Ursula K. Le Guin',
     genre: 'sci-fi',
-    cover: 'https://covers.openlibrary.org/b/id/284550-M.jpg?default=false',
+    cover:
+      'https://books.google.com/books/content?id=f9QiDQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
   },
   {
     key: 'frankenstein',
     title: 'Frankenstein',
     author: 'Mary Shelley',
     genre: 'horror',
-    cover: 'https://covers.openlibrary.org/b/id/11466753-M.jpg?default=false',
+    cover:
+      'https://books.google.com/books/content?id=6W24a29p9GQC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
   },
   {
     key: 'braiding-sweetgrass',
     title: 'Braiding Sweetgrass',
     author: 'Robin Wall Kimmerer',
     genre: 'nonfiction',
-    cover: 'https://covers.openlibrary.org/b/id/12836879-M.jpg?default=false',
+    cover:
+      'https://books.google.com/books/content?id=vmM9BAAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
   },
   {
     key: 'acotar',
     title: 'A Court of Thorns and Roses',
     author: 'Sarah J. Maas',
     genre: 'fantasy',
-    cover: '/landing-covers/acotar.jpg',
+    cover:
+      'https://books.google.com/books/content?id=E-kdBQAAQBAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
   },
   {
     key: 'throne-of-glass',
     title: 'Throne of Glass',
     author: 'Sarah J. Maas',
     genre: 'fantasy',
-    cover: '/landing-covers/throne-of-glass.jpg',
+    cover:
+      'https://books.google.com/books/content?id=mezhxQ0twPUC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
   },
 ] as const
 

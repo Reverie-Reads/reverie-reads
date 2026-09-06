@@ -1,5 +1,60 @@
 import { expect, test } from '@playwright/test'
 
+test('the sample library uses large cover sources and saves only after consent', async ({
+  page,
+}) => {
+  await page.route('**books.google.com/books/content**', (route) =>
+    route.fulfill({ path: 'public/landing-covers/acotar.jpg' }),
+  )
+  await page.goto('/')
+  const demo = page.getByTestId('guest-library-compact')
+  const covers = demo.locator('img')
+
+  await expect(covers).toHaveCount(2)
+  for (const cover of await covers.all()) {
+    await expect(cover).toHaveAttribute('src', /books\.google\.com\/books\/content.*zoom=0/)
+  }
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('reverie.guest-handoff.v1')))
+    .toBeNull()
+
+  await demo.getByRole('button', { name: 'Keep this library', exact: true }).click()
+  await expect(demo.getByRole('heading', { name: 'Keep this little library?' })).toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('reverie.guest-handoff.v1')))
+    .toBeNull()
+
+  await demo.getByRole('button', { name: 'Continue to my account', exact: true }).click()
+  await expect(page).toHaveURL(/\/auth\?mode=signup&guest=true$/)
+  await expect(page.getByRole('heading', { name: 'Your guest library is waiting' })).toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('reverie.guest-handoff.v1')))
+    .not.toBeNull()
+
+  await page.getByRole('button', { name: 'Let it go', exact: true }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Your guest library is waiting' }),
+  ).not.toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('reverie.guest-handoff.v1')))
+    .toBeNull()
+})
+
+for (const width of [1440, 390]) {
+  test(`opening a hero-demo book does not move the surrounding landing page at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('/')
+    const demo = page.getByTestId('guest-library-compact')
+    await demo.scrollIntoViewIfNeeded()
+    const before = await page.evaluate(() => window.scrollY)
+    await demo.getByRole('button', { name: 'Open Jane Eyre', exact: true }).click()
+    await expect(demo.getByRole('heading', { name: 'Book details', exact: true })).toBeFocused()
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(before)
+  })
+}
+
 for (const width of [1440, 390]) {
   test.describe(`${width}px guest library`, () => {
     test.use({ viewport: { width, height: 844 }, isMobile: width === 390, hasTouch: width === 390 })

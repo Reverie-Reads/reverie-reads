@@ -29,6 +29,7 @@ import {
   StatusTag,
 } from '../components/Structure'
 import { hasOnboarded } from './OnboardingRoute'
+import { loadGuestHandoff } from '../auth/landing/guest/handoff'
 import { useVoice } from '../skin/labels'
 import { BookmarkGlyph } from '../components/BookmarkGlyph'
 import { Surface } from '../components/Surface'
@@ -57,11 +58,10 @@ function HomeScreen() {
   const all = books ?? []
   const openBook = (id: string) => void navigate({ to: '/book/$bookId', params: { bookId: id } })
 
-  // First-run: a brand-new reader (no books, hasn't been through onboarding) is sent to the
-  // book-first onboarding flow once. Existing libraries and anyone who finished/skipped
-  // are left alone (honor-based flag in OnboardingRoute).
+  // A deliberately saved guest library always gets its review, including for a returning reader.
+  // Otherwise, first-run onboarding remains limited to an empty, not-yet-onboarded account.
   useEffect(() => {
-    if (books && books.length === 0 && !hasOnboarded()) {
+    if (books && (loadGuestHandoff() || (books.length === 0 && !hasOnboarded()))) {
       void navigate({ to: '/onboarding', replace: true })
     }
   }, [books, navigate])
