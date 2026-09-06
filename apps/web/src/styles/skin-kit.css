@@ -419,6 +419,33 @@
   background: transparent;
 }
 
+/* Long-form writing needs room for the first and last letters on every line. Button pills,
+   notches, and the single-line italic treatments must not clip or restyle a reader's prose. */
+textarea.skin-field,
+[data-skin] textarea.skin-field {
+  min-height: 9rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  clip-path: none;
+  background: var(--field);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.65;
+  letter-spacing: normal;
+  text-transform: none;
+  resize: vertical;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+textarea.skin-field::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
 /* Firstlight's stars come out in dark mode only — the light sky has none. */
 [data-skin='bloom'][data-mode='light'] .rv-sky-star {
   display: none;

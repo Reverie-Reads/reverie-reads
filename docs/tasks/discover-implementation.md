@@ -106,3 +106,24 @@ starting; the passing run explicitly waited for the new intent handler before ch
 
 Browser tests deliberately stub external provider/model responses. The separate runtime smoke
 proves local execution, not recommendation quality or hosted production behavior.
+
+## Multiline writing follow-up
+
+The landing reading-record field inherited button typography and the Tryst pill radius, which
+cut into the first line of text on a phone. Guest notes now use the app's writing-field class.
+All multiline writing fields use body type at 16px, normal weight/style, 1.65 line height,
+16px padding, and the room's small card radius. They retain each room's field colors and visible
+keyboard focus without clipping prose inside button shapes. This also covers reading-log notes,
+reviews, club comments, onboarding note previews, and bulk entry. Reviews, comments, and bulk
+entry now have explicit accessible names.
+
+Browser verification checked all nine landing rooms in both modes at 320px and 390px (36
+combinations), with no horizontal overflow. A two-paragraph guest note saved and appeared in both
+book-detail examples. On a local signed-in account, a reading note survived refresh; the review
+draft and multiline bulk list retained their line breaks. Both app fields showed 16px text,
+26.4px line height, 16px padding, and a visible 2px focus outline. Review and bulk drafts were not
+submitted. The shared club/onboarding field styling was checked in source, without creating a
+club or posting a comment. Mobile screenshots were visually inspected.
+
+After this follow-up, typecheck, lint, production build, formatting, and 17 focused existing
+reading/demo tests passed. No additional complete browser-suite run was performed.

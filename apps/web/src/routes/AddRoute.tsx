@@ -903,8 +903,9 @@ function BulkAdd({ addToHousehold }: { addToHousehold: boolean }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={5}
+        aria-label="Books to add, one title or ISBN per line"
         placeholder={'Iron Flame\n9781649374172\nThe Love Hypothesis'}
-        className="w-full skin-card border border-line p-3 text-[13px] text-ink outline-none"
+        className="w-full skin-field border border-line text-ink outline-none"
         style={{ background: 'var(--field)' }}
       />
       <div className="mt-2 flex items-center gap-3">

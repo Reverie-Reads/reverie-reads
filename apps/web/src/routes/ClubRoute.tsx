@@ -252,6 +252,7 @@ function ClubScreen() {
         {me && (
           <div className="mt-3">
             <textarea
+              aria-label="Your comment"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={2}
