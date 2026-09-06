@@ -53,6 +53,28 @@ test('uses an accessible label and rejects hidden or same-page fragment links', 
   assert.equal(result.selected.url, 'https://author.example/bibliography')
 })
 
+test('uses a link title only as a navigation label when an image link has no visible text', () => {
+  const html = `
+    <main>
+      <a href="/books/ruthless-rival/" title="Ruthless Rival">
+        <img src="cover.jpg">
+      </a>
+      <a href="/books/unlabelled/"><img src="unlabelled.jpg"></a>
+      <a href="/about">About</a>
+    </main>
+  `
+
+  const selection = selectNavigationCandidate(html, {
+    parentUrl: 'https://author.example/all-books/',
+    canonicalOrigin: 'https://author.example',
+    targetTitle: 'Ruthless Rival',
+  })
+
+  assert.equal(selection.status, 'selected')
+  assert.equal(selection.selected.url, 'https://author.example/books/ruthless-rival/')
+  assert.equal(selection.selected.label, 'Ruthless Rival')
+})
+
 test('parses malformed markup without broadening the first-party navigation boundary', () => {
   const result = selectNavigationCandidate(
     '<nav><a href="/series"><span>Series<a href="https://evil.example/books">Books</nav><iframe src="https://evil.example/collect">',
@@ -83,6 +105,36 @@ test('extracts inert visible evidence from the main document only', () => {
   assert.match(result.text, /H1: The Leamington Bloom Series/)
   assert.match(result.text, /P: Pyg is the first novel in the series\./)
   assert.doesNotMatch(result.text, /Store|hidden|form|script/i)
+})
+
+test('keeps adjacent labelled book metadata in one inert evidence line', () => {
+  const html = `
+    <html>
+      <head><title>Ruthless Rival | L.J. Shen</title></head>
+      <body>
+        <main>
+          <h1>Ruthless Rival</h1>
+          <div class="book-metadata">
+            <strong>Title:</strong> <span>Ruthless Rival</span><br>
+            <strong>Series:</strong> <a href="/all-books/#cruel-castaways">Cruel Castaways #<span>1</span></a><br>
+            <strong>Release Date:</strong> May 3, 2022<br>
+            <strong>Buy the Book:</strong><br>
+            <a href="https://retailer.example">Retailer</a>
+            <p>The synopsis remains ordinary prose.</p>
+          </div>
+        </main>
+      </body>
+    </html>
+  `
+
+  const extracted = extractEvidenceText(html)
+
+  assert.equal(extracted.status, 'extracted')
+  assert.match(
+    extracted.text,
+    /META: Title: Ruthless Rival \| Series: Cruel Castaways #\s*1 \| Release Date: May 3, 2022/,
+  )
+  assert.doesNotMatch(extracted.text, /META:.*Retailer/)
 })
 
 test('caps the evidence packet and reports omitted characters', () => {

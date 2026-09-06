@@ -217,6 +217,8 @@ gateway in [`docs/decisions/0009-authority-retrieval-gateway.md`](../../docs/dec
 it accepts only a consulted-manifest URL on a reviewed origin, selects one same-origin child
 deterministically, returns sanitized evidence, and fails unresolved. Its security boundary is now
 implemented and its interpreter can be enabled explicitly for the no-write trial.
+When a reviewed origin supplied several consulted URLs, a shallow catalog-style hub is preferred
+over its homepage or a detail page so the single navigation hop can reach an exact-title child.
 
 The first bounded implementation slice now lives in `src/authority/retrieval/`. It provides the
 reviewed-origin gate, public-address validation and connection pinning, manual redirect checks,
@@ -232,6 +234,10 @@ position and membership role survive only on that same relationship line. This p
 from joining one book's identity to another book's series facts on a multi-book page. The packet is
 stripped before returning or caching results. Exercise the boundary with:
 
+Cleaning also drops a membership whose cited sources were all deterministically demoted while
+retaining a separately supported membership in the same proposal. An originally uncited
+membership remains invalid, and a series result with no surviving membership still fails closed.
+
 ```sh
 node --test packages/series-source-trial/test/authority-retrieval-*.test.mjs
 ```
@@ -242,11 +248,11 @@ Run the integrated path explicitly:
 pnpm series:authority:acquire -- --scope gold --max 10 --retrieval
 ```
 
-With the committed registry this remains a no-network retrieval dry run: its only real origin
-candidate is pending, so the command records `origin_pending` and does not fetch it. An unchanged
-successful second-pass interpretation is cached by packet hash without retaining evidence text.
-Origin activation requires a separate human rights/access review and cannot be supplied by model
-output or a CLI flag.
+With the committed registry this remains a no-network retrieval dry run: its real-origin entries
+are pending or manual-only, so the command records `origin_pending` and does not fetch them. An
+unchanged successful second-pass interpretation is cached by packet hash without retaining evidence
+text. Origin activation requires a separate human rights/access review and cannot be supplied by
+model output or a CLI flag.
 
 Run a small gold holdout before a broader capability evaluation:
 
@@ -294,6 +300,9 @@ audit, and the resulting deterministic quarantine are recorded in
 The bounded second-pass wiring, Pyg live-source limit, cache/redaction proof, and synthetic no-tools
 model check are recorded in
 `reports/authority-retrieval-interpretation-pilot-2026-09-05.md`.
+
+The 99-case acquisition baseline, source-profile decisions, live one-hop gate, and dependent-claim
+cleanup are recorded in `reports/authority-origin-evaluation-2026-09-05.md`.
 
 ## Build the 200-case authority set
 

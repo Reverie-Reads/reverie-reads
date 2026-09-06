@@ -26,6 +26,9 @@ const BLOCK_TAGS = new Set([
   'td',
   'figcaption',
 ])
+const INLINE_METADATA_CONTAINERS = new Set(['div', 'section'])
+const INLINE_METADATA_LABEL =
+  /^(?:title|author|series|book(?: number)?|volume(?: number)?|position|release date|publication date)\s*:?$/i
 const DOWNLOAD_SUFFIX = /\.(?:zip|rar|7z|tar|gz|pdf|epub|mobi|docx?|xlsx?|pptx?)(?:$|[?#])/i
 const MUTATION_PATH = /\/(?:logout|signout|delete|remove|unsubscribe|cart|checkout)(?:\/|$)/i
 const MUTATION_QUERY = /^(?:action|do|logout|signout|delete|remove|unsubscribe|token)$/i
@@ -86,6 +89,37 @@ const walk = (node, visitor) => {
   for (const child of node.childNodes ?? []) walk(child, visitor)
 }
 
+const inlineMetadataLine = (node) => {
+  if (!INLINE_METADATA_CONTAINERS.has(node?.tagName)) return ''
+  const segments = []
+  let current = []
+
+  const flush = () => {
+    if (!current.length) return
+    const labelNode = current.find((child) => child?.tagName === 'strong')
+    const label = cleanText(visibleText(labelNode))
+    if (INLINE_METADATA_LABEL.test(label)) {
+      const text = cleanText(current.map(visibleText).join(' '))
+      if (text) segments.push(text)
+    }
+    current = []
+  }
+
+  for (const child of node.childNodes ?? []) {
+    if (child.tagName === 'br') {
+      flush()
+      continue
+    }
+    if (BLOCK_TAGS.has(child.tagName) || INLINE_METADATA_CONTAINERS.has(child.tagName)) {
+      flush()
+      break
+    }
+    current.push(child)
+  }
+  flush()
+  return segments.length >= 2 ? `META: ${segments.join(' | ')}` : ''
+}
+
 const scoreLink = ({ label, url }, targetTitle) => {
   const normalizedLabel = normalizedWords(label)
   const parsedUrl = typeof url === 'string' ? new URL(url) : url
@@ -143,7 +177,8 @@ export function selectNavigationCandidate(
       return
     if (url.hash && url.pathname === parent.pathname && url.search === parent.search) return
     url.hash = ''
-    const label = cleanText(attrs['aria-label'] || visibleText(node))
+    const visibleLabel = cleanText(visibleText(node))
+    const label = cleanText(attrs['aria-label'] || visibleLabel || attrs.title || '')
     if (!label) return
     const candidate = { url: url.href, label }
     candidate.score = scoreLink(candidate, targetTitle)
@@ -185,6 +220,8 @@ export function extractEvidenceText(html, maxCharacters = 8_000) {
   const titleText = cleanText(visibleText(title))
   if (titleText) lines.push(`TITLE: ${titleText}`)
   walk(root, (node) => {
+    const metadata = inlineMetadataLine(node)
+    if (metadata && lines.at(-1) !== metadata) lines.push(metadata)
     if (!BLOCK_TAGS.has(node.tagName)) return
     const text = cleanText(visibleText(node))
     if (!text) return

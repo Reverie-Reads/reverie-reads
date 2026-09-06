@@ -122,9 +122,12 @@ work inside it. Link hubs and known discovery-only hosts cannot establish classi
 spin-off, companion, shared-character, or same-world statement also cannot be reversed into
 membership for the related work; that contextual source is demoted to identity-only unless separate
 direct evidence supports the membership. A consulted source that is blocked for classification is
-demoted to identity-only before validation; the proposal survives only when separate eligible
-evidence still supports every membership and position. An unconsulted redundant source may be
-removed, but removing it must expose—not repair—an otherwise unsupported claim.
+demoted to identity-only before validation. A membership that cited evidence before cleaning but
+loses every citation because those sources were demoted is discarded; an independently supported
+membership in the same proposal may survive. A membership that arrived with no evidence remains
+visible so validation fails, and a series proposal with no surviving membership still fails closed.
+This removes only the claim dependent on risky evidence; it never transfers support from another
+claim or invents a replacement.
 
 Provider data is cleaned before it reaches that resolver. Google contributes identity only.
 Open Library, Wikidata, Inventaire, and BookBrainz contribute a membership only after the exact

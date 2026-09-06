@@ -176,7 +176,9 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   interpretation; proposed identity, series names, standalone language, and positions must also be
   present in the packet before selection. Unsupported retrieved position is cleared and unsupported
   membership role becomes unknown without discarding otherwise direct membership. Page text is
-  redacted before persistence.
+  redacted before persistence. When one reviewed origin contributed several consulted URLs, select
+  a shallow catalog-style hub before its homepage or a detail page so the single child hop is spent
+  on exact-title evidence; source kind, depth, and lexical order remain deterministic tie-breakers.
   The repository still activates no real origin. See
   `docs/decisions/0009-authority-retrieval-gateway.md`.
 - **Corpus cover recovery is bounded, resumable, and independent of classification.** The
