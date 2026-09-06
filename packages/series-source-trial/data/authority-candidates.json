@@ -148,6 +148,25 @@
       ],
       "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
       "reviewNote": "Selected under Hachette's standalone heading, but that same list contains disproven labels. The title page establishes the work and publication path without a second affirmative standalone source."
+    },
+    {
+      "id": "kindle-storyteller-2024-murmuration",
+      "title": "Murmuration",
+      "authors": ["Elisabeth Pike"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "kindle_first",
+      "selectionFrame": "kindle_storyteller_2024_shortlist",
+      "sampleSources": [
+        {
+          "kind": "industry_press",
+          "url": "https://www.thebookseller.com/news/kindle-storyteller-award-2024-shortlist-announced"
+        },
+        { "kind": "author", "url": "https://elisabethpike.co.uk/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected as one of all five 2024 finalists. The author's site identifies Murmuration as her debut novel and later calls Christopher, Running her second novel, but does not affirm either standalone status or a bibliographic series relationship."
     }
   ]
 }

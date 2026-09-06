@@ -304,7 +304,17 @@ model check are recorded in
 The 99-case acquisition baseline, source-profile decisions, live one-hop gate, and dependent-claim
 cleanup are recorded in `reports/authority-origin-evaluation-2026-09-05.md`.
 
-## Build the 200-case authority set
+The two-stage 1,200-case target and complete five-work 2024 Kindle Storyteller development frame
+are recorded in `reports/authority-development-frame-2024-2026-09-06.md`.
+
+The complete five-work 2021 Kindle Storyteller development frame and its five first-party
+series-positive reviews are recorded in
+`reports/authority-development-frame-2021-2026-09-06.md`.
+
+The final direct Reverie-seed review and the intentionally unresolved Dark Forces case are recorded
+in `reports/authority-seed-candidate-resolution-2026-09-06.md`.
+
+## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
 
@@ -371,14 +381,29 @@ validate its truth. An archived copy may preserve provenance, but does not turn 
 page into authority evidence. Provider output and LLM output can prioritize the review queue;
 neither can write gold truth.
 
+The program has two intentionally separate partitions:
+
+- **Development:** 200 authority-reviewed cases used to improve source adapters, deterministic
+  cleaning, prompts, and operating cost. Existing cases default to this partition.
+- **Qualification:** 1,000 additional authority-reviewed cases held out from tuning. New records in
+  this locked set declare `"evaluationPartition": "qualification"` and are evaluated only after the
+  system is frozen.
+
+The complete gold-program target is therefore 1,200 reviewed works. The qualification partition
+contains 400 series-positive works and 600 true standalone controls. With zero observed errors,
+598 standalone controls are required to support a 0.5% false-standalone ceiling at a one-sided 95%
+confidence level. A 99% membership-precision floor similarly requires at least 299 emitted
+membership claims with zero false positives. The 400 positive works make that claim denominator
+possible, but the qualification run must report the actual emitted-claim count.
+
 ## Decision rule
 
 Accuracy is a hard constraint. A provider cannot pass by trading false claims for lower price or
 greater coverage. After all hard gates pass, compare eligible providers using the weights in
 `data/evaluation-policy.json`.
 
-The current gold set is a pre-pilot. Procurement remains blocked until at least 200 cases are
-authority-reviewed, including at least 100 positive series cases and 50 standalone controls.
+The current gold set is a pre-pilot. Provider comparison remains blocked until at least 200 cases
+are authority-reviewed, including at least 100 positive series cases and 50 standalone controls.
 The intended 200-case minimum stratification is:
 
 - the current 69-series Reverie sample;
@@ -389,6 +414,11 @@ The intended 200-case minimum stratification is:
 
 Overlap should be resolved while preserving the intended stratum counts. A work with multiple
 memberships needs every in-scope membership annotated before claim-level precision is fair.
+
+Passing that 200-case development gate does not qualify production accuracy. Production
+qualification additionally requires the untouched 1,000-case partition, the 600/400 truth mix,
+at least 299 emitted membership claims, and the configured accuracy thresholds. Any case inspected
+while changing the resolver belongs in development, never qualification.
 
 When both Open Library and Wikidata are in one run, the report also scores their combined baseline.
 Google Books and Hardcover each receive a separate marginal-lift strategy, plus an all-four strategy

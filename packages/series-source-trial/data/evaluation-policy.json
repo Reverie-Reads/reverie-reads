@@ -11,6 +11,15 @@
     "minimumMembershipPrecision": 0.99,
     "maximumFalseStandaloneRate": 0.005
   },
+  "qualificationGates": {
+    "confidenceLevel": 0.95,
+    "minimumReviewedCases": 1000,
+    "minimumReviewedPositiveCases": 400,
+    "minimumReviewedStandaloneCases": 600,
+    "minimumEvaluatedMembershipClaims": 299,
+    "minimumMembershipPrecision": 0.99,
+    "maximumFalseStandaloneRate": 0.005
+  },
   "eligibleProviderWeights": {
     "seriesCoverage": 0.25,
     "relationshipAndOrderRichness": 0.2,
@@ -24,6 +33,8 @@
     "Accuracy is a hard gate, not a weighted dimension.",
     "Only authority-reviewed cases contribute to precision, recall, and order accuracy.",
     "Candidate references contribute to coverage diagnostics only.",
-    "A search-result series label is not relational membership evidence."
+    "A search-result series label is not relational membership evidence.",
+    "The 200-case hard gate is the development comparison set; the separate 1000-case qualification partition stays locked during tuning.",
+    "With zero observed errors, 600 standalone controls and at least 299 emitted membership claims support the configured one-sided 95% rate bounds."
   ]
 }

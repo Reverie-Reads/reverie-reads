@@ -2,9 +2,23 @@ import { normalize } from './normalize.mjs'
 
 const publicationPaths = new Set(['independent', 'kindle_first', 'traditional'])
 const riskFeatures = new Set(['multi_series', 'connected_universe'])
+const evaluationPartitions = new Set(['development', 'qualification'])
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
 const difference = (minimum, actual) => Math.max(0, minimum - actual)
+const finiteOrZero = (value) => (Number.isFinite(value) ? value : 0)
+const evaluationPartition = (testCase) => testCase?.evaluationPartition ?? 'development'
+
+export function zeroEventMinimum(maximumRate, confidenceLevel) {
+  if (!Number.isFinite(maximumRate) || maximumRate <= 0 || maximumRate >= 1) {
+    throw new RangeError('maximumRate must be greater than 0 and less than 1')
+  }
+  if (!Number.isFinite(confidenceLevel) || confidenceLevel <= 0 || confidenceLevel >= 1) {
+    throw new RangeError('confidenceLevel must be greater than 0 and less than 1')
+  }
+
+  return Math.ceil(Math.log(1 - confidenceLevel) / Math.log(1 - maximumRate))
+}
 
 const usableAuthoritySources = (sources, plan) => {
   const authorityKinds = new Set(asArray(plan?.authoritySourceKinds))
@@ -171,6 +185,9 @@ export function auditAuthoritySample(caseSet, plan, policy) {
       errors.push(`${testCase.id}: truth status must be reviewed or candidate`)
       continue
     }
+    if (!evaluationPartitions.has(evaluationPartition(testCase))) {
+      errors.push(`${testCase.id}: evaluationPartition must be development or qualification`)
+    }
     if (!Array.isArray(testCase.truth.memberships) || !Array.isArray(testCase.truth.sources)) {
       errors.push(`${testCase.id}: truth requires memberships and sources arrays`)
       continue
@@ -224,8 +241,14 @@ export function auditAuthoritySample(caseSet, plan, policy) {
     }
   }
 
-  const reviewed = cases.filter((testCase) => testCase?.truth?.status === 'reviewed')
-  const candidates = cases.filter((testCase) => testCase?.truth?.status === 'candidate')
+  const developmentCases = cases.filter(
+    (testCase) => evaluationPartition(testCase) === 'development',
+  )
+  const qualificationCases = cases.filter(
+    (testCase) => evaluationPartition(testCase) === 'qualification',
+  )
+  const reviewed = developmentCases.filter((testCase) => testCase?.truth?.status === 'reviewed')
+  const candidates = developmentCases.filter((testCase) => testCase?.truth?.status === 'candidate')
   const positives = reviewed.filter((testCase) => testCase.truth.standalone === false)
   const standalones = reviewed.filter((testCase) => testCase.truth.standalone === true)
   const gates = policy?.hardGates ?? {}
@@ -255,7 +278,7 @@ export function auditAuthoritySample(caseSet, plan, policy) {
   }))
 
   const strata = asArray(plan?.strata).map((stratum) => {
-    const selected = cases.filter((testCase) =>
+    const selected = developmentCases.filter((testCase) =>
       authorityCaseStrata(testCase, plan).includes(stratum.id),
     ).length
     const reviewedCount = reviewed.filter((testCase) =>
@@ -273,7 +296,76 @@ export function auditAuthoritySample(caseSet, plan, policy) {
     }
   })
 
-  const selectionGap = difference(plan.selectionTarget, cases.length)
+  const qualificationReviewed = qualificationCases.filter(
+    (testCase) => testCase?.truth?.status === 'reviewed',
+  )
+  const qualificationCandidates = qualificationCases.filter(
+    (testCase) => testCase?.truth?.status === 'candidate',
+  )
+  const qualificationPositives = qualificationReviewed.filter(
+    (testCase) => testCase.truth.standalone === false,
+  )
+  const qualificationStandalones = qualificationReviewed.filter(
+    (testCase) => testCase.truth.standalone === true,
+  )
+  const qualificationGates = policy?.qualificationGates ?? {}
+  const confidenceLevel = qualificationGates.confidenceLevel
+  const falseStandaloneMinimum =
+    Number.isFinite(confidenceLevel) &&
+    Number.isFinite(qualificationGates.maximumFalseStandaloneRate)
+      ? zeroEventMinimum(qualificationGates.maximumFalseStandaloneRate, confidenceLevel)
+      : null
+  const falsePositiveMembershipMinimum =
+    Number.isFinite(confidenceLevel) &&
+    Number.isFinite(qualificationGates.minimumMembershipPrecision)
+      ? zeroEventMinimum(1 - qualificationGates.minimumMembershipPrecision, confidenceLevel)
+      : null
+  const qualificationTargets = [
+    {
+      id: 'qualification_reviewed_cases',
+      label: 'Locked authority-reviewed cases',
+      minimum: finiteOrZero(qualificationGates.minimumReviewedCases),
+      actual: qualificationReviewed.length,
+    },
+    {
+      id: 'qualification_reviewed_positive_cases',
+      label: 'Locked positive series cases',
+      minimum: finiteOrZero(qualificationGates.minimumReviewedPositiveCases),
+      actual: qualificationPositives.length,
+    },
+    {
+      id: 'qualification_reviewed_standalone_cases',
+      label: 'Locked standalone controls',
+      minimum: finiteOrZero(qualificationGates.minimumReviewedStandaloneCases),
+      actual: qualificationStandalones.length,
+    },
+  ].map((target) => ({
+    ...target,
+    gap: difference(target.minimum, target.actual),
+    met: target.actual >= target.minimum,
+  }))
+
+  if (
+    falseStandaloneMinimum !== null &&
+    finiteOrZero(qualificationGates.minimumReviewedStandaloneCases) < falseStandaloneMinimum
+  ) {
+    errors.push(
+      `qualificationGates: minimumReviewedStandaloneCases must be at least ${falseStandaloneMinimum} for the configured zero-error confidence bound`,
+    )
+  }
+  if (
+    falsePositiveMembershipMinimum !== null &&
+    finiteOrZero(qualificationGates.minimumEvaluatedMembershipClaims) <
+      falsePositiveMembershipMinimum
+  ) {
+    errors.push(
+      `qualificationGates: minimumEvaluatedMembershipClaims must be at least ${falsePositiveMembershipMinimum} for the configured zero-error confidence bound`,
+    )
+  }
+
+  const selectionGap = difference(plan.selectionTarget, developmentCases.length)
+  const developmentTarget = finiteOrZero(gates.minimumReviewedCases)
+  const qualificationTarget = finiteOrZero(qualificationGates.minimumReviewedCases)
   return {
     schemaVersion: 1,
     valid: errors.length === 0,
@@ -283,7 +375,7 @@ export function auditAuthoritySample(caseSet, plan, policy) {
       targets.every((target) => target.met) &&
       strata.every((stratum) => stratum.met),
     counts: {
-      selected: cases.length,
+      selected: developmentCases.length,
       reviewed: reviewed.length,
       candidate: candidates.length,
       reviewedPositive: positives.length,
@@ -293,6 +385,29 @@ export function auditAuthoritySample(caseSet, plan, policy) {
     },
     targets,
     strata,
+    qualification: {
+      sampleReady: errors.length === 0 && qualificationTargets.every((target) => target.met),
+      confidenceLevel: Number.isFinite(confidenceLevel) ? confidenceLevel : null,
+      counts: {
+        selected: qualificationCases.length,
+        reviewed: qualificationReviewed.length,
+        candidate: qualificationCandidates.length,
+        reviewedPositive: qualificationPositives.length,
+        reviewedStandalone: qualificationStandalones.length,
+      },
+      targets: qualificationTargets,
+      minimumEvaluatedMembershipClaims: finiteOrZero(
+        qualificationGates.minimumEvaluatedMembershipClaims,
+      ),
+      zeroEventMinimums: {
+        falseStandaloneCases: falseStandaloneMinimum,
+        evaluatedMembershipClaims: falsePositiveMembershipMinimum,
+      },
+    },
+    program: {
+      reviewed: reviewed.length + qualificationReviewed.length,
+      target: developmentTarget + qualificationTarget,
+    },
     errors,
   }
 }
@@ -322,6 +437,19 @@ export function renderAuthoritySampleMarkdown(audit) {
     ),
     '',
     'Candidates never count toward an accuracy or review gate. Strata may overlap, so their counts do not sum to the sample total.',
+    '',
+    '## Locked production qualification set',
+    '',
+    `Status: ${audit.qualification.sampleReady ? 'sample ready for untouched qualification run' : 'not yet built'}.`,
+    `Selected: ${audit.qualification.counts.selected}; reviewed: ${audit.qualification.counts.reviewed}; candidates: ${audit.qualification.counts.candidate}. Program progress: ${audit.program.reviewed}/${audit.program.target} reviewed cases.`,
+    '',
+    '| Gate | Reviewed | Minimum | Gap |',
+    '| --- | ---: | ---: | ---: |',
+    ...audit.qualification.targets.map(
+      (target) => `| ${target.label} | ${target.actual} | ${target.minimum} | ${target.gap} |`,
+    ),
+    '',
+    `With zero observed errors, the configured one-sided ${Math.round((audit.qualification.confidenceLevel ?? 0) * 100)}% bounds require at least ${audit.qualification.zeroEventMinimums.falseStandaloneCases ?? 'an unset number of'} true standalone controls and ${audit.qualification.zeroEventMinimums.evaluatedMembershipClaims ?? 'an unset number of'} emitted membership claims. The qualification run therefore must emit at least ${audit.qualification.minimumEvaluatedMembershipClaims} eligible membership claims; positive cases alone do not establish that denominator.`,
   ]
 
   if (audit.errors.length) {

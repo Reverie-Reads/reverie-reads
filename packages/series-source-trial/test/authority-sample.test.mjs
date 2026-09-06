@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import plan from '../data/authority-sample-plan.json' with { type: 'json' }
 import policy from '../data/evaluation-policy.json' with { type: 'json' }
-import { auditAuthoritySample } from '../src/authority-sample.mjs'
+import { auditAuthoritySample, zeroEventMinimum } from '../src/authority-sample.mjs'
 import { loadTrialCases } from '../src/cases.mjs'
 
 const source = { kind: 'publisher', url: 'https://publisher.example/books/example' }
@@ -58,19 +58,31 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 108,
-    reviewed: 99,
+    selected: 118,
+    reviewed: 109,
     candidate: 9,
-    reviewedPositive: 78,
+    reviewedPositive: 88,
     reviewedStandalone: 21,
     selectionTarget: 200,
-    selectionGap: 92,
+    selectionGap: 82,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 101,
-    reviewed_positive_cases: 22,
+    reviewed_cases: 91,
+    reviewed_positive_cases: 12,
     reviewed_standalone_cases: 29,
   })
+  assert.deepEqual(audit.qualification.counts, {
+    selected: 0,
+    reviewed: 0,
+    candidate: 0,
+    reviewedPositive: 0,
+    reviewedStandalone: 0,
+  })
+  assert.deepEqual(audit.qualification.zeroEventMinimums, {
+    falseStandaloneCases: 598,
+    evaluatedMembershipClaims: 299,
+  })
+  assert.deepEqual(audit.program, { reviewed: 109, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -78,9 +90,9 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
       label: 'Reverie seeded series',
       minimumReviewed: 69,
       selected: 69,
-      reviewed: 67,
-      candidate: 2,
-      gap: 2,
+      reviewed: 68,
+      candidate: 1,
+      gap: 1,
       met: false,
     },
   )
@@ -99,12 +111,124 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
         .map(({ id, reviewed, gap }) => [id, { reviewed, gap }]),
     ),
     {
-      recent_independent_or_kindle_first: { reviewed: 18, gap: 32 },
+      recent_independent_or_kindle_first: { reviewed: 27, gap: 23 },
       recent_traditional: { reviewed: 27, gap: 23 },
       multi_series_or_connected_universe: { reviewed: 13, gap: 7 },
       standalone_control: { reviewed: 24, gap: 26 },
     },
   )
+})
+
+test('keeps the complete 2021 Kindle Storyteller frame and direct authority truth', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter(
+    (testCase) => testCase.selectionFrame === 'kindle_storyteller_2021_shortlist',
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 5)
+  assert.equal(
+    frame.every((testCase) => testCase.truth.status === 'reviewed'),
+    true,
+  )
+  assert.deepEqual(
+    byId.get('kindle-storyteller-2021-escape-to-the-hummingbird-hotel')?.truth.memberships[0]
+      ?.positions,
+    [],
+  )
+  assert.deepEqual(
+    byId
+      .get('kindle-storyteller-2021-stranger-at-the-villa')
+      ?.truth.memberships[0]?.positions.map(({ value }) => value),
+    [3],
+  )
+  assert.deepEqual(
+    byId
+      .get('kindle-storyteller-2021-an-isolated-incident')
+      ?.truth.memberships[0]?.positions.map(({ value }) => value),
+    [11],
+  )
+  assert.deepEqual(
+    byId
+      .get('kindle-storyteller-2021-the-corfe-castle-murders')
+      ?.truth.memberships[0]?.positions.map(({ value }) => value),
+    [1],
+  )
+  assert.deepEqual(
+    byId
+      .get('kindle-storyteller-2021-a-thousand-li-the-second-sect')
+      ?.truth.memberships[0]?.positions.map(({ value }) => value),
+    [5],
+  )
+})
+
+test('keeps the complete 2024 Kindle Storyteller frame and conservative authority truth', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter(
+    (testCase) => testCase.selectionFrame === 'kindle_storyteller_2024_shortlist',
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 5)
+  assert.equal(byId.get('kindle-storyteller-2024-murmuration')?.truth.status, 'candidate')
+  assert.deepEqual(
+    byId
+      .get('kindle-storyteller-2024-stateside')
+      ?.truth.memberships[0]?.positions.map(({ value }) => value),
+    [5],
+  )
+  assert.deepEqual(
+    byId
+      .get('kindle-storyteller-2024-bitter-enemies')
+      ?.truth.memberships[0]?.positions.map(({ value }) => value),
+    [2],
+  )
+  assert.deepEqual(
+    byId.get('kindle-storyteller-2024-hopes-and-dreams-on-foxglove-street')?.truth.memberships[0]
+      ?.positions,
+    [],
+  )
+  assert.deepEqual(
+    byId.get('kindle-storyteller-2024-jennifer')?.truth.memberships[0]?.positions,
+    [],
+  )
+})
+
+test('derives exact zero-event sample minimums for the production rate bounds', () => {
+  assert.equal(zeroEventMinimum(0.005, 0.95), 598)
+  assert.equal(zeroEventMinimum(0.01, 0.95), 299)
+  assert.throws(() => zeroEventMinimum(0, 0.95), RangeError)
+  assert.throws(() => zeroEventMinimum(0.01, 1), RangeError)
+})
+
+test('keeps qualification cases isolated from development tuning gates', () => {
+  const qualificationPolicy = {
+    ...smallPolicy(),
+    qualificationGates: {
+      confidenceLevel: 0.95,
+      minimumReviewedCases: 1,
+      minimumReviewedPositiveCases: 1,
+      minimumReviewedStandaloneCases: 598,
+      minimumEvaluatedMembershipClaims: 299,
+      minimumMembershipPrecision: 0.99,
+      maximumFalseStandaloneRate: 0.005,
+    },
+  }
+  const audit = auditAuthoritySample(
+    {
+      cases: [reviewedCase({ evaluationPartition: 'qualification' })],
+      sharedSources: {},
+    },
+    smallPlan(),
+    qualificationPolicy,
+  )
+
+  assert.equal(audit.valid, true)
+  assert.equal(audit.ready, false)
+  assert.equal(audit.counts.reviewed, 0)
+  assert.equal(audit.qualification.counts.reviewed, 1)
+  assert.equal(audit.qualification.counts.reviewedPositive, 1)
+  assert.equal(audit.program.reviewed, 1)
 })
 
 test('records high-risk membership without inventing order and preserves ambiguous candidates', async () => {
@@ -128,7 +252,10 @@ test('records high-risk membership without inventing order and preserves ambiguo
   }
 
   assert.equal(byId.get('reverie-dark-forces-bulletproof')?.truth.status, 'candidate')
-  assert.equal(byId.get('reverie-lords-the-sacrifice')?.truth.status, 'candidate')
+  const sacrifice = byId.get('reverie-lords-the-sacrifice')
+  assert.equal(sacrifice?.truth.status, 'reviewed')
+  assert.equal(sacrifice?.truth.memberships[0]?.series, 'A Dark College Romance')
+  assert.deepEqual(sacrifice?.truth.memberships[0]?.positions, [])
 
   const grey = byId.get('gold-grey')
   assert.equal(grey?.truth.membershipsComplete, true)
@@ -211,7 +338,7 @@ test('corrects false standalones, connected-world noise, and the seventh batch s
   assert.deepEqual(honeyCut?.riskFeatures, ['connected_universe'])
 })
 
-test('promotes the final unambiguous seed candidates while preserving ambiguous controls', async () => {
+test('promotes the unambiguous seed candidates while preserving the ambiguous Dark Forces control', async () => {
   const caseSet = await loadTrialCases()
   const byId = new Map(caseSet.cases.map((testCase) => [testCase.id, testCase]))
   const reviewedMemberships = new Map([
@@ -237,7 +364,7 @@ test('promotes the final unambiguous seed candidates while preserving ambiguous 
   )
   assert.equal(byId.get('reverie-the-wolves-of-ruin-dire-bound')?.publicationPath, 'independent')
   assert.equal(byId.get('reverie-dark-forces-bulletproof')?.truth.status, 'candidate')
-  assert.equal(byId.get('reverie-lords-the-sacrifice')?.truth.status, 'candidate')
+  assert.equal(byId.get('reverie-lords-the-sacrifice')?.truth.status, 'reviewed')
 })
 
 test('promotes explicit external series evidence without inferring order or standalone status', async () => {
