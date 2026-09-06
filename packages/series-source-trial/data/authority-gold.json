@@ -5188,6 +5188,119 @@
         ],
         "reviewNote": "The author's catalog labels the pair The Wisdom Duology, identifies Artificial Wisdom as the debut, and calls Infinite Wisdom its sequel and the conclusion. This establishes Artificial Wisdom as publication position one even though the current editions are now issued by Penguin Random House."
       }
+    },
+    {
+      "id": "selfies-2023-fiction-the-west-rises",
+      "title": "The West Rises",
+      "authors": ["S. M. Davies"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2022,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2023_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2023/03/Selfies-2023-shortlist-press-release.pdf"
+        },
+        { "kind": "author", "url": "https://smdaviesauthor.com/books/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "High King",
+            "aliases": [],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [{ "kind": "author", "url": "https://smdaviesauthor.com/books/" }],
+        "reviewNote": "The author's catalog identifies the exact work as High King 1 and presents a separate High King 2 entry, establishing both membership and publication position one. The official shortlist's parenthetical High King: Book 1 title is selection-frame evidence only and is not used to establish truth."
+      }
+    },
+    {
+      "id": "selfies-2023-fiction-the-ring-breaker",
+      "title": "The Ring Breaker",
+      "authors": ["Jean Gill"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2022,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2023_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2023/03/Selfies-2023-shortlist-press-release.pdf"
+        },
+        { "kind": "author", "url": "https://jeangill.com/books/the-ring-breaker/" },
+        { "kind": "author_post", "url": "https://jeangill.com/category/news/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Midwinter Dragon",
+            "aliases": ["Midwinter Dragon"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://jeangill.com/books/the-ring-breaker/" },
+          { "kind": "author_post", "url": "https://jeangill.com/category/news/" }
+        ],
+        "reviewNote": "The author's exact-title page establishes the work and publication date, while her news archive explicitly announces The Ring Breaker as book one of The Midwinter Dragon."
+      }
+    },
+    {
+      "id": "selfies-2023-fiction-the-secret-diary-of-a-bengali-newlywed",
+      "title": "The Secret Diary of a Bengali Newlywed",
+      "authors": ["Halima Khatun"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2022,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2023_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2023/03/Selfies-2023-shortlist-press-release.pdf"
+        },
+        {
+          "kind": "author",
+          "url": "https://halimakhatun.co.uk/the-secret-diary-of-a-bengali-newlywed/"
+        },
+        {
+          "kind": "author",
+          "url": "https://halimakhatun.co.uk/the-secret-diary-of-a-bengali-woman-books-1-3/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Secret Diary",
+            "aliases": ["The Secret Diary series", "The Secret series"],
+            "role": "primary",
+            "positions": [{ "value": 3, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://halimakhatun.co.uk/the-secret-diary-of-a-bengali-newlywed/"
+          },
+          {
+            "kind": "author",
+            "url": "https://halimakhatun.co.uk/the-secret-diary-of-a-bengali-woman-books-1-3/"
+          }
+        ],
+        "reviewNote": "The author's exact-title page calls the work an instalment in The Secret series. Her three-book collection explicitly calls the group The Secret Diary series and labels The Secret Diary of a Bengali Newlywed book three, establishing the normalized series identity and publication position."
+      }
     }
   ],
   "sharedSources": {

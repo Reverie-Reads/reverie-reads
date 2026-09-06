@@ -2197,6 +2197,129 @@
         "sources": []
       },
       "reviewNote": "Selected without provider-result filtering from the complete 2024 Selfies adult fiction shortlist. The author's current catalog distinguishes this 2023 debut from a later novel and a third work in progress, but does not affirm either standalone status or a bibliographic relationship."
+    },
+    {
+      "id": "selfies-2023-fiction-the-phone-call",
+      "title": "The Phone Call",
+      "authors": ["A. J. Campbell"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2022,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2023_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2023/03/Selfies-2023-shortlist-press-release.pdf"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.ajcampbellauthor.com/books/14/the-phone-call"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2023 Selfies adult fiction shortlist. The author's exact-title page establishes the work but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "selfies-2023-fiction-death-in-paris",
+      "title": "Death in Paris",
+      "authors": ["Kate Darroch"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2022,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2023_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2023/03/Selfies-2023-shortlist-press-release.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2023 Selfies adult fiction shortlist. Community catalogs label the exact work as the first Màiri Maguire mystery, but the author's former books subdomain is now unavailable; its archived homepage establishes the title but does not expose an affirmative relationship. The case remains unresolved rather than upgrading community metadata to gold truth."
+    },
+    {
+      "id": "selfies-2023-fiction-small-eden",
+      "title": "Small Eden",
+      "authors": ["Jane Davis"],
+      "identifiers": { "isbn13": ["9781838034818"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2022,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2023_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2023/03/Selfies-2023-shortlist-press-release.pdf"
+        },
+        { "kind": "author", "url": "https://jane-davis.co.uk/books/small-eden/" }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2023 Selfies adult fiction shortlist. The author's exact-title page establishes identity and publication but does not affirm either standalone status or a bibliographic relationship."
+    },
+    {
+      "id": "selfies-2023-fiction-the-maids-of-biddenden",
+      "title": "The Maids of Biddenden",
+      "authors": ["G. D. Harper"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2022,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2023_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2023/03/Selfies-2023-shortlist-press-release.pdf"
+        },
+        { "kind": "author", "url": "https://www.gdharper.com/maids-of-biddenden.html" }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2023 Selfies adult fiction shortlist. The author's exact-title page establishes the work, while the author biography lists it beside other historical novels without affirmatively calling it standalone or related; catalog adjacency is not relationship evidence."
+    },
+    {
+      "id": "selfies-2023-fiction-the-secrets-we-keep",
+      "title": "The Secrets We Keep",
+      "authors": ["A. J. Wills"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2022,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2023_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/wp-content/uploads/2023/03/Selfies-2023-shortlist-press-release.pdf"
+        },
+        { "kind": "author", "url": "https://www.ajwillsauthor.com/home" }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2023 Selfies adult fiction shortlist. The author's catalog lists the exact title among his thrillers but makes no affirmative bibliographic-series or standalone claim; a community-profile standalone label is insufficient for gold truth."
     }
   ]
 }
