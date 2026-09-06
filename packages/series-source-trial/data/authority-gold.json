@@ -1756,15 +1756,28 @@
       "id": "hachette-standalone-romantasy-a-dowry-of-blood",
       "title": "A Dowry of Blood",
       "authors": ["S. T. Gibson"],
+      "identifiers": { "isbn13": ["9780316501071"] },
       "sampleOrigin": "authority_negative_control",
-      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "strata": [
+        "recent_independent_or_kindle_first",
+        "multi_series_or_connected_universe",
+        "standalone_control"
+      ],
+      "riskFeatures": ["connected_universe"],
       "publicationYear": 2021,
       "publicationPath": "independent",
-      "selectionFrame": "hachette_standalone_romantasy_2026_09_04",
+      "selectionFrames": [
+        "hachette_standalone_romantasy_2026_09_04",
+        "hachette_standalone_sff_horror_2026_09_06"
+      ],
       "sampleSources": [
         {
           "kind": "publisher",
           "url": "https://www.hachettebookgroup.com/book-list/best-books-for-romantasy-fans/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
         },
         {
           "kind": "publisher",
@@ -1774,9 +1787,16 @@
       "truth": {
         "status": "reviewed",
         "standalone": true,
+        "membershipsComplete": true,
         "memberships": [],
-        "sources": [{ "kind": "author", "url": "https://stgibson.com/works/" }],
-        "reviewNote": "The author's current catalog explicitly places A Dowry of Blood under Vampire Standalones. The original Nyx announcement supports the 2021 independent publication path; Hachette's list selected the challenge case."
+        "sources": [
+          { "kind": "author", "url": "https://stgibson.com/works/" },
+          {
+            "kind": "author_post",
+            "url": "https://stgibson.com/2023/06/07/cover-reveal-for-an-education-in-malice/"
+          }
+        ],
+        "reviewNote": "The author's current works page places A Dowry of Blood under Vampire Standalones while separately labeling the Summoner's Circle Series. The author calls An Education in Malice a companion novel, but that contextual relationship supplies no bibliographic series membership for A Dowry of Blood and is retained as a connected-work challenge. The original Nyx announcement supports the 2021 independent publication path; both complete Hachette lists selected the same work."
       }
     },
     {
@@ -3242,6 +3262,113 @@
           }
         ],
         "reviewNote": "The author's dedicated Shackleford Legacies page includes Jennifer as the first displayed work, but does not explicitly number it. Gold truth therefore records the direct series membership and leaves order unknown."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-horror-ghoster",
+      "title": "Ghoster",
+      "authors": ["Jason Arnopp"],
+      "identifiers": { "isbn13": ["9780316362306"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_horror_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/jason-arnopp/ghoster/9780316362306/"
+        },
+        { "kind": "author", "url": "https://www.jasonarnopp.com/ghoster.html" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "memberships": [],
+        "sources": [
+          {
+            "kind": "author_post",
+            "url": "https://www.jasonarnopp.com/128240-news/new-book-deal-announced"
+          },
+          { "kind": "author", "url": "https://www.jasonarnopp.com/ghoster.html" },
+          { "kind": "author", "url": "https://www.jasonarnopp.com/128075-about.html" }
+        ],
+        "reviewNote": "The author announced that his two-book Orbit deal comprised unrelated standalones. His current exact-title and biography pages identify Ghoster and The Last Days of Jack Sparks as those two Orbit novels, so the claim is tied to this exact work rather than inferred from missing series metadata."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-horror-the-last-days-of-jack-sparks",
+      "title": "The Last Days of Jack Sparks",
+      "authors": ["Jason Arnopp"],
+      "identifiers": { "isbn13": ["9780316362252"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_horror_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/jason-arnopp/the-last-days-of-jack-sparks/9780316362252/"
+        },
+        { "kind": "author", "url": "https://www.jasonarnopp.com/jack-sparks.html" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "memberships": [],
+        "sources": [
+          { "kind": "author", "url": "https://www.jasonarnopp.com/jack-sparks.html" }
+        ],
+        "reviewNote": "The author's exact-title page affirmatively calls The Last Days of Jack Sparks a standalone book. This ruling does not rely on the Hachette selection heading or on absent provider series fields."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-horror-the-girl-with-all-the-gifts",
+      "title": "The Girl With All the Gifts",
+      "authors": ["M. R. Carey"],
+      "identifiers": { "isbn13": ["9780356500157", "9780316278140"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["multi_series_or_connected_universe", "standalone_control"],
+      "riskFeatures": ["connected_universe"],
+      "selectionFrame": "hachette_standalone_sff_horror_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.orbit-books.co.uk/titles/m-r-carey-2/the-girl-with-all-the-gifts/9780356500157/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "membershipsComplete": true,
+        "memberships": [
+          {
+            "series": "The Girl With All the Gifts",
+            "aliases": ["The Girl With All the Gifts series"],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.orbit-books.co.uk/titles/m-r-carey-2/the-girl-with-all-the-gifts/9780356500157/"
+          },
+          {
+            "kind": "publisher",
+            "url": "https://store.orbit-books.co.uk/products/the-boy-on-the-bridge"
+          }
+        ],
+        "reviewNote": "Orbit's exact page places the target and The Boy on the Bridge together inside a relational module explicitly titled The Girl With All the Gifts series. Orbit separately calls The Boy on the Bridge a stand-alone novel in the same world, demonstrating that readable-standalone and connected-world wording cannot erase the publisher-assigned bibliographic relationship. No order is inferred from carousel layout."
       }
     }
   ],

@@ -2,7 +2,11 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import plan from '../data/authority-sample-plan.json' with { type: 'json' }
 import policy from '../data/evaluation-policy.json' with { type: 'json' }
-import { auditAuthoritySample, zeroEventMinimum } from '../src/authority-sample.mjs'
+import {
+  auditAuthoritySample,
+  authorityCaseSelectionFrames,
+  zeroEventMinimum,
+} from '../src/authority-sample.mjs'
 import { loadTrialCases } from '../src/cases.mjs'
 
 const source = { kind: 'publisher', url: 'https://publisher.example/books/example' }
@@ -58,18 +62,18 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 118,
-    reviewed: 109,
-    candidate: 9,
-    reviewedPositive: 88,
-    reviewedStandalone: 21,
+    selected: 126,
+    reviewed: 112,
+    candidate: 14,
+    reviewedPositive: 89,
+    reviewedStandalone: 23,
     selectionTarget: 200,
-    selectionGap: 82,
+    selectionGap: 74,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 91,
-    reviewed_positive_cases: 12,
-    reviewed_standalone_cases: 29,
+    reviewed_cases: 88,
+    reviewed_positive_cases: 11,
+    reviewed_standalone_cases: 27,
   })
   assert.deepEqual(audit.qualification.counts, {
     selected: 0,
@@ -82,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 109, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 112, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -113,8 +117,8 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     {
       recent_independent_or_kindle_first: { reviewed: 27, gap: 23 },
       recent_traditional: { reviewed: 27, gap: 23 },
-      multi_series_or_connected_universe: { reviewed: 13, gap: 7 },
-      standalone_control: { reviewed: 24, gap: 26 },
+      multi_series_or_connected_universe: { reviewed: 15, gap: 5 },
+      standalone_control: { reviewed: 27, gap: 23 },
     },
   )
 })
@@ -192,6 +196,38 @@ test('keeps the complete 2024 Kindle Storyteller frame and conservative authorit
     byId.get('kindle-storyteller-2024-jennifer')?.truth.memberships[0]?.positions,
     [],
   )
+})
+
+test('keeps the complete Hachette horror frame without trusting its standalone heading', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('hachette_standalone_sff_horror_2026_09_06'),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 9)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 4)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 5)
+
+  const girlWithAllTheGifts = byId.get('hachette-standalone-sff-horror-the-girl-with-all-the-gifts')
+  assert.equal(girlWithAllTheGifts?.truth.standalone, false)
+  assert.equal(girlWithAllTheGifts?.truth.memberships[0]?.series, 'The Girl With All the Gifts')
+  assert.deepEqual(girlWithAllTheGifts?.truth.memberships[0]?.positions, [])
+
+  const reviewedStandalones = [
+    'hachette-standalone-sff-horror-ghoster',
+    'hachette-standalone-sff-horror-the-last-days-of-jack-sparks',
+    'hachette-standalone-romantasy-a-dowry-of-blood',
+  ]
+  for (const id of reviewedStandalones) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, true)
+    assert.deepEqual(testCase?.truth.memberships, [])
+  }
+
+  const dowry = byId.get('hachette-standalone-romantasy-a-dowry-of-blood')
+  assert.deepEqual(dowry?.riskFeatures, ['connected_universe'])
+  assert.equal(dowry?.truth.membershipsComplete, true)
 })
 
 test('derives exact zero-event sample minimums for the production rate bounds', () => {

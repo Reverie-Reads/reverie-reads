@@ -167,6 +167,120 @@
       ],
       "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
       "reviewNote": "Selected as one of all five 2024 finalists. The author's site identifies Murmuration as her debut novel and later calls Christopher, Running her second novel, but does not affirm either standalone status or a bibliographic series relationship."
+    },
+    {
+      "id": "hachette-standalone-sff-horror-the-children-of-red-peak",
+      "title": "The Children of Red Peak",
+      "authors": ["Craig DiLouie"],
+      "identifiers": { "isbn13": ["9780316428118"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_horror_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/craig-dilouie/the-children-of-red-peak/9780316428118/"
+        },
+        { "kind": "author", "url": "https://craigdilouie.com/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF horror section. The exact publisher page and author's site identify the work but do not independently make an affirmative standalone claim, so missing series metadata is not promoted to negative truth."
+    },
+    {
+      "id": "hachette-standalone-sff-horror-someone-like-me",
+      "title": "Someone Like Me",
+      "authors": ["M. R. Carey"],
+      "identifiers": { "isbn13": ["9780356509464"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_horror_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachette.co.uk/titles/m-r-carey-2/someone-like-me/9780356509464/"
+        },
+        { "kind": "publisher", "url": "https://www.littlebrown.co.uk/contributor/m-r-carey-2/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF horror section. The exact publisher and contributor pages establish the work but do not independently affirm standalone status, so the negative claim remains unresolved."
+    },
+    {
+      "id": "hachette-standalone-sff-horror-one-of-us",
+      "title": "One of Us",
+      "authors": ["Craig DiLouie"],
+      "identifiers": { "isbn13": ["9780316411356"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_horror_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/craig-dilouie/one-of-us/9780316411356/"
+        },
+        { "kind": "author", "url": "https://craigdilouie.com/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF horror section. Direct attributed interviews quote the author calling One of Us a standalone, but the current gold policy requires an author-controlled or publisher-controlled authority page; the eligible exact pages do not independently expose that statement."
+    },
+    {
+      "id": "hachette-standalone-sff-horror-dead-water",
+      "title": "Dead Water",
+      "authors": ["C. A. Fletcher"],
+      "identifiers": { "isbn13": ["9780356513812", "9780316538633"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "standalone_control"],
+      "publicationYear": 2022,
+      "publicationPath": "traditional",
+      "selectionFrame": "hachette_standalone_sff_horror_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachette.co.uk/titles/c-a-fletcher/dead-water/9780356513812/"
+        },
+        { "kind": "author", "url": "https://www.charliefletcher.com/books" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF horror section. The 2022 publisher product page and author's catalog establish the exact traditionally published work, but neither independently affirms standalone status."
+    },
+    {
+      "id": "hachette-standalone-sff-horror-it-rides-a-pale-horse",
+      "title": "It Rides a Pale Horse",
+      "authors": ["Andy Marino"],
+      "identifiers": { "isbn13": ["9780316629522", "9780316629546"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "standalone_control"],
+      "publicationYear": 2022,
+      "publicationPath": "traditional",
+      "selectionFrame": "hachette_standalone_sff_horror_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/andy-marino/it-rides-a-pale-horse/9780316629546/"
+        },
+        { "kind": "author", "url": "https://www.andy-marino.com/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF horror section. The exact publisher and author pages identify It Rides a Pale Horse as a 2022 adult horror novel, but do not independently affirm standalone status, so the negative claim remains unresolved."
     }
   ]
 }

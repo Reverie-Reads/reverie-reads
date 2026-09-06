@@ -53,6 +53,14 @@ export const authorityWorkKey = (testCase) =>
       .join('&'),
   ].join('|')
 
+export const authorityCaseSelectionFrames = (testCase) => {
+  const legacy =
+    typeof testCase?.selectionFrame === 'string' && testCase.selectionFrame
+      ? [testCase.selectionFrame]
+      : []
+  return [...new Set([...legacy, ...asArray(testCase?.selectionFrames)])]
+}
+
 export function authorityCaseStrata(testCase, plan) {
   const known = new Set(asArray(plan?.strata).map((stratum) => stratum.id))
   const strata = new Set(asArray(testCase?.strata))
@@ -108,31 +116,31 @@ const validateRecentStratum = (testCase, stratum, plan, errors) => {
 }
 
 const validateSelectionFrame = (testCase, plan, errors) => {
-  if (!testCase.selectionFrame) return
+  for (const frameId of authorityCaseSelectionFrames(testCase)) {
+    const frame = asArray(plan?.selectionFrames).find(({ id }) => id === frameId)
+    if (!frame) {
+      errors.push(`${testCase.id}: unknown selectionFrame ${frameId}`)
+      continue
+    }
 
-  const frame = asArray(plan?.selectionFrames).find(({ id }) => id === testCase.selectionFrame)
-  if (!frame) {
-    errors.push(`${testCase.id}: unknown selectionFrame ${testCase.selectionFrame}`)
-    return
-  }
+    const sourceMatches = usableSamplingSources(testCase.sampleSources, plan).some(
+      (source) => source.kind === frame.source?.kind && source.url === frame.source?.url,
+    )
+    if (!sourceMatches) {
+      errors.push(`${testCase.id}: selectionFrame ${frame.id} requires its declared source`)
+    }
+    if (frame.publicationYear !== undefined && testCase.publicationYear !== frame.publicationYear) {
+      errors.push(`${testCase.id}: selectionFrame ${frame.id} publicationYear does not match`)
+    }
+    if (frame.publicationPath !== undefined && testCase.publicationPath !== frame.publicationPath) {
+      errors.push(`${testCase.id}: selectionFrame ${frame.id} publicationPath does not match`)
+    }
 
-  const sourceMatches = usableSamplingSources(testCase.sampleSources, plan).some(
-    (source) => source.kind === frame.source?.kind && source.url === frame.source?.url,
-  )
-  if (!sourceMatches) {
-    errors.push(`${testCase.id}: selectionFrame ${frame.id} requires its declared source`)
-  }
-  if (frame.publicationYear !== undefined && testCase.publicationYear !== frame.publicationYear) {
-    errors.push(`${testCase.id}: selectionFrame ${frame.id} publicationYear does not match`)
-  }
-  if (frame.publicationPath !== undefined && testCase.publicationPath !== frame.publicationPath) {
-    errors.push(`${testCase.id}: selectionFrame ${frame.id} publicationPath does not match`)
-  }
-
-  const caseStrata = new Set(authorityCaseStrata(testCase, plan))
-  for (const stratum of asArray(frame.strata)) {
-    if (!caseStrata.has(stratum)) {
-      errors.push(`${testCase.id}: selectionFrame ${frame.id} requires stratum ${stratum}`)
+    const caseStrata = new Set(authorityCaseStrata(testCase, plan))
+    for (const stratum of asArray(frame.strata)) {
+      if (!caseStrata.has(stratum)) {
+        errors.push(`${testCase.id}: selectionFrame ${frame.id} requires stratum ${stratum}`)
+      }
     }
   }
 }
@@ -231,7 +239,9 @@ export function auditAuthoritySample(caseSet, plan, policy) {
   }
 
   for (const frame of asArray(plan?.selectionFrames)) {
-    const selected = cases.filter((testCase) => testCase.selectionFrame === frame.id).length
+    const selected = cases.filter((testCase) =>
+      authorityCaseSelectionFrames(testCase).includes(frame.id),
+    ).length
     if (!Number.isInteger(frame.expectedCases) || frame.expectedCases < 1) {
       errors.push(`${frame.id}: selection frame requires a positive expectedCases value`)
     } else if (selected !== frame.expectedCases) {

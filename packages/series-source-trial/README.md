@@ -314,6 +314,10 @@ series-positive reviews are recorded in
 The final direct Reverie-seed review and the intentionally unresolved Dark Forces case are recorded
 in `reports/authority-seed-candidate-resolution-2026-09-06.md`.
 
+The complete nine-title Hachette standalone SFF horror frame, its false-label series control, and
+the multi-frame sampling support are recorded in
+`reports/authority-development-frame-hachette-horror-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
@@ -322,8 +326,8 @@ Audit the sample before running another provider or resolver comparison:
 pnpm series:sample:audit
 ```
 
-The audit reports selection coverage and authority-review coverage separately. The current two
-Reverie seed candidates and seven external candidates count as selected works, but never as truth
+The audit reports selection coverage and authority-review coverage separately. The current one
+Reverie seed candidate and thirteen external candidates count as selected works, but never as truth
 and never toward an accuracy gate. It also validates that every reviewed result has
 affirmative author or publisher evidence, that a reviewed standalone has no memberships, and that
 a reviewed series work has at least one.
@@ -371,7 +375,9 @@ Recent-publication strata require a recognized `sampleSources` entry supporting 
 publication path. `selectionFrames` can name a complete, externally defined list such as an award
 shortlist; the audit checks its expected case count, common year/path, required stratum, and source.
 This makes selection reproducible without pretending that the list organizer is the authority for
-series truth.
+series truth. Use the legacy singular `selectionFrame` for one list or `selectionFrames` when the
+same work occurs in multiple complete lists; the audit counts the shared work in each frame while
+retaining one stable truth record.
 
 An authority source is an author page, a verified author-controlled post, a publisher page, or a
 publisher catalog. A shared authority page may be declared under the gold file's `sharedSources`
