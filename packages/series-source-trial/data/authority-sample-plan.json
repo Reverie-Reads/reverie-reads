@@ -191,6 +191,22 @@
         "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
       },
       "selectionRule": "Include all 47 distinct titles under Standalones and Standalones (continued) in the author's current complete book-list PDF, in listed publication order, with no provider-result filtering. Do not include the separately labelled Arrangement Novels or The Messes Series. The selection heading is a challenge label, not gold truth; every title remains unresolved until exact-work authority evidence confirms or contradicts it."
+    },
+    {
+      "id": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "label": "Complete Penguin Random House 2026 fantasy and science fiction list observed 2026-09-06",
+      "expectedCases": 30,
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "observedOn": "2026-09-06",
+      "source": {
+        "kind": "publisher",
+        "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+      },
+      "selectionRule": "Include all 30 titles on the publisher's New Fantasy and Science Fiction To Read This Year page at the observation date, in displayed order, with no series or standalone-result filtering. The page's structured data supplies the title, contributor, ISBN, 2026 date, and exact product URL for every selected work; classification requires the separate exact product page."
     }
   ],
   "strata": [

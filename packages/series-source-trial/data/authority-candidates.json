@@ -1676,6 +1676,478 @@
       ],
       "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
       "reviewNote": "Selected without provider-result filtering from the complete 2025 Selfies general non-fiction shortlist. The author's exact-work page calls the book a collection and uses series colloquially in a testimonial; neither establishes a bibliographic relationship or standalone status."
+    },
+    {
+      "id": "prh-2026-sff-fishbone-cinderella",
+      "title": "Fishbone Cinderella",
+      "authors": [
+        "Elizabeth Lim"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217092987"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/801240/fishbone-cinderella-by-elizabeth-lim/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-agnes-aubert-s-mystical-cat-shelter",
+      "title": "Agnes Aubert's Mystical Cat Shelter",
+      "authors": [
+        "Heather Fawcett"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593973271"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/770049/agnes-auberts-mystical-cat-shelter-by-heather-fawcett/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-intercepts",
+      "title": "Intercepts",
+      "authors": [
+        "T. J. Payne"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217090662"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/833286/intercepts-by-t-j-payne/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-the-unicorn-hunters",
+      "title": "The Unicorn Hunters",
+      "authors": [
+        "Katherine Arden"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593128282"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/608879/the-unicorn-hunters-by-katherine-arden/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-the-elsewhere-express",
+      "title": "The Elsewhere Express",
+      "authors": [
+        "Samantha Sotto Yambao"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593725047"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/738847/the-elsewhere-express-by-samantha-sotto-yambao/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-star-wars-outlaws-low-red-moon",
+      "title": "Star Wars Outlaws: Low Red Moon",
+      "authors": [
+        "Mike Chen"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593874493"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional",
+        "multi_series_or_connected_universe"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/761127/star-wars-outlaws-low-red-moon-by-mike-chen/"
+        }
+      ],
+      "riskFeatures": [
+        "connected_universe"
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact publisher page places the work in the Star Wars franchise, but a franchise setting is not direct bibliographic-series or standalone evidence."
+    },
+    {
+      "id": "prh-2026-sff-dead-batteries",
+      "title": "Dead Batteries",
+      "authors": [
+        "Kate Maupin"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217088232"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/804957/dead-batteries-by-kate-maupin/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-our-dark-incantations",
+      "title": "Our Dark Incantations",
+      "authors": [
+        "Wanda Hellmund"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217190737"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/814812/our-dark-incantations-by-wanda-hellmund/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-weavingshaw",
+      "title": "Weavingshaw",
+      "authors": [
+        "Heba Al-Wasity"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593982570"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/778530/weavingshaw-by-heba-al-wasity/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-stellar-smoke",
+      "title": "Stellar Smoke",
+      "authors": [
+        "Tanaïs"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593852859"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/767088/stellar-smoke-by-tanais/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-thistlemarsh",
+      "title": "Thistlemarsh",
+      "authors": [
+        "Moorea Corrigan"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593819883"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/769869/thistlemarsh-by-moorea-corrigan/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-exhumation",
+      "title": "Exhumation",
+      "authors": [
+        "Nicholas Binge"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217179183"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/804814/exhumation-by-nicholas-binge/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "prh-2026-sff-certainty",
+      "title": "Certainty",
+      "authors": [
+        "John Twelve Hawks"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780385551205"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/770142/certainty-by-john-twelve-hawks/"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
     }
   ]
 }

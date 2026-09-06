@@ -62,10 +62,11 @@ const seriesOutput = {
 test('instructs the scout to distinguish direct numbered sequences from lone numerals', () => {
   assert.equal(
     AUTHORITY_ACQUISITION_PROMPT_VERSION,
-    'authority-acquisition-v5-numbered-sequence-evidence',
+    'authority-acquisition-v6-reading-independence-evidence',
   )
   assert.match(authorityAcquisitionInstructions, /directly compares the exact target/)
   assert.match(authorityAcquisitionInstructions, /lone numeral, a numbered edition/)
+  assert.match(authorityAcquisitionInstructions, /establishes reading independence only/)
 })
 
 test('repairs only the observed series-without-membership structural failure', () => {
@@ -308,6 +309,37 @@ test('does not let an irrelevant reading-independence tag quarantine a series cl
 
   assert.equal(validation.valid, true)
   assert.equal(validation.policySafe, true)
+})
+
+test('does not accept reading-independence language as standalone classification evidence', () => {
+  const output = structuredClone(seriesOutput)
+  output.classification = 'standalone'
+  output.memberships = []
+  output.authoritySources[0].supports = ['identity', 'standalone']
+  output.authoritySources[0].evidenceSummary =
+    'The author identifies the exact prequel and says it works as a standalone title.'
+
+  const directValidation = validateAuthorityAcquisition(buildAuthorityTarget(testCase), output, [
+    publisherUrl,
+  ])
+  assert.equal(directValidation.valid, true)
+  assert.equal(directValidation.policySafe, false)
+  assert.ok(
+    directValidation.policyViolations.some((error) =>
+      error.includes('reading_independence_not_classification'),
+    ),
+  )
+
+  const cleaned = canonicalizeAuthorityAcquisition(output, [publisherUrl])
+  assert.deepEqual(cleaned.authoritySources[0].supports, ['identity'])
+  const cleanedValidation = validateAuthorityAcquisition(buildAuthorityTarget(testCase), cleaned, [
+    publisherUrl,
+  ])
+  assert.equal(cleanedValidation.valid, true)
+  assert.equal(cleanedValidation.policySafe, false)
+  assert.ok(
+    cleanedValidation.policyViolations.some((error) => error.includes('affirmative authority')),
+  )
 })
 
 test('keeps selection frames and known marketing taxonomies out of truth evidence', () => {

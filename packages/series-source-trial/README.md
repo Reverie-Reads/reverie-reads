@@ -17,10 +17,11 @@ A provider's search label never counts as series evidence. Candidate labels from
 useful for measuring coverage and discovering disagreements, but they do not contribute to claimed
 accuracy until an authority source has been reviewed.
 
-The current sample contains one difficult work from each of Reverie's 69 distinct seeded series
-plus external sampling frames: 138 selected works, of which 120 are authority-reviewed. The reviewed
-set contains 95 positive series cases and 25 confirmed standalone controls. Some reviewed cases
-replace seed references, so the final distinct-case count is printed at runtime.
+The current development sample contains one difficult work from each of Reverie's 69 distinct
+seeded series plus external sampling frames: 231 selected works, of which 146 are
+authority-reviewed. The reviewed set contains 120 positive series cases and 26 confirmed standalone
+controls. Some reviewed cases replace seed references, so the final distinct-case count is printed
+at runtime.
 
 ## Run the open-source baseline
 
@@ -350,6 +351,14 @@ The complete 2025 Selfies general non-fiction frame, numbered-sequence correctio
 boundary fix, structural repair path, and cache-cost accounting are recorded in
 `reports/authority-development-frame-selfies-2025-nonfiction-2026-09-06.md`.
 
+The 10-case representative replay of the Kiersten Modglin standalone-label challenge, its 100%
+grounded but 0% policy-safe result, and the resulting homogeneous-frame spending stop are recorded
+in `reports/authority-standalone-risk-replay-2026-09-06.md`.
+
+The complete 30-work Penguin Random House 2026 SFF frame, its balanced scout replay, one promoted
+publisher-series relationship, one multi-membership correction, and the reading-independence guard
+are recorded in `reports/authority-development-frame-prh-2026-sff-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
@@ -358,9 +367,9 @@ Audit the sample before running another provider or resolver comparison:
 pnpm series:sample:audit
 ```
 
-The audit reports selection coverage and authority-review coverage separately. The current 72
-candidates count as selected works, but never as truth
-and never toward an accuracy gate. It also validates that every reviewed result has
+The audit reports selection coverage and authority-review coverage separately. The current 85
+candidates count as selected works, but never as truth and never toward an accuracy gate. It also
+validates that every reviewed result has
 affirmative author or publisher evidence, that a reviewed standalone has no memberships, and that
 a reviewed series work has at least one.
 

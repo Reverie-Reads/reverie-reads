@@ -112,7 +112,7 @@ const cacheKey = (target) =>
   createHash('sha256')
     .update(
       JSON.stringify({
-        cacheVersion: 3,
+        cacheVersion: 4,
         model,
         promptVersion: AUTHORITY_ACQUISITION_PROMPT_VERSION,
         target: authorityAcquisitionCacheMaterial(target),
