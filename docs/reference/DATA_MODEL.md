@@ -208,7 +208,8 @@ profiles            (id pk = auth user, display_name, created_at,
                      adaptive_skin jsonb, adaptive_pending jsonb,
                      adaptive_dismissed jsonb, adaptive_locked bool,
                      auto_merge_duplicates bool not null default true,
-                     default_store_id, default_store_name, default_store_website)
+                     default_store_id, default_store_name, default_store_website,
+                     arrangement jsonb not null)          -- versioned priority nav + Home modules
 
 books               (id pk, owner_id fk→profiles, corpus_work_id fk→works not null, title,
                      author_first, author_last, authors_display,
