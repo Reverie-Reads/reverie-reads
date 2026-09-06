@@ -5,6 +5,23 @@
 
 const isStored = (url: string): boolean => url.includes('/storage/v1/object/public/covers/')
 
+/** Prefer the strongest Google image tier explicitly present in the API response. Selection is
+ * separate from the display-only/storage policy. Keep in sync with packages/core/src/covers.ts. */
+export function bestGoogleCoverLink(imageLinks: unknown): string {
+  if (!imageLinks || typeof imageLinks !== 'object') return ''
+  const links = imageLinks as Record<string, unknown>
+  for (const key of ['extraLarge', 'large', 'medium', 'small', 'thumbnail', 'smallThumbnail']) {
+    const value = links[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value
+        .trim()
+        .replace(/^http:/, 'https:')
+        .replace('&edge=curl', '')
+    }
+  }
+  return ''
+}
+
 const GOOGLE_CONTENT_HOSTS = new Set(['books.google.com', 'books.googleusercontent.com'])
 export function isGoogleContentCover(url: string): boolean {
   try {

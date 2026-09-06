@@ -75,6 +75,25 @@ export const mayIngestCover = (source: CoverSource, url?: string): boolean =>
 export const isStoredCoverUrl = (url: string): boolean =>
   url.includes('/storage/v1/object/public/covers/')
 
+/** Google publishes several imageLinks tiers. Prefer the strongest URL it explicitly returned
+ * instead of assuming a thumbnail rewrite will always uncover a larger scan. The returned image
+ * remains display-only under Google's terms; this helper selects a URL, it does not authorize
+ * caching. Keep in sync with supabase/functions/_shared/coverUrl.ts. */
+export function bestGoogleCoverLink(imageLinks: unknown): string {
+  if (!imageLinks || typeof imageLinks !== 'object') return ''
+  const links = imageLinks as Record<string, unknown>
+  for (const key of ['extraLarge', 'large', 'medium', 'small', 'thumbnail', 'smallThumbnail']) {
+    const value = links[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value
+        .trim()
+        .replace(/^http:/, 'https:')
+        .replace('&edge=curl', '')
+    }
+  }
+  return ''
+}
+
 /** The Google Books `books/content` endpoint (its imageLinks host + the googleusercontent mirror) —
  *  the only cover host whose `zoom` we rewrite, and the one that serves a stock "no image" plate.
  *  Parse the URL and allow exact observed hosts: substring/partial-host regexes would treat an
@@ -212,7 +231,7 @@ export const isUpgradeableCoverUrl = (url: string): boolean =>
  * chain both the grid/detail `<img>` and the Discover card render. The upgraded (larger) URL leads,
  * but the **un-upgraded original is always kept as a fallback**: an upgrade that 404s or returns the
  * source's "no image" plate (see `isGoogleNoCoverArt`) must degrade to the real, smaller cover — never
- * to a broken/placeholder state for a book that has a cover. A stored ~300px thumb (when present, thumb
+ * to a broken/placeholder state for a book that has a cover. A stored 720px card derivative (when present, thumb
  * surfaces only) leads since it's already the right size. When every candidate fails, the caller shows
  * the honest skin placeholder. Pure — one implementation, every surface.
  */

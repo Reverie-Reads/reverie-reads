@@ -19,6 +19,23 @@ function normalizeIsbn(raw: string): string {
   return ''
 }
 
+// Dependency-free mirror of _shared/coverUrl.ts: this file is imported directly by the core
+// parity tests, whose TypeScript config deliberately does not allow Deno's `.ts` import suffixes.
+function bestGoogleCoverLink(imageLinks: unknown): string {
+  if (!imageLinks || typeof imageLinks !== 'object') return ''
+  const links = imageLinks as Record<string, unknown>
+  for (const key of ['extraLarge', 'large', 'medium', 'small', 'thumbnail', 'smallThumbnail']) {
+    const value = links[key]
+    if (typeof value === 'string' && value.trim()) {
+      return value
+        .trim()
+        .replace(/^http:/, 'https:')
+        .replace('&edge=curl', '')
+    }
+  }
+  return ''
+}
+
 export type EnrichSource = 'openlibrary' | 'google' | 'hardcover' | 'isbndb' | 'manual'
 
 /** One source's normalized contribution. Every field optional — sources fill what they have. */
@@ -249,7 +266,7 @@ export function normalizeGoogle(volume: any): SourceRecord {
   const ids: any[] = v.industryIdentifiers ?? []
   const isbn13 = ids.find((x) => x.type === 'ISBN_13')?.identifier ?? ''
   const isbn10 = ids.find((x) => x.type === 'ISBN_10')?.identifier ?? ''
-  const cover = v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || ''
+  const cover = bestGoogleCoverLink(v.imageLinks)
   const categories = (v.categories ?? [])
     .flatMap((c: string) => String(c).split(/\s*\/\s*/))
     .filter((g: string) => g && !/^fiction$/i.test(g))

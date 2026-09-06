@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  bestGoogleCoverLink,
   isDegenerateGoogleCoverRender,
   DISPLAY_ONLY_COVER_SOURCES,
   coverCandidates,
@@ -14,8 +15,24 @@ import {
   mayIngestCover,
   upgradeCoverUrl,
 } from './covers'
+import { bestGoogleCoverLink as edgeBestGoogleCoverLink } from '../../../supabase/functions/_shared/coverUrl'
 
 describe('cover system provenance + non-overwrite', () => {
+  it('prefers the strongest Google imageLinks tier in core and at the Edge boundary', () => {
+    const links = {
+      smallThumbnail: 'http://books.google.com/small.jpg&edge=curl',
+      thumbnail: 'http://books.google.com/thumb.jpg&edge=curl',
+      medium: 'http://books.google.com/medium.jpg&edge=curl',
+      extraLarge: 'http://books.google.com/extra.jpg&edge=curl',
+    }
+    expect(bestGoogleCoverLink(links)).toBe('https://books.google.com/extra.jpg')
+    expect(edgeBestGoogleCoverLink(links)).toBe(bestGoogleCoverLink(links))
+    expect(bestGoogleCoverLink({ thumbnail: 'http://books.google.com/thumb.jpg' })).toBe(
+      'https://books.google.com/thumb.jpg',
+    )
+    expect(bestGoogleCoverLink(null)).toBe('')
+  })
+
   it('recognizes stored (durable) cover URLs vs external hotlinks', () => {
     expect(
       isStoredCoverUrl('https://x.supabase.co/storage/v1/object/public/covers/u/a/b.webp'),

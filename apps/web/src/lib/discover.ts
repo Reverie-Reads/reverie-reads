@@ -1,5 +1,6 @@
 import {
   blendCuratedPool,
+  bestGoogleCoverLink,
   tierDiscoverShelf,
   embeddingText,
   genreKey,
@@ -59,9 +60,7 @@ export function volumeToHit(item: any): DiscoverHit {
   return {
     title: v.title ?? '',
     authors: v.authors ?? [],
-    cover: String(v.imageLinks?.thumbnail ?? '')
-      .replace('http:', 'https:')
-      .replace('&edge=curl', ''),
+    cover: bestGoogleCoverLink(v.imageLinks),
     isbn: ind?.identifier ?? '',
     pub: v.publishedDate ?? '',
   }

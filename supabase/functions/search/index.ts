@@ -25,6 +25,7 @@ import { envInt, rateLimit, tooMany } from '../_shared/ratelimit.ts'
 import { captureEdgeError } from '../_shared/observe.ts'
 import { SourceBodyError, SourceHttpError } from '../_shared/httpClassify.ts'
 import { runSearchProviders } from './orchestrate.ts'
+import { bestGoogleCoverLink } from '../_shared/coverUrl.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -185,10 +186,7 @@ async function googleSearch(q: string): Promise<SearchResult[]> {
   for (const it of j.items ?? []) {
     const v = it.volumeInfo ?? {}
     if (typeof v.title !== 'string' || !v.title) continue
-    const links = v.imageLinks as { thumbnail?: string; smallThumbnail?: string } | undefined
-    const cover = (links?.thumbnail ?? links?.smallThumbnail ?? '')
-      .replace('http:', 'https:')
-      .replace('&edge=curl', '')
+    const cover = bestGoogleCoverLink(v.imageLinks)
     if (!cover) continue
     const ids =
       (v.industryIdentifiers as { type?: string; identifier?: string }[] | undefined) ?? []

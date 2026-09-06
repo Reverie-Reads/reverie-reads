@@ -79,7 +79,7 @@ comments. Reproduced here with the parts that most often get guessed wrong calle
                                // it "Spice", but no other skin does and the field is neutral.
 
   // --- cover + provenance ---
-  cover, coverThumb?,          // full + ~300px stored thumbnail (grids/spines/shelves)
+  cover, coverThumb?,          // full + 720px stored card derivative (grids/spines/shelves)
   coverSource?: string,        // hardcover | google | openlibrary | upload | camera | url
   coverSourceUrl?: string,     // the external URL it was ingested from
   coverUserChosen?: boolean,   // the reader picked it — enrichment NEVER overwrites it

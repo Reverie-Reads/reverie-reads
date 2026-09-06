@@ -15,7 +15,7 @@ import { CoverPlaceholder } from './CoverPlaceholder'
  * telemetry). FILLS its parent (the caller provides the sized/bordered box), so it's a drop-in for the
  * app's `{cover && <img …/>}` cover idiom.
  *
- * `thumb` prefers the ~300px stored thumbnail (grids/spines/shelves — the ingest pipeline's asset) and
+ * `thumb` prefers the 720px stored card derivative (grids/spines/shelves — the ingest pipeline's asset) and
  * a lighter display size; detail/flip ask for the largest.
  */
 export function CoverImage({

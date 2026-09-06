@@ -7,8 +7,8 @@
 //
 //  · action:'ingest' — every durable chosen cover flows through here (reviewed edition provider,
 //    camera, upload): receive the bytes (multipart) or fetch an exact trusted origin (server-side,
-//    no client CORS), validate magic bytes + a sane size cap, normalize to webp (max ~1200px long edge)
-//    plus a ~300px thumb, extract the dominant colour (spine tint), and store both in the public
+//    no client CORS), validate magic bytes + a sane size cap, normalize to webp (max 1600px long edge)
+//    plus a 720px card derivative, extract the dominant colour (spine tint), and store both in the public
 //    'covers' bucket. Personal cover paths are u/{uid}/{bookId}/{rev}.webp; authenticated corpus
 //    administrators and household owners for the exact work may instead use w/{workId}/{rev}.webp
 //    so shared metadata never depends on a reader-owned object. The DB row is patched by the CLIENT
@@ -28,7 +28,12 @@ import {
 import { envInt, rateLimit, tooMany } from '../_shared/ratelimit.ts'
 import { captureEdgeError, logEvent } from '../_shared/observe.ts'
 import { Trace, wantsTrace } from '../_shared/trace.ts'
-import { isGoogleContentCover, isGoogleNoCoverArt, upgradeCoverUrl } from '../_shared/coverUrl.ts'
+import {
+  bestGoogleCoverLink,
+  isGoogleContentCover,
+  isGoogleNoCoverArt,
+  upgradeCoverUrl,
+} from '../_shared/coverUrl.ts'
 import { olHeaders } from '../_shared/olIdentity.ts'
 import {
   fetchPublicRemote,
@@ -58,7 +63,10 @@ const googleHeaders = (): HeadersInit => (GOOGLE_KEY ? { Referer: GOOGLE_REFERER
 
 const MAX_INPUT_BYTES = envInt('COVER_MAX_INPUT_BYTES', 8 * 1024 * 1024) // camera photos; crop already shrank most
 const FULL_EDGE = 1600 // long-edge cap for the stored cover — headroom for high-DPR (2–3×) detail/flip
-const THUMB_EDGE = 300 // long-edge cap for the grid/spine thumb
+// A 390px phone renders two 144px-minimum cover columns at roughly 160–175 CSS px per cover. The
+// old 300px asset fell below even DPR 2 there and was visibly soft. 720px covers the practical
+// DPR 2–3 card range while keeping the 1600px full asset out of grids.
+const THUMB_EDGE = 720 // long-edge cap for the responsive grid/spine card derivative
 const EDITIONS_TTL_DAYS = 7
 
 const cleanIsbn = (s: string) => (s || '').replace(/[^0-9Xx]/g, '').toUpperCase()
@@ -668,10 +676,7 @@ async function googleEditions(input: EditionsInput): Promise<EditionOption[]> {
   const out: EditionOption[] = []
   for (const it of items) {
     const v = it.volumeInfo ?? {}
-    const links = v.imageLinks as { thumbnail?: string; smallThumbnail?: string } | undefined
-    const cover = (links?.thumbnail ?? links?.smallThumbnail ?? '')
-      .replace('http:', 'https:')
-      .replace('&edge=curl', '')
+    const cover = bestGoogleCoverLink(v.imageLinks)
     if (!cover) continue
     const ids =
       (v.industryIdentifiers as { type?: string; identifier?: string }[] | undefined) ?? []
