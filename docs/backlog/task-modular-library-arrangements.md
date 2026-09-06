@@ -1,7 +1,9 @@
 # Modular library arrangements
 
-Status: **design to do**, added by owner request on 2026-09-05. This brief authorizes a design
-handoff, not implementation of account-level customization during the reading-room release.
+Status: **interactive design ready for owner review**, added by owner request on 2026-09-05. Open
+`/lab/arrangements`; the full decision and persistence contract live in
+`design/MODULAR_LIBRARY_ARRANGEMENTS.md`. This brief authorizes a design handoff, not implementation
+of account-level customization before review.
 
 ## Reader outcome
 
