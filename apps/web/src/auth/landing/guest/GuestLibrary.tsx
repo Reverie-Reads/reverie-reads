@@ -1,5 +1,13 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { isBookRead, nextReadCandidates, type NextReadScope } from '@reverie/core'
+import { useNavigate } from '@tanstack/react-router'
+import {
+  SKINS,
+  isBookRead,
+  nextReadCandidates,
+  type NextReadScope,
+  type ResolvedMode,
+  type SkinId,
+} from '@reverie/core'
 import { CoverCard } from '../../../components/CoverCard'
 import { CoverImage } from '../../../components/CoverImage'
 import { NavigationGlyph } from '../../../components/NavigationGlyph'
@@ -11,6 +19,7 @@ import { GuestAddBooks } from './GuestAddBooks'
 import { GuestBookDetail } from './GuestBookDetail'
 import { GuestConfigure } from './GuestConfigure'
 import { GUEST_VIEWS, type GuestView } from './state'
+import { createGuestHandoff, saveGuestHandoff, summarizeGuestHandoff } from './handoff'
 import { field, primary, quiet } from './styles'
 
 const icons: Record<GuestView, NavigationIconName> = {
@@ -34,12 +43,24 @@ function focusHeading(heading: HTMLHeadingElement | null) {
   })
 }
 
-/** The public library has real state and shared app controls, with no account or persistence. */
-export function GuestLibrary({ compact = false }: { compact?: boolean }) {
+/** The public library has real state and shared app controls. It persists only after the visitor
+ * explicitly asks to carry it into an account. */
+export function GuestLibrary({
+  compact = false,
+  skin,
+  mode,
+}: {
+  compact?: boolean
+  skin: SkinId
+  mode: ResolvedMode
+}) {
+  const navigate = useNavigate()
   const { state, dispatch } = useGuestLibrary()
   const [scope, setScope] = useState<NextReadScope>('available')
   const [rereads, setRereads] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [handoffOpen, setHandoffOpen] = useState(false)
+  const [handoffError, setHandoffError] = useState(false)
   const [pagination, setPagination] = useState({ key: '', index: 0 })
   const heading = useRef<HTMLHeadingElement>(null)
   const focusAfterChange = useRef(false)
@@ -81,6 +102,8 @@ export function GuestLibrary({ compact = false }: { compact?: boolean }) {
       ? Math.min(pagination.index, Math.max(0, Math.ceil(total / pageSize) - 1))
       : 0
   const from = pageIndex * pageSize
+  const handoff = createGuestHandoff(state, { skin, mode })
+  const handoffSummary = summarizeGuestHandoff(handoff)
   return (
     <section
       id={compact ? 'try-next-read' : 'try-library'}
@@ -121,8 +144,8 @@ export function GuestLibrary({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
       <p className="my-4 text-sm leading-relaxed text-muted">
-        Open a book. Make it yours. This temporary library resets when you refresh; no account
-        needed.
+        Open a book. Make it yours. It stays on this page until you refresh; choose “Keep this
+        library” when you want to carry it into an account.
       </p>
       <nav
         aria-label="Guest library dock"
@@ -307,6 +330,7 @@ export function GuestLibrary({ compact = false }: { compact?: boolean }) {
                 <div key={item.id} className="min-w-0">
                   <CoverCard
                     book={item}
+                    coverSize="full"
                     hideIntensity
                     reportCoverErrors={false}
                     onOpen={() => dispatch({ type: 'select', id: item.id })}
@@ -368,7 +392,71 @@ export function GuestLibrary({ compact = false }: { compact?: boolean }) {
         <p className="text-sm leading-relaxed text-muted" data-testid="guest-notice">
           {state.notice}
         </p>
-        {resetting ? (
+        {handoffOpen ? (
+          <div
+            className="skin-card space-y-3 border border-line bg-[color:var(--card-solid)] p-4"
+            aria-labelledby={`${headingId}-handoff`}
+          >
+            <h4
+              id={`${headingId}-handoff`}
+              className="text-xl font-semibold leading-snug text-ink"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              Keep this little library?
+            </h4>
+            <p className="text-sm leading-relaxed text-muted">
+              Reverie will hold a private copy in this browser for seven days, then ask before
+              adding anything to your account.
+            </p>
+            <ul className="grid grid-cols-2 gap-2 text-sm text-ink sm:grid-cols-3">
+              <li>{handoffSummary.books} books</li>
+              <li>{handoffSummary.activeReads} in progress</li>
+              <li>{handoffSummary.completedReads} finished reads</li>
+              <li>{handoffSummary.readingNotes} journal notes</li>
+              <li>{SKINS[skin].label} room</li>
+            </ul>
+            {handoffSummary.draftNotes > 0 && (
+              <p className="text-sm leading-relaxed text-ink">
+                {handoffSummary.draftNotes} unfinished{' '}
+                {handoffSummary.draftNotes === 1 ? 'note has' : 'notes have'} no reading-record home
+                yet. Reverie will keep the text in this browser and show it during review, but will
+                not turn it into a finished read.
+              </p>
+            )}
+            <p className="text-xs leading-relaxed text-muted">
+              Your room carries over. The dock remains a preview while modular app layouts are being
+              designed.
+            </p>
+            {handoffError && (
+              <p role="alert" className="text-sm text-ink">
+                This browser would not let Reverie hold the transfer. Your guest library is still
+                here on this page.
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={primary}
+                onClick={() => {
+                  setHandoffError(false)
+                  if (!saveGuestHandoff(handoff)) {
+                    setHandoffError(true)
+                    return
+                  }
+                  void navigate({
+                    to: '/auth',
+                    search: { mode: 'signup', guest: true },
+                  })
+                }}
+              >
+                Continue to my account
+              </button>
+              <button type="button" className={quiet} onClick={() => setHandoffOpen(false)}>
+                Not yet
+              </button>
+            </div>
+          </div>
+        ) : resetting ? (
           <div className="space-y-2">
             <p className="text-sm">
               Reset this guest library? Your additions and notes will be cleared.
@@ -390,9 +478,14 @@ export function GuestLibrary({ compact = false }: { compact?: boolean }) {
             </div>
           </div>
         ) : (
-          <button type="button" className={quiet} onClick={() => setResetting(true)}>
-            Start over
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={primary} onClick={() => setHandoffOpen(true)}>
+              Keep this library
+            </button>
+            <button type="button" className={quiet} onClick={() => setResetting(true)}>
+              Start over
+            </button>
+          </div>
         )}
         {compact && (
           <a

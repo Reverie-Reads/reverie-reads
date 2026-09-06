@@ -163,7 +163,7 @@ function Hero({ skin, mode }: RoomSelection) {
         </div>
         <ReadingRoomPreview skin={skin} mode={mode} className="min-w-0 p-4 sm:p-6">
           <RoomCaption skin={skin} mode={mode} />
-          <GuestLibrary compact />
+          <GuestLibrary compact skin={skin} mode={mode} />
         </ReadingRoomPreview>
       </div>
     </header>

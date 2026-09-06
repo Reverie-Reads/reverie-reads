@@ -18,6 +18,14 @@ import { ImportSummary } from '../components/ImportSummary'
 import { Surface } from '../components/Surface'
 import { useAuth } from '../auth/AuthProvider'
 import { useHouseholdLibraryAuthorization } from '../data/household'
+import { profileKey, type Profile } from '../data/profile'
+import {
+  clearGuestHandoff,
+  loadGuestHandoff,
+  summarizeGuestHandoff,
+  type GuestHandoff,
+} from '../auth/landing/guest/handoff'
+import { importGuestHandoff, type GuestHandoffResult } from '../data/guestHandoff'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import type { AddDestination } from '../components/addDestination'
 
@@ -52,10 +60,11 @@ function Stage({ children }: { children: ReactNode }) {
 }
 
 type ImportState = null | { phase: 'importing' } | { phase: 'done'; r: ImportExportResult }
+type GuestImportState = null | { phase: 'importing' } | { phase: 'done'; r: GuestHandoffResult }
 
 function OnboardingFlow() {
   const navigate = useNavigate()
-  const { setSkin } = useSkinControls()
+  const { setSkin, setMode } = useSkinControls()
   const activeSkin = useEffectiveSkin()
   const voice = useVoice()
   const isAdaptive = useSkin((s) => s.skin) === 'adaptive'
@@ -67,9 +76,14 @@ function OnboardingFlow() {
   const currentRead = existing.find((book) => book.readStatus === 'Reading')
   const available = nextReadCandidates(existing)
   const csvRef = useRef<HTMLInputElement>(null)
-  const [step, setStep] = useState<'books' | 'appearance' | 'ready'>('books')
+  const [guestHandoff, setGuestHandoff] = useState<GuestHandoff | null>(() => loadGuestHandoff())
+  const [step, setStep] = useState<'guest' | 'books' | 'appearance' | 'ready'>(() =>
+    loadGuestHandoff() ? 'guest' : 'books',
+  )
   const [picked, setPicked] = useState<SkinId | null>(null)
   const [imp, setImp] = useState<ImportState>(null)
+  const [guestImp, setGuestImp] = useState<GuestImportState>(null)
+  const [guestErr, setGuestErr] = useState<string | null>(null)
   const [impErr, setImpErr] = useState<{ message: string; mayHaveSaved: boolean } | null>(null)
   const [importDestination, setImportDestination] = useState<AddDestination>('mine')
   const importDestinationChosen = useRef(false)
@@ -81,6 +95,45 @@ function OnboardingFlow() {
 
   const skinLabel = isAdaptive ? 'Adaptive' : SKINS[activeSkin].label
   const skinTagline = SKINS[activeSkin].tagline
+  const guestSummary = guestHandoff ? summarizeGuestHandoff(guestHandoff) : null
+
+  const finishGuestTransfer = () => {
+    clearGuestHandoff()
+    setGuestHandoff(null)
+    setGuestImp(null)
+    markOnboarded()
+    setStep('ready')
+  }
+
+  const bringGuestLibraryIn = () => {
+    if (!guestHandoff || !booksQuery.data || booksQuery.isError || guestImp?.phase === 'importing')
+      return
+    const pending = guestHandoff
+    const library = booksQuery.data
+    setGuestErr(null)
+    setGuestImp({ phase: 'importing' })
+    void (async () => {
+      try {
+        const r = await importGuestHandoff(pending, library, {
+          autoMerge: qc.getQueryData<Profile>(profileKey)?.autoMergeDuplicates ?? true,
+        })
+        setSkin(pending.skin)
+        setMode(pending.mode)
+        markOnboarded()
+        void qc.invalidateQueries()
+        setGuestImp({ phase: 'done', r })
+        if (!r.review.length && !r.draftNotes) {
+          clearGuestHandoff()
+          setGuestHandoff(null)
+        }
+        void enrichImported(qc, r.bookIds)
+      } catch (error) {
+        setGuestErr((error as Error).message)
+        setGuestImp(null)
+        void qc.invalidateQueries()
+      }
+    })()
+  }
 
   // In-flow import — same engine as Settings (importDetectedExport auto-detects the column shape +
   // folds duplicates in), then the shared DuplicateReview handles anything fuzzy. fileToCsvText turns
@@ -127,7 +180,226 @@ function OnboardingFlow() {
     setSkin(id) // dress the app live
   }
 
-  // ── in-flow import (overrides the step view while a file is being brought in) ──
+  // ── explicit guest handoff ────────────────────────────────────────────────────────────────
+  if (guestImp?.phase === 'importing') {
+    return (
+      <Stage>
+        <div className="text-center">
+          <Label className="block text-[12px] text-muted">Bringing your room home</Label>
+          <h2
+            className="mt-3 text-[28px] leading-tight text-ink"
+            style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+          >
+            Adding your guest library…
+          </h2>
+          <p className="mt-2 text-[14px] leading-relaxed text-muted">
+            Reverie is checking every title against the books already in your account.
+          </p>
+          <div
+            className="skin-meter mx-auto mt-6 h-1.5 w-[min(320px,80%)] overflow-hidden"
+            style={{ background: 'var(--chip)' }}
+          >
+            <div
+              className="skin-meter rv-anim h-full w-2/5"
+              style={{
+                background: 'linear-gradient(90deg, transparent, var(--accent), transparent)',
+                animation: 'shim 1.4s ease-in-out infinite',
+              }}
+            />
+          </div>
+        </div>
+      </Stage>
+    )
+  }
+
+  if (guestImp?.phase === 'done') {
+    const { r } = guestImp
+    const carried = r.added + r.merged + r.unchanged
+    const draftBooks = guestHandoff?.books.filter((book) => !!book.draftNote) ?? []
+    return (
+      <Stage>
+        <Label className="block text-[12px] text-muted">Your guest library</Label>
+        <h2
+          className="mt-2 text-[28px] leading-tight text-ink"
+          style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+        >
+          {r.review.length ? 'Your books are here. A few need a look.' : 'Your books are here.'}
+        </h2>
+        <p className="mt-3 text-[15px] leading-relaxed text-muted">
+          {r.added} added · {r.merged} folded into books you had · {r.unchanged} already up to date
+          {carried === 1 ? ' · 1 book checked' : ` · ${carried} books checked`}
+        </p>
+
+        {r.review.length > 0 && (
+          <div className="mt-6">
+            <span className="skin-label mb-2 block text-[12px] text-[color:var(--accent-ink)]">
+              Similar titles · {r.review.length}
+            </span>
+            <DuplicateReview
+              candidates={r.review}
+              requireAll
+              onDone={(remaining) => {
+                if (remaining > 0) return
+                if (!r.draftNotes) finishGuestTransfer()
+                else
+                  setGuestImp({
+                    phase: 'done',
+                    r: { ...r, review: [] },
+                  })
+              }}
+            />
+          </div>
+        )}
+
+        {r.review.length === 0 && draftBooks.length > 0 && (
+          <Surface radius="panel" tone="card-solid" pad={4} className="mt-6">
+            <h3 className="text-[18px] font-semibold text-ink">
+              Unfinished notes need your choice
+            </h3>
+            <p className="mt-2 text-[14px] leading-relaxed text-muted">
+              Reverie stores private notes with finished reading records. These drafts came from
+              books still in progress, so they were not converted into finished reads. Copy any text
+              you want to keep before continuing.
+            </p>
+            <div className="mt-4 space-y-3">
+              {draftBooks.map((book) => (
+                <label
+                  key={book.incoming.title}
+                  className="block text-[13px] font-semibold text-ink"
+                >
+                  {book.incoming.title}
+                  <textarea
+                    readOnly
+                    value={book.draftNote}
+                    className="skin-field mt-1.5 min-h-24 w-full border border-line bg-[color:var(--field)] p-3 text-[14px] font-normal leading-relaxed text-ink"
+                  />
+                </label>
+              ))}
+            </div>
+            <Button className="mt-4" onClick={finishGuestTransfer}>
+              Continue without these drafts
+            </Button>
+          </Surface>
+        )}
+
+        {!r.review.length && !draftBooks.length && (
+          <div className="mt-6 flex justify-end">
+            <Button onClick={finishGuestTransfer}>Continue →</Button>
+          </div>
+        )}
+      </Stage>
+    )
+  }
+
+  if (step === 'guest' && guestHandoff && guestSummary) {
+    return (
+      <Stage>
+        <Label className="block text-[12px] text-muted">From your guest room</Label>
+        <h1
+          className="mt-3 text-balance text-[34px] leading-tight text-ink"
+          style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+        >
+          Bring this little library home.
+        </h1>
+        <p className="mt-3 text-[16px] leading-relaxed text-muted">
+          Review what you tried. Nothing is added to your account until you choose the button below;
+          duplicates stop for a closer look.
+        </p>
+        <Surface radius="panel" tone="card-solid" pad={4} className="mt-6">
+          <div className="grid grid-cols-2 gap-3 text-[14px] text-ink sm:grid-cols-3">
+            <p>
+              <strong>{guestSummary.books}</strong>
+              <br />
+              books
+            </p>
+            <p>
+              <strong>{guestSummary.activeReads}</strong>
+              <br />
+              in progress
+            </p>
+            <p>
+              <strong>{guestSummary.completedReads}</strong>
+              <br />
+              finished reads
+            </p>
+            <p>
+              <strong>{guestSummary.readingNotes}</strong>
+              <br />
+              journal notes
+            </p>
+            <p>
+              <strong>{SKINS[guestHandoff.skin].label}</strong>
+              <br />
+              reading room
+            </p>
+          </div>
+          <details className="mt-4 border-t border-line pt-3">
+            <summary className="min-h-11 cursor-pointer py-2 text-[14px] font-semibold text-ink">
+              Review the books
+            </summary>
+            <ul className="mt-1 space-y-1 text-[14px] text-muted">
+              {guestHandoff.books.map((book) => (
+                <li key={`${book.incoming.title}-${book.incoming.last ?? ''}`}>
+                  {book.incoming.title}
+                  {book.incoming.first || book.incoming.last
+                    ? ` · ${[book.incoming.first, book.incoming.last].filter(Boolean).join(' ')}`
+                    : ''}
+                </li>
+              ))}
+            </ul>
+          </details>
+        </Surface>
+        {guestSummary.draftNotes > 0 && (
+          <p className="mt-4 text-[14px] leading-relaxed text-ink">
+            {guestSummary.draftNotes} unfinished{' '}
+            {guestSummary.draftNotes === 1 ? 'note will' : 'notes will'} stay in this browser for
+            review. Reverie will never disguise a draft as a finished reading record.
+          </p>
+        )}
+        {guestErr && (
+          <div role="alert" className="mt-4 text-[14px] leading-relaxed text-ink">
+            <p>
+              The transfer stopped. Some books may already be saved; Reverie will check them again
+              safely when you retry.
+            </p>
+            <p className="mt-1 text-muted">{guestErr}</p>
+          </div>
+        )}
+        {!booksQuery.data && !booksQuery.isError && (
+          <p role="status" className="mt-4 text-[14px] text-ink">
+            Checking your existing library before transfer…
+          </p>
+        )}
+        {booksQuery.isError && (
+          <div className="mt-4">
+            <p role="alert" className="text-[14px] text-ink">
+              Your library could not be checked yet.
+            </p>
+            <Button variant="secondary" className="mt-2" onClick={() => void booksQuery.refetch()}>
+              Try again
+            </Button>
+          </div>
+        )}
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Button disabled={!booksQuery.data || booksQuery.isError} onClick={bringGuestLibraryIn}>
+            Add these books to my account
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              clearGuestHandoff()
+              setGuestHandoff(null)
+              setStep('books')
+            }}
+          >
+            Start without them
+          </Button>
+        </div>
+      </Stage>
+    )
+  }
+
+  // ── in-flow file import (overrides the step view while a file is being brought in) ──
   if (imp?.phase === 'importing') {
     return (
       <Stage>

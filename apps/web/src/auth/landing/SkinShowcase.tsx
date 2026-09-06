@@ -151,7 +151,7 @@ export function SkinShowcase({
                 ))}
               </div>
             </div>
-            <GuestLibrary />
+            <GuestLibrary skin={active} mode={mode} />
           </ReadingRoomPreview>
         </div>
         <p className="mx-auto mt-6 max-w-[70ch] text-sm leading-relaxed text-muted">

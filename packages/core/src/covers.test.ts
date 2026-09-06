@@ -84,6 +84,9 @@ describe('upgradeCoverUrl', () => {
     expect(upgradeCoverUrl('https://covers.openlibrary.org/b/id/123-S.jpg', 'thumb')).toBe(
       'https://covers.openlibrary.org/b/id/123-M.jpg',
     )
+    expect(
+      upgradeCoverUrl('https://covers.openlibrary.org/b/id/123-M.jpg?default=false', 'full'),
+    ).toBe('https://covers.openlibrary.org/b/id/123-L.jpg?default=false')
   })
 
   it('leaves Hardcover, B&N, storage, and empty URLs untouched', () => {
