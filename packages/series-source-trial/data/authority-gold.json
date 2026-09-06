@@ -3620,7 +3620,7 @@
         "memberships": [
           {
             "series": "Warleigh Hall Jane Austen",
-            "aliases": ["Austenesque"],
+            "aliases": ["Austenesque", "The Warleigh Hall Jane Austen series"],
             "role": "primary",
             "positions": [{ "value": 4, "orderType": "publication" }]
           }
@@ -4991,6 +4991,202 @@
           }
         ],
         "reviewNote": "The exact publisher page establishes the work, while Penguin Random House's dedicated Critical Role series roster explicitly includes the exact title among the series' ten titles. Campaign continuity is not used as the relationship evidence, and no order is inferred."
+      }
+    },
+    {
+      "id": "selfies-2024-fiction-shooters",
+      "title": "Shooters",
+      "authors": ["Julia Boggio"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2023,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2024_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2024winners/"
+        },
+        { "kind": "author", "url": "https://juliaboggio.com/books" },
+        {
+          "kind": "author_post",
+          "url": "https://juliaboggio.com/blog/my-top-4-takeaways-from-reading-only-indie-books-in-april"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Photographers Trilogy",
+            "aliases": ["Photographers Trilogy", "Photographers Series"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://juliaboggio.com/books" },
+          {
+            "kind": "author_post",
+            "url": "https://juliaboggio.com/blog/camera-shy-photo-contest"
+          },
+          {
+            "kind": "author_post",
+            "url": "https://juliaboggio.com/blog/my-top-4-takeaways-from-reading-only-indie-books-in-april"
+          }
+        ],
+        "reviewNote": "The author's catalog presents Shooters inside her Photographers series, and her posts explicitly call the set a true Photographers Trilogy. She identifies Exposure! as the final book and as a return to the couple from book one; the exact catalog identifies that couple as Shooters characters Stella and Connor, establishing publication position one without relying on retailer metadata."
+      }
+    },
+    {
+      "id": "selfies-2024-fiction-ostler",
+      "title": "Ostler",
+      "authors": ["Susan Grossey"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2023,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2024_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2024winners/"
+        },
+        {
+          "kind": "author",
+          "url": "https://susangrossey.com/books-by-susan/cambridge-hardiman-mysteries/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Cambridge Hardiman Mysteries",
+            "aliases": [],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://susangrossey.com/books-by-susan/cambridge-hardiman-mysteries/"
+          }
+        ],
+        "reviewNote": "The author's dedicated Cambridge Hardiman Mysteries page explicitly labels Ostler book one and lists Sizar and Whipster as books two and three."
+      }
+    },
+    {
+      "id": "selfies-2024-fiction-like-me",
+      "title": "Like Me",
+      "authors": ["Katharine Light"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2023,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2024_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2024winners/"
+        },
+        { "kind": "author", "url": "https://www.katharinelight.com/books" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Millingham Series",
+            "aliases": ["Millingham Series"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.katharinelight.com/books" }
+        ],
+        "reviewNote": "The author's books page places Like Me under The Millingham Series and explicitly labels it book one, followed by books two through four."
+      }
+    },
+    {
+      "id": "selfies-2024-fiction-darcy",
+      "title": "Darcy: A Pride and Prejudice Variation",
+      "authors": ["Alice McVeigh"],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_independent_or_kindle_first",
+        "standalone_control"
+      ],
+      "publicationYear": 2023,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2024_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2024winners/"
+        },
+        { "kind": "author", "url": "https://www.alicemcveigh.com/books/darcy/" },
+        {
+          "kind": "author_post",
+          "url": "https://www.alicemcveigh.com/a-note-on-the-warleigh-hall-jane-austen-series/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Warleigh Hall Jane Austen",
+            "aliases": ["Austenesque", "The Warleigh Hall Jane Austen series"],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://www.alicemcveigh.com/books/darcy/" },
+          {
+            "kind": "author_post",
+            "url": "https://www.alicemcveigh.com/a-note-on-the-warleigh-hall-jane-austen-series/"
+          }
+        ],
+        "reviewNote": "The author's exact-title page identifies Darcy among her award-winning Austen variations, and her dedicated Warleigh Hall Jane Austen series note explicitly describes the series. That note says the books may be read in any order, which is reading independence rather than evidence that Darcy lacks bibliographic membership; numeric order remains unset."
+      }
+    },
+    {
+      "id": "selfies-2024-fiction-artificial-wisdom",
+      "title": "Artificial Wisdom",
+      "authors": ["Thomas R. Weaver"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2023,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2024_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2024winners/"
+        },
+        { "kind": "author", "url": "https://thomasrweaver.com/artificial-wisdom/" }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Wisdom Duology",
+            "aliases": ["Wisdom Duology"],
+            "role": "primary",
+            "positions": [{ "value": 1, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          { "kind": "author", "url": "https://thomasrweaver.com/" },
+          { "kind": "author", "url": "https://thomasrweaver.com/artificial-wisdom/" },
+          { "kind": "author", "url": "https://thomasrweaver.com/infinite-wisdom/" }
+        ],
+        "reviewNote": "The author's catalog labels the pair The Wisdom Duology, identifies Artificial Wisdom as the debut, and calls Infinite Wisdom its sequel and the conclusion. This establishes Artificial Wisdom as publication position one even though the current editions are now issued by Penguin Random House."
       }
     }
   ],

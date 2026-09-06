@@ -2148,6 +2148,55 @@
         "sources": []
       },
       "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
+    },
+    {
+      "id": "selfies-2024-fiction-hidden-depths",
+      "title": "Hidden Depths",
+      "authors": ["J. H. Mann"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2023,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2024_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2024winners/"
+        },
+        { "kind": "author", "url": "https://www.jhmannauthor.com/hidden-depths" }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2024 Selfies adult fiction shortlist. The author's exact-title page establishes the work but makes no affirmative bibliographic-series or standalone claim; praise mentioning another author's series is not evidence about Hidden Depths."
+    },
+    {
+      "id": "selfies-2024-fiction-the-eagle-and-the-cockerel",
+      "title": "The Eagle and the Cockerel",
+      "authors": ["Alan Rhode"],
+      "identifiers": { "isbn13": ["9781916797413"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2023,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2024_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2024winners/"
+        },
+        { "kind": "author", "url": "https://alan-rhode.com/" }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "Selected without provider-result filtering from the complete 2024 Selfies adult fiction shortlist. The author's current catalog distinguishes this 2023 debut from a later novel and a third work in progress, but does not affirm either standalone status or a bibliographic relationship."
     }
   ]
 }

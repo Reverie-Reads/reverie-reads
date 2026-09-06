@@ -62,16 +62,16 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 231,
-    reviewed: 146,
-    candidate: 85,
-    reviewedPositive: 120,
+    selected: 238,
+    reviewed: 151,
+    candidate: 87,
+    reviewedPositive: 125,
     reviewedStandalone: 26,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 54,
+    reviewed_cases: 49,
     reviewed_positive_cases: 0,
     reviewed_standalone_cases: 24,
   })
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 146, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 151, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -115,10 +115,10 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
         .map(({ id, reviewed, gap }) => [id, { reviewed, gap }]),
     ),
     {
-      recent_independent_or_kindle_first: { reviewed: 36, gap: 14 },
+      recent_independent_or_kindle_first: { reviewed: 41, gap: 9 },
       recent_traditional: { reviewed: 51, gap: 0 },
       multi_series_or_connected_universe: { reviewed: 20, gap: 0 },
-      standalone_control: { reviewed: 33, gap: 17 },
+      standalone_control: { reviewed: 34, gap: 16 },
     },
   )
 })
@@ -323,6 +323,39 @@ test('keeps the complete 2025 Selfies fiction frame and readable standalone seri
 
   assert.equal(byId.get('selfies-2025-fiction-echoing-shore')?.truth.status, 'candidate')
   assert.equal(byId.get('selfies-2025-fiction-unravelling')?.truth.status, 'candidate')
+})
+
+test('keeps the complete 2024 Selfies fiction frame and reading-independence control', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('selfies_2024_adult_fiction_shortlist'),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 7)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 5)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 2)
+
+  const memberships = new Map([
+    ['selfies-2024-fiction-shooters', ['The Photographers Trilogy', 1]],
+    ['selfies-2024-fiction-ostler', ['Cambridge Hardiman Mysteries', 1]],
+    ['selfies-2024-fiction-like-me', ['The Millingham Series', 1]],
+    ['selfies-2024-fiction-darcy', ['Warleigh Hall Jane Austen', null]],
+    ['selfies-2024-fiction-artificial-wisdom', ['The Wisdom Duology', 1]],
+  ])
+  for (const [id, [series, position]] of memberships) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, false)
+    assert.equal(testCase?.truth.memberships[0]?.series, series)
+    assert.equal(testCase?.truth.memberships[0]?.positions[0]?.value ?? null, position)
+  }
+
+  assert.ok(byId.get('selfies-2024-fiction-darcy')?.strata.includes('standalone_control'))
+  assert.equal(byId.get('selfies-2024-fiction-hidden-depths')?.truth.status, 'candidate')
+  assert.equal(
+    byId.get('selfies-2024-fiction-the-eagle-and-the-cockerel')?.truth.status,
+    'candidate',
+  )
 })
 
 test('keeps the complete 2025 Selfies general non-fiction frame and direct numbered-series truth', async () => {
