@@ -45,11 +45,22 @@ export const buildAuthorityTarget = (testCase) => ({
   },
 })
 
-export const authorityPolicyForCase = (testCase) => ({
-  classificationBlockedUrls: asArray(testCase.sampleSources)
-    .map((source) => source?.url)
-    .filter(Boolean),
-})
+export const authorityPolicyForCase = (testCase, samplePlan = null) => {
+  const frameIds = new Set(
+    [testCase?.selectionFrame, ...asArray(testCase?.selectionFrames)].filter(Boolean),
+  )
+  const framedSources = asArray(samplePlan?.selectionFrames)
+    .filter((frame) => frameIds.has(frame?.id))
+    .map((frame) => frame?.source?.url)
+    .filter(Boolean)
+  return {
+    classificationBlockedUrls: samplePlan
+      ? framedSources
+      : asArray(testCase?.sampleSources)
+          .map((source) => source?.url)
+          .filter(Boolean),
+  }
+}
 
 const comparableUrl = (value) => {
   try {
@@ -245,6 +256,14 @@ export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, p
       ),
   }
 }
+
+export const shouldRepairAuthorityAcquisition = (validation) =>
+  validation?.valid === false &&
+  asArray(validation?.policyViolations).length === 0 &&
+  asArray(validation?.errors).length > 0 &&
+  asArray(validation.errors).every(
+    (error) => error === 'series classification requires a membership',
+  )
 
 export function validateAuthorityAcquisition(target, output, consultedUrls, policy = {}) {
   const errors = []
@@ -528,11 +547,12 @@ export function scoreAuthorityAcquisition(caseSet, results, model) {
     (total, result) => total + (result.validation?.groundedUrlCount ?? 0),
     0,
   )
-  const inputTokens = completed.reduce(
+  const billed = completed.filter((result) => !result.cached)
+  const inputTokens = billed.reduce(
     (total, result) => total + Number(result.usage?.input_tokens ?? 0),
     0,
   )
-  const outputTokens = completed.reduce(
+  const outputTokens = billed.reduce(
     (total, result) => total + Number(result.usage?.output_tokens ?? 0),
     0,
   )
@@ -572,8 +592,27 @@ export function scoreAuthorityAcquisition(caseSet, results, model) {
     operations: {
       errors: results.filter((result) => result.status === 'error').length,
       cached: results.filter((result) => result.cached).length,
-      modelCalls: results.filter((result) => result.status === 'completed' && !result.cached)
-        .length,
+      modelCalls: results.reduce(
+        (total, result) =>
+          total +
+          (result.status === 'completed' && !result.cached
+            ? Number(result.modelCallCount ?? 1)
+            : 0),
+        0,
+      ),
+      repairCalls: results.filter(
+        (result) => result.status === 'completed' && !result.cached && result.repair?.output,
+      ).length,
+      repairInputTokens: results.reduce(
+        (total, result) =>
+          total + (!result.cached ? Number(result.repair?.usage?.input_tokens ?? 0) : 0),
+        0,
+      ),
+      repairOutputTokens: results.reduce(
+        (total, result) =>
+          total + (!result.cached ? Number(result.repair?.usage?.output_tokens ?? 0) : 0),
+        0,
+      ),
       webSearchCalls: results.reduce(
         (total, result) => total + Number(result.webSearchCalls ?? 0),
         0,

@@ -91,6 +91,19 @@
       "selectionRule": "Include all six adult fiction titles on the official 2025 Selfies shortlist, with no provider-result filtering."
     },
     {
+      "id": "selfies_2025_general_nonfiction_shortlist",
+      "label": "Complete 2025 Selfies Book Awards general non-fiction shortlist",
+      "expectedCases": 6,
+      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "source": {
+        "kind": "platform_award",
+        "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+      },
+      "selectionRule": "Include all six general non-fiction titles on the official 2025 Selfies shortlist, with no provider-result filtering. Treat the complete nonfiction shortlist as a standalone challenge frame, not as evidence that any selected work lacks a bibliographic relationship."
+    },
+    {
       "id": "selfies_2026_fiction_shortlist",
       "label": "Complete 2026 Selfies Book Awards fiction shortlist",
       "expectedCases": 6,

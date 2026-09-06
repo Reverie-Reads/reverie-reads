@@ -3995,6 +3995,54 @@
         ],
         "reviewNote": "The exact author page calls The Nanny's Secret an installment of the standalone Locke Industries Series. Standalone describes independent readability, not absence of a bibliographic relationship; no position is asserted."
       }
+    },
+    {
+      "id": "selfies-2025-nonfiction-confusables-2",
+      "title": "The Little Book of Confusables 2",
+      "authors": ["Sarah Townsend"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first", "standalone_control"],
+      "riskFeatures": ["numbered_title"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_general_nonfiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author_post",
+          "url": "https://www.linkedin.com/posts/sarahtownsendeditorial_launchday-booklaunch-activity-7270379518224216064--TTO"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.sarahtownsendeditorial.co.uk/2014/05/common-confusables-right-first-time/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Little Book of Confusables",
+            "aliases": ["Little Book of Confusables"],
+            "role": "primary",
+            "positions": [{ "value": 2, "orderType": "publication" }]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author_post",
+            "url": "https://www.linkedin.com/posts/sarahtownsendeditorial_launchday-booklaunch-activity-7270379518224216064--TTO"
+          },
+          {
+            "kind": "author",
+            "url": "https://www.sarahtownsendeditorial.co.uk/2014/05/common-confusables-right-first-time/"
+          }
+        ],
+        "reviewNote": "The author's launch post explicitly compares Confusables 1 with Confusables 2, and her own site repeatedly markets The Little Book of Confusables 1 + 2 as a paired sequence. Together with the exact numbered title, this establishes primary membership and publication position two without treating the numeral alone as evidence."
+      }
     }
   ],
   "sharedSources": {

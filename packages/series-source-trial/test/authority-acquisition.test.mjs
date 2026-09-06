@@ -7,9 +7,14 @@ import {
   buildAuthorityTarget,
   canonicalizeAuthorityAcquisition,
   scoreAuthorityAcquisition,
+  shouldRepairAuthorityAcquisition,
   validateAuthorityAcquisition,
 } from '../src/authority/evidence.mjs'
-import { acquireAuthorityEvidence } from '../src/authority/openai.mjs'
+import { acquireAuthorityEvidence, repairAuthorityEvidence } from '../src/authority/openai.mjs'
+import {
+  AUTHORITY_ACQUISITION_PROMPT_VERSION,
+  authorityAcquisitionInstructions,
+} from '../src/authority/schema.mjs'
 
 const publisherUrl = 'https://publisher.example/books/second-book'
 const testCase = {
@@ -53,6 +58,42 @@ const seriesOutput = {
   uncertainties: [],
   note: 'Publisher evidence supplies identity, membership, and position.',
 }
+
+test('instructs the scout to distinguish direct numbered sequences from lone numerals', () => {
+  assert.equal(
+    AUTHORITY_ACQUISITION_PROMPT_VERSION,
+    'authority-acquisition-v5-numbered-sequence-evidence',
+  )
+  assert.match(authorityAcquisitionInstructions, /directly compares the exact target/)
+  assert.match(authorityAcquisitionInstructions, /lone numeral, a numbered edition/)
+})
+
+test('repairs only the observed series-without-membership structural failure', () => {
+  assert.equal(
+    shouldRepairAuthorityAcquisition({
+      valid: false,
+      errors: ['series classification requires a membership'],
+      policyViolations: [],
+    }),
+    true,
+  )
+  assert.equal(
+    shouldRepairAuthorityAcquisition({
+      valid: false,
+      errors: ['identity evidence URL is not a grounded identity authority source'],
+      policyViolations: [],
+    }),
+    false,
+  )
+  assert.equal(
+    shouldRepairAuthorityAcquisition({
+      valid: false,
+      errors: ['series classification requires a membership'],
+      policyViolations: ['membership 0 lacks classification-eligible authority evidence'],
+    }),
+    false,
+  )
+})
 
 test('builds a truth-blind target with only identity hints', () => {
   const target = buildAuthorityTarget(testCase)
@@ -312,6 +353,25 @@ test('keeps selection frames and known marketing taxonomies out of truth evidenc
   assert.ok(
     discoveryOnly.policyViolations.some((error) => error.includes('known_discovery_only_host')),
   )
+})
+
+test('blocks only the actual selection-frame URL when a sample plan is available', () => {
+  const frameUrl = 'https://awards.example/shortlist'
+  const authorUrl = 'https://author.example/books/exact-work'
+  const policy = authorityPolicyForCase(
+    {
+      selectionFrame: 'award-frame',
+      sampleSources: [
+        { kind: 'platform_award', url: frameUrl },
+        { kind: 'author', url: authorUrl },
+      ],
+    },
+    {
+      selectionFrames: [{ id: 'award-frame', source: { kind: 'platform_award', url: frameUrl } }],
+    },
+  )
+
+  assert.deepEqual(policy.classificationBlockedUrls, [frameUrl])
 })
 
 test('quarantines revisions of a known-conflicting author catalog without blocking exact pages', () => {
@@ -582,6 +642,48 @@ test('sends a bounded, stateless web-search request and captures all consulted U
   assert.deepEqual(result.output, seriesOutput)
 })
 
+test('uses a bounded no-tools call to repair structural output', async () => {
+  const target = buildAuthorityTarget(testCase)
+  let requestBody
+  const fetchImpl = async (_url, options) => {
+    requestBody = JSON.parse(options.body)
+    return new Response(
+      JSON.stringify({
+        id: 'repair-1',
+        model: 'test-model',
+        output: [
+          {
+            type: 'message',
+            content: [
+              {
+                type: 'output_text',
+                text: JSON.stringify(seriesOutput),
+                annotations: [],
+              },
+            ],
+          },
+        ],
+        usage: { input_tokens: 40, output_tokens: 20 },
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )
+  }
+
+  const result = await repairAuthorityEvidence(
+    target,
+    { ...seriesOutput, memberships: [] },
+    ['series classification requires a membership'],
+    { apiKey: 'test-key', model: 'test-model', fetchImpl },
+  )
+
+  assert.equal('tools' in requestBody, false)
+  assert.equal(requestBody.store, false)
+  assert.equal(requestBody.max_output_tokens, 1000)
+  assert.match(requestBody.instructions, /Do not search the web/)
+  assert.match(requestBody.input, /series classification requires a membership/)
+  assert.deepEqual(result.output, seriesOutput)
+})
+
 test('scores abstention, series precision, and dangerous errors separately', () => {
   const standaloneCase = {
     id: 'standalone',
@@ -616,6 +718,8 @@ test('scores abstention, series precision, and dangerous errors separately', () 
     cached: false,
     webSearchCalls: 2,
     usage: { input_tokens: 200, output_tokens: 80 },
+    modelCallCount: 2,
+    repair: { output: seriesOutput, usage: { input_tokens: 40, output_tokens: 20 } },
     output: seriesOutput,
   }
   accepted.validation = validateAuthorityAcquisition(buildAuthorityTarget(testCase), seriesOutput, [
@@ -639,6 +743,10 @@ test('scores abstention, series precision, and dangerous errors separately', () 
   assert.equal(score.capability.falseSeriesRate, 0)
   assert.equal(score.operations.webSearchCalls, 3)
   assert.equal(score.operations.inputTokens, 300)
+  assert.equal(score.operations.modelCalls, 3)
+  assert.equal(score.operations.repairCalls, 1)
+  assert.equal(score.operations.repairInputTokens, 40)
+  assert.equal(score.operations.repairOutputTokens, 20)
 })
 
 test('treats a generic publisher series suffix as naming drift, not a false membership', () => {
@@ -683,4 +791,30 @@ test('separates usable candidate proposals from unresolved and quarantined outpu
     unresolved: 0,
     quarantined: 0,
   })
+})
+
+test('does not report cached evidence tokens as new run consumption', () => {
+  const result = {
+    caseId: 'book',
+    status: 'completed',
+    cached: true,
+    modelCallCount: 2,
+    webSearchCalls: 2,
+    usage: { input_tokens: 300, output_tokens: 90 },
+    repair: { output: seriesOutput, usage: { input_tokens: 40, output_tokens: 20 } },
+    output: seriesOutput,
+    validation: validateAuthorityAcquisition(buildAuthorityTarget(testCase), seriesOutput, [
+      publisherUrl,
+    ]),
+  }
+
+  const score = scoreAuthorityAcquisition({ cases: [testCase] }, [result], 'test-model')
+
+  assert.equal(score.operations.cached, 1)
+  assert.equal(score.operations.modelCalls, 0)
+  assert.equal(score.operations.inputTokens, 0)
+  assert.equal(score.operations.outputTokens, 0)
+  assert.equal(score.operations.repairCalls, 0)
+  assert.equal(score.operations.repairInputTokens, 0)
+  assert.equal(score.operations.repairOutputTokens, 0)
 })

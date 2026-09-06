@@ -93,6 +93,11 @@ sources, and provider packets are withheld. Every cited URL must appear in the A
 manifest, but URL grounding alone does not make the page eligible evidence: deterministic source
 policy blocks a case's selection-frame pages, known conflicting marketing taxonomies, unsupported
 positions, and standalone conclusions without an affirmative first-party standalone statement.
+Only the source that defines the case's selection frame is blocked by that rule; author or
+publisher identity pages recorded for sampling remain eligible if the truth-blind live search
+independently rediscovers them. A single no-tools repair call may correct the narrow structural
+error where a proposal says `series` but omits the membership object, using only facts and URLs
+already present in that proposal. It cannot search, add evidence, or bypass revalidation.
 Revisions and mirrors of a catalog with a demonstrated relational contradiction share that risk;
 they cannot corroborate one another or establish classification merely because their URLs differ.
 An exact-work page on the same author or publisher origin remains independently eligible when it
