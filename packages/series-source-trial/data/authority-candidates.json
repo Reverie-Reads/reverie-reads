@@ -89,7 +89,10 @@
       "strata": ["recent_traditional", "standalone_control"],
       "publicationYear": 2022,
       "publicationPath": "traditional",
-      "selectionFrame": "hachette_standalone_romantasy_2026_09_04",
+      "selectionFrames": [
+        "hachette_standalone_romantasy_2026_09_04",
+        "hachette_standalone_sff_fantasy_2026_09_06"
+      ],
       "sampleSources": [
         {
           "kind": "publisher",
@@ -97,11 +100,15 @@
         },
         {
           "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
           "url": "https://www.hachette.co.uk/titles/francesca-may/wild-and-wicked-things/9780356517582/"
         }
       ],
       "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
-      "reviewNote": "Selected under Hachette's standalone heading, but that same list contains disproven labels. The captured author and title pages do not independently make an affirmative standalone claim, so the negative truth remains unresolved."
+      "reviewNote": "Selected under two Hachette standalone headings, but those lists contain disproven labels. The captured author and exact title pages do not independently make an affirmative standalone claim, so the negative truth remains unresolved."
     },
     {
       "id": "hachette-standalone-romantasy-the-carnivale-of-curiosities",
@@ -2603,6 +2610,278 @@
       ],
       "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
       "reviewNote": "Selected without provider-result filtering from the complete CrimeReads featured release list, whose Paul Garuana Galizia byline is normalized to the publisher's Paul Caruana Galizia. The exact publisher page establishes the work but makes no affirmative bibliographic-series or standalone claim; nonfiction subject continuity cannot be inferred as a series relationship."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-age-of-witches",
+      "title": "The Age of Witches",
+      "authors": ["Louisa Morgan"],
+      "identifiers": { "isbn13": ["9780316419543", "9780356512587"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachette.co.uk/titles/louisa-morgan/the-age-of-witches/9780356512587/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The exact publisher page identifies the work but does not independently make an affirmative standalone or bibliographic-series claim, so catalog silence is not promoted to negative truth."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-wolf-in-the-whale",
+      "title": "The Wolf in the Whale",
+      "authors": ["Jordanna Max Brodsky"],
+      "identifiers": { "isbn13": ["9780316417143", "9780356512600"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        { "kind": "author", "url": "https://www.jordannamaxbrodsky.com/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachette.com.au/jordanna-max-brodsky/the-wolf-in-the-whale"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The author's exact work page provides identity only, while Hachette Australia's standalone wording is an attributed review quotation rather than the publisher's own classification. Neither establishes eligible negative truth."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-once-and-future-witches",
+      "title": "The Once and Future Witches",
+      "authors": ["Alix E. Harrow"],
+      "identifiers": { "isbn13": ["9780316422031", "9780356512501"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachette.co.uk/titles/alix-e-harrow/the-once-and-future-witches/9780356512501/"
+        },
+        {
+          "kind": "publisher_catalog",
+          "url": "https://www.hachette.co.uk/wp-content/uploads/2020/06/Little-Brown-Book-Group-Autumn-2020.pdf"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The exact publisher and catalog entries establish the work but do not independently classify it. An attributed author answer exists on Goodreads, but a platform-hosted answer is not an approved author-controlled authority source under the locked policy."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-unlikely-escape-of-uriah-heep",
+      "title": "The Unlikely Escape of Uriah Heep",
+      "authors": ["H. G. Parry"],
+      "identifiers": { "isbn13": ["9780316452724", "9780356513768"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        { "kind": "author", "url": "https://hgparry.com/books/" },
+        { "kind": "author", "url": "https://hgparry.com/faq/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The author's catalog distinguishes the named Shadow Histories sequence and her FAQ says no other books currently have sequels, but no-sequel language does not exclude every bibliographic relationship and is not an affirmative standalone classification."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-ladies-of-the-secret-circus",
+      "title": "The Ladies of the Secret Circus",
+      "authors": ["Constance Sayers"],
+      "identifiers": { "isbn13": ["9780316493642"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "author",
+          "url": "https://constancesayers.com/books/the-ladies-of-the-secret-circus/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The author's exact work page identifies the title and story but makes no affirmative standalone or bibliographic-series claim, so absence from a named sequence remains unresolved."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-wildwood-whispers",
+      "title": "Wildwood Whispers",
+      "authors": ["Willa Reece"],
+      "identifiers": { "isbn13": ["9780316591775", "9780316591782"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["multi_series_or_connected_universe", "standalone_control"],
+      "riskFeatures": ["connected_universe"],
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/willa-reece/wildwood-whispers/9780316591775/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/willa-reece/wildwood-magic/9780316591799/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The publisher cross-promotes Wildwood Magic and locates both stories in Morgan's Gap, but shared setting and related marketing are not bibliographic-series evidence; neither exact page independently affirms standalone status."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-an-orc-on-the-wild-side",
+      "title": "An Orc on the Wild Side",
+      "authors": ["Tom Holt"],
+      "identifiers": { "isbn13": ["9780316270847", "9780356506715"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/tom-holt/an-orc-on-the-wild-side/9780316270847/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/tom-holt/may-contain-traces-of-magic/9780316233354/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. Hachette's backlist copy lists the target among Tom Holt's other titles and outside the explicitly named J.W. Wells & Co. series, but exclusion from one named sequence does not affirm that no other bibliographic relationship exists."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-raven-tower",
+      "title": "The Raven Tower",
+      "authors": ["Ann Leckie"],
+      "identifiers": { "isbn13": ["9780316388719"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        { "kind": "author", "url": "https://annleckie.com/novel/the-raven-tower/" },
+        { "kind": "author", "url": "https://annleckie.com/books/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. Ann Leckie's exact work and book-catalog pages identify The Raven Tower but do not affirm standalone status; a separate catalog placement is an observation, not proof of no relationship."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-great-witch-of-brittany",
+      "title": "The Great Witch of Brittany",
+      "authors": ["Louisa Morgan"],
+      "identifiers": { "isbn13": ["9780316628730"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "multi_series_or_connected_universe", "standalone_control"],
+      "riskFeatures": ["connected_universe"],
+      "publicationYear": 2022,
+      "publicationPath": "traditional",
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/louisa-morgan/the-great-witch-of-brittany/9780316628730/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The exact publisher page says the work returns to the world of A Secret History of Witches, but shared-world wording cannot be reversed into series membership and the page does not independently affirm standalone status."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-sistersong",
+      "title": "Sistersong",
+      "authors": ["Lucy Holland"],
+      "identifiers": { "isbn13": ["9780316320894", "9780316320993"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "standalone_control"],
+      "publicationYear": 2021,
+      "publicationPath": "traditional",
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/lucy-holland/sistersong/9780316320894/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The exact publisher page establishes the 2021 work but makes no affirmative standalone or bibliographic-series claim. Later same-author historical fantasy is not relationship evidence for this title."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-book-of-gothel",
+      "title": "The Book of Gothel",
+      "authors": ["Mary McMyne"],
+      "identifiers": { "isbn13": ["9780316393119", "9780356517704"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "standalone_control"],
+      "publicationYear": 2022,
+      "publicationPath": "traditional",
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        { "kind": "author", "url": "https://marymcmyne.com/the-book-of-gothel/" },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachette.co.uk/titles/mary-mcmyne/the-book-of-gothel/9780356517704/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The exact author and publisher pages identify the work and its retelling scope but make no affirmative standalone or bibliographic-series claim, so a self-contained story is not assumed to be a standalone record."
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-ballad-of-perilous-graves",
+      "title": "The Ballad of Perilous Graves",
+      "authors": ["Alex Jennings"],
+      "identifiers": { "isbn13": ["9780759557215", "9780356519258"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "standalone_control"],
+      "publicationYear": 2022,
+      "publicationPath": "traditional",
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/alex-jennings/the-ballad-of-perilous-graves/9780759557215/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The exact publisher page establishes the work, author, and 2022 publication but does not independently make an affirmative standalone or bibliographic-series claim; debut wording is not relationship evidence."
     }
   ]
 }

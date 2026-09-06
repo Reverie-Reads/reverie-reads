@@ -18,8 +18,8 @@ useful for measuring coverage and discovering disagreements, but they do not con
 accuracy until an authority source has been reviewed.
 
 The current development sample contains one difficult work from each of Reverie's 69 distinct
-seeded series plus external sampling frames: 273 selected works, of which 169 are
-authority-reviewed. The reviewed set contains 141 positive series cases and 28 confirmed standalone
+seeded series plus external sampling frames: 288 selected works, of which 172 are
+authority-reviewed. The reviewed set contains 141 positive series cases and 31 confirmed standalone
 controls. Some reviewed cases replace seed references, so the final distinct-case count is printed
 at runtime.
 
@@ -326,6 +326,10 @@ The complete nine-title Hachette standalone SFF horror frame, its false-label se
 the multi-frame sampling support are recorded in
 `reports/authority-development-frame-hachette-horror-2026-09-06.md`.
 
+The complete seventeen-title Hachette standalone SFF fantasy frame, its Hart and Mercy false-label
+control, three independently confirmed standalones, and thirteen unresolved publisher labels are
+recorded in `reports/authority-development-frame-hachette-fantasy-2026-09-06.md`.
+
 The complete 2026 Selfies fiction shortlist, its four first-party rulings, and the scout's refusal
 to promote two platform-only series hints are recorded in
 `reports/authority-development-frame-selfies-2026-fiction-2026-09-06.md`.
@@ -396,7 +400,7 @@ Audit the sample before running another provider or resolver comparison:
 pnpm series:sample:audit
 ```
 
-The audit reports selection coverage and authority-review coverage separately. The current 104
+The audit reports selection coverage and authority-review coverage separately. The current 116
 candidates count as selected works, but never as truth and never toward an accuracy gate. It also
 validates that every reviewed result has
 affirmative author or publisher evidence, that a reviewed standalone has no memberships, and that
