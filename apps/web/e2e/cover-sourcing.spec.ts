@@ -227,7 +227,7 @@ test('the cover sheet leads with photographing your own copy', async ({ page }) 
   }
 })
 
-test('cover choices show real resolution and lead with the exact ISBN on mobile', async ({
+test('mobile cover choices show resolution, lead with exact ISBN, and retain a working fallback', async ({
   page,
 }) => {
   const c = await client()
@@ -240,6 +240,7 @@ test('cover choices show real resolution and lead with the exact ISBN on mobile'
   await stub(page)
   const exact = `${GOOGLE_COVER}&quality=exact`
   const soft = 'https://assets.hardcover.app/quality-soft.png'
+  const fallback = `${GOOGLE_COVER}&quality=fallback`
   const png = (width: number, height: number) =>
     PNG.sync.write(new PNG({ width, height, colorType: 2 }))
   await page.route('**/functions/v1/covers**', (r) =>
@@ -262,6 +263,14 @@ test('cover choices show real resolution and lead with the exact ISBN on mobile'
             format: 'Hardcover',
             year: 2021,
           },
+          {
+            source: 'google',
+            cover: fallback,
+            isbn13: '9780141187761',
+            title: 'Sourcing Probe',
+            format: 'Ebook',
+            year: 2022,
+          },
         ],
       },
     }),
@@ -272,6 +281,10 @@ test('cover choices show real resolution and lead with the exact ISBN on mobile'
   await page.route(/books\.google\.com.*quality=exact/, (r) =>
     r.fulfill({ contentType: 'image/png', body: png(800, 1200) }),
   )
+  await page.route(/books\.google\.com.*quality=fallback/, (r) => {
+    const original = new URL(r.request().url()).searchParams.get('zoom') === '1'
+    return r.fulfill({ contentType: 'image/png', body: original ? png(128, 192) : png(575, 750) })
+  })
   try {
     await page.setViewportSize({ width: 390, height: 844 })
     await signIn(page, c.session)
@@ -294,6 +307,27 @@ test('cover choices show real resolution and lead with the exact ISBN on mobile'
     const saved = await coverOf(c, id)
     expect(saved.cover_url).toContain('quality=exact')
     expect(saved.cover_source).toBe('google')
+    const fallbackChoice = choices.nth(2)
+    await fallbackChoice.scrollIntoViewIfNeeded()
+    await expect(fallbackChoice).toContainText('May look soft · 128 × 192')
+    await fallbackChoice.click()
+    await expect.poll(async () => (await coverOf(c, id)).cover_url).toBe(fallback)
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Sourcing Probe', exact: true })).toBeVisible()
+    await expect
+      .poll(() =>
+        page
+          .locator('img')
+          .evaluateAll((images) =>
+            images.some(
+              (image) =>
+                image.src.includes('quality=fallback') &&
+                image.naturalWidth === 128 &&
+                image.naturalHeight === 192,
+            ),
+          ),
+      )
+      .toBe(true)
   } finally {
     await reset(c)
   }

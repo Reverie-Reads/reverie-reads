@@ -49,3 +49,16 @@ it('does not label a broken image as sharp or allow it to replace a working cove
   expect(screen.getByText('Image unavailable')).toBeInTheDocument()
   expect(screen.getByRole('button')).toBeDisabled()
 })
+it('refuses a successfully decoded tracking pixel from any provider', () => {
+  const onSelect = vi.fn()
+  const { container } = render(
+    <CoverEditionOption edition={edition} isbn="" disabled={false} onSelect={onSelect} />,
+  )
+  const img = container.querySelector('img')!
+  Object.defineProperties(img, { naturalWidth: { value: 1 }, naturalHeight: { value: 1 } })
+  fireEvent.load(img)
+  expect(screen.getByText('Image unavailable')).toBeInTheDocument()
+  expect(screen.getByRole('button')).toBeDisabled()
+  fireEvent.click(screen.getByRole('button'))
+  expect(onSelect).not.toHaveBeenCalled()
+})

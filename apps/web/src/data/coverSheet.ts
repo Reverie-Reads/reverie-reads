@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { mayIngestCover, normalizeIsbn, upgradeCoverUrl, type Book, type CoverSource } from '@reverie/core'
+import { mayIngestCover, normalizeIsbn, type Book, type CoverSource } from '@reverie/core'
 import { fetchEditions, ingestCover, type EditionOption } from '../lib/covers'
 import { clearCoverBroken } from './brokenCovers'
 import { useUpdateBook } from './books'
@@ -74,13 +74,15 @@ export function useSetCover() {
       // Display-only: record the reference, fetch nothing. Judged by exact host as well as by label,
       // since the lazy backfill's 'url' label can carry Google or another unreviewed remote image.
       if (!file && !mayIngestCover(source, url)) {
-        const display = upgradeCoverUrl(url ?? '', 'full')
+        // Keep the URL the reader actually previewed. Rewriting it here loses the only
+        // working fallback when a larger Google render is a plate or scan strip.
+        const display = url ?? ''
         if (!display) throw new Error('failed')
         await update.mutateAsync({
           id: book.id,
           patch: {
             cover: display,
-            coverThumb: upgradeCoverUrl(url ?? '', 'thumb'),
+            coverThumb: display,
             coverSource: source,
             coverSourceUrl: sourceUrl ?? url,
             ...(userChosen ? chosen : {}),

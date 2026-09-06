@@ -40,7 +40,11 @@ export function CoverEditionOption({
         <CoverImage
           book={{ title: edition.title, cover: edition.cover }}
           reportErrors={false}
-          onResolved={setImage}
+          onResolved={(resolved) => {
+            // Match the ingest floor: tracking pixels and tiny source plates are not covers.
+            if (resolved.width < 50 || resolved.height < 50) setUnavailable(true)
+            else setImage(resolved)
+          }}
           onExhausted={() => setUnavailable(true)}
         />
       </span>

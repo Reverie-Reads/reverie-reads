@@ -1,47 +1,47 @@
-work_id,genre,title,width,height,issue
-45b23e9a-c3fd-4eca-84ab-bb88e56bbb3b,fantasy,A Broken Blade,128,206,below card resolution target
-6ec74480-01cb-44c6-afad-3fb51638587d,fantasy,A Clash of Kings,332,500,below card resolution target
-2d5b07af-0df4-4781-ac6c-be36f614bf8c,fantasy,A Court of Frost and Starlight,336,500,below card resolution target
-c076ba32-a24a-41f5-89d7-10c171194d78,fantasy,A Court of Wings and Ruin,326,500,below card resolution target
-ec94241a-e176-46f7-a49a-7c86338d5563,fantasy,A Dark and Wild Wood,128,183,below card resolution target
-15e131c7-b8f5-4998-a89c-e39332acb8f9,fantasy,A Darker Shade of Magic,333,500,below card resolution target
-af0ee5ff-3d73-4a72-9cf9-bb65a6038b69,horror,20th Century Ghosts,332,500,below card resolution target
-00981a29-bc83-47ba-aea5-91e212b4e0fa,horror,A Certain Hunger,331,500,below card resolution target
-b15abd73-6586-491d-9c3c-24e7a550c23e,horror,A Child Alone with Strangers,98,147,below card resolution target
-609009f0-f71f-44ac-9fd2-25dbfbccc187,horror,A Court of Bonds and Betrayal - Acotar,292,445,below card resolution target
-33f9d476-031c-4d75-9dce-40f91efa7183,literary,Audition,326,500,below card resolution target
-dd8f179a-c47b-4e9d-a84a-78f084f3a09d,literary,Beartown,337,500,below card resolution target
-5f7d5b85-bdab-42e0-8019-6b30c842cd2f,literary,Essays and Poems,324,500,below card resolution target
-7d6278bc-ed23-4e0e-a540-d4ff5194de12,literary,Less Than Zero,324,500,below card resolution target
-32b0e0e8-903f-4431-8d23-fa9b41f4dec0,literary,Lone Dog Road,,,missing cover
-c89ff8c9-046e-4606-a973-e47b5253fa19,literary,Of Human Bondage,304,500,below card resolution target
-1264bc11-c6f9-4ac4-9316-c0557c677c0d,literary,Of Mice and Men,,,missing cover
-d5783a84-0d5a-4514-b7da-2b8d8ca8e2ca,mystery,Assassins Anonymous,331,500,below card resolution target
-3c7938a6-b412-40a2-8fb4-2c346112a869,mystery,Big Little Lies,332,500,below card resolution target
-9d37a046-c1c2-4f0d-934a-68f4e06d1ad0,mystery,Company of Liars,326,500,below card resolution target
-b5f9a042-944d-46ec-a91f-257ab5fd0e4d,mystery,Hot Wax,128,197,below card resolution target
-2a2ee53e-f6dc-42b9-99d4-51d3959aa926,mystery,If We Were Villains,336,500,below card resolution target
-d768a104-e97d-4022-89a3-5c571bd8de74,mystery,Strange Houses,317,500,below card resolution target
-d795a2cf-a6e7-4a74-aeb5-8677f8abd63e,mystery,Strange Pictures,320,500,below card resolution target
-a6455aad-21c2-42aa-8447-cd934b34fdec,nonfiction,A Brief History of Time,318,500,below card resolution target
-d439a9c8-bb02-4851-9ab1-b8bea4d4749b,nonfiction,An Enquiry Concerning Human Understanding,333,500,below card resolution target
-36c951e1-d92d-4c7a-8778-1bb2ab0f69b5,nonfiction,An Unquiet Mind,311,475,below card resolution target
-004d4296-4d04-452d-af22-8a46a2e765cc,nonfiction,Ants of North America,500,213,below card resolution target
-c4875ea5-98b1-4af6-8c60-7ae7819555bd,nonfiction,Bandit Roads,98,147,below card resolution target
-2e601dac-891b-4a30-a82e-066ea339c8eb,nonfiction,Beyond Good and Evil,324,500,below card resolution target
-d989d867-eccf-4a30-ac0f-7afe89ed99a6,nonfiction,Birds of Belize,304,500,below card resolution target
-e5cf02c4-0039-4b91-bef5-672c25566bff,nonfiction,Building Social Business,318,500,below card resolution target
-f8270e24-d328-4cf7-b63a-4f8acde84507,romance,A Broken Queen,,,missing cover
-94617659-d066-4fb9-9930-9f64c6851726,romance,A Court of Silver Flames,325,500,below card resolution target
-ab028d53-ff1c-4f99-acc7-fba59f0e8ddd,romance,A Court of Thorns and Roses,600,600,below card resolution target
-594361b3-4f19-4774-809c-41e7776acd6e,romance,A Court this Cruel and Lovely,313,500,below card resolution target
-6afdf544-4a9a-4549-83cf-9826dea0b1d4,romance,A Curse of Beasts and Magic,410,630,below card resolution target
-b220ab67-d2ea-4de2-b8d6-3b1423c84562,romance,A Deal with the Elf King,339,500,below card resolution target
-f079774c-447a-450b-a066-d876d80ad93f,romance,A False Start,326,500,below card resolution target
-549f6119-3342-4b43-bac8-3477240e1245,science fiction,1984,291,475,below card resolution target
-15d1a99e-8570-4e2e-bbd8-1f4d0f0334ce,science fiction,Absolution,,,missing cover
-a8deb26d-5f3c-43f3-a36f-69bd9c14d0de,science fiction,Area X,375,500,below card resolution target
-66aab1af-3dab-4f43-b616-615d443efebb,science fiction,Beings,128,195,below card resolution target
-e7b6a76d-2318-4152-915f-aa8ed2ac9750,science fiction,Dune,333,500,below card resolution target
-8658795b-3c91-46c6-a507-f9c6b53caf0c,science fiction,Epiphany of The Long Sun,316,475,below card resolution target
-0662d5e8-8b15-41f0-a254-83b1dfdbfa8d,science fiction,Hearts in Atlantic,324,500,below card resolution target
+work_id,genre,title,width,height,issue,priority,visual_issue,visual_observation,source_probe,source_width,source_height
+45b23e9a-c3fd-4eca-84ab-bb88e56bbb3b,fantasy,A Broken Blade,128,206,below card resolution target,identity/art review first,identity conflict,Cover reads Broken Blade / Kelly McCullough; catalog credits Medissa Blair.,original also undersized,128,206
+ec94241a-e176-46f7-a49a-7c86338d5563,fantasy,A Dark and Wild Wood,128,183,below card resolution target,identity/art review first,not cover art,Source plate says COVER COMING SOON.,original also undersized,128,183
+609009f0-f71f-44ac-9fd2-25dbfbccc187,horror,A Court of Bonds and Betrayal - Acotar,292,445,below card resolution target,identity/art review first,identity conflict,Cover reads A Court of Bones and Sorrow / Alex Frost; stored title differs.,,,
+33f9d476-031c-4d75-9dce-40f91efa7183,literary,Audition,326,500,below card resolution target,identity/art review first,identity conflict,Cover reads The Audition / Maddie Ziegler; catalog credits Katie Kitamura.,,,
+004d4296-4d04-452d-af22-8a46a2e765cc,nonfiction,Ants of North America,500,213,below card resolution target,identity/art review first,not cover art,Cropped interior page headed KEY TO NORTH AMERICAN ANT GENERA BASED ON THE WORKER CASTE.,,,
+c4875ea5-98b1-4af6-8c60-7ae7819555bd,nonfiction,Bandit Roads,98,147,below card resolution target,identity/art review first,identity conflict,Cover reads Bandit: A Daughter's Memoir / Molly Brodak; catalog credits Rochard Grant.,original also undersized,98,147
+d989d867-eccf-4a30-ac0f-7afe89ed99a6,nonfiction,Birds of Belize,304,500,below card resolution target,identity/art review first,identity conflict,Cover reads Bridge of Birds / Barry Hughart; catalog credits H. Lee Jones.,,,
+0662d5e8-8b15-41f0-a254-83b1dfdbfa8d,science fiction,Hearts in Atlantic,324,500,below card resolution target,identity/art review first,identity conflict,Cover reads Hearts in Atlantis / Stephen King; stored title differs.,,,
+6ec74480-01cb-44c6-afad-3fb51638587d,fantasy,A Clash of Kings,332,500,below card resolution target,resolution or missing image review,,,,,
+2d5b07af-0df4-4781-ac6c-be36f614bf8c,fantasy,A Court of Frost and Starlight,336,500,below card resolution target,resolution or missing image review,,,,,
+c076ba32-a24a-41f5-89d7-10c171194d78,fantasy,A Court of Wings and Ruin,326,500,below card resolution target,resolution or missing image review,,,,,
+15e131c7-b8f5-4998-a89c-e39332acb8f9,fantasy,A Darker Shade of Magic,333,500,below card resolution target,resolution or missing image review,,,,,
+af0ee5ff-3d73-4a72-9cf9-bb65a6038b69,horror,20th Century Ghosts,332,500,below card resolution target,resolution or missing image review,,,,,
+00981a29-bc83-47ba-aea5-91e212b4e0fa,horror,A Certain Hunger,331,500,below card resolution target,resolution or missing image review,,,,,
+b15abd73-6586-491d-9c3c-24e7a550c23e,horror,A Child Alone with Strangers,98,147,below card resolution target,resolution or missing image review,,,original also undersized,98,147
+dd8f179a-c47b-4e9d-a84a-78f084f3a09d,literary,Beartown,337,500,below card resolution target,resolution or missing image review,,,,,
+5f7d5b85-bdab-42e0-8019-6b30c842cd2f,literary,Essays and Poems,324,500,below card resolution target,resolution or missing image review,,,,,
+7d6278bc-ed23-4e0e-a540-d4ff5194de12,literary,Less Than Zero,324,500,below card resolution target,resolution or missing image review,,,,,
+32b0e0e8-903f-4431-8d23-fa9b41f4dec0,literary,Lone Dog Road,,,missing cover,resolution or missing image review,,,,,
+c89ff8c9-046e-4606-a973-e47b5253fa19,literary,Of Human Bondage,304,500,below card resolution target,resolution or missing image review,,,,,
+1264bc11-c6f9-4ac4-9316-c0557c677c0d,literary,Of Mice and Men,,,missing cover,resolution or missing image review,,,,,
+d5783a84-0d5a-4514-b7da-2b8d8ca8e2ca,mystery,Assassins Anonymous,331,500,below card resolution target,resolution or missing image review,,,,,
+3c7938a6-b412-40a2-8fb4-2c346112a869,mystery,Big Little Lies,332,500,below card resolution target,resolution or missing image review,,,,,
+9d37a046-c1c2-4f0d-934a-68f4e06d1ad0,mystery,Company of Liars,326,500,below card resolution target,resolution or missing image review,,,,,
+b5f9a042-944d-46ec-a91f-257ab5fd0e4d,mystery,Hot Wax,128,197,below card resolution target,resolution or missing image review,,,original also undersized,128,197
+2a2ee53e-f6dc-42b9-99d4-51d3959aa926,mystery,If We Were Villains,336,500,below card resolution target,resolution or missing image review,,,,,
+d768a104-e97d-4022-89a3-5c571bd8de74,mystery,Strange Houses,317,500,below card resolution target,resolution or missing image review,,,,,
+d795a2cf-a6e7-4a74-aeb5-8677f8abd63e,mystery,Strange Pictures,320,500,below card resolution target,resolution or missing image review,,,,,
+a6455aad-21c2-42aa-8447-cd934b34fdec,nonfiction,A Brief History of Time,318,500,below card resolution target,resolution or missing image review,,,,,
+d439a9c8-bb02-4851-9ab1-b8bea4d4749b,nonfiction,An Enquiry Concerning Human Understanding,333,500,below card resolution target,resolution or missing image review,,,,,
+36c951e1-d92d-4c7a-8778-1bb2ab0f69b5,nonfiction,An Unquiet Mind,311,475,below card resolution target,resolution or missing image review,,,,,
+2e601dac-891b-4a30-a82e-066ea339c8eb,nonfiction,Beyond Good and Evil,324,500,below card resolution target,resolution or missing image review,,,,,
+e5cf02c4-0039-4b91-bef5-672c25566bff,nonfiction,Building Social Business,318,500,below card resolution target,resolution or missing image review,,,,,
+f8270e24-d328-4cf7-b63a-4f8acde84507,romance,A Broken Queen,,,missing cover,resolution or missing image review,,,,,
+94617659-d066-4fb9-9930-9f64c6851726,romance,A Court of Silver Flames,325,500,below card resolution target,resolution or missing image review,,,,,
+ab028d53-ff1c-4f99-acc7-fba59f0e8ddd,romance,A Court of Thorns and Roses,600,600,below card resolution target,resolution or missing image review,,,,,
+594361b3-4f19-4774-809c-41e7776acd6e,romance,A Court this Cruel and Lovely,313,500,below card resolution target,resolution or missing image review,,,,,
+6afdf544-4a9a-4549-83cf-9826dea0b1d4,romance,A Curse of Beasts and Magic,410,630,below card resolution target,resolution or missing image review,,,,,
+b220ab67-d2ea-4de2-b8d6-3b1423c84562,romance,A Deal with the Elf King,339,500,below card resolution target,resolution or missing image review,,,,,
+f079774c-447a-450b-a066-d876d80ad93f,romance,A False Start,326,500,below card resolution target,resolution or missing image review,,,,,
+549f6119-3342-4b43-bac8-3477240e1245,science fiction,1984,291,475,below card resolution target,resolution or missing image review,,,,,
+15d1a99e-8570-4e2e-bbd8-1f4d0f0334ce,science fiction,Absolution,,,missing cover,resolution or missing image review,,,,,
+a8deb26d-5f3c-43f3-a36f-69bd9c14d0de,science fiction,Area X,375,500,below card resolution target,resolution or missing image review,,,,,
+66aab1af-3dab-4f43-b616-615d443efebb,science fiction,Beings,128,195,below card resolution target,resolution or missing image review,,,original also undersized,128,195
+e7b6a76d-2318-4152-915f-aa8ed2ac9750,science fiction,Dune,333,500,below card resolution target,resolution or missing image review,,,,,
+8658795b-3c91-46c6-a507-f9c6b53caf0c,science fiction,Epiphany of The Long Sun,316,475,below card resolution target,resolution or missing image review,,,,,

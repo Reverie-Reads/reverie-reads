@@ -85,11 +85,15 @@ test('an arrangement follows the account into navigation and Home', async ({ pag
     await page.goto('/')
     await page.reload()
     await expect(page.locator('[data-home-module]')).toHaveCount(3)
-    expect(
-      await page
-        .locator('[data-home-module]')
-        .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-home-module'))),
-    ).toEqual(['reading', 'year', 'priority'])
+    // Both the default and saved arrangements contain three modules. Wait for identity,
+    // not just count, while account preferences hydrate after a full reload.
+    await expect
+      .poll(() =>
+        page
+          .locator('[data-home-module]')
+          .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-home-module'))),
+      )
+      .toEqual(['reading', 'year', 'priority'])
   } finally {
     await c.cleanup()
   }
