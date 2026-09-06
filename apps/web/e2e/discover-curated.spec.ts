@@ -94,7 +94,7 @@ test('an in-scope genre surfaces curated titles through the same shelf; out-of-s
   const c = await client()
   await stub(page)
   await signIn(page, c.session)
-  await page.goto('/discover')
+  await page.goto('/discover?browse=true')
 
   const chips = page.getByRole('group', { name: 'Browse a genre' })
   await chips.waitFor({ timeout: 20_000 })

@@ -23,13 +23,13 @@ lives in `ROADMAP.md`.
    hide/restore, preview/reset and the deliberate guest handoff. See
    `MODULAR_LIBRARY_ARRANGEMENTS.md` and `docs/backlog/task-modular-library-arrangements.md`.
    Keep atmosphere and recommendation scope independent of arrangement preferences.
-2. **DISCOVER AS A READING DECISION — WORKING STUDY FOR REVIEW.** Three guided paths, useful
-   book details, independent copy relationships, dismiss/undo, and saved-shortlist interactions
-   are demonstrated in `studies/discover/`. Read
-   [the interaction specification](studies/discover/DISCOVER_READING_DECISION.md) for evidence,
-   data dependencies, build order, and acceptance. The preview uses authored fixtures and
-   in-memory state; production Discover and its ranking are unchanged. Live anchor/mood scoring
-   and account-scoped session storage remain implementation work after review.
+2. **DISCOVER AS A READING DECISION — APPROVED, IMPLEMENTED IN PR #444.** The authenticated
+   page now follows the study's three guided paths, bounded catalog choices, book details,
+   independent copy relationships, dismiss/undo, and private saved shortlists. The original
+   [interaction specification](studies/discover/DISCOVER_READING_DECISION.md) remains the design
+   reference. [Implementation notes](../docs/tasks/discover-implementation.md) record the source
+   evidence, account/backup boundaries, and release checks. Future matching improvements should
+   be measured against useful selections, not a larger feed or unverified explanations.
 3. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
    icons, onboarding material, and one accurate demonstration. Preserve each room's own interface
    language. Do not reopen the chosen palette as a new concept exercise.

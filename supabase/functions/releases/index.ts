@@ -16,7 +16,7 @@
 // itself is service-role.
 
 import { captureEdgeError } from '../_shared/observe.ts'
-import { normalizeGoogle } from '../enrich/merge.ts'
+import { mapGenre, normalizeGoogle } from '../enrich/merge.ts'
 import { blendCuratedPool, tierDiscoverShelf } from './curated.ts'
 
 const cors = {
@@ -65,6 +65,9 @@ interface Hit {
   pub: string
   /** provenance: present (true) only on curated-injection hits — absent on live-query hits */
   curated?: boolean
+  genre?: string
+  genres?: string[]
+  description?: string
 }
 
 const norm = (s: string): string =>
@@ -106,6 +109,8 @@ function toHit(rec: any): Hit {
     cover: rec.cover ?? '',
     isbn: rec.isbn13 || rec.isbn10 || '',
     pub,
+    ...mapGenre(Array.isArray(rec.categories) ? rec.categories : []),
+    description: typeof rec.description === 'string' ? rec.description.slice(0, 2500) : '',
   }
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -233,7 +238,7 @@ Deno.serve(async (req: Request) => {
       const query = (body.query ?? '').trim()
       const genre = norm(body.genre ?? '')
       if (!query || !genre) return json({ error: 'missing genre/query' }, 400)
-      const key = `discover:${genre}`
+      const key = `discover:v2:${genre}`
       const cached = (await cacheGet(key)) as Hit[] | null
       if (cached) return json({ hits: cached })
       const hits = await fetchDiscoverShelf(query, genre)

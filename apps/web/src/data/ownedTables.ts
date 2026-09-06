@@ -40,6 +40,7 @@ export interface OwnedTable {
 
 export const USER_OWNED_TABLES: OwnedTable[] = [
   // ── the library itself ──
+  { table: 'discovery_sessions', owner: 'owner_id', plan: { backup: true } },
   { table: 'books', owner: 'owner_id', plan: { backup: true } },
   { table: 'reads', owner: 'owner_id', plan: { backup: true } },
   { table: 'lists', owner: 'owner_id', plan: { backup: true } },

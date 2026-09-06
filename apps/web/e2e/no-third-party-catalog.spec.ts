@@ -119,15 +119,28 @@ test('Discover mount makes no third-party catalog request', async ({ page }) => 
   await page.route('**books.google.com/books/content**', (r) =>
     r.fulfill({ status: 404, body: '' }),
   )
-  // The releases fn is stubbed to FAIL — the old code's fallback fired exactly here, so this is
-  // the state that used to leak. Empty shelf is the accepted cost, and it must stay silent.
+  // The releases fn is stubbed to FAIL — the old code's fallback fired exactly here.
+  // A source-supported curated shelf is allowed; a direct third-party catalog request is not.
   await page.route('**/functions/v1/releases**', (r) => r.fulfill({ status: 500, json: {} }))
 
   await page.goto('/discover')
-  await expect(page.getByRole('heading', { name: /discover/i }).first()).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'Find a book to get lost in.' })).toBeVisible({
     timeout: 20_000,
   })
-  await page.waitForTimeout(3000) // let any fallback fire if one existed
+  await page.waitForTimeout(3000) // Detect any request initiated by the guided entry screen.
+  expect(thirdParty, 'The guided entry screen reached a third-party catalog.').toEqual([])
+
+  // Choose a genre explicitly so the wider shelf really requests its provider. Merely mounting
+  // the all-genres catalog leaves that query disabled and cannot exercise the failed-source path.
+  const failedProvider = page.waitForResponse(
+    (response) => response.url().includes('/functions/v1/releases') && response.status() === 500,
+  )
+  await page.goto('/discover?browse=true&genre=fantasy')
+  await failedProvider
+  await expect(
+    page.getByRole('button', { name: 'View details for Fourth Wing', exact: true }).last(),
+  ).toBeVisible()
+  await page.waitForTimeout(3000) // Let any forbidden failed-provider fallback initiate a request.
 
   expect(
     thirdParty,

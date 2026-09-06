@@ -1,9 +1,11 @@
 # Discover: a few books to sit with
 
-Status: **interaction specification and working study for owner review**, 2026-09-06.
-This is the first deliverable in the agreed Discover redesign. It does not replace `/discover`,
-ship a new recommendation service, or persist account data. Open the standalone study at
-`http://127.0.0.1:4346/` while its local server is running.
+Status: **design approved; implementation in PR #444**, 2026-09-06.
+The standalone study remains the fixture-based design reference at `http://127.0.0.1:4346/`
+while its local server is running. The implementation now lives in the authenticated `/discover`
+route. Review [the implementation and release notes](../../../docs/tasks/discover-implementation.md)
+for the exact data boundaries and verification results. The capability audit below records the
+baseline before implementation; it is not a list of remaining work.
 
 ## The decision
 

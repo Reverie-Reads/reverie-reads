@@ -5,6 +5,7 @@ import {
   embeddingText,
   genreKey,
   type Book,
+  type DiscoveryBook,
 } from '@reverie/core'
 import { supabase } from './supabase'
 
@@ -16,7 +17,7 @@ import { supabase } from './supabase'
 // toward the reader's taste. This module stays pure/fetch-thin so that swap is a one-liner.
 
 /** Same shape as the Add screen's search hits — a Discover pick IS an add prefill. */
-export interface DiscoverHit {
+export interface DiscoverHit extends DiscoveryBook {
   /** Present for corpus-backed hits so Add preserves the exact shared-work identity. */
   corpusWorkId?: string
   title: string

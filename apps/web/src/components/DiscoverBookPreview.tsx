@@ -1,76 +1,29 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { normalizeIsbn, splitName, type Book } from '@reverie/core'
+import { discoveryRelationship, splitName, type Book } from '@reverie/core'
 import { Modal } from './Modal'
 import { CoverImage } from './CoverImage'
-import { supabase } from '../lib/supabase'
-import { enrichBookOutcome } from '../lib/enrich'
+import { fetchDiscoveryDetails, plainDescription } from '../lib/discoveryDetails'
 import { hitKey, type DiscoverHit } from '../lib/discover'
-
-interface Details {
-  description?: string | null
-  publisher?: string | null
-  language?: string | null
-}
-const normalize = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .trim()
-
-/** Source prose is rendered as text, never trusted markup or generated marketing copy. */
-function plainDescription(value: string): string {
-  const doc = new DOMParser().parseFromString(value, 'text/html')
-  doc.querySelectorAll('script,style').forEach((node) => node.remove())
-  doc.querySelectorAll('p,br').forEach((node) => node.append('\n'))
-  return doc.body.textContent?.trim() ?? ''
-}
 
 export function DiscoverBookPreview({
   hit,
   book,
   onClose,
+  reason,
+  discoverSession,
 }: {
   hit: DiscoverHit
   book?: Book
+  reason?: string
+  discoverSession?: string
   onClose: () => void
 }) {
   const author = hit.authors.join(', ')
   const { first, last } = splitName(hit.authors[0] ?? '')
   const details = useQuery({
     queryKey: ['discover-details', hit.corpusWorkId ?? hitKey(hit)],
-    queryFn: async (): Promise<Details> => {
-      if (hit.corpusWorkId) {
-        const { data, error } = await supabase
-          .from('works')
-          .select('description,publisher,language')
-          .eq('id', hit.corpusWorkId)
-          .maybeSingle()
-        if (error) throw error
-        return data ?? {}
-      }
-      const result = await enrichBookOutcome({
-        title: hit.title,
-        author: hit.authors[0],
-        isbn: hit.isbn || undefined,
-      })
-      if (result.status === 'failed' || result.status === 'rate_limited')
-        throw new Error('Book details are unavailable right now.')
-      if (result.status !== 'ok') return {}
-      const data = result.data
-      const isbn = normalizeIsbn(hit.isbn)
-      const sameEdition =
-        isbn &&
-        [data.isbn, data.isbn10, data.isbn13, ...(data.isbns ?? [])].some(
-          (value) => normalizeIsbn(value) === isbn,
-        )
-      const sameWork =
-        normalize(hit.title) === normalize(data.title ?? '') &&
-        Boolean(hit.authors[0]) &&
-        (data.authors ?? []).some((name) => normalize(name) === normalize(hit.authors[0]!))
-      // A plausible title search is not enough to show another work's synopsis as this one's.
-      return sameEdition || (sameWork && data.confidence === 'high') ? data : {}
-    },
+    queryFn: () => fetchDiscoveryDetails(hit),
     staleTime: 1000 * 60 * 30,
     retry: false,
   })
@@ -112,9 +65,16 @@ export function DiscoverBookPreview({
               </div>
             )}
           </dl>
-          {book && <p className="mt-4 text-sm font-semibold text-ink">Already in your library</p>}
+          {book && (
+            <p className="mt-4 text-sm font-semibold text-ink">{discoveryRelationship(book)}</p>
+          )}
         </div>
       </div>
+      {reason && (
+        <p className="mt-6 border-l-2 border-line pl-4 text-base leading-relaxed text-muted">
+          {reason}
+        </p>
+      )}
       <div className="mt-6 border-t border-line pt-5">
         <h3 className="text-lg font-semibold leading-snug text-ink">About this book</h3>
         {details.isPending ? (
@@ -145,7 +105,12 @@ export function DiscoverBookPreview({
         </p>
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line pt-5">
-        {book ? (
+        {details.data?.unavailable ? (
+          <p role="status" className="text-sm text-muted">
+            This catalog record is no longer available. Your saved shortlist still keeps its
+            original details.
+          </p>
+        ) : book ? (
           <Link
             to="/book/$bookId"
             params={{ bookId: book.id }}
@@ -164,6 +129,7 @@ export function DiscoverBookPreview({
               cover: hit.cover || undefined,
               pub: hit.pub || undefined,
               want: true,
+              discoverSession,
             }}
             className="skin-control skin-btn-primary inline-flex min-h-11 items-center px-4 text-sm font-semibold"
           >

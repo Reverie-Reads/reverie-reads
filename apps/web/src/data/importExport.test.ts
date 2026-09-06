@@ -14,6 +14,7 @@ interface Row {
 /** The tables importExport.ts touches. A literal union (not an index signature) so the strict
  *  `noUncheckedIndexedAccess` build still sees every table as present. */
 type Table =
+  | 'discovery_sessions'
   | 'books'
   | 'tropes'
   | 'moods'
@@ -35,6 +36,7 @@ type Table =
 type Db = Record<Table, Row[]>
 
 const TABLES: Table[] = [
+  'discovery_sessions',
   'books', 'tropes', 'moods', 'book_tropes', 'book_moods', 'author_follows', 'reads', 'lists',
   'list_items', 'reviews', 'reading_orders', 'reading_order_items', 'merge_verdicts', 'series',
   'series_entries', 'trope_suggestions', 'series_merge_decisions', 'profiles',
@@ -380,6 +382,7 @@ function seedOldAccount() {
       // surviving_series_id can't be remapped onto the new account's regenerated series ids).
       { id: 'smd-same', owner_id: OWNER, name_key_a: 'acotar', name_key_b: 'a court of thorns and roses', ruling: 'same', surviving_series_id: 'ser1', alias_name: 'ACOTAR' },
     ],
+    discovery_sessions: [{ owner_id: OWNER, id: 'f9100000-0000-4000-8000-000000000001', document: { version: 1, id: 'f9100000-0000-4000-8000-000000000001', createdAt: '2026-09-06T00:00:00.000Z', intent: { kind: 'mood', moods: ['Hopeful'] }, picks: [{ book: { title: 'A welcome', authors: ['Nell Stone'], cover: '', isbn: '', pub: '' }, reason: 'A hopeful description.', basis: 'description' }], dismissed: [] } }],
     profiles: [
       {
         id: OWNER,
@@ -743,7 +746,7 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
       author_follows: { author_name: string; state: string }[]
       profile: Record<string, unknown>
     }
-    expect(parsed.v).toBe(8)
+    expect(parsed.v).toBe(9)
     expect((parsed.tropes['book-a'] ?? []).map((t) => t.name).sort()).toEqual(['Dragons With Opinions', 'Enemies to Lovers'])
     expect(parsed.moods['book-a']).toEqual([{ name: 'Devastating' }])
     expect(parsed.author_follows).toHaveLength(2)
@@ -1313,5 +1316,28 @@ describe('a backup cannot silently lose rows — paging, and the file’s own co
     const json = await buildBackup()
     wipeToFreshAccount()
     await expect(restoreBackup(json)).resolves.toMatchObject({ books: 2 })
+  })
+})
+
+describe('saved discoveries in reader backups', () => {
+  it('round-trips ordered public snapshots into the current account without adding books', async () => {
+    const original = structuredClone(db.discovery_sessions[0])
+    const backup = await buildBackup()
+    const file = JSON.parse(backup)
+    expect(file.counts.discovery_sessions).toBe(1)
+    expect(file.discovery_sessions[0].owner_id).toBeUndefined()
+    wipeToFreshAccount()
+    await restoreBackup(backup)
+    expect(db.discovery_sessions[0]?.owner_id).toBe(NEW_OWNER)
+    expect(db.discovery_sessions[0]?.id).toBe(original?.id)
+    expect((db.discovery_sessions[0]?.document as { picks: { book: {title: string} }[] }).picks[0]?.book.title).toBe('A welcome')
+    expect(db.books.some(book => book.title === 'A welcome')).toBe(false)
+  })
+  it('rejects an unreadable snapshot before restoring any section', async () => {
+    const file = JSON.parse(await buildBackup())
+    file.discovery_sessions[0].document.version = 999
+    wipeToFreshAccount(); access=[]
+    await expect(restoreBackup(JSON.stringify(file))).rejects.toThrow('unreadable shortlist')
+    expect(access.some(a => a.mode !== 'select')).toBe(false)
   })
 })
