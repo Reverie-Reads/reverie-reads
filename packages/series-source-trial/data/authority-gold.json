@@ -5980,6 +5980,164 @@
         ],
         "reviewNote": "Leslye Penelope's current FAQ answers the exact sequel question by stating that The Monsters We Defy was written as a standalone novel and that no sequel is planned. This is direct author-controlled evidence rather than an inference from catalog silence."
       }
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-the-doors-of-eden",
+      "title": "The Doors of Eden",
+      "authors": ["Adrian Tchaikovsky"],
+      "identifiers": { "isbn13": ["9780316705783"] },
+      "sampleOrigin": "authority_negative_control",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/adrian-tchaikovsky/the-doors-of-eden/9780316705783/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://adriantchaikovsky.com/stand-alone-novels.html"
+          }
+        ],
+        "reviewNote": "Adrian Tchaikovsky's current author catalog places the exact Doors of Eden entry under Stand Alone Novels and explicitly describes the section's work as standalone SF. The ruling does not rely on Hachette's selection heading."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-provenance",
+      "title": "Provenance",
+      "authors": ["Ann Leckie"],
+      "identifiers": { "isbn13": ["9780316388634", "9780316565202"] },
+      "sampleOrigin": "authority_negative_control",
+      "strata": ["multi_series_or_connected_universe", "standalone_control"],
+      "riskFeatures": ["connected_universe"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://orbitworks.net/titles/ann-leckie/provenance/9780316565202/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://orbitworks.net/titles/ann-leckie/provenance/9780316565202/"
+          }
+        ],
+        "reviewNote": "Orbit's exact product page affirmatively calls Provenance a stand-alone novel set in the world of the Imperial Radch trilogy. Gold therefore records no bibliographic membership while retaining connected-universe risk; shared-world language is not reversed into series membership."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-century-rain",
+      "title": "Century Rain",
+      "authors": ["Alastair Reynolds"],
+      "identifiers": { "isbn13": ["9780316462686"] },
+      "sampleOrigin": "authority_negative_control",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/alastair-reynolds/century-rain/9780316462686/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          { "kind": "author", "url": "https://www.alastairreynolds.com/novels/" }
+        ],
+        "reviewNote": "Alastair Reynolds's current novels page names Century Rain among four unrelated standalone novels and says he does not intend to return to its world. This is direct exact-author evidence rather than an inference from catalog separation."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-ymir",
+      "title": "Ymir",
+      "authors": ["Rich Larson"],
+      "identifiers": { "isbn13": ["9780316416580"] },
+      "sampleOrigin": "authority_negative_control",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/rich-larson/ymir/9780316416580/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/series/rich-larson/the-violet-wars/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          { "kind": "author", "url": "https://www.patreon.com/richlarson/about" }
+        ],
+        "reviewNote": "Rich Larson's current author-controlled biography explicitly calls Ymir and Annex two utterly unrelated standalone novels. That direct negative evidence resolves Hachette's competing Violet Wars relationship as a catalog grouping false positive rather than allowing a publisher series field to manufacture bibliographic membership."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-eversion",
+      "title": "Eversion",
+      "authors": ["Alastair Reynolds"],
+      "identifiers": { "isbn13": ["9780316462822", "9780575090781"] },
+      "sampleOrigin": "authority_negative_control",
+      "strata": ["recent_traditional", "standalone_control"],
+      "publicationYear": 2022,
+      "publicationPath": "traditional",
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachette.co.uk/titles/alastair-reynolds/eversion/9780575090781/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          { "kind": "author", "url": "https://www.alastairreynolds.com/about/" }
+        ],
+        "reviewNote": "Alastair Reynolds's current biography identifies Eversion as his 2022 standalone story and contrasts it with the named Revelation Space and Prefect Dreyfus sequence works around it. The exact affirmative statement establishes the negative truth."
+      }
     }
   ],
   "sharedSources": {

@@ -217,6 +217,18 @@
       "selectionRule": "Include all seventeen titles under the publisher list's Fantasy heading at the observation date, including ambiguous labels and any label contradicted by stronger current relational evidence, with no provider-result filtering. The heading selects the challenge frame but cannot establish gold truth."
     },
     {
+      "id": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "label": "Complete Hachette standalone SFF science fiction section observed 2026-09-06",
+      "expectedCases": 18,
+      "strata": ["standalone_control"],
+      "observedOn": "2026-09-06",
+      "source": {
+        "kind": "publisher",
+        "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+      },
+      "selectionRule": "Include all eighteen titles under the publisher list's Science Fiction heading at the observation date, including ambiguous labels and any label contradicted by stronger current relational evidence, with no provider-result filtering. The heading selects the challenge frame but cannot establish gold truth."
+    },
+    {
       "id": "fern_michaels_2024_matching_year_releases",
       "label": "Complete Fern Michaels 2024 matching-year release frame",
       "expectedCases": 5,

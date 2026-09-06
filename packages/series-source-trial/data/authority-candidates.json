@@ -2882,6 +2882,284 @@
       ],
       "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
       "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The exact publisher page establishes the work, author, and 2022 publication but does not independently make an affirmative standalone or bibliographic-series claim; debut wording is not relationship evidence."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-goldilocks",
+      "title": "Goldilocks",
+      "authors": ["L. R. Lam"],
+      "identifiers": { "isbn13": ["9780316462884"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/l-r-lam/goldilocks/9780316462884/"
+        },
+        { "kind": "author", "url": "https://lrlam.co.uk/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The author's catalog distinguishes several named series and duologies from Goldilocks, but exclusion from those relationships is not an affirmative standalone claim, so the case remains unresolved."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-the-ministry-for-the-future",
+      "title": "The Ministry for the Future",
+      "authors": ["Kim Stanley Robinson"],
+      "identifiers": { "isbn13": ["9780316300162"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/kim-stanley-robinson/the-ministry-for-the-future/9780316300162/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact publisher page identifies the work but does not independently affirm standalone status. A translated publisher page uses a standalone label, but the current review does not promote that cross-language edition without an explicit work-identity bridge."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-the-world-gives-way",
+      "title": "The World Gives Way",
+      "authors": ["Marissa Levien"],
+      "identifiers": { "isbn13": ["9780316592390"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/marissa-levien/the-world-gives-way/9780316592390/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact publisher page calls the work a debut and first novel, which establishes career context but not the absence of a bibliographic relationship."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-our-war",
+      "title": "Our War",
+      "authors": ["Craig DiLouie"],
+      "identifiers": { "isbn13": ["9780316525251"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/craig-dilouie/our-war/9780316525251/"
+        },
+        { "kind": "author", "url": "https://craigdilouie.com/book/our-war/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact author and publisher pages identify the novel, but the author's broad site taxonomy is not a bibliographic series assertion and neither page independently affirms standalone status."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-afterwar",
+      "title": "Afterwar",
+      "authors": ["Lilith Saintcrow"],
+      "identifiers": { "isbn13": ["9780316558273"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/lilith-saintcrow/afterwar/9780316558273/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact publisher page establishes the work but makes no affirmative standalone or bibliographic-series claim; the author's site was unavailable to the bounded review, which is unresolved rather than negative evidence."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-84k",
+      "title": "84K",
+      "authors": ["Claire North"],
+      "identifiers": { "isbn13": ["9780316316781"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachette.co.uk/titles/claire-north/84k/9780356507392/"
+        },
+        { "kind": "author", "url": "https://www.clairenorth.com/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact publisher and author catalog pages identify 84K but do not independently affirm standalone status; the absence of a displayed series is not negative truth."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-a-boy-and-his-dog-at-the-end-of-the-world",
+      "title": "A Boy and His Dog at the End of the World",
+      "authors": ["C. A. Fletcher"],
+      "identifiers": { "isbn13": ["9780316449472", "9780356510934"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachette.co.uk/titles/c-a-fletcher/a-boy-and-his-dog-at-the-end-of-the-world/9780356510934/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact publisher page establishes the work and its self-contained quest, but plot completeness and an unforgettable ending are not bibliographic standalone evidence."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-the-ship",
+      "title": "The Ship",
+      "authors": ["Antonia Honeywell"],
+      "identifiers": { "isbn13": ["9780316469890"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/antonia-honeywell/the-ship/9780316469890/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact publisher page identifies the debut novel but does not independently affirm standalone status, so career-order language is not promoted into relationship truth."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-places-in-the-darkness",
+      "title": "Places in the Darkness",
+      "authors": ["Chris Brookmyre"],
+      "identifiers": { "isbn13": ["9780316435253", "9780316435260"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/chris-brookmyre/places-in-the-darkness/9780316435260/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact publisher page describes one space-station investigation but does not independently classify the work as standalone or assign a bibliographic relationship."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-six-wakes",
+      "title": "Six Wakes",
+      "authors": ["Mur Lafferty"],
+      "identifiers": { "isbn13": ["9780316389662"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/mur-lafferty/six-wakes/9780316389662/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact publisher page contains a bookseller praise quotation calling Six Wakes stand-alone, but attributed praise is not the publisher's own classification and cannot establish gold truth."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-the-last-astronaut",
+      "title": "The Last Astronaut",
+      "authors": ["David Wellington"],
+      "identifiers": { "isbn13": ["9780316419550"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/david-wellington/the-last-astronaut/9780316419550/"
+        },
+        { "kind": "author", "url": "https://davidwellington.net/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The author's current site separates The Last Astronaut from the explicitly named Red Space trilogy, but exclusion from that series is not affirmative evidence that no other bibliographic relationship exists."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-adrift",
+      "title": "Adrift",
+      "authors": ["Rob Boffard"],
+      "identifiers": { "isbn13": ["9780316519120"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/rob-boffard/adrift/9780316519120/"
+        }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact publisher page establishes the work's identity and survival plot but makes no affirmative standalone or bibliographic-series statement."
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-the-body-scout",
+      "title": "The Body Scout",
+      "authors": ["Lincoln Michel"],
+      "identifiers": { "isbn13": ["9780316628709"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/lincoln-michel/the-body-scout/9780316628709/"
+        },
+        { "kind": "author", "url": "https://lincolnmichel.com/news-events/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The exact author and publisher pages identify The Body Scout as a novel and debut novel, but neither independently makes an affirmative standalone or series claim."
     }
   ]
 }
