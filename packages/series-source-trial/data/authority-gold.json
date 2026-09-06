@@ -4043,6 +4043,955 @@
         ],
         "reviewNote": "The author's launch post explicitly compares Confusables 1 with Confusables 2, and her own site repeatedly markets The Little Book of Confusables 1 + 2 as a paired sequence. Together with the exact numbered title, this establishes primary membership and publication position two without treating the numeral alone as evidence."
       }
+    },
+    {
+      "id": "prh-2026-sff-a-parade-of-horribles",
+      "title": "A Parade of Horribles",
+      "authors": [
+        "Matt Dinniman"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217190065"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/812017/a-parade-of-horribles-by-matt-dinniman/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Dungeon Crawler Carl",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 8,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/812017/a-parade-of-horribles-by-matt-dinniman/"
+          }
+        ],
+        "reviewNote": "The publisher calls the exact work the eighth book in the Dungeon Crawler Carl series."
+      }
+    },
+    {
+      "id": "prh-2026-sff-the-exquisite-torment-of-loving-your-enemy",
+      "title": "The Exquisite Torment of Loving Your Enemy",
+      "authors": [
+        "Brigitte Knightley"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593819487"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/768664/the-exquisite-torment-of-loving-your-enemy-by-brigitte-knightley/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Dearly Beloathed",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 2,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/768664/the-exquisite-torment-of-loving-your-enemy-by-brigitte-knightley/"
+          }
+        ],
+        "reviewNote": "The exact publisher product page labels the work Book 2 of the Dearly Beloathed sequence."
+      }
+    },
+    {
+      "id": "prh-2026-sff-broken-dove",
+      "title": "Broken Dove",
+      "authors": [
+        "Dani Francis"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593875490"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/763700/broken-dove-by-dani-francis/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Silver Elite",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 2,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/763700/broken-dove-by-dani-francis/"
+          }
+        ],
+        "reviewNote": "The exact publisher page labels the work Book 2 of Silver Elite and calls it the sequel to Silver Elite."
+      }
+    },
+    {
+      "id": "prh-2026-sff-defy-the-dusk",
+      "title": "Defy the Dusk",
+      "authors": [
+        "Danielle L. Jensen"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593975121"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/773240/defy-the-dusk-by-danielle-l-jensen/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Sundering Duet",
+            "aliases": [
+              "Sundering Duet"
+            ],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 1,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/773240/defy-the-dusk-by-danielle-l-jensen/"
+          }
+        ],
+        "reviewNote": "The exact publisher page labels the work Book One of The Sundering Duet and calls it the first book in a fantasy duology."
+      }
+    },
+    {
+      "id": "prh-2026-sff-dominion",
+      "title": "Dominion",
+      "authors": [
+        "Jean Kwok"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217044368"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/776554/dominion-by-jean-kwok/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Silk and Iron Trilogy",
+            "aliases": [
+              "Silk and Iron Trilogy"
+            ],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 1,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/776554/dominion-by-jean-kwok/"
+          }
+        ],
+        "reviewNote": "The exact publisher product page labels the work Book 1 of The Silk and Iron Trilogy."
+      }
+    },
+    {
+      "id": "prh-2026-sff-twelve-months",
+      "title": "Twelve Months",
+      "authors": [
+        "Jim Butcher"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593199343"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/645506/twelve-months-by-jim-butcher/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Dresden Files",
+            "aliases": [
+              "The Dresden Files"
+            ],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 18,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/645506/twelve-months-by-jim-butcher/"
+          }
+        ],
+        "reviewNote": "The exact publisher product page labels the work Book 18 of Dresden Files."
+      }
+    },
+    {
+      "id": "prh-2026-sff-strange-familiars",
+      "title": "Strange Familiars",
+      "authors": [
+        "Keshe Chow"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593956489"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/796271/strange-familiars-by-keshe-chow/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Seamere College Duology",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 1,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/796271/strange-familiars-by-keshe-chow/"
+          }
+        ],
+        "reviewNote": "The exact publisher product page labels the work Book 1 of Seamere College Duology."
+      }
+    },
+    {
+      "id": "prh-2026-sff-beneath",
+      "title": "Beneath",
+      "authors": [
+        "Ariel Sullivan"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217091027"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional",
+        "multi_series_or_connected_universe"
+      ],
+      "riskFeatures": [
+        "multi_series"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/787678/beneath-by-ariel-sullivan/"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.arielsullivan.com/books/beneath"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "membershipsComplete": true,
+        "memberships": [
+          {
+            "series": "Conform",
+            "aliases": [
+              "The Conform series"
+            ],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 2,
+                "orderType": "publication"
+              }
+            ]
+          },
+          {
+            "series": "Thousand Voices",
+            "aliases": [],
+            "role": "unknown",
+            "positions": []
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/787678/beneath-by-ariel-sullivan/"
+          },
+          {
+            "kind": "author",
+            "url": "https://www.arielsullivan.com/books/beneath"
+          }
+        ],
+        "reviewNote": "The exact publisher page labels the work Book 2 of The Conform series, while the author's exact page independently assigns it to Thousand Voices without an order. Both direct bibliographic memberships are retained."
+      }
+    },
+    {
+      "id": "prh-2026-sff-the-empire-burns-at-dawn",
+      "title": "The Empire Burns at Dawn",
+      "authors": [
+        "Fatima Al-Shemary"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217187690"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/801714/the-empire-burns-at-dawn-by-fatima-al-shemary/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Ages of Alifan",
+            "aliases": [
+              "Ages of Alifan"
+            ],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 1,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/801714/the-empire-burns-at-dawn-by-fatima-al-shemary/"
+          }
+        ],
+        "reviewNote": "The exact publisher product page labels the work Book 1 of The Ages of Alifan."
+      }
+    },
+    {
+      "id": "prh-2026-sff-a-glimmer-of-death",
+      "title": "A Glimmer of Death",
+      "authors": [
+        "Laurell K. Hamilton"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593637876"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/723061/a-glimmer-of-death-by-laurell-k-hamilton/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Merry Gentry",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 10,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/723061/a-glimmer-of-death-by-laurell-k-hamilton/"
+          }
+        ],
+        "reviewNote": "The exact publisher page labels the work Book 10 of Merry Gentry and calls it the first half of the series conclusion."
+      }
+    },
+    {
+      "id": "prh-2026-sff-lore-olympus-volume-eleven",
+      "title": "Lore Olympus: Volume Eleven",
+      "authors": [
+        "Rachel Smythe"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217091218"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/789707/lore-olympus-volume-eleven-by-rachel-smythe/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Lore Olympus",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 11,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/789707/lore-olympus-volume-eleven-by-rachel-smythe/"
+          }
+        ],
+        "reviewNote": "The exact publisher product page labels the work Book 11 of Lore Olympus."
+      }
+    },
+    {
+      "id": "prh-2026-sff-exodus-the-helium-sea",
+      "title": "Exodus: The Helium Sea",
+      "authors": [
+        "Peter F. Hamilton"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593357699"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/674427/exodus-the-helium-sea-by-peter-f-hamilton/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Exodus: The Archimedes Engine",
+            "aliases": [
+              "The Archimedes Engine",
+              "Archimedes Engine"
+            ],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 2,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/674427/exodus-the-helium-sea-by-peter-f-hamilton/"
+          }
+        ],
+        "reviewNote": "The exact publisher page labels the work Book 2 of Exodus: The Archimedes Engine and calls it the duology conclusion."
+      }
+    },
+    {
+      "id": "prh-2026-sff-innamorata",
+      "title": "Innamorata",
+      "authors": [
+        "Ava Reid"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593722596"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/726604/innamorata-by-ava-reid/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The House of Teeth Duology",
+            "aliases": [
+              "House of Teeth"
+            ],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 1,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/726604/innamorata-by-ava-reid/"
+          }
+        ],
+        "reviewNote": "The exact publisher page labels the work Book 1 of The House of Teeth Duology and prints Book One of that duology in its description."
+      }
+    },
+    {
+      "id": "prh-2026-sff-dreamers-of-the-full-moon-coffee-shop",
+      "title": "Dreamers of the Full Moon Coffee Shop",
+      "authors": [
+        "Mai Mochizuki"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217300464"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/819226/dreamers-of-the-full-moon-coffee-shop-by-mai-mochizuki-translated-by-jordan-taylor/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Full Moon Coffee Shop",
+            "aliases": [
+              "The Full Moon Coffee Shop"
+            ],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 3,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/819226/dreamers-of-the-full-moon-coffee-shop-by-mai-mochizuki-translated-by-jordan-taylor/"
+          }
+        ],
+        "reviewNote": "The exact publisher page labels the work Book 3 of Full Moon Coffee Shop. Its description also calls the novel standalone, which is a readability claim and does not erase the explicit bibliographic relationship."
+      }
+    },
+    {
+      "id": "prh-2026-sff-the-first-step",
+      "title": "The First Step",
+      "authors": [
+        "Tao Wong"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9798217188420"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/804197/the-first-step-by-tao-wong/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "A Thousand Li",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 1,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/804197/the-first-step-by-tao-wong/"
+          }
+        ],
+        "reviewNote": "The exact publisher product page labels the work Book 1 of A Thousand Li."
+      }
+    },
+    {
+      "id": "prh-2026-sff-under-the-oak-tree-volume-4-the-novel",
+      "title": "Under the Oak Tree: Volume 4 (The Novel)",
+      "authors": [
+        "Suji Kim"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593974131"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/772414/under-the-oak-tree-volume-4-the-novel-by-suji-kim/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Under the Oak Tree – Novel",
+            "aliases": [
+              "Under the Oak Tree Novel"
+            ],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 4,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/772414/under-the-oak-tree-volume-4-the-novel-by-suji-kim/"
+          }
+        ],
+        "reviewNote": "The exact publisher product page labels the work Book 4 of Under the Oak Tree – Novel."
+      }
+    },
+    {
+      "id": "prh-2026-sff-critical-role-the-mighty-nein-children-of-empire",
+      "title": "Critical Role: The Mighty Nein--Children of Empire",
+      "authors": [
+        "Nibedita Sen"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593874295"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional",
+        "multi_series_or_connected_universe"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/760755/critical-role-the-mighty-nein--children-of-empire-by-nibedita-sen/"
+        },
+        {
+          "kind": "publisher_catalog",
+          "url": "https://www.penguinrandomhouse.com/series/R1C/critical-role/"
+        }
+      ],
+      "riskFeatures": [
+        "connected_universe"
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "membershipsComplete": true,
+        "memberships": [
+          {
+            "series": "Critical Role",
+            "aliases": [
+              "Critical Role Series"
+            ],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.penguinrandomhouse.com/books/760755/critical-role-the-mighty-nein--children-of-empire-by-nibedita-sen/"
+          },
+          {
+            "kind": "publisher_catalog",
+            "url": "https://www.penguinrandomhouse.com/series/R1C/critical-role/"
+          }
+        ],
+        "reviewNote": "The exact publisher page establishes the work, while Penguin Random House's dedicated Critical Role series roster explicitly includes the exact title among the series' ten titles. Campaign continuity is not used as the relationship evidence, and no order is inferred."
+      }
     }
   ],
   "sharedSources": {

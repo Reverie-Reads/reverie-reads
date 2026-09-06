@@ -1,5 +1,5 @@
 export const AUTHORITY_ACQUISITION_PROMPT_VERSION =
-  'authority-acquisition-v5-numbered-sequence-evidence'
+  'authority-acquisition-v6-reading-independence-evidence'
 export const AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION =
   'authority-acquisition-repair-v1-structure-only'
 
@@ -33,7 +33,9 @@ Rules:
 - "Standalone" may describe reading independence rather than bibliographic classification. If a
   qualifying source also assigns the exact work to a named bibliographic series, classify it as
   series and describe the independently-readable claim in uncertainties. Use standalone only when
-  no qualifying bibliographic series membership is present.
+  no qualifying bibliographic series membership is present. A source saying a work "works as,"
+  "reads as," or "can be read as" a standalone establishes reading independence only; it does not
+  affirmatively classify the work as bibliographically standalone.
 - Distinguish a bibliographic series from a universe, setting, collection, companion grouping, or
   recommended reading order. memberships contains bibliographic series only. A standalone inside a
   named universe stays classification standalone with an empty memberships array; describe its

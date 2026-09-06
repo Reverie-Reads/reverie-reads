@@ -62,16 +62,16 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 201,
-    reviewed: 129,
-    candidate: 72,
-    reviewedPositive: 103,
+    selected: 231,
+    reviewed: 146,
+    candidate: 85,
+    reviewedPositive: 120,
     reviewedStandalone: 26,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 71,
+    reviewed_cases: 54,
     reviewed_positive_cases: 0,
     reviewed_standalone_cases: 24,
   })
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 129, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 146, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -116,8 +116,8 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     ),
     {
       recent_independent_or_kindle_first: { reviewed: 36, gap: 14 },
-      recent_traditional: { reviewed: 34, gap: 16 },
-      multi_series_or_connected_universe: { reviewed: 18, gap: 2 },
+      recent_traditional: { reviewed: 51, gap: 0 },
+      multi_series_or_connected_universe: { reviewed: 20, gap: 0 },
       standalone_control: { reviewed: 33, gap: 17 },
     },
   )
@@ -348,6 +348,76 @@ test('keeps the complete 2025 Selfies general non-fiction frame and direct numbe
   assert.equal(confusables?.truth.standalone, false)
   assert.equal(confusables?.truth.memberships[0]?.series, 'The Little Book of Confusables')
   assert.equal(confusables?.truth.memberships[0]?.positions[0]?.value, 2)
+})
+
+test('keeps the complete PRH 2026 SFF frame and exact product-page relationships', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes(
+      'prh_2026_fantasy_science_fiction_observed_2026_09_06',
+    ),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 30)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 17)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 13)
+  assert.equal(
+    frame.every(
+      (testCase) =>
+        testCase.publicationYear === 2026 &&
+        testCase.publicationPath === 'traditional' &&
+        testCase.strata.includes('recent_traditional'),
+    ),
+    true,
+  )
+
+  const relationships = new Map([
+    ['prh-2026-sff-a-parade-of-horribles', ['Dungeon Crawler Carl', 8]],
+    ['prh-2026-sff-the-exquisite-torment-of-loving-your-enemy', ['Dearly Beloathed', 2]],
+    ['prh-2026-sff-broken-dove', ['Silver Elite', 2]],
+    ['prh-2026-sff-defy-the-dusk', ['The Sundering Duet', 1]],
+    ['prh-2026-sff-dominion', ['The Silk and Iron Trilogy', 1]],
+    ['prh-2026-sff-twelve-months', ['Dresden Files', 18]],
+    ['prh-2026-sff-strange-familiars', ['Seamere College Duology', 1]],
+    ['prh-2026-sff-beneath', ['Conform', 2]],
+    ['prh-2026-sff-the-empire-burns-at-dawn', ['The Ages of Alifan', 1]],
+    ['prh-2026-sff-a-glimmer-of-death', ['Merry Gentry', 10]],
+    ['prh-2026-sff-lore-olympus-volume-eleven', ['Lore Olympus', 11]],
+    ['prh-2026-sff-exodus-the-helium-sea', ['Exodus: The Archimedes Engine', 2]],
+    ['prh-2026-sff-innamorata', ['The House of Teeth Duology', 1]],
+    ['prh-2026-sff-dreamers-of-the-full-moon-coffee-shop', ['Full Moon Coffee Shop', 3]],
+    ['prh-2026-sff-the-first-step', ['A Thousand Li', 1]],
+    ['prh-2026-sff-under-the-oak-tree-volume-4-the-novel', ['Under the Oak Tree – Novel', 4]],
+  ])
+  for (const [id, [series, position]] of relationships) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, false)
+    assert.equal(testCase?.truth.memberships[0]?.series, series)
+    assert.equal(testCase?.truth.memberships[0]?.positions[0]?.value, position)
+  }
+
+  assert.equal(byId.get('prh-2026-sff-fishbone-cinderella')?.truth.status, 'candidate')
+  assert.equal(byId.get('prh-2026-sff-intercepts')?.truth.status, 'candidate')
+  const beneath = byId.get('prh-2026-sff-beneath')
+  assert.equal(beneath?.truth.membershipsComplete, true)
+  assert.deepEqual(
+    beneath?.truth.memberships.map(({ series, positions }) => [series, positions]),
+    [
+      ['Conform', [{ value: 2, orderType: 'publication' }]],
+      ['Thousand Voices', []],
+    ],
+  )
+  assert.deepEqual(beneath?.riskFeatures, ['multi_series'])
+  assert.deepEqual(byId.get('prh-2026-sff-star-wars-outlaws-low-red-moon')?.riskFeatures, [
+    'connected_universe',
+  ])
+  const criticalRole = byId.get('prh-2026-sff-critical-role-the-mighty-nein-children-of-empire')
+  assert.equal(criticalRole?.truth.status, 'reviewed')
+  assert.equal(criticalRole?.truth.membershipsComplete, true)
+  assert.equal(criticalRole?.truth.memberships[0]?.series, 'Critical Role')
+  assert.deepEqual(criticalRole?.truth.memberships[0]?.positions, [])
+  assert.deepEqual(criticalRole?.riskFeatures, ['connected_universe'])
 })
 
 test('keeps both complete Fern Michaels matching-year frames and direct relationship truth', async () => {

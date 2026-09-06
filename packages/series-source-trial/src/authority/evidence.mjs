@@ -138,12 +138,27 @@ const knownMembershipEvidenceRisk = (source) => {
   return null
 }
 
+const knownStandaloneEvidenceRisk = (source) => {
+  const summary = source?.evidenceSummary ?? ''
+  if (
+    /\b(?:works?|functions?|reads?) as (?:an? )?stand-?alone\b/i.test(summary) ||
+    /\b(?:can|could|may|might) be (?:read|enjoyed|understood) (?:as (?:an? )?stand-?alone|independently)\b/i.test(
+      summary,
+    ) ||
+    /\bindependently readable\b/i.test(summary)
+  ) {
+    return 'reading_independence_not_classification'
+  }
+  return null
+}
+
 const sourceClassificationEligible = (source, blockedUrls, support) => {
   if (!source || !asArray(source.supports).includes(support)) return false
   const blocked = new Set(asArray(blockedUrls).map(comparableUrl).filter(Boolean))
   if (blocked.has(comparableUrl(source.url))) return false
   if (knownClassificationRisk(source)) return false
   if (support === 'series_membership' && knownMembershipEvidenceRisk(source)) return false
+  if (support === 'standalone' && knownStandaloneEvidenceRisk(source)) return false
   if (support === 'standalone' && !/\bstand-?alones?\b/i.test(source.evidenceSummary ?? '')) {
     return false
   }
@@ -204,13 +219,14 @@ export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, p
         !classificationBlocked.has(comparableUrl(normalizedSource.url))
       ) {
         const relationshipRisk = knownMembershipEvidenceRisk(normalizedSource)
+        const standaloneRisk = knownStandaloneEvidenceRisk(normalizedSource)
         return {
           ...normalizedSource,
-          supports: relationshipRisk
-            ? supports.filter(
-                (support) => support !== 'series_membership' && support !== 'position',
-              )
-            : supports,
+          supports: supports.filter(
+            (support) =>
+              !(relationshipRisk && ['series_membership', 'position'].includes(support)) &&
+              !(standaloneRisk && support === 'standalone'),
+          ),
         }
       }
       return {
@@ -341,6 +357,14 @@ export function validateAuthorityAcquisition(target, output, consultedUrls, poli
     const membershipRisk = knownMembershipEvidenceRisk(source)
     if (membershipRisk && asArray(source.supports).includes('series_membership')) {
       policyViolations.push(`authority source ${index} has ${membershipRisk}`)
+    }
+    const standaloneRisk = knownStandaloneEvidenceRisk(source)
+    if (
+      output.classification === 'standalone' &&
+      standaloneRisk &&
+      asArray(source.supports).includes('standalone')
+    ) {
+      policyViolations.push(`authority source ${index} has ${standaloneRisk}`)
     }
     if (
       asArray(policy.classificationBlockedUrls).map(comparableUrl).includes(comparable) &&
