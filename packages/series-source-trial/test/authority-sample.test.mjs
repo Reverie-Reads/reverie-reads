@@ -62,18 +62,18 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 273,
-    reviewed: 169,
-    candidate: 104,
+    selected: 288,
+    reviewed: 172,
+    candidate: 116,
     reviewedPositive: 141,
-    reviewedStandalone: 28,
+    reviewedStandalone: 31,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 31,
+    reviewed_cases: 28,
     reviewed_positive_cases: 0,
-    reviewed_standalone_cases: 22,
+    reviewed_standalone_cases: 19,
   })
   assert.deepEqual(audit.qualification.counts, {
     selected: 0,
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 169, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 172, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -116,9 +116,9 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     ),
     {
       recent_independent_or_kindle_first: { reviewed: 49, gap: 1 },
-      recent_traditional: { reviewed: 56, gap: 0 },
+      recent_traditional: { reviewed: 58, gap: 0 },
       multi_series_or_connected_universe: { reviewed: 20, gap: 0 },
-      standalone_control: { reviewed: 36, gap: 14 },
+      standalone_control: { reviewed: 39, gap: 11 },
     },
   )
 })
@@ -306,6 +306,54 @@ test('keeps the complete Hachette horror frame without trusting its standalone h
   const dowry = byId.get('hachette-standalone-romantasy-a-dowry-of-blood')
   assert.deepEqual(dowry?.riskFeatures, ['connected_universe'])
   assert.equal(dowry?.truth.membershipsComplete, true)
+})
+
+test('keeps the complete Hachette fantasy frame and rejects uncorroborated standalone labels', async () => {
+  const caseSet = await loadTrialCases()
+  const selectionUrl = 'https://www.hachettebookgroup.com/landing-page/standalone-sff-books/'
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('hachette_standalone_sff_fantasy_2026_09_06'),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 17)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 4)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 13)
+
+  for (const testCase of frame) {
+    assert.ok(testCase.sampleSources.some(({ url }) => url === selectionUrl))
+    assert.equal(
+      testCase.truth.sources.some(({ url }) => url === selectionUrl),
+      false,
+    )
+  }
+
+  for (const id of [
+    'hachette-standalone-sff-fantasy-brother-red',
+    'hachette-standalone-sff-fantasy-the-light-of-the-midnight-stars',
+    'hachette-standalone-sff-fantasy-the-monsters-we-defy',
+  ]) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, true)
+    assert.equal(testCase?.truth.membershipsComplete, true)
+    assert.deepEqual(testCase?.truth.memberships, [])
+  }
+
+  const hartAndMercy = byId.get('hachette-standalone-romantasy-the-undertaking-of-hart-and-mercy')
+  assert.equal(hartAndMercy?.truth.standalone, false)
+  assert.equal(hartAndMercy?.truth.memberships[0]?.series, 'Hart and Mercy')
+  assert.deepEqual(
+    hartAndMercy?.truth.memberships[0]?.positions.map(({ value }) => value),
+    [1],
+  )
+
+  assert.equal(
+    byId.get('hachette-standalone-sff-fantasy-the-once-and-future-witches')?.truth.status,
+    'candidate',
+  )
+  assert.deepEqual(byId.get('hachette-standalone-sff-fantasy-wildwood-whispers')?.riskFeatures, [
+    'connected_universe',
+  ])
 })
 
 test('keeps the complete 2026 Selfies fiction frame and separates connected worlds from series', async () => {

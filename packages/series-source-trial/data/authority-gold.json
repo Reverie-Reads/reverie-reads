@@ -1813,11 +1813,18 @@
       "riskFeatures": ["connected_universe"],
       "publicationYear": 2022,
       "publicationPath": "traditional",
-      "selectionFrame": "hachette_standalone_romantasy_2026_09_04",
+      "selectionFrames": [
+        "hachette_standalone_romantasy_2026_09_04",
+        "hachette_standalone_sff_fantasy_2026_09_06"
+      ],
       "sampleSources": [
         {
           "kind": "publisher",
           "url": "https://www.hachettebookgroup.com/book-list/best-books-for-romantasy-fans/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
         },
         {
           "kind": "publisher",
@@ -1843,7 +1850,7 @@
           },
           { "kind": "author", "url": "https://www.meganbannen.com/rosieandadam.html" }
         ],
-        "reviewNote": "Hachette places the work under a standalone heading, but the author's second-book guide explicitly calls The Undertaking the first book in the series and the third-book page confirms the continuing Hart and Mercy series."
+        "reviewNote": "Two complete Hachette lists place the work under standalone headings, but the author's second-book guide explicitly calls The Undertaking the first book in the series and the third-book page confirms the continuing Hart and Mercy series."
       }
     },
     {
@@ -5875,6 +5882,103 @@
           }
         ],
         "reviewNote": "The exact publisher page affirmatively describes Sweet Thing as a DC-set standalone. This is direct work-level standalone evidence, not an inference from the absence of a series label."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-brother-red",
+      "title": "Brother Red",
+      "authors": ["Adrian Selby"],
+      "identifiers": { "isbn13": ["9780316465939", "9780356508443"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/adrian-selby/brother-red/9780316465939/?lens=orbit"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          {
+            "kind": "publisher",
+            "url": "https://www.hachette.com.au/adrian-selby/brother-red"
+          }
+        ],
+        "reviewNote": "Hachette Australia's exact work page affirmatively calls Brother Red a standalone adventure. The ruling does not rely on the Hachette US selection heading or on absent provider series metadata."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-light-of-the-midnight-stars",
+      "title": "The Light of the Midnight Stars",
+      "authors": ["Rena Rossner"],
+      "identifiers": { "isbn13": ["9780316483636", "9780356511467"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "standalone_control"],
+      "publicationYear": 2021,
+      "publicationPath": "traditional",
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/rena-rossner/the-light-of-the-midnight-stars/9780316483636/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          {
+            "kind": "publisher_catalog",
+            "url": "https://www.hachette.co.uk/wp-content/uploads/2020/10/Spring-2021-Online-Catalogue.pdf"
+          }
+        ],
+        "reviewNote": "Hachette's exact Spring 2021 catalog entry affirmatively describes The Light of the Midnight Stars as a new standalone novel. The catalog ties the statement to the title, author, format, ISBN, and publication month."
+      }
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-monsters-we-defy",
+      "title": "The Monsters We Defy",
+      "authors": ["Leslye Penelope"],
+      "identifiers": { "isbn13": ["9780316377911"] },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_traditional", "standalone_control"],
+      "publicationYear": 2022,
+      "publicationPath": "traditional",
+      "selectionFrame": "hachette_standalone_sff_fantasy_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/leslye-penelope/the-monsters-we-defy/9780316377911/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          { "kind": "author", "url": "https://lpenelope.com/contact/" }
+        ],
+        "reviewNote": "Leslye Penelope's current FAQ answers the exact sequel question by stating that The Monsters We Defy was written as a standalone novel and that no sequel is planned. This is direct author-controlled evidence rather than an inference from catalog silence."
       }
     }
   ],
