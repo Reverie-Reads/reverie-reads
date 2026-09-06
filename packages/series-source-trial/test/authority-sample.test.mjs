@@ -63,15 +63,15 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
     selected: 263,
-    reviewed: 163,
-    candidate: 100,
-    reviewedPositive: 136,
+    reviewed: 164,
+    candidate: 99,
+    reviewedPositive: 137,
     reviewedStandalone: 27,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 37,
+    reviewed_cases: 36,
     reviewed_positive_cases: 0,
     reviewed_standalone_cases: 23,
   })
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 163, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 164, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -115,7 +115,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
         .map(({ id, reviewed, gap }) => [id, { reviewed, gap }]),
     ),
     {
-      recent_independent_or_kindle_first: { reviewed: 48, gap: 2 },
+      recent_independent_or_kindle_first: { reviewed: 49, gap: 1 },
       recent_traditional: { reviewed: 51, gap: 0 },
       multi_series_or_connected_universe: { reviewed: 20, gap: 0 },
       standalone_control: { reviewed: 35, gap: 15 },
@@ -262,10 +262,11 @@ test('keeps the complete 2026 Selfies fiction frame and separates connected worl
   const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
 
   assert.equal(frame.length, 6)
-  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 4)
-  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 2)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 5)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 1)
 
   const memberships = new Map([
+    ['selfies-2026-fiction-swimming-with-manatees', ['Ava Martinez', 1]],
     ['selfies-2026-fiction-hunting-the-sun', ['Midwinter Dragon', 3]],
     ['selfies-2026-fiction-flint-in-the-bones', ['The Norwich Map Runners', 1]],
   ])
@@ -286,7 +287,6 @@ test('keeps the complete 2026 Selfies fiction frame and separates connected worl
   assert.deepEqual(butterflyWitch?.truth.memberships, [])
   assert.deepEqual(butterflyWitch?.riskFeatures, ['connected_universe'])
 
-  assert.equal(byId.get('selfies-2026-fiction-swimming-with-manatees')?.truth.status, 'candidate')
   assert.equal(byId.get('selfies-2026-fiction-the-silver-tide')?.truth.status, 'candidate')
 })
 
