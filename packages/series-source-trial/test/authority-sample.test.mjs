@@ -62,17 +62,17 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 132,
-    reviewed: 116,
-    candidate: 16,
-    reviewedPositive: 91,
+    selected: 138,
+    reviewed: 120,
+    candidate: 18,
+    reviewedPositive: 95,
     reviewedStandalone: 25,
     selectionTarget: 200,
-    selectionGap: 68,
+    selectionGap: 62,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 84,
-    reviewed_positive_cases: 9,
+    reviewed_cases: 80,
+    reviewed_positive_cases: 5,
     reviewed_standalone_cases: 25,
   })
   assert.deepEqual(audit.qualification.counts, {
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 116, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 120, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -115,10 +115,10 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
         .map(({ id, reviewed, gap }) => [id, { reviewed, gap }]),
     ),
     {
-      recent_independent_or_kindle_first: { reviewed: 31, gap: 19 },
+      recent_independent_or_kindle_first: { reviewed: 35, gap: 15 },
       recent_traditional: { reviewed: 27, gap: 23 },
-      multi_series_or_connected_universe: { reviewed: 16, gap: 4 },
-      standalone_control: { reviewed: 29, gap: 21 },
+      multi_series_or_connected_universe: { reviewed: 17, gap: 3 },
+      standalone_control: { reviewed: 30, gap: 20 },
     },
   )
 })
@@ -264,6 +264,41 @@ test('keeps the complete 2026 Selfies fiction frame and separates connected worl
 
   assert.equal(byId.get('selfies-2026-fiction-swimming-with-manatees')?.truth.status, 'candidate')
   assert.equal(byId.get('selfies-2026-fiction-the-silver-tide')?.truth.status, 'candidate')
+})
+
+test('keeps the complete 2025 Selfies fiction frame and readable standalone series evidence', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('selfies_2025_adult_fiction_shortlist'),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 6)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 4)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 2)
+
+  const memberships = new Map([
+    ['selfies-2025-fiction-sizar', ['Cambridge Hardiman Mysteries', 2]],
+    ['selfies-2025-fiction-secret-diary-bengali-mum', ['Diverse Romcom', null]],
+    ['selfies-2025-fiction-pride-and-perjury', ['Warleigh Hall Jane Austen', 4]],
+    ['selfies-2025-fiction-house-of-crimson-hearts', ['Kingdom of Immortal Lovers', 1]],
+  ])
+  for (const [id, [series, position]] of memberships) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, false)
+    assert.equal(testCase?.truth.memberships[0]?.series, series)
+    assert.equal(testCase?.truth.memberships[0]?.positions[0]?.value ?? null, position)
+  }
+
+  const pride = byId.get('selfies-2025-fiction-pride-and-perjury')
+  assert.ok(pride?.strata.includes('standalone_control'))
+
+  const crimson = byId.get('selfies-2025-fiction-house-of-crimson-hearts')
+  assert.equal(crimson?.truth.membershipsComplete, true)
+  assert.deepEqual(crimson?.riskFeatures, ['connected_universe'])
+
+  assert.equal(byId.get('selfies-2025-fiction-echoing-shore')?.truth.status, 'candidate')
+  assert.equal(byId.get('selfies-2025-fiction-unravelling')?.truth.status, 'candidate')
 })
 
 test('derives exact zero-event sample minimums for the production rate bounds', () => {

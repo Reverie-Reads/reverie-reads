@@ -323,6 +323,45 @@
       ],
       "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
       "reviewNote": "The author's catalog establishes the exact work but presents the Cornwall novels without a series label. Third-party metadata calls The Silver Tide part of Wild Cornwall, which is useful discovery evidence but does not satisfy the gold policy's author or publisher authority requirement."
+    },
+    {
+      "id": "selfies-2025-fiction-echoing-shore",
+      "title": "The Echoing Shore",
+      "authors": ["J. H. Mann"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        { "kind": "author", "url": "https://www.jhmannauthor.com/books" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "The author's catalog identifies the exact 2024 Cornwall mystery but presents it without a bibliographic series label. Third-party metadata groups it under Wild Cornwall; that discovery claim remains unresolved without direct author-controlled or publisher-controlled relationship evidence."
+    },
+    {
+      "id": "selfies-2025-fiction-unravelling",
+      "title": "Unravelling",
+      "authors": ["Preethi Nair"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_adult_fiction_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        { "kind": "author", "url": "https://preethinair.com/site/" },
+        { "kind": "author", "url": "https://preethinair.com/site/blog/" }
+      ],
+      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
+      "reviewNote": "The author's site identifies Unravelling as her fourth novel and confirms its September 2024 independent publication, but does not affirm either a bibliographic series relationship or standalone status. Missing series language remains unknown."
     }
   ]
 }
