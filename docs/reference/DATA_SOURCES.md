@@ -93,6 +93,10 @@ sources, and provider packets are withheld. Every cited URL must appear in the A
 manifest, but URL grounding alone does not make the page eligible evidence: deterministic source
 policy blocks a case's selection-frame pages, known conflicting marketing taxonomies, unsupported
 positions, and standalone conclusions without an affirmative first-party standalone statement.
+Revisions and mirrors of a catalog with a demonstrated relational contradiction share that risk;
+they cannot corroborate one another or establish classification merely because their URLs differ.
+An exact-work page on the same author or publisher origin remains independently eligible when it
+directly states the relationship.
 The model cannot assign authority to its own source. Scout output never writes authority gold,
 Supabase, or the corpus and remains production-blocked by the same safety, rights, privacy, latency,
 cost, and fixed-sample gates as the resolver.

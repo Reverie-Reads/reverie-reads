@@ -62,16 +62,16 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 148,
-    reviewed: 127,
-    candidate: 21,
-    reviewedPositive: 101,
+    selected: 195,
+    reviewed: 128,
+    candidate: 67,
+    reviewedPositive: 102,
     reviewedStandalone: 26,
     selectionTarget: 200,
-    selectionGap: 52,
+    selectionGap: 5,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 73,
+    reviewed_cases: 72,
     reviewed_positive_cases: 0,
     reviewed_standalone_cases: 24,
   })
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 127, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 128, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -118,9 +118,33 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
       recent_independent_or_kindle_first: { reviewed: 35, gap: 15 },
       recent_traditional: { reviewed: 34, gap: 16 },
       multi_series_or_connected_universe: { reviewed: 18, gap: 2 },
-      standalone_control: { reviewed: 31, gap: 19 },
+      standalone_control: { reviewed: 32, gap: 18 },
     },
   )
+})
+
+test('keeps the complete Modglin standalone-label challenge frame without trusting its labels', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter(
+    (testCase) => testCase.selectionFrame === 'kiersten_modglin_current_standalones_2026_09_06',
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 47)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 1)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 46)
+  assert.equal(byId.get('kiersten-modglin-the-nannys-secret')?.truth.standalone, false)
+  assert.deepEqual(
+    byId.get('kiersten-modglin-the-nannys-secret')?.truth.memberships[0]?.positions,
+    [],
+  )
+  for (const id of [
+    'kiersten-modglin-becoming-mrs-abbott',
+    'kiersten-modglin-the-list',
+    'kiersten-modglin-the-missing-piece',
+  ]) {
+    assert.equal(byId.get(id)?.truth.status, 'candidate')
+  }
 })
 
 test('keeps the complete 2021 Kindle Storyteller frame and direct authority truth', async () => {

@@ -425,6 +425,1156 @@
       ],
       "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
       "reviewNote": "The complete matching-year frame and publisher page establish a 2025 traditionally published collection containing three named stories. The authority pages do not affirm standalone status or a bibliographic series relationship for the collection title, so the case remains unresolved."
+    },
+    {
+      "id": "kiersten-modglin-becoming-mrs-abbott",
+      "title": "Becoming Mrs. Abbott",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-list",
+      "title": "The List",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-missing-piece",
+      "title": "The Missing Piece",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-playing-jenna",
+      "title": "Playing Jenna",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-beginning-after",
+      "title": "The Beginning After",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-long-route",
+      "title": "The Long Route",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-stranger-in-the-woods",
+      "title": "The Stranger in the Woods",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-good-neighbors",
+      "title": "The Good Neighbors",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-better-choice",
+      "title": "The Better Choice",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-lucky-ones",
+      "title": "The Lucky Ones",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-i-said-yes",
+      "title": "I Said Yes",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-mother-in-law",
+      "title": "The Mother-in-Law",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-dream-job",
+      "title": "The Dream Job",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-liars-wife",
+      "title": "The Liar's Wife",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-my-husbands-secret",
+      "title": "My Husband's Secret",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-perfect-getaway",
+      "title": "The Perfect Getaway",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-roommate",
+      "title": "The Roommate",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-missing",
+      "title": "The Missing",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-just-married",
+      "title": "Just Married",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-our-little-secret",
+      "title": "Our Little Secret",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-widow-falls",
+      "title": "Widow Falls",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-missing-daughter",
+      "title": "Missing Daughter",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-reunion",
+      "title": "The Reunion",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-tell-me-the-truth",
+      "title": "Tell Me the Truth",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-dinner-guests",
+      "title": "The Dinner Guests",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-if-youre-reading-this",
+      "title": "If You're Reading This...",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-a-quiet-retreat",
+      "title": "A Quiet Retreat",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-family-secret",
+      "title": "The Family Secret",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-dont-go-down-there",
+      "title": "Don't Go Down There",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-wait-for-dark",
+      "title": "Wait for Dark",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-you-can-trust-me",
+      "title": "You Can Trust Me",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-hemlock",
+      "title": "Hemlock",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-do-not-open",
+      "title": "Do Not Open",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-youll-never-know-im-here",
+      "title": "You'll Never Know I'm Here",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-stranger",
+      "title": "The Stranger",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-hollow",
+      "title": "The Hollow",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-bitter-house",
+      "title": "Bitter House",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-guilty-one",
+      "title": "The Guilty One",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-hidden",
+      "title": "The Hidden",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-where-the-darkness-goes",
+      "title": "Where the Darkness Goes",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-the-last-trip",
+      "title": "The Last Trip",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-nine-pines",
+      "title": "Nine Pines",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-wilde-women",
+      "title": "Wilde Women",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-erased",
+      "title": "Erased",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-people-like-us",
+      "title": "People Like Us",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
+    },
+    {
+      "id": "kiersten-modglin-head-under-water",
+      "title": "Head Under Water",
+      "authors": [
+        "Kiersten Modglin"
+      ],
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "standalone_control"
+      ],
+      "selectionFrame": "kiersten_modglin_current_standalones_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "author",
+          "url": "https://www.kierstenmodglinauthor.com/s/54-KIERSTEN-MODGLIN-BOOKLIST.pdf"
+        }
+      ],
+      "truth": {
+        "status": "candidate",
+        "standalone": null,
+        "memberships": [],
+        "sources": []
+      },
+      "reviewNote": "The current author-controlled complete book list selects this title under Standalones. Because the selection-frame URL cannot establish its own classification and the catalog has known relational contradictions, the case remains unresolved pending exact-work authority review."
     }
   ]
 }
