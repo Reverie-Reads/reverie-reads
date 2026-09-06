@@ -62,18 +62,18 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 126,
-    reviewed: 112,
-    candidate: 14,
-    reviewedPositive: 89,
-    reviewedStandalone: 23,
+    selected: 132,
+    reviewed: 116,
+    candidate: 16,
+    reviewedPositive: 91,
+    reviewedStandalone: 25,
     selectionTarget: 200,
-    selectionGap: 74,
+    selectionGap: 68,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 88,
-    reviewed_positive_cases: 11,
-    reviewed_standalone_cases: 27,
+    reviewed_cases: 84,
+    reviewed_positive_cases: 9,
+    reviewed_standalone_cases: 25,
   })
   assert.deepEqual(audit.qualification.counts, {
     selected: 0,
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 112, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 116, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -115,10 +115,10 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
         .map(({ id, reviewed, gap }) => [id, { reviewed, gap }]),
     ),
     {
-      recent_independent_or_kindle_first: { reviewed: 27, gap: 23 },
+      recent_independent_or_kindle_first: { reviewed: 31, gap: 19 },
       recent_traditional: { reviewed: 27, gap: 23 },
-      multi_series_or_connected_universe: { reviewed: 15, gap: 5 },
-      standalone_control: { reviewed: 27, gap: 23 },
+      multi_series_or_connected_universe: { reviewed: 16, gap: 4 },
+      standalone_control: { reviewed: 29, gap: 21 },
     },
   )
 })
@@ -228,6 +228,42 @@ test('keeps the complete Hachette horror frame without trusting its standalone h
   const dowry = byId.get('hachette-standalone-romantasy-a-dowry-of-blood')
   assert.deepEqual(dowry?.riskFeatures, ['connected_universe'])
   assert.equal(dowry?.truth.membershipsComplete, true)
+})
+
+test('keeps the complete 2026 Selfies fiction frame and separates connected worlds from series', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('selfies_2026_fiction_shortlist'),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 6)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 4)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 2)
+
+  const memberships = new Map([
+    ['selfies-2026-fiction-hunting-the-sun', ['Midwinter Dragon', 3]],
+    ['selfies-2026-fiction-flint-in-the-bones', ['The Norwich Map Runners', 1]],
+  ])
+  for (const [id, [series, position]] of memberships) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, false)
+    assert.equal(testCase?.truth.memberships[0]?.series, series)
+    assert.equal(testCase?.truth.memberships[0]?.positions[0]?.value, position)
+  }
+
+  const deathValley = byId.get('selfies-2026-fiction-death-valley')
+  assert.equal(deathValley?.truth.standalone, true)
+  assert.deepEqual(deathValley?.truth.memberships, [])
+
+  const butterflyWitch = byId.get('selfies-2026-fiction-the-butterfly-witch')
+  assert.equal(butterflyWitch?.truth.standalone, true)
+  assert.equal(butterflyWitch?.truth.membershipsComplete, true)
+  assert.deepEqual(butterflyWitch?.truth.memberships, [])
+  assert.deepEqual(butterflyWitch?.riskFeatures, ['connected_universe'])
+
+  assert.equal(byId.get('selfies-2026-fiction-swimming-with-manatees')?.truth.status, 'candidate')
+  assert.equal(byId.get('selfies-2026-fiction-the-silver-tide')?.truth.status, 'candidate')
 })
 
 test('derives exact zero-event sample minimums for the production rate bounds', () => {

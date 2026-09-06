@@ -18,8 +18,8 @@ useful for measuring coverage and discovering disagreements, but they do not con
 accuracy until an authority source has been reviewed.
 
 The current sample contains one difficult work from each of Reverie's 69 distinct seeded series
-plus external sampling frames: 108 selected works, of which 99 are authority-reviewed. The reviewed
-set contains 78 positive series cases and 21 confirmed standalone controls. Some reviewed cases
+plus external sampling frames: 132 selected works, of which 116 are authority-reviewed. The reviewed
+set contains 91 positive series cases and 25 confirmed standalone controls. Some reviewed cases
 replace seed references, so the final distinct-case count is printed at runtime.
 
 ## Run the open-source baseline
@@ -317,6 +317,10 @@ in `reports/authority-seed-candidate-resolution-2026-09-06.md`.
 The complete nine-title Hachette standalone SFF horror frame, its false-label series control, and
 the multi-frame sampling support are recorded in
 `reports/authority-development-frame-hachette-horror-2026-09-06.md`.
+
+The complete 2026 Selfies fiction shortlist, its four first-party rulings, and the scout's refusal
+to promote two platform-only series hints are recorded in
+`reports/authority-development-frame-selfies-2026-fiction-2026-09-06.md`.
 
 ## Build the authority gold program
 

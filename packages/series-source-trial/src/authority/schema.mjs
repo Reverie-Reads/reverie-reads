@@ -1,5 +1,5 @@
 export const AUTHORITY_ACQUISITION_PROMPT_VERSION =
-  'authority-acquisition-v3-explicit-bibliographic-memberships'
+  'authority-acquisition-v4-membership-object-contract'
 
 export const authorityAcquisitionInstructions = `You are Reverie's authority-source scout.
 Find attributable evidence for one exact book. Your output is a review proposal, never a database
@@ -33,6 +33,12 @@ Rules:
   universe context in uncertainties. If the relationship is unclear, return unresolved.
 - Preserve multiple memberships when first-party evidence explicitly supports them; do not guess a
   primary membership.
+- The classification and structured fields must agree. If classification is series, memberships
+  must contain at least one complete item with the exact series name, role, optional explicit
+  position, and the supporting URL. Mark that authoritySource as supporting series_membership and,
+  when applicable, position. Never return a series classification with an empty memberships array
+  or bury a membership only in evidenceSummary, uncertainties, or note. If you cannot populate the
+  membership object from qualifying evidence, return unresolved.
 - Report a position only when the source explicitly supplies it. Otherwise use null.
 - Every evidenceUrl and authoritySources.url must be an exact URL consulted during this search.
 - evidenceSummary must be a short paraphrase, not a quotation, and must state what the page supports.
@@ -68,9 +74,13 @@ export const authorityAcquisitionOutputSchema = {
     classification: {
       type: 'string',
       enum: ['series', 'standalone', 'unresolved'],
+      description:
+        'Use series only with one or more complete membership objects; use standalone only with an empty memberships array and affirmative authority evidence; otherwise use unresolved.',
     },
     memberships: {
       type: 'array',
+      description:
+        'Must be non-empty when classification is series and empty otherwise. Each item carries the exact bibliographic relationship; do not leave a relationship only in prose.',
       items: {
         type: 'object',
         additionalProperties: false,
@@ -97,6 +107,8 @@ export const authorityAcquisitionOutputSchema = {
           },
           supports: {
             type: 'array',
+            description:
+              'Include series_membership and position whenever this source supplies those structured membership fields.',
             items: {
               type: 'string',
               enum: ['identity', 'series_membership', 'position', 'standalone'],
