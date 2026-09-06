@@ -62,18 +62,18 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 263,
-    reviewed: 164,
-    candidate: 99,
-    reviewedPositive: 137,
-    reviewedStandalone: 27,
+    selected: 273,
+    reviewed: 169,
+    candidate: 104,
+    reviewedPositive: 141,
+    reviewedStandalone: 28,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 36,
+    reviewed_cases: 31,
     reviewed_positive_cases: 0,
-    reviewed_standalone_cases: 23,
+    reviewed_standalone_cases: 22,
   })
   assert.deepEqual(audit.qualification.counts, {
     selected: 0,
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 164, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 169, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -116,11 +116,65 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     ),
     {
       recent_independent_or_kindle_first: { reviewed: 49, gap: 1 },
-      recent_traditional: { reviewed: 51, gap: 0 },
+      recent_traditional: { reviewed: 56, gap: 0 },
       multi_series_or_connected_universe: { reviewed: 20, gap: 0 },
-      standalone_control: { reviewed: 35, gap: 15 },
+      standalone_control: { reviewed: 36, gap: 14 },
     },
   )
+})
+
+test('keeps the complete CrimeReads 2023 release frame and authority-only classifications', async () => {
+  const caseSet = await loadTrialCases()
+  const selectionUrl = 'https://crimereads.com/10-new-books-coming-out-this-week-november-6-2023/'
+  const frame = caseSet.cases.filter(
+    (testCase) => testCase.selectionFrame === 'crimereads_2023_11_06_new_releases',
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 10)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 5)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 5)
+  assert.deepEqual(
+    frame.map(({ title }) => title).sort(),
+    [
+      'A Death in Malta',
+      'Barbacoa, Bomba, and Betrayal',
+      'Blood Betrayal',
+      'Kennedy 35',
+      'Last Night at the Hollywood Canteen',
+      'Resurrection Walk',
+      'Sweet Thing',
+      'The Cliff House',
+      'The Manor House',
+      'The Twelve Days of Murder',
+    ].sort(),
+  )
+
+  for (const testCase of frame) {
+    assert.ok(testCase.sampleSources.some(({ url }) => url === selectionUrl))
+    assert.equal(
+      testCase.truth.sources.some(({ url }) => url === selectionUrl),
+      false,
+    )
+  }
+
+  const numberedMemberships = new Map([
+    ['crimereads-2023-barbacoa-bomba-and-betrayal', ['A Caribbean Kitchen Mystery', 3]],
+    ['crimereads-2023-blood-betrayal', ['Blackwater Falls', 2]],
+    ['crimereads-2023-resurrection-walk', ['A Lincoln Lawyer Novel', 7]],
+    ['crimereads-2023-kennedy-35', ['Box 88', 3]],
+  ])
+  for (const [id, [series, position]] of numberedMemberships) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, false)
+    assert.equal(testCase?.truth.memberships[0]?.series, series)
+    assert.equal(testCase?.truth.memberships[0]?.positions[0]?.value, position)
+  }
+
+  const sweetThing = byId.get('crimereads-2023-sweet-thing')
+  assert.equal(sweetThing?.truth.standalone, true)
+  assert.equal(sweetThing?.truth.membershipsComplete, true)
+  assert.deepEqual(sweetThing?.truth.memberships, [])
 })
 
 test('keeps the complete Modglin standalone-label challenge frame without trusting its labels', async () => {

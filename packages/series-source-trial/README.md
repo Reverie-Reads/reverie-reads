@@ -18,8 +18,8 @@ useful for measuring coverage and discovering disagreements, but they do not con
 accuracy until an authority source has been reviewed.
 
 The current development sample contains one difficult work from each of Reverie's 69 distinct
-seeded series plus external sampling frames: 263 selected works, of which 164 are
-authority-reviewed. The reviewed set contains 137 positive series cases and 27 confirmed standalone
+seeded series plus external sampling frames: 273 selected works, of which 169 are
+authority-reviewed. The reviewed set contains 141 positive series cases and 28 confirmed standalone
 controls. Some reviewed cases replace seed references, so the final distinct-case count is printed
 at runtime.
 
@@ -383,6 +383,11 @@ The first-party evidence refresh that promotes _Swimming with Manatees_ from unr
 Martinez book one, without rerunning the scout or trusting retail metadata, is recorded in
 `reports/authority-evidence-refresh-bill-bennett-2026-09-06.md`.
 
+The complete ten-title CrimeReads November 6, 2023 featured release frame, four publisher/author
+series rulings, one affirmative publisher standalone, five unresolved works, and two corrected
+selection-source bylines are recorded in
+`reports/authority-development-frame-crimereads-2023-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
@@ -391,7 +396,7 @@ Audit the sample before running another provider or resolver comparison:
 pnpm series:sample:audit
 ```
 
-The audit reports selection coverage and authority-review coverage separately. The current 99
+The audit reports selection coverage and authority-review coverage separately. The current 104
 candidates count as selected works, but never as truth and never toward an accuracy gate. It also
 validates that every reviewed result has
 affirmative author or publisher evidence, that a reviewed standalone has no memberships, and that
