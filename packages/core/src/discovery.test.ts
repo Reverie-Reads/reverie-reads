@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { makeBook } from './book.fixture'
 import {
   dedupeDiscoveryBooks,
+  discoveryCandidatePool,
   discoveryKey,
   discoveryLibraryMatch,
   discoveryMoodEvidence,
@@ -177,4 +178,105 @@ describe('private shortlist snapshots', () => {
     expect(restored?.picks[0]?.book.description).toHaveLength(2500)
     expect(restored?.dismissed).toEqual([])
   })
+})
+
+describe('discovery quality regression set', () => {
+  it.each([
+    'romance',
+    'fantasy',
+    'science fiction',
+    'horror',
+    'mystery',
+    'literary',
+    'cozy',
+    'nonfiction',
+    'young adult',
+  ])('%s offers several authors without sacrificing supported connections', (genre) => {
+    const pool = Array.from({ length: 8 }, (_, i) =>
+      hit(`Selection ${i}`, {
+        genre,
+        authors: [i < 5 ? 'Prolific Writer' : `Writer ${i}`],
+        description: 'Catalog description.',
+      }),
+    )
+    const picks = discoveryShortlist(pool, { kind: 'genre', genre })
+    expect(picks).toHaveLength(5)
+    expect(picks.filter((p) => p.book.authors.includes('Prolific Writer'))).toHaveLength(2)
+    expect(new Set(picks.flatMap((p) => p.book.authors)).size).toBe(4)
+  })
+  it('suppresses held duplicate copies without choosing a personal detail destination', () => {
+    const a = makeBook({
+      id: 'a',
+      title: hopeful.title,
+      first: 'Nell',
+      last: 'Stone',
+      ownership: 'owned',
+    })
+    const b = { ...a, id: 'b', ownership: 'unowned' as const, wishlist: true }
+    expect(discoveryLibraryMatch(hopeful, [a, b])).toBeUndefined()
+    expect(eligibleDiscoveryBooks([hopeful], { kind: 'genre', genre: 'fantasy' }, [a, b])).toEqual(
+      [],
+    )
+  })
+  it('supports secondary genres and canonical spellings without appearance input', () => {
+    const a = hit('Starting point', { genre: 'literary', genres: ['Sci-Fi'] })
+    const b = hit('A distant place', { authors: ['Different Writer'], genre: 'science fiction' })
+    expect(discoveryShortlist([b], { kind: 'anchor', anchor: a })[0]?.reason).toContain(
+      'science fiction',
+    )
+    expect(eligibleDiscoveryBooks([b], { kind: 'genre', genre: 'Sci-Fi' }, [])).toEqual([b])
+  })
+  it('does not promote a partial scoring batch over unscored candidates', () => {
+    const a = hit('Earlier', { authors: ['Author One'] })
+    const b = hit('Later', { authors: ['Author Two'] })
+    expect(
+      discoveryShortlist([a, b], { kind: 'genre', genre: 'fantasy' }, { [discoveryKey(b)]: 1 }).map(
+        (p) => p.book.title,
+      ),
+    ).toEqual(['Earlier', 'Later'])
+    expect(
+      discoveryShortlist(
+        [a, b],
+        { kind: 'genre', genre: 'fantasy' },
+        { [discoveryKey(a)]: 0, [discoveryKey(b)]: 1 },
+      ).map((p) => p.book.title),
+    ).toEqual(['Later', 'Earlier'])
+  })
+  it('keeps author evidence above genre evidence and never invents variety', () => {
+    const other = hit('Another writer', { authors: ['Different Writer'] })
+    const scores = { [discoveryKey(hopeful)]: -1, [discoveryKey(other)]: 1 }
+    expect(discoveryShortlist([other, hopeful], { kind: 'anchor', anchor }, scores)[0]?.book).toBe(
+      hopeful,
+    )
+    const sameAuthor = Array.from({ length: 5 }, (_, i) => hit(`Same author ${i}`))
+    expect(discoveryShortlist(sameAuthor, { kind: 'anchor', anchor })).toHaveLength(5)
+  })
+  it('prefers available descriptions when semantic ranking is unavailable', () => {
+    const sparse = hit('A bare record', { authors: ['Other Writer'] })
+    expect(
+      discoveryShortlist([sparse, hopeful], { kind: 'genre', genre: 'fantasy' })[0]?.book,
+    ).toBe(hopeful)
+  })
+})
+
+it('gives both full candidate sources room before the 32-book limit', () => {
+  const corpus = Array.from({ length: 32 }, (_, i) =>
+    hit(`Corpus ${i}`, { corpusWorkId: `work-${i}` }),
+  )
+  const external = Array.from({ length: 32 }, (_, i) =>
+    hit(`External ${i}`, { authors: ['Outside Writer'] }),
+  )
+  const pool = discoveryCandidatePool([corpus, external], { kind: 'genre', genre: 'fantasy' }, [])
+  expect(pool).toHaveLength(32)
+  expect(pool.filter((b) => b.corpusWorkId)).toHaveLength(16)
+  expect(pool.filter((b) => !b.corpusWorkId)).toHaveLength(16)
+  expect(pool.slice(0, 4).map((b) => b.title)).toEqual([
+    'Corpus 0',
+    'External 0',
+    'Corpus 1',
+    'External 1',
+  ])
+  expect(
+    dedupeDiscoveryBooks([external[0]!, { ...external[0]!, corpusWorkId: id }])[0]?.corpusWorkId,
+  ).toBe(id)
 })

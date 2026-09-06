@@ -25,6 +25,7 @@ export function CoverImage({
   ghost = false,
   reportErrors = true,
   onExhausted,
+  onResolved,
 }: {
   book: {
     id?: string
@@ -50,6 +51,7 @@ export function CoverImage({
   /** Temporary public examples must not send visitor-entered titles to cover telemetry. */
   reportErrors?: boolean
   onExhausted?: () => void
+  onResolved?: (image: { url: string; width: number; height: number }) => void
 }) {
   const [failed, setFailed] = useState<Set<string>>(() => new Set())
   const chain = coverCandidates(book.cover, {
@@ -87,6 +89,7 @@ export function CoverImage({
         // broken volume the discover-cover-quality audit sampled) → the honest placeholder.
         const img = e.currentTarget
         if (isDegenerateGoogleCoverRender(src, img.naturalWidth, img.naturalHeight)) fail()
+        else onResolved?.({ url: src, width: img.naturalWidth, height: img.naturalHeight })
       }}
       onError={fail}
     />

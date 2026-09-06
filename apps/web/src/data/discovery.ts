@@ -2,10 +2,10 @@ import {
   DISCOVERY_MOOD_TERMS,
   DISCOVERY_POOL_LIMIT,
   dedupeDiscoveryBooks,
+  discoveryCandidatePool,
   discoveryIntentText,
   discoveryKey,
   discoveryShortlist,
-  eligibleDiscoveryBooks,
   genreKey,
   parseDiscoveryBook,
   type Book,
@@ -28,7 +28,7 @@ const clean = (book: DiscoveryBook): DiscoveryBook => ({
 })
 
 /** Each query is capped. Mood terms are a fixed vocabulary, never interpolated reader input. */
-async function catalogPool(intent: DiscoveryIntent, signal: AbortSignal): Promise<DiscoveryBook[]> {
+async function catalogPool(intent: DiscoveryIntent, signal: AbortSignal): Promise<DiscoveryBook[][]> {
   const base = () =>
     supabase
       .from('works')
@@ -63,10 +63,14 @@ async function catalogPool(intent: DiscoveryIntent, signal: AbortSignal): Promis
     queries.map(async (query) => {
       const { data, error } = await query
       if (error) throw error
-      return ((data as unknown as WorkRow[]) ?? []).map((row) => clean(workToHit(row)))
+      return ((data as unknown as WorkRow[]) ?? []).map((row) => clean({
+        ...workToHit(row),
+        // A shared work can describe many editions. No reader has chosen one on this path.
+        isbn: row.isbns.length === 1 ? row.isbns[0]! : '',
+      }))
     }),
   )
-  return dedupeDiscoveryBooks(results.flat()).slice(0, DISCOVERY_POOL_LIMIT)
+  return results.map(dedupeDiscoveryBooks)
 }
 
 /** Optional semantic ordering against THIS intent. No personal notes, ratings, or history leave here.
@@ -167,10 +171,7 @@ export async function createDiscoverySession(
     )
     .filter((book): book is DiscoveryBook => !!book)
     .map(clean)
-  const eligible = eligibleDiscoveryBooks([...corpus, ...externalBooks], resolved, library).slice(
-    0,
-    DISCOVERY_POOL_LIMIT,
-  )
+  const eligible = discoveryCandidatePool([...corpus, externalBooks], resolved, library)
   const scores = eligible.length ? await rankDiscoveryIntent(eligible, resolved, signal) : {}
   signal.throwIfAborted()
   return {

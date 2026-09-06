@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
 import { ok, okUser } from './support/ok'
+import { PNG } from 'pngjs'
 
 // Cover sourcing posture (docs/reference/reverie-metadata-sourcing.md §Covers).
 //
@@ -221,6 +222,78 @@ test('the cover sheet leads with photographing your own copy', async ({ page }) 
     })
     expect(order.your).toBeGreaterThanOrEqual(0)
     expect(order.editions).toBeGreaterThan(order.your)
+  } finally {
+    await reset(c)
+  }
+})
+
+test('cover choices show real resolution and lead with the exact ISBN on mobile', async ({
+  page,
+}) => {
+  const c = await client()
+  await reset(c)
+  const id = await makeBook(c, {
+    isbn: '9780306406157',
+    cover_url: GOOGLE_COVER,
+    cover_user_chosen: true,
+  })
+  await stub(page)
+  const exact = `${GOOGLE_COVER}&quality=exact`
+  const soft = 'https://assets.hardcover.app/quality-soft.png'
+  const png = (width: number, height: number) =>
+    PNG.sync.write(new PNG({ width, height, colorType: 2 }))
+  await page.route('**/functions/v1/covers**', (r) =>
+    r.fulfill({
+      json: {
+        editions: [
+          {
+            source: 'hardcover',
+            cover: soft,
+            isbn13: '9780140328721',
+            title: 'Sourcing Probe',
+            format: 'Paperback',
+            year: 2020,
+          },
+          {
+            source: 'google',
+            cover: exact,
+            isbn13: '9780306406157',
+            title: 'Sourcing Probe',
+            format: 'Hardcover',
+            year: 2021,
+          },
+        ],
+      },
+    }),
+  )
+  await page.route('**/quality-soft.png', (r) =>
+    r.fulfill({ contentType: 'image/png', body: png(128, 192) }),
+  )
+  await page.route(/books\.google\.com.*quality=exact/, (r) =>
+    r.fulfill({ contentType: 'image/png', body: png(800, 1200) }),
+  )
+  try {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await signIn(page, c.session)
+    await page.goto(`/book/${id}`)
+    await page
+      .getByRole('button', { name: /Change cover/i })
+      .first()
+      .click()
+    const sheet = page.getByRole('dialog', { name: 'Cover', exact: true })
+    await expect(sheet.getByText('Matches your ISBN')).toBeVisible()
+    const choices = sheet.locator('ul li button')
+    await expect(choices.first()).toContainText('Matches your ISBN')
+    await expect(choices.first()).toContainText('Sharp in detail · 800 × 1200')
+    await expect(choices.nth(1)).toContainText('May look soft · 128 × 192')
+    await choices.first().scrollIntoViewIfNeeded()
+    await page.screenshot({ path: '../../output/playwright/cover-quality-mobile.png' })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+    await choices.first().click()
+    await expect(sheet.getByText('Cover updated.', { exact: true })).toBeVisible()
+    const saved = await coverOf(c, id)
+    expect(saved.cover_url).toContain('quality=exact')
+    expect(saved.cover_source).toBe('google')
   } finally {
     await reset(c)
   }

@@ -49,10 +49,16 @@ export async function fetchDiscoveryDetails(hit: DiscoveryBook): Promise<Details
     [data.isbn, data.isbn10, data.isbn13, ...(data.isbns ?? [])].some(
       (value) => normalizeIsbn(value) === isbn,
     )
+  const authors = (values: string[]) =>
+    [...new Set(values.map(normalize).filter(Boolean))].sort().join('|')
   const sameWork =
     normalize(hit.title) === normalize(data.title ?? '') &&
-    Boolean(hit.authors[0]) &&
-    (data.authors ?? []).some((name) => normalize(name) === normalize(hit.authors[0]!))
-  // A plausible title search is not enough to show another work's synopsis as this one's.
-  return sameEdition || (sameWork && data.confidence === 'high') ? data : {}
+    Boolean(authors(hit.authors)) &&
+    authors(hit.authors) === authors(data.authors ?? [])
+  if (sameEdition) return data
+  // A work match can supply its synopsis, never a different edition's publisher or language.
+  // Matching only the first contributor could silently substitute a different collaboration.
+  return sameWork && data.confidence === 'high'
+    ? { description: data.description, genre: data.genre, genres: data.genres }
+    : {}
 }

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { mayIngestCover, upgradeCoverUrl, type Book, type CoverSource } from '@reverie/core'
+import { mayIngestCover, normalizeIsbn, upgradeCoverUrl, type Book, type CoverSource } from '@reverie/core'
 import { fetchEditions, ingestCover, type EditionOption } from '../lib/covers'
 import { clearCoverBroken } from './brokenCovers'
 import { useUpdateBook } from './books'
@@ -16,14 +16,20 @@ export function useEditionOptions(book: Book, enabled: boolean) {
     queryFn: () => fetchEditions({ isbn: book.isbn || undefined, title: book.title, author }),
     enabled: enabled && !!(book.isbn || book.title),
     staleTime: 5 * 60 * 1000,
-    // Candidates we can actually KEEP lead the list. Google editions stay — they're legitimate
-    // display candidates and often the only ones — but a reader scanning top-down meets the
-    // storable options first. Stable within each group, so each source's own order survives.
-    select: (list) => [
-      ...list.filter((e) => mayIngestCover(e.source, e.cover)),
-      ...list.filter((e) => !mayIngestCover(e.source, e.cover)),
-    ],
+    select: (list) => sortCoverEditions(list, book.isbn),
   })
+}
+
+/** Exact edition before storage convenience; unknown ISBNs never imply an edition match. */
+export function matchesCoverEdition(option: EditionOption, isbn: string): boolean {
+  const exact = normalizeIsbn(isbn)
+  return !!exact && [option.isbn13, option.isbn10].some((value) => normalizeIsbn(value ?? '') === exact)
+}
+export function sortCoverEditions(options: readonly EditionOption[], isbn: string): EditionOption[] {
+  return [...options].sort((a, b) =>
+    Number(matchesCoverEdition(b, isbn)) - Number(matchesCoverEdition(a, isbn)) ||
+    Number(mayIngestCover(b.source, b.cover)) - Number(mayIngestCover(a.source, a.cover)),
+  )
 }
 
 export interface SetCoverInput {

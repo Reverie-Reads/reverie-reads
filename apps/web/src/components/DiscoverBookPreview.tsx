@@ -27,7 +27,7 @@ export function DiscoverBookPreview({
     staleTime: 1000 * 60 * 30,
     retry: false,
   })
-  const description = details.data?.description ? plainDescription(details.data.description) : ''
+  const description = plainDescription(details.data?.description || hit.description || '')
   return (
     <Modal title={hit.title} onClose={onClose} wide>
       <div className="grid gap-6 sm:grid-cols-[160px_minmax(0,1fr)]">
@@ -77,13 +77,22 @@ export function DiscoverBookPreview({
       )}
       <div className="mt-6 border-t border-line pt-5">
         <h3 className="text-lg font-semibold leading-snug text-ink">About this book</h3>
-        {details.isPending ? (
+        {description && (
+          <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-ink">
+            {description}
+          </p>
+        )}
+        {details.isPending && !description ? (
           <p role="status" className="mt-3 text-sm text-muted">
             Loading the catalog description…
           </p>
         ) : details.isError ? (
           <div role="alert" className="mt-3 text-sm leading-relaxed text-muted">
-            <p>The description couldn’t be loaded. You can still keep browsing or add the book.</p>
+            <p>
+              {description
+                ? 'The description from your selection is shown above. Updated details couldn’t be loaded.'
+                : 'The description couldn’t be loaded. You can still keep browsing or add the book.'}
+            </p>
             <button
               type="button"
               onClick={() => void details.refetch()}
@@ -92,11 +101,11 @@ export function DiscoverBookPreview({
               Try again
             </button>
           </div>
-        ) : (
-          <p className="mt-3 whitespace-pre-line text-base leading-relaxed text-ink">
-            {description || 'There isn’t a description in this catalog record yet.'}
+        ) : !description ? (
+          <p className="mt-3 text-base leading-relaxed text-ink">
+            There isn’t a description in this catalog record yet.
           </p>
-        )}
+        ) : null}
         <p className="mt-4 text-xs leading-relaxed text-muted">
           {hit.corpusWorkId
             ? 'Details from the shared catalog.'

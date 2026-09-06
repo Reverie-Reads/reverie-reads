@@ -1,4 +1,5 @@
 import { normalizeIsbn } from './match'
+import { genreKey } from './genreNormalize'
 import type { Book } from './types'
 
 /** Public catalog facts only. A snapshot never contains a reader's notes, ratings, or read log. */
@@ -109,17 +110,21 @@ export function discoveryRelationship(
 }
 export function dedupeDiscoveryBooks(books: readonly DiscoveryBook[]): DiscoveryBook[] {
   const out: DiscoveryBook[] = []
-  // Prefer shared identity and its metadata when an external edition represents the same work.
-  const sourceOrder = [
-    ...books.filter((b) => b.corpusWorkId),
-    ...books.filter((b) => !b.corpusWorkId),
-  ]
-  for (const book of sourceOrder) {
+  for (const book of books) {
     if (!book.title.trim()) continue
-    if (!out.some((existing) => sameDiscoveryWork(existing, book))) out.push(book)
+    const index = out.findIndex((existing) => sameDiscoveryWork(existing, book))
+    if (index < 0) out.push(book)
+    // Keep the discovery position while preferring a known shared identity. Reordering every
+    // corpus record before every external record would undo the balanced candidate pool.
+    else if (book.corpusWorkId && !out[index]!.corpusWorkId) out[index] = book
   }
   return out
 }
+const bookGenres = (book: DiscoveryBook) => [
+  ...new Set([book.genre, ...(book.genres ?? [])].filter(Boolean).map((g) => genreKey(g!))),
+]
+const sharedGenre = (a: DiscoveryBook, b: DiscoveryBook) =>
+  bookGenres(a).find((g) => bookGenres(b).includes(g))
 
 /** Reviewed search vocabulary. These are retrieval terms, never new personal mood assignments.
  * Require actual whole-word evidence: "hopeless" must not become a hopeful recommendation. */
@@ -174,14 +179,35 @@ export function eligibleDiscoveryBooks(
 ): DiscoveryBook[] {
   return dedupeDiscoveryBooks(pool).filter((book) => {
     if (intent.kind === 'anchor' && sameDiscoveryWork(book, intent.anchor)) return false
-    const personal = discoveryLibraryMatch(book, library)
-    if (personal && !personal.wishlist) return false
-    if (personal && (personal.ownership === 'owned' || personal.borrowed)) return false
+    // Suppression asks whether ANY matching copy is held; it must not choose one edition.
+    // The detail-link resolver deliberately returns undefined for ambiguous personal rows.
+    if (
+      library.some(
+        (personal) =>
+          sameDiscoveryWork(book, discoveryBookFromReader(personal)) &&
+          (!personal.wishlist || personal.ownership === 'owned' || personal.borrowed),
+      )
+    )
+      return false
     if (intent.kind === 'mood') return discoveryMoodEvidence(book, intent.moods) !== null
-    if (intent.kind === 'genre')
-      return [book.genre, ...(book.genres ?? [])].some((g) => norm(g ?? '') === norm(intent.genre))
+    if (intent.kind === 'genre') return bookGenres(book).includes(genreKey(intent.genre))
     return true
   })
+}
+/** Every bounded source gets a turn before the ranking ceiling, after library filtering.
+ * A full author/corpus query must not crowd the wider catalog out before it can be compared. */
+export function discoveryCandidatePool(
+  groups: readonly (readonly DiscoveryBook[])[],
+  intent: DiscoveryIntent,
+  library: readonly Book[],
+): DiscoveryBook[] {
+  const eligible = groups.map((group) => eligibleDiscoveryBooks(group, intent, library))
+  const mixed: DiscoveryBook[] = []
+  const longest = Math.max(0, ...eligible.map((group) => group.length))
+  for (let i = 0; i < longest; i++) {
+    for (const group of eligible) if (group[i]) mixed.push(group[i]!)
+  }
+  return dedupeDiscoveryBooks(mixed).slice(0, DISCOVERY_POOL_LIMIT)
 }
 /** Semantic scores may order source-supported choices, but cannot invent a shared theme. */
 export function discoveryShortlist(
@@ -189,10 +215,14 @@ export function discoveryShortlist(
   intent: DiscoveryIntent,
   scores: Readonly<Record<string, number>> = {},
 ): DiscoveryPick[] {
-  const picks: { pick: DiscoveryPick; rank: number; index: number }[] = []
+  const picks: { pick: DiscoveryPick; priority: number; semantic: number | null; index: number }[] =
+    []
   pool.forEach((book, index) => {
     const score = scores[discoveryKey(book)]
-    const semantic = typeof score === 'number' && Number.isFinite(score) ? score : null
+    const semantic =
+      typeof score === 'number' && Number.isFinite(score) && score >= -1 && score <= 1
+        ? score
+        : null
     let reason = ''
     let basis: DiscoveryPick['basis'] = 'genre'
     let priority = 0
@@ -202,8 +232,7 @@ export function discoveryShortlist(
       reason = `For your ${intent.moods.map((m) => m.toLowerCase()).join(' + ')} search: the catalog description or tags include ${evidence.map((term) => `“${term}”`).join(' and ')}. Read a little to see if it fits.`
       basis = 'description'
     } else if (intent.kind === 'genre') {
-      if (![book.genre, ...(book.genres ?? [])].some((g) => norm(g ?? '') === norm(intent.genre)))
-        return
+      if (!bookGenres(book).includes(genreKey(intent.genre))) return
       reason =
         book.catalogSource === 'curated'
           ? `An editorial pick from our ${intent.genre.toLowerCase()} shelf, the genre you chose.`
@@ -216,21 +245,44 @@ export function discoveryShortlist(
         reason = `Another book by ${sharedAuthor}, the author of ${intent.anchor.title}.`
         basis = 'author'
         priority = 2
-      } else if (
-        book.genre &&
-        intent.anchor.genre &&
-        norm(book.genre) === norm(intent.anchor.genre)
-      ) {
-        reason = `More ${book.genre.toLowerCase()}, the genre you started from.`
+      } else if (sharedGenre(book, intent.anchor)) {
+        reason = `More ${sharedGenre(book, intent.anchor)}, a genre shared with ${intent.anchor.title}.`
         priority = 1
       } else return
     }
-    picks.push({ pick: { book, reason, basis }, rank: priority + (semantic ?? 0), index })
+    picks.push({ pick: { book, reason, basis }, priority, semantic, index })
   })
-  return picks
-    .sort((a, b) => b.rank - a.rank || a.index - b.index)
-    .slice(0, DISCOVERY_LIMIT)
-    .map((p) => p.pick)
+  const completePriorities = new Set(
+    picks
+      .map((p) => p.priority)
+      .filter((priority) =>
+        picks.filter((p) => p.priority === priority).every((p) => p.semantic !== null),
+      ),
+  )
+  const ordered = picks.sort(
+    (a, b) =>
+      b.priority - a.priority ||
+      // Rank each evidence tier semantically only when its coverage is complete. Treating
+      // unscored candidates as zero would promote whichever batch happened to finish first.
+      (completePriorities.has(a.priority) ? b.semantic! - a.semantic! : 0) ||
+      Number(Boolean(b.pick.book.description?.trim())) -
+        Number(Boolean(a.pick.book.description?.trim())) ||
+      a.index - b.index,
+  )
+  const selected: DiscoveryPick[] = []
+  const deferred: DiscoveryPick[] = []
+  const authorCounts = new Map<string, number>()
+  for (const { pick } of ordered) {
+    const authors = pick.book.authors.map(norm).filter(Boolean)
+    if (authors.some((author) => (authorCounts.get(author) ?? 0) >= 2)) deferred.push(pick)
+    else {
+      selected.push(pick)
+      for (const author of authors) authorCounts.set(author, (authorCounts.get(author) ?? 0) + 1)
+    }
+  }
+  // Prefer variety when supported alternatives exist, without padding from unrelated books
+  // or shortening a useful same-author shelf when it is the only evidence available.
+  return [...selected, ...deferred].slice(0, DISCOVERY_LIMIT)
 }
 
 const record = (value: unknown): Record<string, unknown> | null =>
