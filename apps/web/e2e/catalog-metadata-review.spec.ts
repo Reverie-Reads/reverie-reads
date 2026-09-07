@@ -137,6 +137,7 @@ test('metadata review saves a sourced description, keeps identity concerns, and 
       'href',
       'https://publisher.example/book',
     )
+    await expect(page.getByText('Description corrected', { exact: true })).toBeVisible()
     expect(
       await ok(c.admin.from('books').select('*').eq('id', c.bookId).single(), 'personal after'),
     ).toEqual(before)

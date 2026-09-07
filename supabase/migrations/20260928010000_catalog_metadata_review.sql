@@ -156,7 +156,7 @@ begin
       raise exception 'A description and HTTPS source link are required.' using errcode = '22023';
     end if;
     -- Deliberately narrow: no call to the broad editor that also establishes manual series intent.
-    update public.works set description=trim(p_description), updated_at=now(),
+    update public.works set description=btrim(p_description, E' \t\r\n'), updated_at=now(),
       metadata_provenance=coalesce(metadata_provenance,'{}') || jsonb_build_object('description',
         jsonb_build_object('source','manual','sourceRef',trim(p_source_url),'observedAt',now()))
       where id=p_work returning * into work_row;
