@@ -416,10 +416,36 @@ pnpm series:authority:discovery:score -- \
   packages/series-source-trial/private-results/authority-acquisition/<run>.json
 ```
 
+Model experiments should set their controls explicitly. Model, reasoning effort, search-context
+size, and search budget are recorded in the report and included in the cache key, so one arm cannot
+silently reuse another arm's response:
+
+```sh
+pnpm series:authority:acquire -- \
+  --holdout packages/series-source-trial/data/authority-discovery-holdout.json \
+  --model gpt-5.6-luna \
+  --reasoning low \
+  --search-context medium \
+  --max-tool-calls 3 \
+  --refresh
+```
+
+An opt-in `--focused-search` experiment makes one additional bounded search only for an unresolved
+or quarantined first pass that already cited a grounded, non-discovery-only authority origin. The
+second request is restricted to at most two such domains and can replace the first proposal only
+when it produces a resolved, valid, policy-safe result. It does not inject a gold URL, approve an
+origin, enter the retrieval eligibility path, or change the review-only boundary. It is not the
+default: the frozen regression recovered one additional safe classification in six attempts but did
+not improve source discovery.
+
 The acquisition command rejects a stale dataset hash, prompt-version drift, an invalid cell, or a
 holdout combined with ad-hoc scope, ID, or maximum selectors before making a model call. The scorer
 requires the exact frozen target/result order and reports known-origin discovery, targeted-channel
 discovery, exact-page discovery, source citation, retrieval, and resolution as separate outcomes.
+
+The Luna/Terra/Sol comparison, cache-isolation fix, focused-search result, and rejected Wikidata and
+Open Library locator probes are recorded in
+`reports/authority-model-routing-experiment-2026-09-07.md`.
 
 The two-stage 1,200-case target and complete five-work 2024 Kindle Storyteller development frame
 are recorded in `reports/authority-development-frame-2024-2026-09-06.md`.

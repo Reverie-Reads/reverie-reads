@@ -16,6 +16,10 @@ import {
   responseWebEvidence,
 } from '../src/authority/openai.mjs'
 import {
+  discoveredAuthorityDomains,
+  shouldSelectFocusedAuthoritySearch,
+} from '../src/authority/focused-search.mjs'
+import {
   AUTHORITY_ACQUISITION_PROMPT_VERSION,
   authorityAcquisitionInstructions,
 } from '../src/authority/schema.mjs'
@@ -764,11 +768,18 @@ test('sends a bounded, stateless web-search request and captures all consulted U
     apiKey: 'test-key',
     model: 'test-model',
     maxToolCalls: 99,
+    searchContextSize: 'high',
     fetchImpl,
   })
 
   assert.equal(requestBody.store, false)
-  assert.deepEqual(requestBody.tools, [{ type: 'web_search', external_web_access: true }])
+  assert.deepEqual(requestBody.tools, [
+    {
+      type: 'web_search',
+      external_web_access: true,
+      search_context_size: 'high',
+    },
+  ])
   assert.equal(requestBody.tool_choice, 'required')
   assert.equal(requestBody.max_tool_calls, 6)
   assert.deepEqual(requestBody.include, ['web_search_call.action.sources'])
@@ -805,6 +816,85 @@ test('captures and deduplicates scalar and batched search-query telemetry', () =
     'site:author.example exact title',
   ])
   assert.equal(evidence.webSearchCalls, 2)
+})
+
+test('focuses only on grounded authority origins and excludes discovery-only hosts', () => {
+  const firstPass = {
+    status: 'completed',
+    consultedUrls: [publisherUrl, 'https://thecwa.co.uk/member/ada-reader'],
+    output: {
+      classification: 'unresolved',
+      authoritySources: [
+        { url: publisherUrl, supports: ['identity'] },
+        { url: 'https://thecwa.co.uk/member/ada-reader', supports: ['identity'] },
+      ],
+    },
+    validation: { valid: true, policySafe: true },
+  }
+
+  assert.deepEqual(discoveredAuthorityDomains(firstPass), ['publisher.example'])
+  assert.equal(
+    shouldSelectFocusedAuthoritySearch(firstPass, {
+      status: 'completed',
+      output: seriesOutput,
+      validation: { valid: true, policySafe: true },
+    }),
+    true,
+  )
+})
+
+test('does not focus on discovery-only subdomains or a resolved safe first pass', () => {
+  const unresolved = {
+    status: 'completed',
+    consultedUrls: ['https://books.google.com/books?id=example', publisherUrl],
+    output: {
+      classification: 'unresolved',
+      authoritySources: [
+        { url: 'https://books.google.com/books?id=example', supports: ['identity'] },
+        { url: publisherUrl, supports: ['identity'] },
+      ],
+    },
+    validation: { valid: true, policySafe: true },
+  }
+  const resolved = {
+    ...unresolved,
+    output: { ...unresolved.output, classification: 'series' },
+  }
+
+  assert.deepEqual(discoveredAuthorityDomains(unresolved), ['publisher.example'])
+  assert.deepEqual(discoveredAuthorityDomains(resolved), [])
+})
+
+test('applies allowed-domain filters only to an explicitly focused search', async () => {
+  const target = buildAuthorityTarget(testCase)
+  let requestBody
+  const fetchImpl = async (_url, options) => {
+    requestBody = JSON.parse(options.body)
+    return new Response(
+      JSON.stringify({
+        id: 'response-focused',
+        model: 'test-model',
+        output: [
+          {
+            type: 'message',
+            content: [{ type: 'output_text', text: JSON.stringify(seriesOutput), annotations: [] }],
+          },
+        ],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    )
+  }
+
+  await acquireAuthorityEvidence(target, {
+    apiKey: 'test-key',
+    model: 'test-model',
+    allowedDomains: ['publisher.example'],
+    searchStrategy: 'discovered-origin-focus',
+    fetchImpl,
+  })
+
+  assert.deepEqual(requestBody.tools[0].filters, { allowed_domains: ['publisher.example'] })
+  assert.equal(requestBody.metadata.search_strategy, 'discovered-origin-focus')
 })
 
 test('uses a bounded no-tools call to repair structural output', async () => {
