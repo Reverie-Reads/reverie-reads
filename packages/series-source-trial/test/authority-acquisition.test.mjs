@@ -473,6 +473,28 @@ test('keeps selection frames and known marketing taxonomies out of truth evidenc
   assert.ok(
     discoveryOnly.policyViolations.some((error) => error.includes('known_discovery_only_host')),
   )
+
+  const associationProfile = structuredClone(seriesOutput)
+  const associationUrl = 'https://thecwa.co.uk/find-an-author/example-author/'
+  associationProfile.identity.evidenceUrls = [associationUrl]
+  associationProfile.memberships[0].evidenceUrls = [associationUrl]
+  associationProfile.authoritySources[0].url = associationUrl
+  associationProfile.authoritySources[0].kind = 'author'
+  const associationValidation = validateAuthorityAcquisition(
+    buildAuthorityTarget(testCase),
+    associationProfile,
+    [associationUrl],
+  )
+  assert.equal(associationValidation.valid, true)
+  assert.equal(associationValidation.policySafe, false)
+  assert.ok(
+    associationValidation.policyViolations.some((error) =>
+      error.includes('known_discovery_only_host'),
+    ),
+  )
+  const cleanedAssociation = canonicalizeAuthorityAcquisition(associationProfile, [associationUrl])
+  assert.deepEqual(cleanedAssociation.authoritySources[0].supports, ['identity'])
+  assert.deepEqual(cleanedAssociation.memberships, [])
 })
 
 test('blocks only the actual selection-frame URL when a sample plan is available', () => {

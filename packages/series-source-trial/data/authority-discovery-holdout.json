@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "id": "authority-discovery-recall-holdout-v1",
+  "frozenAt": "2026-09-07T21:00:00.000Z",
+  "promptVersion": "authority-acquisition-v11-preserve-series-label",
+  "sourceDataset": {
+    "path": "data/authority-gold.json",
+    "sha256": "7585c74d49d51eb3caab77e21af3a1829d232654254b8ebc8da15994b73f38e9"
+  },
+  "selection": {
+    "seed": "authority-discovery-recall-holdout-v1",
+    "method": "Exclude every reviewed case present in any local authority-acquisition cache before freeze, require a direct author or publisher authority origin, order each cell by SHA-256 of seed:caseId, and preserve distinct authors across cells in declared cell order.",
+    "priorAcquisitionCasesExcluded": 144,
+    "priorAcquisitionCaseSetSha256": "34595d6222438eb3d332c3254ff1ded14d71e9c559a0bb2ec896f352a3b67a05",
+    "excludedHostedPlatforms": [
+      "books.google.com",
+      "goodreads.com",
+      "linkedin.com",
+      "patreon.com",
+      "tiktok.com"
+    ]
+  },
+  "cells": [
+    {
+      "id": "standalone_publisher",
+      "classification": "standalone",
+      "channel": "publisher",
+      "target": 5
+    },
+    {
+      "id": "series_author",
+      "classification": "series",
+      "channel": "author",
+      "target": 6
+    },
+    {
+      "id": "series_publisher",
+      "classification": "series",
+      "channel": "publisher",
+      "target": 5
+    },
+    {
+      "id": "standalone_author",
+      "classification": "standalone",
+      "channel": "author",
+      "target": 6
+    }
+  ],
+  "cases": [
+    {
+      "id": "crimereads-2023-sweet-thing",
+      "cell": "standalone_publisher"
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-the-light-of-the-midnight-stars",
+      "cell": "standalone_publisher"
+    },
+    {
+      "id": "prh-2026-sff-the-unicorn-hunters",
+      "cell": "standalone_publisher"
+    },
+    {
+      "id": "fern-michaels-2024-the-wild-side",
+      "cell": "standalone_publisher"
+    },
+    {
+      "id": "hachette-standalone-sff-fantasy-brother-red",
+      "cell": "standalone_publisher"
+    },
+    {
+      "id": "kindle-storyteller-2024-bitter-enemies",
+      "cell": "series_author"
+    },
+    {
+      "id": "kindle-storyteller-2024-stateside",
+      "cell": "series_author"
+    },
+    {
+      "id": "selfies-2023-fiction-the-secret-diary-of-a-bengali-newlywed",
+      "cell": "series_author"
+    },
+    {
+      "id": "crimereads-2023-blood-betrayal",
+      "cell": "series_author"
+    },
+    {
+      "id": "selfies-2022-fiction-none-stood-taller",
+      "cell": "series_author"
+    },
+    {
+      "id": "selfies-2022-fiction-sealfinger",
+      "cell": "series_author"
+    },
+    {
+      "id": "prh-2026-sff-the-exquisite-torment-of-loving-your-enemy",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "crimereads-2023-kennedy-35",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "crimereads-2023-barbacoa-bomba-and-betrayal",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "selfies-2021-fiction-how-to-buy-a-planet",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "prh-2026-sff-exodus-the-helium-sea",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-century-rain",
+      "cell": "standalone_author"
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-inmate",
+      "cell": "standalone_author"
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-the-doors-of-eden",
+      "cell": "standalone_author"
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-goldilocks",
+      "cell": "standalone_author"
+    },
+    {
+      "id": "hachette-standalone-sff-horror-the-last-days-of-jack-sparks",
+      "cell": "standalone_author"
+    },
+    {
+      "id": "selfies-2021-fiction-odd-numbers",
+      "cell": "standalone_author"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ const discoveryOnlyHosts = new Set([
   'goodreads.com',
   'linktr.ee',
   'target.com',
+  'thecwa.co.uk',
   'wikipedia.org',
 ])
 
