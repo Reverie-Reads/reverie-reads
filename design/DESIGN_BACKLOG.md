@@ -11,7 +11,7 @@
 Outputs land in design/from-design-tool/<set>/ (code export + screenshots). coding agent implements
 against them on the token system (no hardcoded colors from the mockup).
 
-## Current design queue — 2026-09-06
+## Current design queue — 2026-09-07
 
 The approved Midnight & Lamplight brand, authored reading rooms, working guest library, and
 account arrangements are on public main. This queue was refreshed against public `dc24877`;
@@ -30,7 +30,15 @@ lives in `ROADMAP.md`.
    reference. [Implementation notes](../docs/tasks/discover-implementation.md) record the source
    evidence, account/backup boundaries, and release checks. Future matching improvements should
    be measured against useful selections, not a larger feed or unverified explanations.
-3. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
+3. **STATS + PLANNER FUNDAMENTAL OVERHAUL — ACTIVE DESIGN REVIEW.** The owner prioritized this
+   paired redesign after catalog quality. [Reading life study](studies/reading-life/READING_LIFE.md)
+   proposes Reflect, a private book-led reading record, and Plan, a flexible queue with direct
+   editing and a calendar view. Shared period semantics, completed sessions versus distinct books,
+   rereads/DNF, actual read formats, partial dates, and privacy precede new metrics. The standalone
+   [preview guide](studies/reading-life/README.md) includes interactive sample histories and all nine
+   rooms. **Not implemented in the application yet.** Review the paired study before changing the
+   production screens or schema. This precedes import/restore preview and brand collateral.
+4. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
    icons, onboarding material, and one accurate demonstration. Preserve each room's own interface
    language. Do not reopen the chosen palette as a new concept exercise.
 
