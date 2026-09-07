@@ -62,18 +62,18 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.valid, true)
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
-    selected: 306,
-    reviewed: 179,
+    selected: 329,
+    reviewed: 202,
     candidate: 127,
     reviewedPositive: 141,
-    reviewedStandalone: 38,
+    reviewedStandalone: 61,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 21,
+    reviewed_cases: 0,
     reviewed_positive_cases: 0,
-    reviewed_standalone_cases: 12,
+    reviewed_standalone_cases: 0,
   })
   assert.deepEqual(audit.qualification.counts, {
     selected: 0,
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 179, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 202, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -118,7 +118,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
       recent_independent_or_kindle_first: { reviewed: 49, gap: 1 },
       recent_traditional: { reviewed: 60, gap: 0 },
       multi_series_or_connected_universe: { reviewed: 21, gap: 0 },
-      standalone_control: { reviewed: 46, gap: 4 },
+      standalone_control: { reviewed: 69, gap: 0 },
     },
   )
 })
@@ -199,6 +199,70 @@ test('keeps the complete Modglin standalone-label challenge frame without trusti
   ]) {
     assert.equal(byId.get(id)?.truth.status, 'candidate')
   }
+})
+
+test('keeps the complete Freida McFadden standalone-thriller frame with direct author truth', async () => {
+  const caseSet = await loadTrialCases()
+  const frameUrl = 'https://www.freidamcfadden.com/books/'
+  const bibliographyUrl = 'https://www.freidamcfadden.com/printable-booklist/'
+  const frame = caseSet.cases.filter(
+    (testCase) =>
+      testCase.selectionFrame === 'freida_mcfadden_current_standalone_thrillers_2026_09_06',
+  )
+  const expectedTitlesAndYears = [
+    ['The Witch', 2026],
+    ['The Divorce', 2026],
+    ['Dear Debbie', 2026],
+    ['The Intruder', 2025],
+    ['The Tenant', 2025],
+    ['The Crash', 2025],
+    ['The Boyfriend', 2024],
+    ['The Teacher', 2024],
+    ['The Coworker', 2023],
+    ['Ward D', 2023],
+    ['Never Lie', 2022],
+    ['The Inmate', 2022],
+    ['Do You Remember?', 2022],
+    ['Do Not Disturb', 2021],
+    ['The Locked Door', 2021],
+    ['Want to Know a Secret?', 2021],
+    ['One by One', 2020],
+    ['The Wife Upstairs', 2020],
+    ['The Perfect Son', 2019],
+    ['The Ex', 2019],
+    ['The Surrogate Mother', 2018],
+    ['Brain Damage', 2016],
+    ['Dead Med', 2024],
+  ]
+
+  assert.equal(frame.length, 23)
+  assert.deepEqual(
+    frame.map(({ title }) => title).sort(),
+    expectedTitlesAndYears.map(([title]) => title).sort(),
+  )
+  const yearsByTitle = new Map(frame.map(({ title, publicationYear }) => [title, publicationYear]))
+  for (const [title, publicationYear] of expectedTitlesAndYears) {
+    assert.equal(yearsByTitle.get(title), publicationYear)
+  }
+
+  for (const testCase of frame) {
+    assert.equal(testCase.truth.status, 'reviewed')
+    assert.equal(testCase.truth.standalone, true)
+    assert.equal(testCase.truth.membershipsComplete, true)
+    assert.deepEqual(testCase.truth.memberships, [])
+    assert.deepEqual(testCase.truth.sourceGroups, ['freida_mcfadden_current_standalone_thrillers'])
+    assert.ok(testCase.sampleSources.some(({ url }) => url === frameUrl))
+    assert.ok(testCase.sampleSources.some(({ url }) => url === bibliographyUrl))
+  }
+
+  assert.equal(
+    frame.some(({ title }) =>
+      ['The Housemaid', "The Housemaid's Secret", 'The Devil Wears Scrubs', 'The Gift'].includes(
+        title,
+      ),
+    ),
+    false,
+  )
 })
 
 test('keeps the complete 2021 Kindle Storyteller frame and direct authority truth', async () => {
