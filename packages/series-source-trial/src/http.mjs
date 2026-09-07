@@ -21,12 +21,17 @@ export async function fetchJson(url, options = {}, retries = 3) {
       const responseError = new Error(
         `${response.status} ${response.statusText}${reason ? ` (${reason})` : ''}`,
       )
+      responseError.status = response.status
+      responseError.reason = reason
       if (response.status !== 429 && response.status < 500) {
         responseError.retryable = false
         throw responseError
       }
       const retryAfter = Number(response.headers.get('retry-after'))
-      await sleep(Number.isFinite(retryAfter) ? retryAfter * 1000 : 750 * 2 ** attempt)
+      responseError.retryAfterMs = Number.isFinite(retryAfter) ? retryAfter * 1000 : null
+      if (attempt < retries - 1) {
+        await sleep(responseError.retryAfterMs ?? 750 * 2 ** attempt)
+      }
       lastError = responseError
     } catch (error) {
       if (error?.retryable === false) throw error

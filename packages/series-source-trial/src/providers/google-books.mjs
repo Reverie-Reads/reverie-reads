@@ -21,9 +21,54 @@ export const googleBooks = {
       process.env.VITE_GOOGLE_BOOKS_KEY ??
       ''
     const referrer = process.env.GOOGLE_BOOKS_REFERRER ?? ''
+    const configuredDelayMs = Number(process.env.GOOGLE_BOOKS_DELAY_MS ?? 1100)
+    const delayMs = Number.isFinite(configuredDelayMs) ? Math.max(0, configuredDelayMs) : 1100
+    const configuredConcurrency = Number(process.env.GOOGLE_BOOKS_CONCURRENCY ?? 4)
+    const concurrency = Number.isFinite(configuredConcurrency)
+      ? Math.max(1, Math.min(4, Math.floor(configuredConcurrency)))
+      : 4
+    const configuredCooldownMs = Number(process.env.GOOGLE_BOOKS_429_COOLDOWN_MS ?? 15_000)
+    const cooldownMs = Number.isFinite(configuredCooldownMs)
+      ? Math.max(0, configuredCooldownMs)
+      : 15_000
     const results = Array(cases.length)
     let nextIndex = 0
     let completed = 0
+    let nextRequestAt = Date.now()
+    let quotaNotBefore = 0
+    let requestStartGate = Promise.resolve()
+
+    const waitForRequestSlot = () => {
+      const turn = requestStartGate.then(async () => {
+        while (true) {
+          const now = Date.now()
+          const startAt = Math.max(now, nextRequestAt, quotaNotBefore)
+          if (startAt > now) await sleep(startAt - now)
+          if (Date.now() < quotaNotBefore) continue
+          nextRequestAt = Date.now() + delayMs
+          return
+        }
+      })
+      requestStartGate = turn
+      return turn
+    }
+
+    const fetchGoogle = async (url, options) => {
+      const maximumAttempts = 4
+      for (let attempt = 0; attempt < maximumAttempts; attempt += 1) {
+        await waitForRequestSlot()
+        try {
+          return await fetchJson(url, options, 1)
+        } catch (error) {
+          if (error?.status !== 429 || attempt === maximumAttempts - 1) throw error
+          quotaNotBefore = Math.max(
+            quotaNotBefore,
+            Date.now() + Math.max(error.retryAfterMs ?? 0, cooldownMs),
+          )
+        }
+      }
+      throw new Error('Google Books request attempts exhausted')
+    }
 
     async function worker() {
       while (nextIndex < cases.length) {
@@ -36,7 +81,7 @@ export const googleBooks = {
 
         try {
           const headers = referrer ? { Referer: referrer, Origin: referrer } : {}
-          const { body, latencyMs } = await fetchJson(
+          const { body, latencyMs } = await fetchGoogle(
             `https://www.googleapis.com/books/v1/volumes?${params}`,
             { headers },
           )
@@ -90,11 +135,10 @@ export const googleBooks = {
         if (completed % 10 === 0 || completed === cases.length) {
           progress(`google-books ${completed}/${cases.length}`)
         }
-        await sleep(250)
       }
     }
 
-    await Promise.all(Array.from({ length: 4 }, () => worker()))
+    await Promise.all(Array.from({ length: concurrency }, () => worker()))
     return results
   },
 }

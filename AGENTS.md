@@ -135,10 +135,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
 - **LLM resolution consumes cleaned evidence; it never upgrades source risk by itself.** In the
   trial, Google is identity-only; open graph claims require exact-work relational evidence;
   Inventaire `wd:` mirrors retain Wikidata lineage; and an ordinary exact-work, non-singleton
-  Hardcover relation may supply membership after deterministic semantic quarantine. Self-titled
-  Hardcover relations, universe groupings, reading-order containers, fractional Hardcover
-  positions, and competing relationships are review-only; current community-source order needs
-  independent agreement. Wikidata entity URLs and Inventaire `wd:` identifiers normalize to the
+  Hardcover relation remains a candidate until independent open relational evidence agrees.
+  Self-titled Hardcover relations, universe groupings, reading-, publication-, chronological-, and
+  recommended-order containers, fractional Hardcover positions, and competing relationships are
+  review-only; current community-source order needs independent agreement. The separate authority
+  scout may propose first-party confirmation for review, but it does not upgrade a Hardcover-only
+  resolver packet. Wikidata entity URLs and Inventaire `wd:` identifiers normalize to the
   same lineage. Unknown providers cannot corroborate until profiled. The model may select, explain,
   review, or abstain, but only deterministic eligibility can make a proposal automatic and only
   affirmative authority evidence can establish standalone status. The model uses strict structured

@@ -63,9 +63,13 @@ Use this hierarchy by question:
 | Which edition/history is involved?    | National-library and ISBN/ONIX records; ISFDB is useful corroboration for speculative fiction. Edition publication does not by itself prove work-level series membership.                                                                                       |
 | What breaks a tie?                    | Two independent sources, with author/publisher evidence controlling. A disagreement remains an administrator review item rather than being decided by source count alone.                                                                                       |
 
-Current automatic classification uses Hardcover's structured series-to-book relationship and its
-provider cardinality. Candidate labels returned during ordinary Google Books/Open Library/Hardcover
-search are not relationship evidence. The evidence model also accepts author, publisher,
+The Hardcover adapter uses its structured series-to-book relationship and provider cardinality;
+candidate labels returned during ordinary Google Books/Open Library/Hardcover search are not
+relationship evidence. The complete 209-case development frame showed that structure and
+cardinality alone are insufficient for automatic membership: plausible wrong canonical names and a
+publication-order container survived the earlier semantic quarantine. Hardcover relationships are
+therefore candidates until independent open relational evidence agrees or a future integrated
+first-party adjudication path passes its own deterministic gate. The evidence model also accepts author, publisher,
 ISBN/ONIX, national-library, Wikidata, ISFDB, and Open Library observations as supported connectors
 are added; unavailable sources remain retryable and cannot become a negative ruling. Open Library's
 own guidance reserves its APIs for low-volume real-time use and points bulk consumers to monthly
@@ -146,10 +150,11 @@ claim or invents a replacement.
 Provider data is cleaned before it reaches that resolver. Google contributes identity only.
 Open Library, Wikidata, Inventaire, and BookBrainz contribute a membership only after the exact
 author-matched work appears in a structured relationship; mirrored Wikidata observations share one
-lineage. Hardcover is a high-coverage candidate supplement, not an automatic authority: its
-ordinary exact-work, non-singleton relationship may supply membership after semantic quarantine,
-but it never corroborates another provider. Self-titled, singleton, universe, reading-order, and
-competing relationships remain review-only. A fractional Hardcover position is also quarantined:
+lineage. Hardcover is a high-coverage candidate supplement, not an automatic authority: its ordinary
+exact-work, non-singleton relationship requires independent open relational agreement before it can
+supply automatic membership, and it never corroborates another provider. Self-titled, singleton,
+universe, reading-order, publication-order, chronological-order, recommended-order, and competing
+relationships remain review-only. A fractional Hardcover position is also quarantined:
 it may describe a novella or a legitimate intermediate installment, but the 50-case trial found it
 on a publisher-declared standalone placed inside a connected-world reading order. Every current
 community source needs independent agreement before an ordinal is automatic; a position conflict
@@ -166,10 +171,12 @@ Inventaire and BookBrainz remain useful discovery and administrator-review input
 to the routine decision packet reduced safe automatic recall on the first 40 reviewed cases without
 improving precision or standalone safety. Keep them out of the default automatic packet until the
 larger authority set shows a net benefit; their evidence remains available for conflict discovery.
-On the first 61 reviewed cases, that default packet plus deterministic validation produced 100%
-membership precision, 92.7% recall, and no false series assignments across 20 authority-declared
-standalones. This remains a pre-pilot result: production use is still blocked by the fixed 200-case
-sample gate and source data-use rights.
+The complete 209-case development evaluation supersedes the earlier 61-case result. Raw Hardcover
+relationships reached 68.0% membership recall but only 84.9% precision and produced false series
+claims for 9.7% of authority-declared standalones. The previous cleaner plus resolver improved that
+to 92.9% precision and 1.6% false standalone, still below the production thresholds. This evidence
+is why Hardcover-only membership is now review-only. Production use remains blocked by the untouched
+1,000-case qualification partition and source data-use rights.
 
 The same profiles keep data-use boundaries visible to the resolver: Wikidata, Inventaire, and
 BookBrainz claims are durable CC0 inputs; Google is live identity-only; Open Library remains trial

@@ -44,11 +44,11 @@ export const PROVIDER_PROFILES = {
   },
   hardcover: {
     sourceRole: 'high_coverage_supplement',
-    membershipRule: 'relational_non_singleton_with_semantic_quarantine',
+    membershipRule: 'independent_corroboration_required',
     positionRule: 'independent_corroboration_required',
     mayCorroborate: false,
     dataUse: 'decision_input_pending_terms',
-    note: 'Exact non-singleton book_series rows may supply membership; reading-order, universe, companion-collection, self-titled, and conflicting relationships remain review-only.',
+    note: 'Exact non-singleton book_series rows supply candidates; independent open relational evidence is required before automatic membership. Ordering containers, universe, companion-collection, self-titled, and conflicting relationships remain review-only.',
   },
 }
 
@@ -148,7 +148,7 @@ export function gradeMembershipEvidence(target, evidence, identityEvidence = [])
     if (entry.role === 'universe' || /\buniverse\b/i.test(entry.series)) {
       riskFlags.push('possible_universe_not_series')
     }
-    if (/\breading order\b/i.test(entry.series)) {
+    if (/\b(?:reading|publication|chronological|recommended)\s+order\b/i.test(entry.series)) {
       riskFlags.push('possible_reading_order_not_series')
     }
     if (entry.provider === 'hardcover' && /\bcompanions?\b/i.test(entry.series)) {

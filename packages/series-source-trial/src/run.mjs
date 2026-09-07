@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadTrialCases, selectCases } from './cases.mjs'
@@ -11,9 +11,11 @@ import { hardcover } from './providers/hardcover.mjs'
 import { inventaire } from './providers/inventaire.mjs'
 import { openLibrary } from './providers/openlibrary.mjs'
 import { wikidata } from './providers/wikidata.mjs'
+import { reusableProviderResults } from './resume.mjs'
 import { renderScoreMarkdown, scoreProvider } from './score.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const repositoryRoot = resolve(packageRoot, '../..')
 
 await loadLocalEnvironment(resolve(packageRoot, '.env.local'))
 const adapters = new Map(
@@ -28,6 +30,7 @@ const parseArgs = (argv) => {
     providers: 'openlibrary,wikidata,inventaire,bookbrainz,google-books',
     scope: 'all',
     out: null,
+    resume: [],
   }
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
@@ -35,6 +38,7 @@ const parseArgs = (argv) => {
     if (value === '--providers') options.providers = argv[++index]
     else if (value === '--scope') options.scope = argv[++index]
     else if (value === '--out') options.out = argv[++index]
+    else if (value === '--resume') options.resume.push(argv[++index])
     else throw new Error(`Unknown argument ${value}`)
   }
   return options
@@ -42,9 +46,29 @@ const parseArgs = (argv) => {
 
 const timestamp = () =>
   new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19)
+const resolveExisting = async (path) => {
+  for (const candidate of [
+    resolve(path),
+    resolve(repositoryRoot, path),
+    resolve(packageRoot, path),
+  ]) {
+    try {
+      await access(candidate)
+      return candidate
+    } catch {
+      // Try the next supported invocation root.
+    }
+  }
+  throw new Error(`Resume report not found: ${path}`)
+}
 const options = parseArgs(process.argv.slice(2))
 const caseSet = await loadTrialCases()
 const selected = selectCases(caseSet, options.scope)
+const resumePaths = await Promise.all(options.resume.map(resolveExisting))
+const resumeReports = await Promise.all(
+  resumePaths.map((path) => readFile(path, 'utf8').then(JSON.parse)),
+)
+const reusableByProvider = reusableProviderResults(selected, resumeReports)
 const policy = JSON.parse(
   await readFile(resolve(packageRoot, 'data/evaluation-policy.json'), 'utf8'),
 )
@@ -60,11 +84,19 @@ console.log(
 for (const providerName of providerNames) {
   const adapter = adapters.get(providerName)
   if (!adapter) throw new Error(`Unknown provider ${providerName}`)
-  console.log(`Starting ${providerName}.`)
+  const reusable = reusableByProvider.get(providerName) ?? new Map()
+  const pendingCases = selected.filter((testCase) => !reusable.has(testCase.id))
+  console.log(
+    `Starting ${providerName}; reusing ${reusable.size}, requesting ${pendingCases.length}.`,
+  )
   const startedAt = new Date().toISOString()
+  const requestedResults = pendingCases.length
+    ? await adapter.run(pendingCases, (message) => console.log(message))
+    : []
+  const requestedById = new Map(requestedResults.map((result) => [result.caseId, result]))
   const results = annotateProviderResults(
     providerName,
-    await adapter.run(selected, (message) => console.log(message)),
+    selected.map((testCase) => requestedById.get(testCase.id) ?? reusable.get(testCase.id)),
   )
   runs.push({
     schemaVersion: 1,
@@ -72,6 +104,11 @@ for (const providerName of providerNames) {
     observedAt: startedAt,
     completedAt: new Date().toISOString(),
     rights: adapter.rights,
+    reuse: {
+      sourceReports: options.resume,
+      reusedResults: reusable.size,
+      requestedResults: pendingCases.length,
+    },
     results,
   })
 }
