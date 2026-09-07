@@ -1,6 +1,7 @@
 # Catalog cover review
 
-Status: implementation in progress on `codex/catalog-cover-review`, based on public `b32b52c`.
+Status: implemented for review in [PR #460](https://github.com/Reverie-Reads/reverie-reads/pull/460),
+on `codex/catalog-cover-review`, based on public `b32b52c`.
 
 The reviewed cover chooser is shipped. Existing shared records still need deliberate curation:
 the September 6 audit found eight identity/art concerns and many small originals. The new workspace
@@ -33,3 +34,18 @@ error/retry states, missing/broken/soft images, keyboard use, mobile layout, and
 Run the complete local gate and one fresh-database full browser suite at the default worker count,
 with retries zero. Catalog findings remain review evidence; no incident rows enter migrations and
 no production data repairs are performed by this coding session.
+
+## Verification
+
+Typecheck, lint, build, complete unit tests (including the compiled Workflow integration), formatting,
+and full-history plus staged-patch secret scans passed. A fresh local database applied all migrations
+and passed 1,419 assertions across 46 SQL test files.
+
+The full local browser run at product commit `7d2b705`, with one worker and retries zero, finished with
+253 passed, 10 skipped, and one failed history-note locator assertion. The recorded page contained the
+saved note. Two test-selector corrections followed: locate the note inside its history list item and
+locate the queue dropdown by its combobox role. The complete four-test workspace file then passed
+with retries zero, including real database replacement, reload/Reviewed queue, untouched personal
+fields, stale review refusal, missing/broken-image gating, and all nine rooms in both modes at 390px.
+The original full-run failure is retained; the focused run does not relabel it as a green full run.
+The PR carries the complete CI matrix for the final test selectors.

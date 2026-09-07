@@ -13,7 +13,7 @@ Priorities mean:
 
 ## Active catalog quality follow-up
 
-The cover review workspace is in implementation on `codex/catalog-cover-review`; see
+The cover review workspace is implemented for review in [PR #460](https://github.com/Reverie-Reads/reverie-reads/pull/460); see
 [the acceptance brief](docs/tasks/catalog-cover-review.md). It adds deliberate administrator review
 of shared covers, durable concerns/decisions, edition comparison, and stale-record protection. It
 preserves personal cover choices. The reviewed September catalog findings still need owner curation;

@@ -183,7 +183,7 @@ test('an administrator compares and saves a shared cover without altering their 
     await expect(
       page.getByRole('list', { name: 'Catalog cover review queue' }).getByRole('link'),
     ).toHaveCount(0)
-    await page.getByLabel('Review queue', { exact: true }).selectOption('approved')
+    await page.getByRole('combobox', { name: 'Review queue', exact: true }).selectOption('approved')
     await expect(
       page
         .getByRole('list', { name: 'Catalog cover review queue' })
