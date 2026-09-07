@@ -91,6 +91,19 @@
       "selectionRule": "Include all six adult fiction titles on the official 2025 Selfies shortlist, with no provider-result filtering."
     },
     {
+      "id": "selfies_2025_childrens_shortlist",
+      "label": "Complete 2025 Selfies Book Awards children's shortlist",
+      "expectedCases": 6,
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "source": {
+        "kind": "platform_award",
+        "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+      },
+      "selectionRule": "Include all six children's titles on the official 2025 Selfies shortlist, with no provider-result filtering. Normalize the shortlist's Karin Inglis byline to the author's canonical Karen Inglis name."
+    },
+    {
       "id": "selfies_2024_adult_fiction_shortlist",
       "label": "Complete 2024 Selfies Book Awards adult fiction shortlist",
       "expectedCases": 7,

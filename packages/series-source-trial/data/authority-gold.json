@@ -6819,6 +6819,287 @@
         ],
         "reviewNote": "The author's official site identifies @k.m.moronova as her account, and the exact post from that account affirmatively calls Bulletproof a standalone in the Dark Forces universe. Bloom's exact product page independently confirms the work identity and connected-world framing but supplies no series attribute; that absence is corroboration only, not standalone proof. Gold therefore corrects the seed's Dark Forces #4 label to no bibliographic membership: a shared universe is not a numbered series."
       }
+    },
+    {
+      "id": "selfies-2025-childrens-the-wonder-girls-rebel",
+      "title": "The Wonder Girls Rebel",
+      "authors": ["J.M. Carr"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_childrens_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.jmcarr.com/post/the-wonder-girls-rebel-spark-3"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Wonder Girls",
+            "aliases": ["Wonder Girls trilogy"],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 3,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.jmcarr.com/post/the-wonder-girls-rebel-spark-3"
+          }
+        ],
+        "reviewNote": "The author's exact-title post calls the sequence the Wonder Girls trilogy, identifies the first work as book one, and links The Wonder Girls Rebel as book three. Gold records the author's canonical series name and publication position three."
+      }
+    },
+    {
+      "id": "selfies-2025-childrens-body-in-the-thames",
+      "title": "Body in the Thames",
+      "authors": ["Sarah Lustig"],
+      "identifiers": {
+        "isbn13": ["9781739773632"]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_childrens_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.sarahlustig.com/"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.sarahlustig.com/product-page/body-in-the-thames-2"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Westminster Mysteries",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 2,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.sarahlustig.com/"
+          },
+          {
+            "kind": "author",
+            "url": "https://www.sarahlustig.com/product-page/body-in-the-thames-2"
+          }
+        ],
+        "reviewNote": "The author's catalog names the Westminster Mysteries trilogy and directly calls Body in the Thames its second book. The exact product page also identifies the work as the sequel to Mystery in the Palace of Westminster and recommends series order."
+      }
+    },
+    {
+      "id": "selfies-2025-childrens-fyn-carter-agents-eromlos",
+      "title": "Fyn Carter and the Agents of Eromlos",
+      "authors": ["Ian Hunter"],
+      "identifiers": {
+        "isbn13": ["9781738506903"]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_childrens_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://ianhuntercreates.com/2025/03/17/the-london-book-fair-and-the-selfies-book-awards-2025/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Fyn Carter",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 1,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://ianhuntercreates.com/2025/03/17/the-london-book-fair-and-the-selfies-book-awards-2025/"
+          }
+        ],
+        "reviewNote": "The author's exact-work award post calls Agents of Eromlos Fyn 1, identifies the forthcoming Legends from Atlantis as Fyn Carter 2, and describes it as the sequel. Gold therefore records Fyn Carter publication position one."
+      }
+    },
+    {
+      "id": "selfies-2025-childrens-the-witchs-cat-goes-wild",
+      "title": "The Witch's Cat Goes Wild",
+      "authors": ["Kirstie Watson"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_childrens_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.kirstiewatsonauthor.co.uk/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.sourcebooks.com/9781464292415-the-witchs-cat-goes-wild-hc-pic-bk.html"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Witch's Cat",
+            "aliases": ["Witch's Cat"],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.kirstiewatsonauthor.co.uk/"
+          },
+          {
+            "kind": "publisher",
+            "url": "https://www.sourcebooks.com/9781464292415-the-witchs-cat-goes-wild-hc-pic-bk.html"
+          }
+        ],
+        "reviewNote": "The author's catalog establishes the shortlisted work among her Witch's Cat books, and Sourcebooks' exact forthcoming-edition page assigns it to the Witch's Cat series. The publisher numbers that later edition as one despite the earlier self-published books, so gold retains membership but withholds work-level publication order."
+      }
+    },
+    {
+      "id": "selfies-2025-childrens-beyond-the-secret-lake",
+      "title": "Beyond the Secret Lake",
+      "authors": ["Karen Inglis"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_childrens_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://kareninglisauthor.com/beyond-the-secret-lake-8-12yrs/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "The Secret Lake",
+            "aliases": ["Secret Lake series", "Secret Lake mystery adventure series"],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 3,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://kareninglisauthor.com/beyond-the-secret-lake-8-12yrs/"
+          }
+        ],
+        "reviewNote": "The author's exact-title page calls Beyond the Secret Lake book three in the international bestselling Secret Lake mystery adventure series. The author's canonical Karen Inglis name corrects the shortlist's Karin Inglis typo."
+      }
+    },
+    {
+      "id": "selfies-2025-childrens-time-tub-travellers-silk-thief",
+      "title": "Time Tub Travellers and the Silk Thief",
+      "authors": ["Claire Linney"],
+      "sampleOrigin": "external_sample",
+      "strata": ["recent_independent_or_kindle_first"],
+      "publicationYear": 2024,
+      "publicationPath": "independent",
+      "selectionFrame": "selfies_2025_childrens_shortlist",
+      "sampleSources": [
+        {
+          "kind": "platform_award",
+          "url": "https://theselfies.co.uk/uncategorised/2025-shortlists-announced/"
+        },
+        {
+          "kind": "author",
+          "url": "https://www.clairelinney.com/book-store"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Time Tub Travellers",
+            "aliases": [],
+            "role": "primary",
+            "positions": [
+              {
+                "value": 1,
+                "orderType": "publication"
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.clairelinney.com/book-store"
+          }
+        ],
+        "reviewNote": "The author's store explicitly lists Time Tub Travellers and the Silk Thief as book one, alongside books two and three and a Time Tub Travellers series bundle."
+      }
     }
   ],
   "sharedSources": {
