@@ -1,4 +1,6 @@
-export const AUTHORITY_RETRIEVAL_PROFILES_VERSION = 'authority-retrieval-profiles-v4'
+import { REPEATED_NUMBERED_CATALOG_HEADINGS } from './profile.mjs'
+
+export const AUTHORITY_RETRIEVAL_PROFILES_VERSION = 'authority-retrieval-profiles-v5'
 
 export const authorityRetrievalProfiles = [
   {
@@ -45,17 +47,17 @@ export const authorityRetrievalProfiles = [
   },
   {
     schemaVersion: 1,
-    profileVersion: 'smdaviesauthor-pending-v1',
+    profileVersion: 'smdaviesauthor-approved-trial-v1',
     canonicalOrigin: 'https://smdaviesauthor.com',
-    canonicalAliases: [],
+    canonicalAliases: ['https://www.smdaviesauthor.com'],
     sourceKind: 'author',
-    evidenceCapabilities: [],
-    status: 'pending',
-    termsReviewedAt: null,
-    expiresAt: null,
-    reviewedBy: null,
+    evidenceCapabilities: [REPEATED_NUMBERED_CATALOG_HEADINGS],
+    status: 'approved_trial',
+    termsReviewedAt: '2026-09-07T19:20:57.000Z',
+    expiresAt: '2026-10-07T19:20:57.000Z',
+    reviewedBy: 'reverie-owner',
     reviewReference:
-      'packages/series-source-trial/reports/authority-origin-coverage-evaluation-2026-09-07.md#s-m-davies',
+      'packages/series-source-trial/reports/authority-origin-approval-sm-davies-2026-09-07.md',
   },
   {
     schemaVersion: 1,

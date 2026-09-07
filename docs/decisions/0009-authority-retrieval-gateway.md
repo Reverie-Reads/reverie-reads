@@ -50,8 +50,8 @@ the exact target, hash-bound child packet, reviewed source kind, and provenance 
 replace the first proposal only when the packet contains the exact target title and author and
 deterministic post-validation finds packet support for the claimed author identity, series name,
 standalone language, and position. Unsupported position becomes null and unsupported membership
-role becomes unknown without discarding a direct relationship. No real origin is approved by the
-repository.
+role becomes unknown without discarding a direct relationship. At that integration stage, no real
+origin was approved by the repository.
 
 Before validation, a membership that originally cited evidence but loses every citation because
 all of its sources were deterministically demoted is removed. This permits a separately supported
@@ -137,8 +137,8 @@ series prefix, their integer positions and titles must be distinct, and one titl
 the target. An isolated numbered heading, a detail page, mixed prefixes, or generic singular or
 plural prefixes such as `Chapter`, `Parts`, and `Volumes` remain insufficient. This recognizes
 reviewed author catalogs shaped like `High King 1: The West Rises` followed by `High King 2: Under
-the Dragon` without granting that page-shape interpretation to unrelated origins. No committed real
-origin currently has this capability.
+the Dragon` without granting that page-shape interpretation to unrelated origins. At the time this
+capability was introduced, no committed real origin had it.
 
 ### Model and evidence boundary
 
@@ -239,13 +239,22 @@ Reverie therefore does not automate the site through this gateway without writte
 supported licensed feed.
 
 The 2026-09-07 coverage review added three explicit non-active profiles. `smdaviesauthor.com`
-remains `pending`: its public books page exposes the repeated `High King 1` / `High King 2` catalog
-shape and its privacy page identifies the author-operated site, but no affirmative automation or
-reuse permission was found and the technical robots review is incomplete. `alihazelwood.com` and
-`penguinrandomhouse.com` are `manual_only` because their linked terms prohibit robots or similar
-automated extraction. Recording these decisions improves registry coverage but activates no new
-origin. Details are in
+initially remained `pending`: its public books page exposes the repeated `High King 1` / `High King
+2` catalog shape and its privacy page identifies the author-operated site. `alihazelwood.com` and
+`penguinrandomhouse.com` remain `manual_only` because their linked terms prohibit robots or similar
+automated extraction. Details are in
 `packages/series-source-trial/reports/authority-origin-coverage-evaluation-2026-09-07.md`.
+
+Later on 2026-09-07, the S. M. Davies technical review confirmed public-only DNS answers, valid
+HTTPS, a canonical redirect from the `www` alias, a robots policy allowing the public catalog, and
+a successful three-request canonical gateway path from the homepage to `/books/`. No site-specific
+terms or affirmative reuse licence was found; robots availability remains only a technical signal.
+The Reverie owner nevertheless approved the same narrow 30-day, no-write internal evaluation
+boundary used for the first author-site pilot. Profile `smdaviesauthor-approved-trial-v1` expires on
+2026-10-07T19:20:57Z and alone grants `repeated_numbered_catalog_headings`. The profile cannot
+inject the origin into discovery and cannot write a classification or corpus row. The review and
+decision are recorded in
+`packages/series-source-trial/reports/authority-origin-approval-sm-davies-2026-09-07.md`.
 
 ## Trial acceptance gates
 

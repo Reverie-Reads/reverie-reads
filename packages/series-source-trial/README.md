@@ -324,13 +324,15 @@ Run the integrated path explicitly:
 pnpm series:authority:acquire -- --scope gold --max 10 --retrieval
 ```
 
-With the committed registry, only `authorljshen.com` may perform bounded retrieval, and only until
-its profile expires on 2026-10-07. `smdaviesauthor.com` is pending; `alihazelwood.com`,
-`penguinrandomhouse.com`, and `penguin.co.uk` are manual-only. The command therefore records
-`origin_pending` and does not fetch those sites. An unchanged successful second-pass interpretation
-is cached by packet hash without retaining evidence text. Origin activation requires a separate
-human rights/access review and cannot be supplied by model output or a CLI flag. No committed real
-origin currently has the catalog-heading capability.
+With the committed registry, `authorljshen.com` and `smdaviesauthor.com` may perform bounded
+retrieval only inside their owner-reviewed trial windows through 2026-10-07. The S. M. Davies
+profile alone grants `repeated_numbered_catalog_headings`; its technical access review and owner
+decision are recorded in
+`reports/authority-origin-approval-sm-davies-2026-09-07.md`. `alihazelwood.com`,
+`penguinrandomhouse.com`, and `penguin.co.uk` are manual-only. An unchanged successful second-pass
+interpretation is cached by packet hash without retaining evidence text. Origin activation
+requires a separate human rights/access review and cannot be supplied by model output or a CLI
+flag.
 
 Run a small gold holdout before a broader capability evaluation:
 
@@ -390,6 +392,10 @@ fresh 12-case development validation slice are recorded in
 The follow-up origin coverage review, explicit manual-only decisions, pending S. M. Davies profile,
 and repeated-numbered catalog safeguard are recorded in
 `reports/authority-origin-coverage-evaluation-2026-09-07.md`.
+
+The subsequent S. M. Davies technical access review, owner-approved 30-day profile, fresh discovery
+miss, and successful manifest-grounded downstream isolation are recorded in
+`reports/authority-origin-approval-sm-davies-2026-09-07.md`.
 
 The two-stage 1,200-case target and complete five-work 2024 Kindle Storyteller development frame
 are recorded in `reports/authority-development-frame-2024-2026-09-06.md`.

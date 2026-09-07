@@ -579,7 +579,6 @@ test('keeps non-approved real origins out of retrieval', async () => {
   for (const url of [
     'https://www.pipwritesfiction.com/',
     'https://www.penguin.co.uk/series/ATTV/assistant-to-the-villain',
-    'https://smdaviesauthor.com/books/',
     'https://alihazelwood.com/mate/',
     'https://www.penguinrandomhouse.com/books/775877/mate-by-ali-hazelwood/',
   ]) {
@@ -615,6 +614,29 @@ test('activates the owner-reviewed L.J. Shen origin only inside its trial window
     ['https://www.authorljshen.com/all-books/'],
     authorityRetrievalProfiles,
     new Date('2026-10-07T06:40:08.000Z'),
+  )
+
+  assert.equal(expired.status, 'skipped')
+  assert.equal(expired.reason, 'origin_pending')
+})
+
+test('activates the owner-reviewed S. M. Davies catalog capability only inside its trial window', () => {
+  for (const url of ['https://smdaviesauthor.com/', 'https://www.smdaviesauthor.com/books/']) {
+    const approved = selectRetrievalParent(
+      [url],
+      authorityRetrievalProfiles,
+      new Date('2026-09-07T19:20:58.000Z'),
+    )
+
+    assert.equal(approved.status, 'selected')
+    assert.equal(approved.profile.profileVersion, 'smdaviesauthor-approved-trial-v1')
+    assert.deepEqual(approved.profile.evidenceCapabilities, [REPEATED_NUMBERED_CATALOG_HEADINGS])
+  }
+
+  const expired = selectRetrievalParent(
+    ['https://smdaviesauthor.com/'],
+    authorityRetrievalProfiles,
+    new Date('2026-10-07T19:20:57.000Z'),
   )
 
   assert.equal(expired.status, 'skipped')
