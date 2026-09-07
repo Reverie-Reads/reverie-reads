@@ -6784,6 +6784,41 @@
         "sources": [],
         "reviewNote": "The author's current Books and Printable Booklist pages list Dead Med under Standalone Thrillers, separately from the explicitly numbered Housemaid series. The author's FAQ identifies it as a rewritten successor to the out-of-print Suicide Med, so this case records the current Dead Med work identity and 2024 publication rather than conflating it with the 2014 title."
       }
+    },
+    {
+      "id": "reverie-dark-forces-bulletproof",
+      "title": "Bulletproof",
+      "authors": ["K.M. Moronova"],
+      "identifiers": {
+        "isbn13": ["9781464265587"]
+      },
+      "sampleOrigin": "reverie",
+      "stratum": "authority_standalone",
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "strata": ["multi_series_or_connected_universe"],
+      "riskFeatures": ["connected_universe"],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.kmmoronova.com/"
+          },
+          {
+            "kind": "author_post",
+            "url": "https://www.tiktok.com/@k.m.moronova/video/7678359894323449119"
+          },
+          {
+            "kind": "publisher",
+            "url": "https://www.bloombooks.com/9781464265587-bulletproof-standard-edition-tp.html"
+          }
+        ],
+        "reviewNote": "The author's official site identifies @k.m.moronova as her account, and the exact post from that account affirmatively calls Bulletproof a standalone in the Dark Forces universe. Bloom's exact product page independently confirms the work identity and connected-world framing but supplies no series attribute; that absence is corroboration only, not standalone proof. Gold therefore corrects the seed's Dark Forces #4 label to no bibliographic membership: a shared universe is not a numbered series."
+      }
     }
   ],
   "sharedSources": {
