@@ -4147,6 +4147,48 @@
       }
     },
     {
+      "id": "prh-2026-sff-the-unicorn-hunters",
+      "title": "The Unicorn Hunters",
+      "authors": [
+        "Katherine Arden"
+      ],
+      "identifiers": {
+        "isbn13": [
+          "9780593128282"
+        ]
+      },
+      "sampleOrigin": "external_sample",
+      "strata": [
+        "recent_traditional"
+      ],
+      "publicationYear": 2026,
+      "publicationPath": "traditional",
+      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.penguinrandomhouse.com/books/608879/the-unicorn-hunters-by-katherine-arden/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          {
+            "kind": "publisher_catalog",
+            "url": "https://prhinternationalsales.com/wp-content/uploads/2026/01/Intl-Secondary-Education-2025-June-2026-Catalog-1.pdf"
+          }
+        ],
+        "reviewNote": "Penguin Random House's International Secondary Education catalog identifies The Unicorn Hunters by Katherine Arden, ISBN 9780593128282, and affirmatively calls it a standalone novel. This publisher-catalog statement is independent of the general PRH web list that selected the case."
+      }
+    },
+    {
       "id": "prh-2026-sff-the-exquisite-torment-of-loving-your-enemy",
       "title": "The Exquisite Torment of Loving Your Enemy",
       "authors": [

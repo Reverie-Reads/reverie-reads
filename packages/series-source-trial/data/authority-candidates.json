@@ -1772,42 +1772,6 @@
       "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
     },
     {
-      "id": "prh-2026-sff-the-unicorn-hunters",
-      "title": "The Unicorn Hunters",
-      "authors": [
-        "Katherine Arden"
-      ],
-      "identifiers": {
-        "isbn13": [
-          "9780593128282"
-        ]
-      },
-      "sampleOrigin": "external_sample",
-      "strata": [
-        "recent_traditional"
-      ],
-      "publicationYear": 2026,
-      "publicationPath": "traditional",
-      "selectionFrame": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
-      "sampleSources": [
-        {
-          "kind": "publisher",
-          "url": "https://www.penguinrandomhouse.com/the-read-down/fantasy-science-fiction/"
-        },
-        {
-          "kind": "publisher",
-          "url": "https://www.penguinrandomhouse.com/books/608879/the-unicorn-hunters-by-katherine-arden/"
-        }
-      ],
-      "truth": {
-        "status": "candidate",
-        "standalone": null,
-        "memberships": [],
-        "sources": []
-      },
-      "reviewNote": "Selected without relationship filtering from the complete observed publisher list. The exact Penguin Random House product page establishes the work and 2026 publication, but makes no affirmative bibliographic-series or standalone claim."
-    },
-    {
       "id": "prh-2026-sff-the-elsewhere-express",
       "title": "The Elsewhere Express",
       "authors": [

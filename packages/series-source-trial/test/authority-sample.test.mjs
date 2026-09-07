@@ -63,17 +63,17 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
     selected: 306,
-    reviewed: 178,
-    candidate: 128,
+    reviewed: 179,
+    candidate: 127,
     reviewedPositive: 141,
-    reviewedStandalone: 37,
+    reviewedStandalone: 38,
     selectionTarget: 200,
     selectionGap: 0,
   })
   assert.deepEqual(Object.fromEntries(audit.targets.map((target) => [target.id, target.gap])), {
-    reviewed_cases: 22,
+    reviewed_cases: 21,
     reviewed_positive_cases: 0,
-    reviewed_standalone_cases: 13,
+    reviewed_standalone_cases: 12,
   })
   assert.deepEqual(audit.qualification.counts, {
     selected: 0,
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 178, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 179, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -116,9 +116,9 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     ),
     {
       recent_independent_or_kindle_first: { reviewed: 49, gap: 1 },
-      recent_traditional: { reviewed: 59, gap: 0 },
+      recent_traditional: { reviewed: 60, gap: 0 },
       multi_series_or_connected_universe: { reviewed: 21, gap: 0 },
-      standalone_control: { reviewed: 45, gap: 5 },
+      standalone_control: { reviewed: 46, gap: 4 },
     },
   )
 })
@@ -675,8 +675,8 @@ test('keeps the complete PRH 2026 SFF frame and exact product-page relationships
   const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
 
   assert.equal(frame.length, 30)
-  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 17)
-  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 13)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'reviewed').length, 18)
+  assert.equal(frame.filter((testCase) => testCase.truth.status === 'candidate').length, 12)
   assert.equal(
     frame.every(
       (testCase) =>
@@ -713,6 +713,16 @@ test('keeps the complete PRH 2026 SFF frame and exact product-page relationships
   }
 
   assert.equal(byId.get('prh-2026-sff-fishbone-cinderella')?.truth.status, 'candidate')
+  const unicornHunters = byId.get('prh-2026-sff-the-unicorn-hunters')
+  assert.equal(unicornHunters?.truth.standalone, true)
+  assert.equal(unicornHunters?.truth.membershipsComplete, true)
+  assert.deepEqual(unicornHunters?.truth.memberships, [])
+  assert.deepEqual(unicornHunters?.truth.sources, [
+    {
+      kind: 'publisher_catalog',
+      url: 'https://prhinternationalsales.com/wp-content/uploads/2026/01/Intl-Secondary-Education-2025-June-2026-Catalog-1.pdf',
+    },
+  ])
   assert.equal(byId.get('prh-2026-sff-intercepts')?.truth.status, 'candidate')
   const beneath = byId.get('prh-2026-sff-beneath')
   assert.equal(beneath?.truth.membershipsComplete, true)
