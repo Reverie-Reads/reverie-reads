@@ -55,7 +55,7 @@ test('quarantines an uncorroborated self-titled Hardcover relation', () => {
   assert.ok(graded.quality.riskFlags.includes('self_titled_relation'))
 })
 
-test('allows an ordinary exact non-singleton Hardcover relationship as decision input', () => {
+test('keeps an ordinary exact non-singleton Hardcover relationship as a review candidate', () => {
   const evidence = [membership('hardcover', 'The Sequence', { position: 2 })]
   const [graded] = gradeMembershipEvidence(
     { title: 'Second Book', authors: ['Ada Reader'] },
@@ -63,8 +63,9 @@ test('allows an ordinary exact non-singleton Hardcover relationship as decision 
     [identity('hardcover')],
   )
 
-  assert.equal(graded.quality.membershipEligible, true)
+  assert.equal(graded.quality.membershipEligible, false)
   assert.equal(graded.quality.positionEligible, false)
+  assert.ok(graded.quality.riskFlags.includes('independent_corroboration_required'))
   assert.ok(graded.quality.riskFlags.includes('position_uncorroborated'))
 })
 
@@ -97,7 +98,7 @@ test('lets independent open-graph evidence corroborate Hardcover order', () => {
   assert.deepEqual(graded[0].quality.corroboratingEvidenceIds, ['wikidata:membership:0'])
 })
 
-test('quarantines a Hardcover reading-order list without blocking its ordinary series', () => {
+test('quarantines a Hardcover reading-order list while retaining its ordinary candidate', () => {
   const evidence = [
     membership('hardcover', 'Blood and Ash', { position: 6 }),
     {
@@ -111,9 +112,28 @@ test('quarantines a Hardcover reading-order list without blocking its ordinary s
     [identity('hardcover')],
   )
 
-  assert.equal(graded[0].quality.membershipEligible, true)
+  assert.equal(graded[0].quality.membershipEligible, false)
+  assert.ok(graded[0].quality.riskFlags.includes('independent_corroboration_required'))
   assert.equal(graded[1].quality.membershipEligible, false)
   assert.ok(graded[1].quality.riskFlags.includes('possible_reading_order_not_series'))
+})
+
+test('quarantines a Hardcover publication-order container', () => {
+  const evidence = [
+    membership('hardcover', 'Imperial Radch (publication order)', {
+      position: 4,
+      memberCount: 8,
+    }),
+  ]
+  const [graded] = gradeMembershipEvidence(
+    { title: 'Provenance', authors: ['Ann Leckie'] },
+    evidence,
+    [identity('hardcover')],
+  )
+
+  assert.equal(graded.quality.membershipEligible, false)
+  assert.equal(graded.quality.positionEligible, false)
+  assert.ok(graded.quality.riskFlags.includes('possible_reading_order_not_series'))
 })
 
 test('quarantines a Hardcover companion collection as review-only evidence', () => {

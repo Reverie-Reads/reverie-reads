@@ -33,13 +33,13 @@ const packet = {
       quality: {
         sourceRole: 'high_coverage_supplement',
         dataUse: 'decision_input_pending_terms',
-        membershipRule: 'relational_non_singleton_with_semantic_quarantine',
+        membershipRule: 'independent_corroboration_required',
         positionRule: 'independent_corroboration_required',
         independentOriginCount: 1,
         corroboratingEvidenceIds: [],
         positionCorroboratingEvidenceIds: [],
-        riskFlags: ['position_uncorroborated'],
-        membershipEligible: true,
+        riskFlags: ['independent_corroboration_required', 'position_uncorroborated'],
+        membershipEligible: false,
         positionEligible: false,
       },
     },
@@ -47,7 +47,7 @@ const packet = {
   providerProfiles: {
     hardcover: {
       sourceRole: 'high_coverage_supplement',
-      membershipRule: 'relational_non_singleton',
+      membershipRule: 'independent_corroboration_required',
     },
   },
   providerErrors: [],

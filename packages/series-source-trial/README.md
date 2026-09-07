@@ -67,6 +67,26 @@ not a general server credential. Google-derived content remains live/short-cache
 Google's API terms prohibit building a permanent copy of returned content unless separately
 permitted.
 
+Google requests share a conservative 1.1-second start interval across the adapter's workers. This
+avoids turning concurrency into a quota burst; controlled trials may override the interval with
+`GOOGLE_BOOKS_DELAY_MS` and the worker count with `GOOGLE_BOOKS_CONCURRENCY`. A 429 pauses the
+shared schedule and retries after the larger of Google's `Retry-After` value or the bounded
+`GOOGLE_BOOKS_429_COOLDOWN_MS` fallback.
+
+A full comparison can resume from one or more prior reports without repeating successful provider
+requests:
+
+```sh
+pnpm series:trial -- --scope gold \
+  --providers openlibrary,wikidata,google-books,hardcover \
+  --resume packages/series-source-trial/private-results/first-pass.json \
+  --resume packages/series-source-trial/private-results/google-retry.json
+```
+
+Reuse requires the same stable case ID, title, and authors. Later successful observations replace
+earlier successful observations; an error never erases a reusable success. Only missing, failed, or
+identity-changed cases are requested again, and the output records its resume sources and counts.
+
 Hardcover is supported as a relational series source:
 
 ```sh
@@ -111,19 +131,23 @@ membership rule, lineage, risk flags, and separate membership/order eligibility:
 | Wikidata     | Exact P179 relationship             | Non-singleton exact-work relation            | Independent agreement on P1545          |
 | Inventaire   | Exact `serie-parts` roster relation | Non-singleton; `wd:` mirrors remain Wikidata | Independent non-mirror agreement        |
 | BookBrainz   | Exact series-roster relation        | Non-singleton exact-work relation            | Never until dependable order is exposed |
-| Hardcover    | Exact `book_series` relation        | Non-singleton after semantic quarantine      | Independent agreement                   |
+| Hardcover    | Exact `book_series` relation        | Independent open relational agreement        | Independent agreement                   |
 
-This is deliberately asymmetric. Hardcover adds broad candidate coverage, and an ordinary
-exact-work, non-singleton relationship may supply membership. Self-titled containers, reading-order
-lists, companion collections, connected “universe” groupings, fractional positions, and competing relationships are
-quarantined; Hardcover order still needs independent agreement. An Inventaire view of the same
-Wikidata entity is one lineage, not two votes. Unknown providers cannot corroborate a source until a
-profile is added.
+This is deliberately asymmetric. Hardcover adds broad candidate coverage, but the complete 209-case
+development frame showed that an ordinary exact-work, non-singleton relationship can still carry a
+plausible wrong series name or an order container. It therefore remains review-only until an
+independent open relational source agrees. Self-titled containers, reading-, publication-,
+chronological-, and recommended-order lists, companion collections, connected “universe” groupings,
+fractional positions, and competing relationships are quarantined. Hardcover order also needs
+independent agreement. An Inventaire view of the same Wikidata entity is one lineage, not two votes.
+Unknown providers cannot corroborate a source until a profile is added.
 
-The LLM's job is to select, explain, or route these cleaned claims—not to make an unsafe
-claim true. It can suppress a Hardcover false positive by choosing review or abstain. Declaring a
-book standalone still requires affirmative author/publisher evidence; silence from another dataset
-is never enough.
+The LLM's job is to select, explain, or route these cleaned claims—not to make an unsafe claim true.
+It can suppress a Hardcover false positive by choosing review or abstain, but a Hardcover-only
+candidate is deterministically ineligible even when the model accepts it. The separate authority
+scout may find first-party confirmation for review; its output is not yet merged into this resolver
+packet. Declaring a book standalone still requires affirmative author/publisher evidence; silence
+from another dataset is never enough.
 
 Put the server-side API key in `packages/series-source-trial/.env.local`:
 
