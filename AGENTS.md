@@ -266,6 +266,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   actually loaded, never the size of its CSS box; reader replacement remains explicit. Alternate
   cover searches require exact ISBN or conservative title/author identity; search rank alone is not
   evidence. Preserve a working linked-image fallback when saving a reader's choice.
+- **Reflect and Planner share recorded history.** Use `useReadingHistory` and the pure
+  `buildReadingHistory` / `summarizeReadingHistory` model for period counts. Base book queries do
+  not hydrate logs. Current DNF is not a dated attempt, a Read flag is not a synthetic session,
+  and missing finish dates stay outside a selected year. Formats come from read logs, genre
+  buckets deduplicate within each read, and return counts preserve earlier-period context.
+  See `docs/tasks/reading-life-implementation.md` for the precision and legacy-data boundaries.
 - **No aggregate rating.** Never compute or display an averaged star rating anywhere.
   Keep the reader's own rating (`rating` on the book + per-read). Others' opinions appear only
   as an opt-in list of **individual** reviews on the book screen — never a single number.
