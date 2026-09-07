@@ -161,6 +161,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   same-world statement cannot be reversed into membership for the related work; require separate
   direct evidence. Output stays review-only and cannot write authority gold, Supabase, or the
   corpus. See `docs/reference/DATA_SOURCES.md`.
+  A review, endorsement, blurb, testimonial, retailer description, or quotation remains
+  third-party evidence when reproduced on an author or publisher page. Preserve the attribution in
+  the evidence summary and demote its classification support; first-party hosting does not turn the
+  quoted speaker into the page owner.
 - **Navigation-aware authority retrieval is a bounded trial primitive, not a crawler.** Only an
   exact URL from the scout's consulted-source manifest and a current, human-reviewed origin profile
   may enter it. Every DNS answer and redirect hop must remain public and profile-approved, and the

@@ -62,11 +62,13 @@ const seriesOutput = {
 test('instructs the scout to distinguish direct numbered sequences from lone numerals', () => {
   assert.equal(
     AUTHORITY_ACQUISITION_PROMPT_VERSION,
-    'authority-acquisition-v6-reading-independence-evidence',
+    'authority-acquisition-v7-attribution-preserving-evidence',
   )
   assert.match(authorityAcquisitionInstructions, /directly compares the exact target/)
   assert.match(authorityAcquisitionInstructions, /lone numeral, a numbered edition/)
   assert.match(authorityAcquisitionInstructions, /establishes reading independence only/)
+  assert.match(authorityAcquisitionInstructions, /attributed statements remain third-party/)
+  assert.match(authorityAcquisitionInstructions, /Never\s+paraphrase away the attribution/)
 })
 
 test('repairs only the observed series-without-membership structural failure', () => {
@@ -340,6 +342,53 @@ test('does not accept reading-independence language as standalone classification
   assert.ok(
     cleanedValidation.policyViolations.some((error) => error.includes('affirmative authority')),
   )
+})
+
+test('does not launder attributed praise on a first-party page into classification evidence', () => {
+  const standalone = structuredClone(seriesOutput)
+  standalone.classification = 'standalone'
+  standalone.memberships = []
+  standalone.authoritySources[0].supports = ['identity', 'standalone']
+  standalone.authoritySources[0].evidenceSummary =
+    'The publisher product page quotes a review calling the exact work a standalone fantasy novel.'
+
+  const rawValidation = validateAuthorityAcquisition(buildAuthorityTarget(testCase), standalone, [
+    publisherUrl,
+  ])
+  assert.equal(rawValidation.valid, true)
+  assert.equal(rawValidation.policySafe, false)
+  assert.ok(
+    rawValidation.policyViolations.some((error) => error.includes('third_party_attribution')),
+  )
+
+  const cleaned = canonicalizeAuthorityAcquisition(standalone, [publisherUrl])
+  assert.deepEqual(cleaned.authoritySources[0].supports, ['identity'])
+  assert.equal(
+    validateAuthorityAcquisition(buildAuthorityTarget(testCase), cleaned, [publisherUrl])
+      .policySafe,
+    false,
+  )
+
+  const membership = structuredClone(seriesOutput)
+  membership.authoritySources[0].evidenceSummary =
+    'The publisher product page quotes a review calling the exact work the second Sequence novel.'
+
+  const rawMembershipValidation = validateAuthorityAcquisition(
+    buildAuthorityTarget(testCase),
+    membership,
+    [publisherUrl],
+  )
+  assert.equal(rawMembershipValidation.valid, true)
+  assert.equal(rawMembershipValidation.policySafe, false)
+  assert.ok(
+    rawMembershipValidation.policyViolations.some((error) =>
+      error.includes('third_party_attribution'),
+    ),
+  )
+
+  const cleanedMembership = canonicalizeAuthorityAcquisition(membership, [publisherUrl])
+  assert.deepEqual(cleanedMembership.authoritySources[0].supports, ['identity'])
+  assert.deepEqual(cleanedMembership.memberships, [])
 })
 
 test('keeps selection frames and known marketing taxonomies out of truth evidence', () => {
