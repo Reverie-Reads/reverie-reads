@@ -18,8 +18,8 @@ useful for measuring coverage and discovering disagreements, but they do not con
 accuracy until an authority source has been reviewed.
 
 The current development sample contains one difficult work from each of Reverie's 69 distinct
-seeded series plus external sampling frames: 329 selected works, of which 203 are
-authority-reviewed. The reviewed set contains 141 positive series cases and 62 confirmed standalone
+seeded series plus external sampling frames: 335 selected works, of which 209 are
+authority-reviewed. The reviewed set contains 147 positive series cases and 62 confirmed standalone
 controls. Some reviewed cases replace seed references, so the final distinct-case count is printed
 at runtime.
 
@@ -159,8 +159,9 @@ The resolver refreshes the report's case metadata and authority truth from the c
 stable case ID. That lets a newly reviewed candidate reuse the provider observations already stored
 in an older trial report; only a genuinely new evidence packet needs a model request.
 
-This shadow harness is intentionally not a production Edge Function. Production integration waits
-until the authority-reviewed sample meets the gates below.
+This shadow harness is intentionally not a production Edge Function. The development sample now
+meets the gates below and can support provider and resolver comparisons; production integration
+still waits for the untouched qualification partition and production-readiness gates.
 
 The first live 10-case shadow, the prompt/lineage correction it exposed, and the corrected full
 23-case pilot are recorded in
@@ -401,6 +402,10 @@ standalone connected-world control, plus the truth-blind scout replay and two di
 author-social prompt probes, is recorded in
 `reports/authority-bulletproof-connected-world-closeout-2026-09-06.md`.
 
+The complete six-title Selfies 2025 children's frame, six direct first-party series rulings, final
+development-stratum closeout, and the scout's cached name-alias rescore are recorded in
+`reports/authority-development-frame-selfies-2025-childrens-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
@@ -495,10 +500,9 @@ Accuracy is a hard constraint. A provider cannot pass by trading false claims fo
 greater coverage. After all hard gates pass, compare eligible providers using the weights in
 `data/evaluation-policy.json`.
 
-The current development set has passed the overall reviewed, positive-series, and standalone
-control gates. Provider comparison remains blocked until every intended sampling stratum is met;
-the recent independent or Kindle-first stratum is currently 49 of 50. The intended 200-case
-minimum stratification is:
+The current development set passes the overall reviewed, positive-series, standalone-control, and
+every sampling-stratum gate. The audit reports `ready for gate evaluation`, so provider and resolver
+comparison can proceed against development data. The intended 200-case minimum stratification is:
 
 - the current 69-series Reverie sample;
 - 50 recent independent or Kindle-first works;

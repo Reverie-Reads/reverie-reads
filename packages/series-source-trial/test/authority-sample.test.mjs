@@ -60,12 +60,12 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   const audit = auditAuthoritySample(await loadTrialCases(), plan, policy)
 
   assert.equal(audit.valid, true)
-  assert.equal(audit.ready, false)
+  assert.equal(audit.ready, true)
   assert.deepEqual(audit.counts, {
-    selected: 329,
-    reviewed: 203,
+    selected: 335,
+    reviewed: 209,
     candidate: 126,
-    reviewedPositive: 141,
+    reviewedPositive: 147,
     reviewedStandalone: 62,
     selectionTarget: 200,
     selectionGap: 0,
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 203, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 209, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -115,7 +115,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
         .map(({ id, reviewed, gap }) => [id, { reviewed, gap }]),
     ),
     {
-      recent_independent_or_kindle_first: { reviewed: 49, gap: 1 },
+      recent_independent_or_kindle_first: { reviewed: 55, gap: 0 },
       recent_traditional: { reviewed: 60, gap: 0 },
       multi_series_or_connected_universe: { reviewed: 22, gap: 0 },
       standalone_control: { reviewed: 70, gap: 0 },
@@ -549,6 +549,53 @@ test('keeps the complete 2025 Selfies fiction frame and readable standalone seri
 
   assert.equal(byId.get('selfies-2025-fiction-echoing-shore')?.truth.status, 'candidate')
   assert.equal(byId.get('selfies-2025-fiction-unravelling')?.truth.status, 'candidate')
+})
+
+test('keeps the complete 2025 Selfies children frame with direct series relationships', async () => {
+  const caseSet = await loadTrialCases()
+  const frame = caseSet.cases.filter((testCase) =>
+    authorityCaseSelectionFrames(testCase).includes('selfies_2025_childrens_shortlist'),
+  )
+  const byId = new Map(frame.map((testCase) => [testCase.id, testCase]))
+
+  assert.equal(frame.length, 6)
+  assert.equal(
+    frame.every((testCase) => testCase.truth.status === 'reviewed'),
+    true,
+  )
+  assert.equal(
+    frame.every((testCase) => testCase.strata.includes('recent_independent_or_kindle_first')),
+    true,
+  )
+
+  const memberships = new Map([
+    ['selfies-2025-childrens-the-wonder-girls-rebel', ['The Wonder Girls', 3]],
+    ['selfies-2025-childrens-body-in-the-thames', ['Westminster Mysteries', 2]],
+    ['selfies-2025-childrens-fyn-carter-agents-eromlos', ['Fyn Carter', 1]],
+    ['selfies-2025-childrens-the-witchs-cat-goes-wild', ["The Witch's Cat", null]],
+    ['selfies-2025-childrens-beyond-the-secret-lake', ['The Secret Lake', 3]],
+    ['selfies-2025-childrens-time-tub-travellers-silk-thief', ['Time Tub Travellers', 1]],
+  ])
+  for (const [id, [series, position]] of memberships) {
+    const testCase = byId.get(id)
+    assert.equal(testCase?.truth.standalone, false)
+    assert.equal(testCase?.truth.memberships[0]?.series, series)
+    assert.equal(testCase?.truth.memberships[0]?.positions[0]?.value ?? null, position)
+  }
+
+  assert.equal(
+    byId.get('selfies-2025-childrens-beyond-the-secret-lake')?.authors[0],
+    'Karen Inglis',
+  )
+  assert.ok(
+    byId
+      .get('selfies-2025-childrens-beyond-the-secret-lake')
+      ?.truth.memberships[0]?.aliases.includes('Secret Lake series'),
+  )
+  assert.match(
+    byId.get('selfies-2025-childrens-the-witchs-cat-goes-wild')?.truth.reviewNote ?? '',
+    /withholds work-level publication order/i,
+  )
 })
 
 test('keeps the complete 2024 Selfies fiction frame and reading-independence control', async () => {
