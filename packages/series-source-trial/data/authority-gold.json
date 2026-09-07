@@ -5982,6 +5982,35 @@
       }
     },
     {
+      "id": "hachette-standalone-sff-scifi-goldilocks",
+      "title": "Goldilocks",
+      "authors": ["L. R. Lam"],
+      "identifiers": { "isbn13": ["9780316462884"] },
+      "sampleOrigin": "authority_negative_control",
+      "strata": ["standalone_control"],
+      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
+      "sampleSources": [
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
+        },
+        {
+          "kind": "publisher",
+          "url": "https://www.hachettebookgroup.com/titles/l-r-lam/goldilocks/9780316462884/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sources": [
+          { "kind": "author", "url": "https://lrlam.co.uk/work-1/goldilocks" }
+        ],
+        "reviewNote": "L. R. Lam's exact work page explicitly calls Goldilocks a standalone near-future thriller and supplies matching publication details. This direct author-controlled statement resolves the case independently of Hachette's selection heading."
+      }
+    },
+    {
       "id": "hachette-standalone-sff-scifi-the-doors-of-eden",
       "title": "The Doors of Eden",
       "authors": ["Adrian Tchaikovsky"],

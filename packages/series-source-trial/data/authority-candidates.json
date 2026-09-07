@@ -2884,28 +2884,6 @@
       "reviewNote": "Selected from Hachette's standalone SFF fantasy section. The exact publisher page establishes the work, author, and 2022 publication but does not independently make an affirmative standalone or bibliographic-series claim; debut wording is not relationship evidence."
     },
     {
-      "id": "hachette-standalone-sff-scifi-goldilocks",
-      "title": "Goldilocks",
-      "authors": ["L. R. Lam"],
-      "identifiers": { "isbn13": ["9780316462884"] },
-      "sampleOrigin": "external_sample",
-      "strata": ["standalone_control"],
-      "selectionFrame": "hachette_standalone_sff_science_fiction_2026_09_06",
-      "sampleSources": [
-        {
-          "kind": "publisher",
-          "url": "https://www.hachettebookgroup.com/landing-page/standalone-sff-books/"
-        },
-        {
-          "kind": "publisher",
-          "url": "https://www.hachettebookgroup.com/titles/l-r-lam/goldilocks/9780316462884/"
-        },
-        { "kind": "author", "url": "https://lrlam.co.uk/" }
-      ],
-      "truth": { "status": "candidate", "standalone": null, "memberships": [], "sources": [] },
-      "reviewNote": "Selected from Hachette's standalone SFF science fiction section. The author's catalog distinguishes several named series and duologies from Goldilocks, but exclusion from those relationships is not an affirmative standalone claim, so the case remains unresolved."
-    },
-    {
       "id": "hachette-standalone-sff-scifi-the-ministry-for-the-future",
       "title": "The Ministry for the Future",
       "authors": ["Kim Stanley Robinson"],
