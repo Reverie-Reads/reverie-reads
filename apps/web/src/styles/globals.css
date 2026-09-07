@@ -53,6 +53,30 @@
   }
 }
 
+/* Native select menus are rendered separately from the closed, skinned control. Inheriting
+   pale room ink can produce pale options on an OS-white popup. Keep menu text/background a
+   matched system-color pair, and tell the browser which native palette to use. A custom property
+   follows the nearest preview boundary, so a Day room inside a Night page remains Day. Scope
+   color-scheme to selects: the room's authored surfaces and other controls are unchanged. */
+[data-mode='light'] {
+  --native-select-scheme: light;
+}
+[data-mode='dark'] {
+  --native-select-scheme: dark;
+}
+select {
+  color-scheme: var(--native-select-scheme, light);
+}
+select option,
+select optgroup {
+  color: CanvasText;
+  background-color: Canvas;
+}
+select option:disabled,
+select optgroup:disabled {
+  color: GrayText;
+}
+
 dialog[data-drawer-dialog]::backdrop {
   background: transparent;
 }
