@@ -176,7 +176,7 @@ test('an administrator compares and saves a shared cover without altering their 
     await expect(page.getByText('Shared cover replaced ·')).toBeVisible()
     await expect(
       page
-        .getByRole('group', { name: 'Review history' })
+        .getByRole('listitem')
         .getByText('Checked the title, author and edition on the cover.', { exact: true }),
     ).toBeVisible()
     await page.getByRole('link', { name: 'Back to review queue' }).click()
