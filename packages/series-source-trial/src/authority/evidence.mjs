@@ -596,11 +596,13 @@ export function scoreAuthorityAcquisition(caseSet, results, model) {
   )
   const billed = completed.filter((result) => !result.cached)
   const inputTokens = billed.reduce(
-    (total, result) => total + Number(result.usage?.input_tokens ?? 0),
+    (total, result) =>
+      total + Number(result.billing?.inputTokens ?? result.usage?.input_tokens ?? 0),
     0,
   )
   const outputTokens = billed.reduce(
-    (total, result) => total + Number(result.usage?.output_tokens ?? 0),
+    (total, result) =>
+      total + Number(result.billing?.outputTokens ?? result.usage?.output_tokens ?? 0),
     0,
   )
   const candidateClassification = (result) => {
@@ -643,7 +645,7 @@ export function scoreAuthorityAcquisition(caseSet, results, model) {
         (total, result) =>
           total +
           (result.status === 'completed' && !result.cached
-            ? Number(result.modelCallCount ?? 1)
+            ? Number(result.billing?.modelCalls ?? result.modelCallCount ?? 1)
             : 0),
         0,
       ),
@@ -661,7 +663,25 @@ export function scoreAuthorityAcquisition(caseSet, results, model) {
         0,
       ),
       webSearchCalls: results.reduce(
-        (total, result) => total + Number(result.webSearchCalls ?? 0),
+        (total, result) =>
+          total + Number(result.billing?.webSearchCalls ?? result.webSearchCalls ?? 0),
+        0,
+      ),
+      focusedSearchAttempts: results.filter(
+        (result) => result.focusedSearch?.candidateDomains?.length,
+      ).length,
+      focusedSearchCalls: results.reduce(
+        (total, result) => total + Number(result.focusedSearch?.billing?.modelCalls ?? 0),
+        0,
+      ),
+      focusedSearchSelected: results.filter((result) => result.focusedSearch?.selected === true)
+        .length,
+      focusedSearchInputTokens: results.reduce(
+        (total, result) => total + Number(result.focusedSearch?.billing?.inputTokens ?? 0),
+        0,
+      ),
+      focusedSearchOutputTokens: results.reduce(
+        (total, result) => total + Number(result.focusedSearch?.billing?.outputTokens ?? 0),
         0,
       ),
       inputTokens,

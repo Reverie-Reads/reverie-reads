@@ -70,6 +70,9 @@ export async function acquireAuthorityEvidence(
     model = process.env.BOOK_AUTHORITY_MODEL ?? 'gpt-5.6-luna',
     reasoningEffort = process.env.BOOK_AUTHORITY_REASONING ?? 'low',
     maxToolCalls = Number(process.env.BOOK_AUTHORITY_MAX_TOOL_CALLS ?? 3),
+    searchContextSize = process.env.BOOK_AUTHORITY_SEARCH_CONTEXT_SIZE ?? 'medium',
+    allowedDomains = [],
+    searchStrategy = 'adaptive',
     fetchImpl = fetch,
   } = {},
 ) {
@@ -90,7 +93,14 @@ export async function acquireAuthorityEvidence(
       max_tool_calls: boundedToolCalls,
       instructions: authorityAcquisitionInstructions,
       input: JSON.stringify(target),
-      tools: [{ type: 'web_search', external_web_access: true }],
+      tools: [
+        {
+          type: 'web_search',
+          external_web_access: true,
+          search_context_size: searchContextSize,
+          ...(allowedDomains.length ? { filters: { allowed_domains: allowedDomains } } : {}),
+        },
+      ],
       tool_choice: 'required',
       include: ['web_search_call.action.sources'],
       text: {
@@ -104,6 +114,7 @@ export async function acquireAuthorityEvidence(
       metadata: {
         prompt_version: AUTHORITY_ACQUISITION_PROMPT_VERSION,
         case_id: target.caseId,
+        search_strategy: searchStrategy,
       },
     }),
   })
