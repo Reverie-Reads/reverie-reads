@@ -21,6 +21,7 @@ import { tropesRoute } from './routes/TropesRoute'
 import { tropeRoute } from './routes/TropeRoute'
 import { moodRoute } from './routes/MoodRoute'
 import { reviewRoute } from './routes/ReviewRoute'
+import { catalogMetadataReviewRoute } from './routes/CatalogMetadataReviewRoute'
 import { catalogCoverReviewRoute } from './routes/CatalogCoverReviewRoute'
 import { authRoute } from './routes/AuthRoute'
 import { welcomeRoute } from './routes/WelcomeRoute'
@@ -53,6 +54,7 @@ const routeTree = rootRoute.addChildren([
   moodRoute,
   reviewRoute,
   catalogCoverReviewRoute,
+  catalogMetadataReviewRoute,
   authRoute,
   welcomeRoute,
   onboardingRoute,

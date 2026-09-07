@@ -421,6 +421,13 @@ corpus_series_entries
 corpus_series_edits (id pk, series_id/editor_id fk null, action,
                      previous_value/next_value jsonb, created_at)
                      -- append-only administrator and synchronization audit
+corpus_metadata_reviews
+                    (work_id pk fk→works, fingerprint, revision, state open|deferred|reviewed,
+                     note, source_url, reviewed_by fk→profiles null, reviewed_at)
+corpus_metadata_review_events
+                    (id pk, work_id fk→works restrict, action, previous_value/next_value jsonb,
+                     editor_id fk→profiles null, created_at)
+                     -- administrator-only assessments; never personal backup/offline state
 corpus_admins        (user_id pk fk→profiles, granted_at, granted_by fk→profiles)
                      -- service-managed authorization; never restored from a reader backup
 corpus_cover_recovery_marks
@@ -712,3 +719,15 @@ an attributed decoded-image measurement and a deliberate identity confirmation. 
 `set_corpus_work_cover` inside the same transaction, retaining its source/Storage validation and
 existing metadata audit. A review has no personal-copy writer and never modifies `books`, reading
 history, possession, or the reader's chosen edition. No pre-existing work is backfilled by migration.
+
+## Catalog metadata assessments
+
+The administrator metadata workspace compares exact normalized title/full-author candidates and
+checksum-valid ISBN-10/13 equivalents, with separate invalid-ISBN and missing-description queues.
+`admin_list_corpus_metadata_reviews` returns at most 25 works (the UI requests 20) and ten related
+records per work. `admin_review_corpus_metadata` checks the opened evidence fingerprint and review
+revision. Only its description action changes bibliographic metadata, with explicit identity
+confirmation, source link, and note; it also appends `work_metadata_edits`. It never routes through
+the broad editor's manual-series intent. Assessments are not identity corrections or merge rulings.
+Changed work or related-record evidence reopens old assessments. Notes and history stay admin-only;
+personal copies and shared memberships are untouched. See `../tasks/catalog-metadata-review.md`.

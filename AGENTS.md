@@ -190,6 +190,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   The repository activates only the owner-reviewed, time-boxed `authorljshen.com` trial profile
   through 2026-10-07, and only in this no-write trial path. See
   `docs/decisions/0009-authority-retrieval-gateway.md`.
+- **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
+  title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
+  edit shared metadata, after identity confirmation and a source/note; it never invokes the broad
+  editor's manual-series intent. Assessments and deferrals keep administrator-only history, guarded
+  by work/evidence fingerprint plus review revision. Never infer a safe shared-work merge or ISBN
+  reassignment from a duplicate candidate. See `docs/tasks/catalog-metadata-review.md`.
 - **Corpus cover recovery is bounded, resumable, and independent of classification.** The
   administrator completion pipeline never walks the whole household library in one RPC. It calls
   `admin_recover_corpus_cover_batch` in groups of at most 25, records a source fingerprint after
