@@ -60,7 +60,7 @@ const TODAY_UNDERLINE = { boxShadow: 'inset 0 -2px 0 0 var(--gold)', paddingBott
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-function Stat({ n, label }: { n: number; label: string }) {
+function Stat({ n, label }: { n: number | string; label: string }) {
   return (
     <Surface radius="panel" tone="card" pad={2} className="text-center">
       <div className="text-[22px] font-bold text-ink">{n}</div>
@@ -69,24 +69,29 @@ function Stat({ n, label }: { n: number; label: string }) {
   )
 }
 
-function Calendar({ books, openBook }: { books: Book[]; openBook: (id: string) => void }) {
+export function PlannerCalendar({
+  books,
+  openBook,
+}: {
+  books: Book[]
+  openBook: (id: string) => void
+}) {
   const query = useReadingHistory()
-  if (!query.data)
-    return (
-      <div>
-        <p role={query.isError ? 'alert' : 'status'} className="mb-4 text-muted">
-          {query.isError
-            ? 'Your reading history could not be loaded.'
-            : query.isPaused
-              ? 'Connect to load your reading history.'
-              : 'Gathering your reading history…'}
-        </p>
-        {query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}
-      </div>
-    )
   return (
     <>
-      {query.isError && (
+      {!query.data && (
+        <div className="mb-4">
+          <p role={query.isError ? 'alert' : 'status'} className="mb-3 text-sm text-muted">
+            {query.isError
+              ? 'Reading history is unavailable. Your saved plans are still here.'
+              : query.isPaused
+                ? 'Your saved plans are available. Connect to load reading history.'
+                : 'Gathering reading history. Your saved plans are ready below.'}
+          </p>
+          {query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}
+        </div>
+      )}
+      {query.data && query.isError && (
         <p role="status" className="mb-4 text-sm text-muted">
           Showing your last loaded reading history.{' '}
           <button type="button" className="underline" onClick={() => void query.refetch()}>
@@ -106,13 +111,13 @@ function CalendarView({
 }: {
   books: Book[]
   openBook: (id: string) => void
-  history: ReadingHistory
+  history?: ReadingHistory
 }) {
   const now = new Date()
   const [cal, setCal] = useState({ y: now.getFullYear(), m: now.getMonth() })
   const [day, setDay] = useState<number | null>(null)
 
-  const summary = summarizeReadingHistory(history, cal.y)
+  const summary = history ? summarizeReadingHistory(history, cal.y) : undefined
 
   const map = new Map<number, { read: Book[]; plan: Book[] }>()
   const slot = (d: number) => {
@@ -120,7 +125,7 @@ function CalendarView({
     map.set(d, cur)
     return cur
   }
-  for (const read of summary.records) {
+  for (const read of summary?.records ?? []) {
     if (read.finished.m === cal.m + 1 && read.finished.d !== null) {
       slot(read.finished.d).read.push(read.book)
     }
@@ -139,9 +144,8 @@ function CalendarView({
   const days = new Date(cal.y, cal.m + 1, 0).getDate()
   const isThisMonth = now.getFullYear() === cal.y && now.getMonth() === cal.m
 
-  const yearReads = summary.records
-  const uniqueYear = summary.distinctBooks.length
-  const readAllTime = history.knownReadBooks.length
+  const uniqueYear = summary?.distinctBooks.length ?? '—'
+  const readAllTime = history?.knownReadBooks.length ?? '—'
   const planned = books.filter((b) => hasDate(b.plan)).length
   // Sort key, not a formatter: a missing month or day sorts before a stated one within the same
   // year, which is where a vaguer plan belongs. Local and throwaway — the calendar branch owns this.
@@ -156,7 +160,7 @@ function CalendarView({
     <div>
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat n={uniqueYear} label={`Books in ${cal.y}`} />
-        <Stat n={yearReads.length} label="Reads incl. rereads" />
+        <Stat n={summary?.records.length ?? '—'} label="Reads incl. rereads" />
         <Stat n={readAllTime} label="Books read · all time" />
         <Stat n={planned} label="Planned" />
       </div>
@@ -397,7 +401,8 @@ function Releases({ books, openBook }: { books: Book[]; openBook: (id: string) =
 
 function PlannerScreen() {
   const navigate = useNavigate()
-  const { data: books } = useBooks()
+  const library = useBooks()
+  const books = library.data
   // Tab lives in the ROUTE — see ShelvesRoute for the full reasoning. `undefined` = the default,
   // so /planner stays canonical and only /planner?tab=releases carries a param.
   const { tab = 'calendar' } = plannerRoute.useSearch()
@@ -435,8 +440,19 @@ function PlannerScreen() {
         </Surface>
       </header>
 
-      {tab === 'calendar' ? (
-        <Calendar books={books ?? []} openBook={openBook} />
+      {!books ? (
+        <div>
+          <p role={library.isError ? 'alert' : 'status'} className="mb-4 text-muted">
+            {library.isError
+              ? 'Your library could not be loaded.'
+              : library.fetchStatus === 'paused'
+                ? 'Connect to load your library.'
+                : 'Loading your library…'}
+          </p>
+          {library.isError && <Button onClick={() => void library.refetch()}>Try again</Button>}
+        </div>
+      ) : tab === 'calendar' ? (
+        <PlannerCalendar books={books} openBook={openBook} />
       ) : (
         <Releases books={books ?? []} openBook={openBook} />
       )}

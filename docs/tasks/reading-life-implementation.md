@@ -30,7 +30,9 @@ used: the normal books query does not hydrate it.
   Genre counts use current book metadata, once per genre per read, and may overlap. Formats use
   read-log values; missing values stay “Not recorded.” No rating averages are calculated.
 - The query boundary waits for both sources. Initial errors have a retry; failed refreshes retain
-  last-loaded data with a visible notice. Long record lists disclose additional rows in batches.
+  last-loaded data with a visible notice. Planner keeps cached plans available when logs are
+  missing/offline and displays unknown reading totals until the history arrives. Long record lists
+  disclose additional rows in batches.
 
 ## Reflect
 
