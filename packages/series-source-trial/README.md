@@ -181,8 +181,9 @@ pnpm series:resolve -- \
   --ids case-one,case-two
 ```
 
-The committed origin registry still activates no real retrieval origin. Current live scout reports
-therefore enrich review packets only; they cannot make a Hardcover candidate automatic.
+The committed origin registry activates only the owner-reviewed, time-boxed
+`authorljshen.com` trial profile through 2026-10-07. Other live scout reports enrich review
+packets only; they cannot make a Hardcover candidate automatic.
 
 Requests use strict JSON Schema output and `store: false`. Responses are cached by the complete
 evidence packet, model, and prompt version under ignored `private-results/resolver-cache/`, so an
@@ -278,12 +279,13 @@ The first bounded implementation slice now lives in `src/authority/retrieval/`. 
 reviewed-origin gate, public-address validation and connection pinning, manual redirect checks,
 per-hop robots evaluation with a process-shared 24-hour cache, process-shared origin pacing, a
 nine-request case ceiling, single-child navigation selection, static HTML extraction, provenance
-hashes, and persistence redaction. It deliberately has no production integration, and the
-repository activates no real origin profile. The opt-in pipeline adds a second strict, no-tools
-model pass only when the first pass is unresolved or quarantined. It binds citations and source
-kind to the retrieved child manifest, hash-checks the packet, and skips the model entirely when the
-exact target title or author is absent. Post-validation requires a non-heading evidence line to join
-the exact target title to each claimed bibliographic series or affirmative standalone statement;
+hashes, and persistence redaction. It deliberately has no production integration. The only active
+real-origin profile is the owner-reviewed, time-boxed `authorljshen.com` trial. The opt-in pipeline
+adds a second strict, no-tools model pass only when the first pass is unresolved or quarantined. It
+binds citations and source kind to the retrieved child manifest, hash-checks the packet, and skips
+the model entirely when the exact target title or author is absent. Post-validation requires a
+non-heading evidence line to join the exact target title to each claimed bibliographic series or
+affirmative standalone statement;
 position and membership role survive only on that same relationship line. This prevents a model
 from joining one book's identity to another book's series facts on a multi-book page. The packet is
 stripped before returning or caching results. Exercise the boundary with:
@@ -302,11 +304,11 @@ Run the integrated path explicitly:
 pnpm series:authority:acquire -- --scope gold --max 10 --retrieval
 ```
 
-With the committed registry this remains a no-network retrieval dry run: its real-origin entries
-are pending or manual-only, so the command records `origin_pending` and does not fetch them. An
-unchanged successful second-pass interpretation is cached by packet hash without retaining evidence
-text. Origin activation requires a separate human rights/access review and cannot be supplied by
-model output or a CLI flag.
+With the committed registry, only `authorljshen.com` may perform bounded retrieval, and only until
+its profile expires on 2026-10-07. Other real-origin entries remain pending or manual-only, so the
+command records `origin_pending` and does not fetch them. An unchanged successful second-pass
+interpretation is cached by packet hash without retaining evidence text. Origin activation requires
+a separate human rights/access review and cannot be supplied by model output or a CLI flag.
 
 Run a small gold holdout before a broader capability evaluation:
 
