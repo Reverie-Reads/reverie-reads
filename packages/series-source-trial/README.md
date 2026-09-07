@@ -397,6 +397,26 @@ The subsequent S. M. Davies technical access review, owner-approved 30-day profi
 miss, and successful manifest-grounded downstream isolation are recorded in
 `reports/authority-origin-approval-sm-davies-2026-09-07.md`.
 
+The first-party discovery benchmark is frozen in `data/authority-discovery-holdout.json`. Its 22
+works had never been sent through any authority-acquisition prompt at freeze time, have distinct
+authors, and are balanced between series/standalone truth plus author/publisher discovery cells.
+Run exactly that set without exposing its known origins to the scout, then score discovery
+separately from classification:
+
+```sh
+pnpm series:authority:acquire -- \
+  --holdout packages/series-source-trial/data/authority-discovery-holdout.json \
+  --retrieval \
+  --refresh
+pnpm series:authority:discovery:score -- \
+  packages/series-source-trial/private-results/authority-acquisition/<run>.json
+```
+
+The acquisition command rejects a stale dataset hash, prompt-version drift, an invalid cell, or a
+holdout combined with ad-hoc scope, ID, or maximum selectors before making a model call. The scorer
+requires the exact frozen target/result order and reports known-origin discovery, targeted-channel
+discovery, exact-page discovery, source citation, retrieval, and resolution as separate outcomes.
+
 The two-stage 1,200-case target and complete five-work 2024 Kindle Storyteller development frame
 are recorded in `reports/authority-development-frame-2024-2026-09-06.md`.
 

@@ -22,6 +22,7 @@ import {
   authorityRetrievalProfiles,
 } from './authority/retrieval/profiles.mjs'
 import { AUTHORITY_ACQUISITION_PROMPT_VERSION } from './authority/schema.mjs'
+import { auditAuthorityDiscoveryHoldout } from './authority/discovery-benchmark.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = resolve(packageRoot, '../..')
@@ -31,6 +32,7 @@ const parseArgs = (argv) => {
     scope: 'gold',
     max: null,
     ids: null,
+    holdout: null,
     out: null,
     refresh: false,
     retrieval: false,
@@ -41,6 +43,7 @@ const parseArgs = (argv) => {
     if (value === '--scope') options.scope = argv[++index]
     else if (value === '--max') options.max = Number(argv[++index])
     else if (value === '--ids') options.ids = argv[++index].split(',').filter(Boolean)
+    else if (value === '--holdout') options.holdout = argv[++index]
     else if (value === '--out') options.out = argv[++index]
     else if (value === '--refresh') options.refresh = true
     else if (value === '--retrieval') options.retrieval = true
@@ -51,6 +54,9 @@ const parseArgs = (argv) => {
   }
   if (options.max !== null && (!Number.isInteger(options.max) || options.max < 1)) {
     throw new Error('Authority acquisition max must be a positive integer')
+  }
+  if (options.holdout && (options.ids || options.max !== null || options.scope !== 'gold')) {
+    throw new Error('Authority acquisition --holdout requires gold scope without --ids or --max')
   }
   return options
 }
@@ -86,16 +92,35 @@ const renderMarkdown = (score) =>
 await loadLocalEnvironment(resolve(packageRoot, '.env.local'))
 const options = parseArgs(process.argv.slice(2))
 const caseSet = await loadTrialCases()
+let holdout = null
+if (options.holdout) {
+  const holdoutPath = resolve(repositoryRoot, options.holdout)
+  const authorityGoldPath = resolve(packageRoot, 'data/authority-gold.json')
+  const [loadedHoldout, authorityGoldText] = await Promise.all([
+    readFile(holdoutPath, 'utf8').then(JSON.parse),
+    readFile(authorityGoldPath, 'utf8'),
+  ])
+  const audit = auditAuthorityDiscoveryHoldout(caseSet, loadedHoldout, { authorityGoldText })
+  if (!audit.valid)
+    throw new Error(`Invalid authority discovery holdout: ${audit.errors.join('; ')}`)
+  if (loadedHoldout.promptVersion !== AUTHORITY_ACQUISITION_PROMPT_VERSION) {
+    throw new Error(
+      `Authority discovery holdout requires ${loadedHoldout.promptVersion}; current prompt is ${AUTHORITY_ACQUISITION_PROMPT_VERSION}`,
+    )
+  }
+  holdout = loadedHoldout
+}
 let cases = caseSet.cases.filter((testCase) => {
   if (options.scope === 'gold') return testCase.truth.status === 'reviewed'
   if (options.scope === 'candidate') return testCase.truth.status === 'candidate'
   return true
 })
-if (options.ids) {
-  const ids = new Set(options.ids)
-  cases = cases.filter((testCase) => ids.has(testCase.id))
-  const missing = options.ids.filter((id) => !cases.some((testCase) => testCase.id === id))
+const selectedIds = holdout ? holdout.cases.map(({ id }) => id) : options.ids
+if (selectedIds) {
+  const availableById = new Map(cases.map((testCase) => [testCase.id, testCase]))
+  const missing = selectedIds.filter((id) => !availableById.has(id))
   if (missing.length) throw new Error(`Unknown or out-of-scope case ids: ${missing.join(', ')}`)
+  cases = selectedIds.map((id) => availableById.get(id))
 }
 cases = cases.slice(0, options.max ?? undefined)
 if (!cases.length) throw new Error('Authority acquisition selection is empty')
@@ -233,7 +258,7 @@ const score = scoreAuthorityAcquisition(selectedCaseSet, results, model)
 const basePath = resolve(
   repositoryRoot,
   options.out ??
-    `packages/series-source-trial/private-results/authority-acquisition/${options.scope}_${timestamp()}`,
+    `packages/series-source-trial/private-results/authority-acquisition/${holdout?.id ?? options.scope}_${timestamp()}`,
 )
 await mkdir(dirname(basePath), { recursive: true })
 await Promise.all([
@@ -244,6 +269,7 @@ await Promise.all([
         schemaVersion: 1,
         model,
         promptVersion: AUTHORITY_ACQUISITION_PROMPT_VERSION,
+        holdoutId: holdout?.id ?? null,
         retrievalEnabled: options.retrieval,
         retrievalProfilesVersion: AUTHORITY_RETRIEVAL_PROFILES_VERSION,
         targets: cases.map(buildAuthorityTarget),
