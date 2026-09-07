@@ -4,10 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { loadTrialCases } from './cases.mjs'
 import { loadLocalEnvironment } from './env.mjs'
 import { buildAuthorityTarget } from './authority/evidence.mjs'
-import {
-  EXA_AUTHORITY_LOCATOR_VERSION,
-  runExaAuthorityLocator,
-} from './authority/exa-locator.mjs'
+import { EXA_AUTHORITY_LOCATOR_VERSION, runExaAuthorityLocator } from './authority/exa-locator.mjs'
 import {
   auditAuthorityLocatorBenchmark,
   authorityLocatorDryRun,
