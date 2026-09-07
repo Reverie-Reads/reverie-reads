@@ -1,7 +1,8 @@
 # A reading life — Reflect and Plan
 
-Status: interactive design study for review, September 7, 2026. No production UI, migrations,
-account data, or persistence are changed. This replaces the old Stats/Wrapped and calendar
+Status: interactive design study for review, September 7, 2026. The production Stats and Planner
+screens, migrations, account data, and persistence are unchanged. A follow-up shared CSS repair
+addresses native dropdown contrast in both the app and this study. This replaces the old Stats/Wrapped and calendar
 visual direction; it does not revive their retired public sharing or romance-only language.
 
 ## The product decision

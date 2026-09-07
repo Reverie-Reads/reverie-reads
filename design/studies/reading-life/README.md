@@ -1,8 +1,10 @@
 # Reading life study
 
 A standalone interactive proposal for Reverie's Stats and Planner overhaul. The reviewable
-contract and implementation order are in [READING_LIFE.md](READING_LIFE.md). This is design-only;
-no application route, database, account, network API client, or service worker is initialized.
+contract and implementation order are in [READING_LIFE.md](READING_LIFE.md). The Stats/Planner
+redesign remains a study; no application route, database, account, network API client, or service
+worker is initialized. The accompanying shared CSS fix makes native select menus readable in
+the application and every study importing its styles.
 
 ## Open the preview
 
@@ -31,8 +33,10 @@ pnpm --filter @reverie/web exec vite build --config ../../design/studies/reading
 ```
 
 Build output goes to ignored `output/reading-life-study`. Local browser evidence goes to
-`output/playwright/reading-life-*`. Full application DB/e2e checks are reserved for the subsequent
-implementation: this patch only changes the standalone design study and design backlog.
+`output/playwright/reading-life-*`. The initial study was design-only. The follow-up native-select
+fix touches app CSS, so its validation also includes the full app gate and a fresh-database e2e run.
+Before a full repository lint, move generated standalone build/verification JavaScript outside
+the checkout; ESLint does not inherit the output directory exclusions from `.gitignore`.
 
 ## Assets and boundary
 
@@ -59,3 +63,16 @@ implementation: this patch only changes the standalone design study and design b
   surface sweep, using the existing renderer's motion handling.
 - Desktop and mobile screenshots were inspected. This is Chromium verification, not a claim of
   completed native Safari/Android or production persistence testing. Those are implementation gates.
+
+## Native dropdown follow-up
+
+The review exposed light room text inherited into a white operating-system option menu. The
+shared app stylesheet now sets a select-only color scheme from the nearest resolved mode and
+pairs `CanvasText` with `Canvas` for options and groups. Disabled options retain `GrayText` and
+forced-color handling stays with the browser. Closed selects keep their room treatment.
+
+Browser checks cover all nine rooms in both modes, a Day subtree inside a Night page, forced
+colors, and native listbox keyboard selection. Native popup overlays are outside page captures;
+listbox rendering provides a visual check of the same option colors, not a claim that an automated
+axe scan inspected an operating-system popup. The CSS follows the browser's
+[color-scheme contract](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/color-scheme).
