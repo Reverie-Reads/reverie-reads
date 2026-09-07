@@ -24,6 +24,7 @@ const genericSeriesTail = new Set([
   'crime',
   'cycle',
   'duology',
+  'fiction',
   'murder',
   'mystery',
   'novel',
@@ -32,6 +33,8 @@ const genericSeriesTail = new Set([
   'saga',
   'series',
   'stories',
+  'thriller',
+  'thrillers',
   'trilogy',
 ])
 
@@ -253,18 +256,23 @@ export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, p
     ...new Set(asArray(urls).filter((url) => citedSource(sources, url, support))),
   ]
   const identityUrls = filterFor(output.identity?.evidenceUrls, 'identity')
+  const canonicalIdentityUrls =
+    output.identity?.matched && !identityUrls.length
+      ? sources
+          .filter((source) => asArray(source.supports).includes('identity'))
+          .map((source) => source.url)
+      : identityUrls
+  const hasAuthorityIdentity = canonicalIdentityUrls.length > 0
   return {
     ...output,
     authoritySources: sources,
     identity: isObject(output.identity)
       ? {
           ...output.identity,
-          evidenceUrls:
-            output.identity.matched && !identityUrls.length
-              ? sources
-                  .filter((source) => asArray(source.supports).includes('identity'))
-                  .map((source) => source.url)
-              : identityUrls,
+          matched: Boolean(output.identity.matched && hasAuthorityIdentity),
+          confidence:
+            output.identity.matched && hasAuthorityIdentity ? output.identity.confidence : 'none',
+          evidenceUrls: canonicalIdentityUrls,
         }
       : output.identity,
     memberships: asArray(output.memberships)

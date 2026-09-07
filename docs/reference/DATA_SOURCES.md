@@ -99,6 +99,20 @@ sources, and provider packets are withheld. Every cited URL must appear in the A
 manifest, but URL grounding alone does not make the page eligible evidence: deterministic source
 policy blocks a case's selection-frame pages, known conflicting marketing taxonomies, unsupported
 positions, and standalone conclusions without an affirmative first-party standalone statement.
+The scout's bounded search order treats locating a first-party origin as a separate objective. It
+searches exact title and author with an official-source signal, inspects the result, and uses a
+remaining query inside a newly discovered author or publisher host before a generic publisher
+fallback. It may cite only exact URLs in the consulted-source manifest. Once a discovery-only source
+establishes identity, remaining search budget goes to author or publisher discovery rather than
+additional aggregators. Search-query telemetry is retained with the no-write trial report so a miss
+is diagnosable; it does not add a known origin or truth source to the prompt. Series-name extraction
+uses the label attached to the explicit bibliographic relationship, not a differing page,
+collection, bundle, or campaign heading, and it preserves articles and named forms such as duology
+or trilogy rather than shortening the source's name. Deterministic cleanup clears a claimed identity
+when no eligible authority identity source survives; the search manifest and query telemetry remain
+available for diagnosing the discovery miss without turning that discovery-only source into
+evidence. Authority scoring may normalize only a bounded set of generic descriptor tails and never
+creates a membership or changes the review proposal.
 Only the source that defines the case's selection frame is blocked by that rule; author or
 publisher identity pages recorded for sampling remain eligible if the truth-blind live search
 independently rediscovers them. A single no-tools repair call may correct the narrow structural
