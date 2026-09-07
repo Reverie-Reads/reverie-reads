@@ -180,7 +180,7 @@ p {
 #main h1 em,
 .rl-retrospective h2 em {
   font-weight: 400;
-  color: var(--primary);
+  color: var(--accent-ink);
 }
 .rl-intro {
   color: var(--muted);
@@ -254,8 +254,8 @@ p {
   text-align: left;
 }
 .rl-text-button:hover {
-  text-decoration-color: var(--primary);
-  color: var(--primary);
+  text-decoration-color: var(--accent-ink);
+  color: var(--accent-ink);
 }
 .rl-cover {
   display: inline-flex;
