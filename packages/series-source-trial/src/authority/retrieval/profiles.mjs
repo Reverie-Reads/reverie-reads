@@ -1,4 +1,4 @@
-export const AUTHORITY_RETRIEVAL_PROFILES_VERSION = 'authority-retrieval-profiles-v3'
+export const AUTHORITY_RETRIEVAL_PROFILES_VERSION = 'authority-retrieval-profiles-v4'
 
 export const authorityRetrievalProfiles = [
   {
@@ -7,6 +7,7 @@ export const authorityRetrievalProfiles = [
     canonicalOrigin: 'https://www.pipwritesfiction.com',
     canonicalAliases: ['https://pipwritesfiction.com'],
     sourceKind: 'author',
+    evidenceCapabilities: [],
     status: 'pending',
     termsReviewedAt: null,
     expiresAt: null,
@@ -20,6 +21,7 @@ export const authorityRetrievalProfiles = [
     canonicalOrigin: 'https://www.authorljshen.com',
     canonicalAliases: ['https://authorljshen.com'],
     sourceKind: 'author',
+    evidenceCapabilities: [],
     status: 'approved_trial',
     termsReviewedAt: '2026-09-07T06:40:08.000Z',
     expiresAt: '2026-10-07T06:40:08.000Z',
@@ -33,11 +35,54 @@ export const authorityRetrievalProfiles = [
     canonicalOrigin: 'https://www.penguin.co.uk',
     canonicalAliases: ['https://penguin.co.uk'],
     sourceKind: 'publisher',
+    evidenceCapabilities: [],
     status: 'manual_only',
     termsReviewedAt: null,
     expiresAt: null,
     reviewedBy: null,
     reviewReference:
       'packages/series-source-trial/reports/authority-origin-evaluation-2026-09-05.md#penguin-uk',
+  },
+  {
+    schemaVersion: 1,
+    profileVersion: 'smdaviesauthor-pending-v1',
+    canonicalOrigin: 'https://smdaviesauthor.com',
+    canonicalAliases: [],
+    sourceKind: 'author',
+    evidenceCapabilities: [],
+    status: 'pending',
+    termsReviewedAt: null,
+    expiresAt: null,
+    reviewedBy: null,
+    reviewReference:
+      'packages/series-source-trial/reports/authority-origin-coverage-evaluation-2026-09-07.md#s-m-davies',
+  },
+  {
+    schemaVersion: 1,
+    profileVersion: 'alihazelwood-manual-v1',
+    canonicalOrigin: 'https://alihazelwood.com',
+    canonicalAliases: ['https://www.alihazelwood.com'],
+    sourceKind: 'author',
+    evidenceCapabilities: [],
+    status: 'manual_only',
+    termsReviewedAt: '2026-09-07T18:16:14.000Z',
+    expiresAt: null,
+    reviewedBy: 'codex-source-review',
+    reviewReference:
+      'packages/series-source-trial/reports/authority-origin-coverage-evaluation-2026-09-07.md#ali-hazelwood',
+  },
+  {
+    schemaVersion: 1,
+    profileVersion: 'penguinrandomhouse-us-manual-v1',
+    canonicalOrigin: 'https://www.penguinrandomhouse.com',
+    canonicalAliases: ['https://penguinrandomhouse.com'],
+    sourceKind: 'publisher',
+    evidenceCapabilities: [],
+    status: 'manual_only',
+    termsReviewedAt: '2026-09-07T18:16:14.000Z',
+    expiresAt: null,
+    reviewedBy: 'codex-source-review',
+    reviewReference:
+      'packages/series-source-trial/reports/authority-origin-coverage-evaluation-2026-09-07.md#penguin-random-house-us',
   },
 ]

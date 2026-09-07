@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { authorityProviderRuns } from '../src/authority/provider-runs.mjs'
+import { REPEATED_NUMBERED_CATALOG_HEADINGS } from '../src/authority/retrieval/profile.mjs'
 import { buildEvidencePacket, validateResolution } from '../src/resolver/evidence.mjs'
 
 const caseId = 'second-book'
@@ -58,6 +59,7 @@ const selectedRetrieval = {
       childFinalUrl: sourceUrl,
       profileVersion: 'author-example-v1',
       sourceKind: 'author',
+      evidenceCapabilities: [REPEATED_NUMBERED_CATALOG_HEADINGS],
       sanitizedSha256: 'a'.repeat(64),
     },
   },
@@ -71,6 +73,7 @@ const retrievalOptions = {
       canonicalOrigin: 'https://author.example',
       canonicalAliases: [],
       sourceKind: 'author',
+      evidenceCapabilities: [REPEATED_NUMBERED_CATALOG_HEADINGS],
       status: 'approved_trial',
       termsReviewedAt: '2026-09-01T00:00:00.000Z',
       expiresAt: '2026-12-01T00:00:00.000Z',
@@ -221,6 +224,22 @@ test('rejects retrieval evidence when the recorded origin profile is not current
         retrievalInterpretation: retrievalInterpretation(),
       }),
     ),
+  )
+
+  assert.deepEqual(runs, [])
+})
+
+test('rejects retrieval evidence when manifest capabilities no longer match the profile', () => {
+  const mismatched = structuredClone(selectedRetrieval)
+  mismatched.retrieval.manifest.evidenceCapabilities = []
+  const runs = authorityProviderRuns(
+    reportWith(
+      resultWith({
+        ...mismatched,
+        retrievalInterpretation: retrievalInterpretation(),
+      }),
+    ),
+    retrievalOptions,
   )
 
   assert.deepEqual(runs, [])

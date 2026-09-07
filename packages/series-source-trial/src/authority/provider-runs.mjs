@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
 import { normalize } from '../normalize.mjs'
-import { profileForConsultedUrl } from './retrieval/profile.mjs'
+import { evidenceCapabilitiesMatch, profileForConsultedUrl } from './retrieval/profile.mjs'
 import { authorityRetrievalProfiles } from './retrieval/profiles.mjs'
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
@@ -50,6 +50,10 @@ const verifiedPass = (result, profiles, now) => {
     !reviewedOrigin.eligible ||
     reviewedOrigin.profile.profileVersion !== retrievalManifest.profileVersion ||
     reviewedOrigin.profile.sourceKind !== retrievalManifest.sourceKind ||
+    !evidenceCapabilitiesMatch(
+      reviewedOrigin.profile.evidenceCapabilities,
+      retrievalManifest.evidenceCapabilities,
+    ) ||
     interpretation?.status !== 'completed' ||
     !interpretation.validation?.valid ||
     !interpretation.validation?.policySafe ||

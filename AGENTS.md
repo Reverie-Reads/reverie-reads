@@ -183,8 +183,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   source kind. The packet is hash-checked and must contain the exact target title and author before
   interpretation; proposed identity, series names, standalone language, and positions must also be
   present in the packet before selection. Unsupported retrieved position is cleared and unsupported
-  membership role becomes unknown without discarding otherwise direct membership. Page text is
-  redacted before persistence. When one reviewed origin contributed several consulted URLs, select
+  membership role becomes unknown without discarding otherwise direct membership. A repeated
+  numbered catalog-heading pattern may count as relational structure only when the current
+  human-reviewed origin profile explicitly grants that finite evidence capability, the gateway
+  binds it into the retrieval manifest, and the current profile still matches before provider
+  evidence is emitted. Page text is redacted before persistence. When one reviewed origin
+  contributed several consulted URLs, select
   a shallow catalog-style hub before its homepage or a detail page so the single child hop is spent
   on exact-title evidence; source kind, depth, and lexical order remain deterministic tie-breakers.
   The repository activates only the owner-reviewed, time-boxed `authorljshen.com` trial profile

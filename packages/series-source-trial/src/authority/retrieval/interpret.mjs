@@ -2,8 +2,9 @@ import { createHash } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import { authorityAcquisitionCacheMaterial } from '../evidence.mjs'
 import { authorityAcquisitionOutputSchema } from '../schema.mjs'
+import { normalizeEvidenceCapabilities, REPEATED_NUMBERED_CATALOG_HEADINGS } from './profile.mjs'
 
-export const RETRIEVAL_INTERPRETATION_PROMPT_VERSION = 'authority-retrieval-interpretation-v1'
+export const RETRIEVAL_INTERPRETATION_PROMPT_VERSION = 'authority-retrieval-interpretation-v2'
 
 export const retrievalInterpretationInstructions = `You are Reverie's authority-evidence interpreter.
 Classify one exact book using only the supplied sanitized first-party evidence packet. Your output
@@ -19,6 +20,11 @@ Rules:
   bibliographic series, collection, trilogy, or duology. A page title, series heading, store link,
   review label, title pattern, shared character, universe, spin-off, companion, or reading-order
   context is insufficient without an explicit exact-work relationship.
+- One reviewed exception exists only when source.provenance.evidenceCapabilities contains
+  ${REPEATED_NUMBERED_CATALOG_HEADINGS}. Then a shallow catalog packet may establish a series when
+  at least two headings use the same named prefix plus distinct integer positions and titles, and
+  one heading's title exactly matches the target. Use that prefix as the series and its attached
+  integer as position. Without that capability, every heading or title pattern remains insufficient.
 - A standalone classification requires an affirmative author or publisher statement about this
   exact work. Silence or absence from a series list is unresolved.
 - Standalone may mean readable independently. If the same packet directly assigns a bibliographic
@@ -92,6 +98,12 @@ export function buildRetrievalInterpretationInput(target, retrieval) {
   if (!['author', 'author_post', 'publisher', 'publisher_catalog'].includes(sourceKind)) {
     throw new Error('Retrieval manifest requires a reviewed source kind')
   }
+  const evidenceCapabilities = normalizeEvidenceCapabilities(
+    retrieval.manifest.evidenceCapabilities,
+  )
+  if (evidenceCapabilities === null) {
+    throw new Error('Retrieval manifest contains an unsupported evidence capability')
+  }
 
   return {
     schemaVersion: 1,
@@ -106,6 +118,7 @@ export function buildRetrievalInterpretationInput(target, retrieval) {
         policyVersion: retrieval.manifest.policyVersion,
         extractorVersion: retrieval.manifest.extractorVersion,
         profileVersion: retrieval.manifest.profileVersion,
+        evidenceCapabilities,
         sanitizedSha256: retrieval.manifest.sanitizedSha256,
       },
     },

@@ -4,7 +4,7 @@ import { profileForConsultedUrl } from './profile.mjs'
 import { parseRobots, robotsAccess } from './robots.mjs'
 
 export const RETRIEVAL_GATEWAY_VERSION = 'authority-retrieval-gateway-v1'
-export const RETRIEVAL_POLICY_VERSION = 'authority-retrieval-policy-v1'
+export const RETRIEVAL_POLICY_VERSION = 'authority-retrieval-policy-v2'
 export const RETRIEVAL_EXTRACTOR_VERSION = 'authority-evidence-extractor-v2'
 export const RETRIEVAL_USER_AGENT =
   'ReverieAuthorityScout/0.1 (+https://reveriereads.app/data-sources)'
@@ -241,6 +241,11 @@ export async function retrieveAuthorityNavigation(
   const inspected = profileForConsultedUrl(consultedUrl, profiles, now)
   if (!inspected.eligible) return typedFailure(inspected.reason, { manifest: baseManifest })
   const profile = inspected.profile
+  const reviewedProfileManifest = {
+    profileVersion: profile.profileVersion,
+    sourceKind: profile.sourceKind,
+    evidenceCapabilities: profile.evidenceCapabilities,
+  }
   const observedPolicies = new Map()
   const dependencies = {
     robotsCache,
@@ -278,7 +283,7 @@ export async function retrieveAuthorityNavigation(
       return typedFailure(selection.status, {
         manifest: {
           ...baseManifest,
-          profileVersion: profile.profileVersion,
+          ...reviewedProfileManifest,
           parentUrl,
           parentFinalUrl: parent.finalUrl,
           candidates: selection.candidates.slice(0, 5),
@@ -291,13 +296,14 @@ export async function retrieveAuthorityNavigation(
     const child = await fetchContent(selection.selected.url, profile, dependencies)
     const extracted = extractEvidenceText(child.text)
     if (extracted.status !== 'extracted' || !extracted.text) {
-      return typedFailure('parse_failure', { manifest: baseManifest })
+      return typedFailure('parse_failure', {
+        manifest: { ...baseManifest, ...reviewedProfileManifest },
+      })
     }
     const manifest = {
       ...baseManifest,
       terminalResult: 'retrieved',
-      profileVersion: profile.profileVersion,
-      sourceKind: profile.sourceKind,
+      ...reviewedProfileManifest,
       parentUrl,
       parentFinalUrl: parent.finalUrl,
       selectedAnchorText: selection.selected.label,
@@ -332,8 +338,7 @@ export async function retrieveAuthorityNavigation(
     return typedFailure(reason, {
       manifest: {
         ...baseManifest,
-        profileVersion: profile.profileVersion,
-        sourceKind: profile.sourceKind,
+        ...reviewedProfileManifest,
         robots: robotsManifest(),
         requests: requestManifest(),
       },

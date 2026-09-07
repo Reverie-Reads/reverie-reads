@@ -6,7 +6,12 @@ import {
 import { normalize } from '../../normalize.mjs'
 import { retrieveAuthorityNavigation, redactRetrievalResult } from './gateway.mjs'
 import { interpretRetrievedAuthorityEvidence } from './interpret.mjs'
-import { profileForConsultedUrl } from './profile.mjs'
+import {
+  evidenceCapabilitiesMatch,
+  normalizeEvidenceCapabilities,
+  profileForConsultedUrl,
+  REPEATED_NUMBERED_CATALOG_HEADINGS,
+} from './profile.mjs'
 
 const kindPriority = new Map([
   ['author', 0],
@@ -65,7 +70,7 @@ const evidenceLines = (text) =>
 const bibliographicRelationshipOccurs = (text) =>
   /\b(?:series|trilogy|duology|collection|saga|cycle)\b/i.test(text)
 
-const directMembershipLine = (target, membership, retrieval) =>
+const directProseMembershipLine = (target, membership, retrieval) =>
   evidenceLines(retrieval?.evidenceText).find(
     (line) =>
       !/^(?:TITLE|H[1-6]):/i.test(line) &&
@@ -73,6 +78,87 @@ const directMembershipLine = (target, membership, retrieval) =>
       phraseOccurs(line, membership?.series) &&
       bibliographicRelationshipOccurs(line),
   )
+
+const NON_SERIES_CATALOG_PREFIXES = new Set([
+  'act',
+  'acts',
+  'book',
+  'books',
+  'chapter',
+  'chapters',
+  'day',
+  'days',
+  'episode',
+  'episodes',
+  'level',
+  'levels',
+  'part',
+  'parts',
+  'section',
+  'sections',
+  'volume',
+  'volumes',
+  'year',
+  'years',
+])
+
+const catalogHubPath = (value) => {
+  try {
+    const url = new URL(value)
+    if (url.searchParams.size) return false
+    const segments = url.pathname
+      .split('/')
+      .filter(Boolean)
+      .map((segment) => normalize(segment).replace(/ /g, '-'))
+    return segments.length === 1 && navigationHubPaths.has(segments[0])
+  } catch {
+    return false
+  }
+}
+
+const numberedCatalogHeading = (line) => {
+  const match = String(line ?? '').match(
+    /^H[1-6]:\s*(.+?)\s+(?:(?:book|volume)\s+|#\s*)?(\d{1,2})\s*[:\u2013\u2014]\s*(.+)$/i,
+  )
+  if (!match) return null
+  const series = match[1].trim()
+  const position = Number(match[2])
+  const title = match[3].trim()
+  const normalizedSeries = normalize(series)
+  if (
+    !normalizedSeries ||
+    NON_SERIES_CATALOG_PREFIXES.has(normalizedSeries) ||
+    !Number.isInteger(position) ||
+    position < 1 ||
+    position > 99 ||
+    !normalize(title)
+  ) {
+    return null
+  }
+  return { line, series, normalizedSeries, position, title }
+}
+
+const repeatedNumberedCatalogEntry = (target, membership, retrieval) => {
+  const capabilities = normalizeEvidenceCapabilities(retrieval?.manifest?.evidenceCapabilities)
+  if (!capabilities?.includes(REPEATED_NUMBERED_CATALOG_HEADINGS)) return null
+  if (!catalogHubPath(retrieval?.manifest?.childFinalUrl)) return null
+  const entries = evidenceLines(retrieval?.evidenceText).map(numberedCatalogHeading).filter(Boolean)
+  const expectedSeries = normalize(membership?.series)
+  const expectedTitle = normalize(target?.target?.title)
+  const matchingSeries = entries.filter((entry) => entry.normalizedSeries === expectedSeries)
+  const distinctPositions = new Set(matchingSeries.map((entry) => entry.position))
+  const distinctTitles = new Set(matchingSeries.map((entry) => normalize(entry.title)))
+  if (matchingSeries.length < 2 || distinctPositions.size < 2 || distinctTitles.size < 2)
+    return null
+  return matchingSeries.find((entry) => normalize(entry.title) === expectedTitle) ?? null
+}
+
+const directMembershipEvidence = (target, membership, retrieval) => {
+  const proseLine = directProseMembershipLine(target, membership, retrieval)
+  if (proseLine) return { line: proseLine, catalogPosition: null }
+  const catalogEntry = repeatedNumberedCatalogEntry(target, membership, retrieval)
+  return catalogEntry ? { line: catalogEntry.line, catalogPosition: catalogEntry.position } : null
+}
 
 const directStandaloneLine = (target, retrieval) =>
   evidenceLines(retrieval?.evidenceText).find(
@@ -124,11 +210,14 @@ export function canonicalizeRetrievedAuthoritySemantics(target, output, retrieva
   if (!output || typeof output !== 'object' || !Array.isArray(output.memberships)) return output
   const memberships = output.memberships.map((membership) => {
     if (!membership || typeof membership !== 'object') return membership
-    const relationshipLine = directMembershipLine(target, membership, retrieval)
+    const relationship = directMembershipEvidence(target, membership, retrieval)
+    const relationshipLine = relationship?.line
     const position =
       membership.position === null ||
       !Number.isFinite(membership.position) ||
-      (relationshipLine && explicitPositionOccurs(relationshipLine, membership.position))
+      (relationshipLine &&
+        (explicitPositionOccurs(relationshipLine, membership.position) ||
+          relationship.catalogPosition === membership.position))
         ? membership.position
         : null
     const role =
@@ -173,13 +262,16 @@ export function validateRetrievedAuthoritySemantics(target, output, retrieval, v
   const memberships = Array.isArray(output.memberships) ? output.memberships : []
   for (const [index, membership] of memberships.entries()) {
     if (!membership || typeof membership !== 'object') continue
-    const relationshipLine = directMembershipLine(target, membership, retrieval)
+    const relationship = directMembershipEvidence(target, membership, retrieval)
+    const relationshipLine = relationship?.line
     if (!relationshipLine) {
       violations.push(`membership ${index} lacks a same-line exact-work bibliographic relationship`)
     }
     if (
       membership.position !== null &&
-      (!relationshipLine || !explicitPositionOccurs(relationshipLine, membership.position))
+      (!relationshipLine ||
+        (!explicitPositionOccurs(relationshipLine, membership.position) &&
+          relationship.catalogPosition !== membership.position))
     ) {
       violations.push(`membership ${index} position is not explicit in the retrieved packet`)
     }
@@ -288,6 +380,27 @@ export async function augmentAuthorityAcquisition(
       selectedPass: 'first',
       selectedSourceManifest: firstPassSourceManifest(firstPass),
       retrieval: persistedRetrieval,
+    }
+  }
+
+  if (
+    retrieval.manifest?.profileVersion !== selected.profile.profileVersion ||
+    retrieval.manifest?.sourceKind !== selected.profile.sourceKind ||
+    !evidenceCapabilitiesMatch(
+      retrieval.manifest?.evidenceCapabilities,
+      selected.profile.evidenceCapabilities,
+    )
+  ) {
+    return {
+      ...firstPass,
+      selectedPass: 'first',
+      selectedSourceManifest: firstPassSourceManifest(firstPass),
+      retrieval: persistedRetrieval,
+      retrievalInterpretation: {
+        status: 'skipped',
+        reason: 'profile_manifest_mismatch',
+        cached: false,
+      },
     }
   }
 
