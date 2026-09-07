@@ -18,8 +18,8 @@ useful for measuring coverage and discovering disagreements, but they do not con
 accuracy until an authority source has been reviewed.
 
 The current development sample contains one difficult work from each of Reverie's 69 distinct
-seeded series plus external sampling frames: 329 selected works, of which 202 are
-authority-reviewed. The reviewed set contains 141 positive series cases and 61 confirmed standalone
+seeded series plus external sampling frames: 329 selected works, of which 203 are
+authority-reviewed. The reviewed set contains 141 positive series cases and 62 confirmed standalone
 controls. Some reviewed cases replace seed references, so the final distinct-case count is printed
 at runtime.
 
@@ -396,6 +396,11 @@ series rulings, one affirmative publisher standalone, five unresolved works, and
 selection-source bylines are recorded in
 `reports/authority-development-frame-crimereads-2023-2026-09-06.md`.
 
+The first-party correction of _Bulletproof_ from a seeded Dark Forces position into a true
+standalone connected-world control, plus the truth-blind scout replay and two discarded
+author-social prompt probes, is recorded in
+`reports/authority-bulletproof-connected-world-closeout-2026-09-06.md`.
+
 ## Build the authority gold program
 
 Audit the sample before running another provider or resolver comparison:
@@ -404,7 +409,7 @@ Audit the sample before running another provider or resolver comparison:
 pnpm series:sample:audit
 ```
 
-The audit reports selection coverage and authority-review coverage separately. The current 129
+The audit reports selection coverage and authority-review coverage separately. The current 126
 candidates count as selected works, but never as truth and never toward an accuracy gate. It also
 validates that every reviewed result has
 affirmative author or publisher evidence, that a reviewed standalone has no memberships, and that
@@ -490,9 +495,10 @@ Accuracy is a hard constraint. A provider cannot pass by trading false claims fo
 greater coverage. After all hard gates pass, compare eligible providers using the weights in
 `data/evaluation-policy.json`.
 
-The current gold set is a pre-pilot. Provider comparison remains blocked until at least 200 cases
-are authority-reviewed, including at least 100 positive series cases and 50 standalone controls.
-The intended 200-case minimum stratification is:
+The current development set has passed the overall reviewed, positive-series, and standalone
+control gates. Provider comparison remains blocked until every intended sampling stratum is met;
+the recent independent or Kindle-first stratum is currently 49 of 50. The intended 200-case
+minimum stratification is:
 
 - the current 69-series Reverie sample;
 - 50 recent independent or Kindle-first works;

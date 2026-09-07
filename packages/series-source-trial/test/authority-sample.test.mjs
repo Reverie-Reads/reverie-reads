@@ -63,10 +63,10 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
   assert.equal(audit.ready, false)
   assert.deepEqual(audit.counts, {
     selected: 329,
-    reviewed: 202,
-    candidate: 127,
+    reviewed: 203,
+    candidate: 126,
     reviewedPositive: 141,
-    reviewedStandalone: 61,
+    reviewedStandalone: 62,
     selectionTarget: 200,
     selectionGap: 0,
   })
@@ -86,7 +86,7 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     falseStandaloneCases: 598,
     evaluatedMembershipClaims: 299,
   })
-  assert.deepEqual(audit.program, { reviewed: 202, target: 1200 })
+  assert.deepEqual(audit.program, { reviewed: 203, target: 1200 })
   assert.deepEqual(
     audit.strata.find((stratum) => stratum.id === 'reverie_series'),
     {
@@ -94,10 +94,10 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
       label: 'Reverie seeded series',
       minimumReviewed: 69,
       selected: 69,
-      reviewed: 68,
-      candidate: 1,
-      gap: 1,
-      met: false,
+      reviewed: 69,
+      candidate: 0,
+      gap: 0,
+      met: true,
     },
   )
 
@@ -117,8 +117,8 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     {
       recent_independent_or_kindle_first: { reviewed: 49, gap: 1 },
       recent_traditional: { reviewed: 60, gap: 0 },
-      multi_series_or_connected_universe: { reviewed: 21, gap: 0 },
-      standalone_control: { reviewed: 69, gap: 0 },
+      multi_series_or_connected_universe: { reviewed: 22, gap: 0 },
+      standalone_control: { reviewed: 70, gap: 0 },
     },
   )
 })
@@ -891,7 +891,7 @@ test('keeps qualification cases isolated from development tuning gates', () => {
   assert.equal(audit.program.reviewed, 1)
 })
 
-test('records high-risk membership without inventing order and preserves ambiguous candidates', async () => {
+test('records high-risk membership without inventing order and corrects connected-world noise', async () => {
   const caseSet = await loadTrialCases()
   const byId = new Map(caseSet.cases.map((testCase) => [testCase.id, testCase]))
 
@@ -911,7 +911,16 @@ test('records high-risk membership without inventing order and preserves ambiguo
     assert.equal(testCase?.truth.memberships[0]?.series, series)
   }
 
-  assert.equal(byId.get('reverie-dark-forces-bulletproof')?.truth.status, 'candidate')
+  const bulletproof = byId.get('reverie-dark-forces-bulletproof')
+  assert.equal(bulletproof?.truth.status, 'reviewed')
+  assert.equal(bulletproof?.truth.standalone, true)
+  assert.equal(bulletproof?.truth.membershipsComplete, true)
+  assert.deepEqual(bulletproof?.truth.memberships, [])
+  assert.deepEqual(bulletproof?.riskFeatures, ['connected_universe'])
+  assert.deepEqual(
+    bulletproof?.truth.sources.map(({ kind }) => kind),
+    ['author', 'author_post', 'publisher'],
+  )
   const sacrifice = byId.get('reverie-lords-the-sacrifice')
   assert.equal(sacrifice?.truth.status, 'reviewed')
   assert.equal(sacrifice?.truth.memberships[0]?.series, 'A Dark College Romance')
@@ -998,7 +1007,7 @@ test('corrects false standalones, connected-world noise, and the seventh batch s
   assert.deepEqual(honeyCut?.riskFeatures, ['connected_universe'])
 })
 
-test('promotes the unambiguous seed candidates while preserving the ambiguous Dark Forces control', async () => {
+test('promotes the final seed candidates and preserves exact authority provenance', async () => {
   const caseSet = await loadTrialCases()
   const byId = new Map(caseSet.cases.map((testCase) => [testCase.id, testCase]))
   const reviewedMemberships = new Map([
@@ -1023,7 +1032,11 @@ test('promotes the unambiguous seed candidates while preserving the ambiguous Da
     'traditional',
   )
   assert.equal(byId.get('reverie-the-wolves-of-ruin-dire-bound')?.publicationPath, 'independent')
-  assert.equal(byId.get('reverie-dark-forces-bulletproof')?.truth.status, 'candidate')
+  const bulletproof = byId.get('reverie-dark-forces-bulletproof')
+  assert.equal(bulletproof?.truth.status, 'reviewed')
+  assert.equal(bulletproof?.truth.standalone, true)
+  assert.deepEqual(bulletproof?.truth.memberships, [])
+  assert.match(bulletproof?.truth.reviewNote ?? '', /shared universe is not a numbered series/i)
   assert.equal(byId.get('reverie-lords-the-sacrifice')?.truth.status, 'reviewed')
 })
 
