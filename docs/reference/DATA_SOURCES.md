@@ -143,16 +143,22 @@ optional second model pass has no tools, may interpret only the hash-bound sanit
 and cannot choose another URL or source kind. The exact target title and author must occur before
 the model is called; deterministic post-validation then requires one non-heading evidence line to
 join the exact target title to each claimed bibliographic series or affirmative standalone
-statement. A position or membership role survives only on that same relationship line, preventing
-cross-book fact assembly on multi-book pages. It runs only for an unresolved or quarantined first
-pass, and its result replaces the first proposal only after those checks and ordinary validation
-pass. Reports and caches retain the applicable selected-source manifest and structured
-paraphrase, never page text. The design and acceptance gates are in
+statement. The only heading exception requires a human-reviewed per-origin capability plus a
+shallow, query-free author catalog with at least two distinct numbered titles sharing the same
+non-generic series prefix and an exact target-title match. The gateway binds the capability into the
+manifest, and provider conversion requires it to still match the current profile. A position or
+membership role survives only on that same relationship line or exact catalog entry,
+preventing cross-book fact assembly on multi-book pages. It runs only for an unresolved or
+quarantined first pass, and its result replaces the first proposal only after those checks and
+ordinary validation pass. Reports and caches retain the applicable selected-source manifest and
+structured paraphrase, never page text. The design and acceptance gates are in
 [ADR 0009](../decisions/0009-authority-retrieval-gateway.md). The trial CLI exposes this path only
 behind `--retrieval`. The resolver's optional `--authority` input accepts the acquisition report,
 but only a selected retrieval pass can cross the automatic-evidence gate. The only active real
-origin is the owner-reviewed, time-boxed `authorljshen.com` trial profile through 2026-10-07;
-nothing is connected to production.
+origin is the owner-reviewed, time-boxed `authorljshen.com` trial profile through 2026-10-07.
+`smdaviesauthor.com` remains pending, while `alihazelwood.com`, `penguinrandomhouse.com`, and
+`penguin.co.uk` are manual-only under their reviewed access terms. No real origin currently has the
+catalog-heading capability; nothing is connected to production.
 
 Acquisition cleaning also distinguishes bibliographic membership from reading dependence. When an
 author or publisher both assigns the exact work to a named series and markets it as independently

@@ -7,6 +7,7 @@ import {
   RETRIEVAL_INTERPRETATION_PROMPT_VERSION,
   retrievalInterpretationCacheMaterial,
 } from '../src/authority/retrieval/interpret.mjs'
+import { REPEATED_NUMBERED_CATALOG_HEADINGS } from '../src/authority/retrieval/profile.mjs'
 
 const target = {
   schemaVersion: 1,
@@ -28,6 +29,7 @@ const retrieval = {
     policyVersion: 'policy-v1',
     extractorVersion: 'extractor-v1',
     profileVersion: 'profile-v1',
+    evidenceCapabilities: [],
     sanitizedSha256: createHash('sha256').update(evidenceText).digest('hex'),
   },
 }
@@ -62,6 +64,7 @@ test('builds a truth-blind, single-source interpretation packet', () => {
   assert.equal(input.source.url, childUrl)
   assert.equal(input.source.kind, 'author')
   assert.equal(input.source.evidenceText, evidenceText)
+  assert.deepEqual(input.source.provenance.evidenceCapabilities, [])
   assert.equal('truth' in input, false)
   assert.equal(JSON.stringify(input).includes('parentUrl'), false)
 })
@@ -105,12 +108,17 @@ test('sends one strict no-tool model request and returns structured output', asy
   assert.equal('tools' in request, false)
   assert.equal('tool_choice' in request, false)
   assert.equal(request.text.format.strict, true)
+  assert.match(request.instructions, new RegExp(REPEATED_NUMBERED_CATALOG_HEADINGS))
   assert.equal(JSON.parse(request.input).source.url, childUrl)
 })
 
 test('rejects a tampered or oversized packet before the API call', async () => {
   for (const changed of [
     { ...retrieval, evidenceText: `${evidenceText} changed` },
+    {
+      ...retrieval,
+      manifest: { ...retrieval.manifest, evidenceCapabilities: ['unknown_capability'] },
+    },
     {
       ...retrieval,
       evidenceText: 'x'.repeat(8_001),

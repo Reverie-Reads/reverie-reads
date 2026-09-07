@@ -11,6 +11,7 @@ import {
   RETRIEVAL_POLICY_VERSION,
   RETRIEVAL_USER_AGENT,
 } from '../src/authority/retrieval/gateway.mjs'
+import { REPEATED_NUMBERED_CATALOG_HEADINGS } from '../src/authority/retrieval/profile.mjs'
 
 const now = new Date('2026-09-05T12:00:00.000Z')
 const parentUrl = 'https://author.example/'
@@ -21,6 +22,7 @@ const profile = {
   canonicalOrigin: 'https://author.example',
   canonicalAliases: ['https://www.author.example'],
   sourceKind: 'author',
+  evidenceCapabilities: [REPEATED_NUMBERED_CATALOG_HEADINGS],
   status: 'approved_trial',
   termsReviewedAt: '2026-09-01T00:00:00.000Z',
   expiresAt: '2026-12-01T00:00:00.000Z',
@@ -91,6 +93,7 @@ test('retrieves one child into a review-only, provenance-bound evidence packet',
   assert.equal(result.manifest.selectedUrl, childUrl)
   assert.equal(result.manifest.childFinalUrl, childUrl)
   assert.equal(result.manifest.sourceKind, 'author')
+  assert.deepEqual(result.manifest.evidenceCapabilities, [REPEATED_NUMBERED_CATALOG_HEADINGS])
   assert.deepEqual(result.manifest.robots, [
     { origin: 'https://author.example', state: 'rules', cacheAgeMs: 0 },
   ])
@@ -142,6 +145,7 @@ test('rejects an ungrounded URL or unapproved origin before network access', asy
     { ...profile, status: 'blocked' },
     { ...profile, expiresAt: '2026-09-05T11:59:59.000Z' },
     { ...profile, reviewReference: '' },
+    { ...profile, evidenceCapabilities: ['unknown_capability'] },
   ]) {
     const result = await run(requestImpl, { profiles: [changed] })
     assert.equal(result.reason, changed.status === 'blocked' ? 'origin_blocked' : 'origin_pending')

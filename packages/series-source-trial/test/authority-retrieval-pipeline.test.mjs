@@ -11,6 +11,7 @@ import {
   shouldAttemptAuthorityRetrieval,
   validateRetrievedAuthoritySemantics,
 } from '../src/authority/retrieval/pipeline.mjs'
+import { REPEATED_NUMBERED_CATALOG_HEADINGS } from '../src/authority/retrieval/profile.mjs'
 import { authorityRetrievalProfiles } from '../src/authority/retrieval/profiles.mjs'
 
 const now = new Date('2026-09-05T12:00:00.000Z')
@@ -267,6 +268,170 @@ test('keeps a hash-numbered position in a same-line title and series metadata fi
   assert.equal(validation.policySafe, true)
 })
 
+test('accepts an exact target in a repeated numbered author-catalog heading', () => {
+  const highKing = structuredClone(directOutput)
+  highKing.memberships[0].series = 'High King'
+  highKing.memberships[0].position = 1
+  highKing.authoritySources[0].supports.push('position')
+  const catalogRetrieval = {
+    ...retrieval,
+    evidenceText: [
+      'TITLE: Books - S. M. Davies',
+      'H4: High King 1: The West Rises',
+      'P: Britain stands on the brink of catastrophe.',
+      'H3: High King 2: Under the Dragon',
+    ].join('\n'),
+    manifest: {
+      ...retrieval.manifest,
+      childFinalUrl: 'https://author.example/books/',
+      evidenceCapabilities: [REPEATED_NUMBERED_CATALOG_HEADINGS],
+    },
+  }
+  const catalogTarget = {
+    ...target,
+    target: { ...target.target, title: 'The West Rises', authors: ['S. M. Davies'] },
+  }
+
+  const cleaned = canonicalizeRetrievedAuthoritySemantics(catalogTarget, highKing, catalogRetrieval)
+  const validation = validateRetrievedAuthoritySemantics(catalogTarget, cleaned, catalogRetrieval, {
+    valid: true,
+    policySafe: true,
+    policyViolations: [],
+  })
+
+  assert.equal(cleaned.memberships[0].position, 1)
+  assert.equal(cleaned.memberships[0].role, 'unknown')
+  assert.equal(validation.policySafe, true)
+})
+
+test('rejects repeated numbered catalog headings without a reviewed profile capability', () => {
+  const highKing = structuredClone(directOutput)
+  highKing.memberships[0].series = 'Top'
+  highKing.memberships[0].position = 1
+  const catalogTarget = {
+    ...target,
+    target: { ...target.target, title: 'The West Rises', authors: ['S. M. Davies'] },
+  }
+  const unprofiledCatalog = {
+    ...retrieval,
+    evidenceText: [
+      'TITLE: Books - S. M. Davies',
+      'H4: Top 1: The West Rises',
+      'H3: Top 2: Under the Dragon',
+    ].join('\n'),
+    manifest: {
+      ...retrieval.manifest,
+      childFinalUrl: 'https://author.example/books/',
+      evidenceCapabilities: [],
+    },
+  }
+
+  const cleaned = canonicalizeRetrievedAuthoritySemantics(
+    catalogTarget,
+    highKing,
+    unprofiledCatalog,
+  )
+  const validation = validateRetrievedAuthoritySemantics(
+    catalogTarget,
+    cleaned,
+    unprofiledCatalog,
+    { valid: true, policySafe: true, policyViolations: [] },
+  )
+
+  assert.equal(cleaned.memberships[0].position, null)
+  assert.equal(validation.policySafe, false)
+})
+
+test('rejects isolated or non-catalog numbered headings as membership evidence', () => {
+  const highKing = structuredClone(directOutput)
+  highKing.memberships[0].series = 'High King'
+  highKing.memberships[0].position = 1
+  const catalogTarget = {
+    ...target,
+    target: { ...target.target, title: 'The West Rises', authors: ['S. M. Davies'] },
+  }
+  const variants = [
+    {
+      text: 'TITLE: Books - S. M. Davies\nH4: High King 1: The West Rises',
+      url: 'https://author.example/books/',
+    },
+    {
+      text: [
+        'TITLE: Books - S. M. Davies',
+        'H4: High King 1: The West Rises',
+        'H3: High Queen 2: Under the Dragon',
+      ].join('\n'),
+      url: 'https://author.example/books/',
+    },
+    {
+      text: [
+        'TITLE: The West Rises - S. M. Davies',
+        'H4: High King 1: The West Rises',
+        'H3: High King 2: Under the Dragon',
+      ].join('\n'),
+      url: 'https://author.example/books/the-west-rises/',
+    },
+    {
+      text: [
+        'TITLE: The West Rises - S. M. Davies',
+        'H4: High King 1: The West Rises',
+        'H3: High King 2: Under the Dragon',
+      ].join('\n'),
+      url: 'https://author.example/books/?title=the-west-rises',
+    },
+    {
+      text: [
+        'TITLE: Contents - S. M. Davies',
+        'H4: Chapter 1: The West Rises',
+        'H3: Chapter 2: Under the Dragon',
+      ].join('\n'),
+      url: 'https://author.example/books/',
+    },
+  ]
+
+  for (const variant of variants) {
+    const candidateRetrieval = {
+      ...retrieval,
+      evidenceText: variant.text,
+      manifest: {
+        ...retrieval.manifest,
+        childFinalUrl: variant.url,
+        evidenceCapabilities: [REPEATED_NUMBERED_CATALOG_HEADINGS],
+      },
+    }
+    const cleaned = canonicalizeRetrievedAuthoritySemantics(
+      catalogTarget,
+      highKing,
+      candidateRetrieval,
+    )
+    const validation = validateRetrievedAuthoritySemantics(
+      catalogTarget,
+      cleaned,
+      candidateRetrieval,
+      { valid: true, policySafe: true, policyViolations: [] },
+    )
+
+    assert.equal(cleaned.memberships[0].position, null)
+    assert.equal(validation.policySafe, false)
+  }
+})
+
+test('does not interpret a retrieved packet whose capabilities differ from the selected profile', async () => {
+  let interpreted = 0
+  const result = await augmentAuthorityAcquisition(target, firstPass, {
+    profiles: [{ ...profile, evidenceCapabilities: [REPEATED_NUMBERED_CATALOG_HEADINGS] }],
+    now,
+    retrieve: async () => retrieval,
+    interpret: async () => {
+      interpreted += 1
+    },
+  })
+
+  assert.equal(result.selectedPass, 'first')
+  assert.equal(result.retrievalInterpretation.reason, 'profile_manifest_mismatch')
+  assert.equal(interpreted, 0)
+})
+
 test('does not hide a structurally invalid membership role', () => {
   const malformed = structuredClone(directOutput)
   malformed.memberships[0].role = 'leader'
@@ -414,6 +579,9 @@ test('keeps non-approved real origins out of retrieval', async () => {
   for (const url of [
     'https://www.pipwritesfiction.com/',
     'https://www.penguin.co.uk/series/ATTV/assistant-to-the-villain',
+    'https://smdaviesauthor.com/books/',
+    'https://alihazelwood.com/mate/',
+    'https://www.penguinrandomhouse.com/books/775877/mate-by-ali-hazelwood/',
   ]) {
     const result = await augmentAuthorityAcquisition(
       target,

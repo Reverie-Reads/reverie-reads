@@ -129,6 +129,17 @@ active content, and control characters. Ordinary visible prose—including promp
 inert evidence, never instructions. Cap the packet at 8,000 Unicode characters and mark every
 omitted range.
 
+A narrow catalog capability may treat headings as relational structure only when the current
+human-reviewed origin profile explicitly grants `repeated_numbered_catalog_headings` and the
+gateway binds that capability into the retrieval manifest. Even then, the terminal URL must be a
+shallow, query-free recognized catalog path, at least two headings must share the same non-generic
+series prefix, their integer positions and titles must be distinct, and one title must exactly equal
+the target. An isolated numbered heading, a detail page, mixed prefixes, or generic singular or
+plural prefixes such as `Chapter`, `Parts`, and `Volumes` remain insufficient. This recognizes
+reviewed author catalogs shaped like `High King 1: The West Rises` followed by `High King 2: Under
+the Dragon` without granting that page-shape interpretation to unrelated origins. No committed real
+origin currently has this capability.
+
 ### Model and evidence boundary
 
 The optional second model request receives the minimal case identity, the sanitized packet, and its
@@ -138,7 +149,8 @@ gateway's successful fetch as source eligibility.
 
 All current cleaning remains in force. In particular, one non-heading extracted evidence line must
 join the exact target title to each claimed bibliographic series or affirmative standalone
-statement. Position and membership role survive only on that same relationship line. This blocks a
+statement, except for the repeated-numbered catalog structure defined above. Position and
+membership role survive only on that same relationship line or exact catalog entry. This blocks a
 model from assembling the target identity and another book's series facts across a multi-book page.
 A universe, trope, trigger warning, reading order, shared character, companion, or spin-off
 statement cannot be reversed into membership. The gateway changes reachability, not authority.
@@ -151,6 +163,7 @@ unresolved, never standalone and never “not in a series.”
 The result manifest records:
 
 - case id and extractor/policy/profile versions;
+- the finite evidence capabilities granted by the reviewed profile;
 - grounded parent URL, selected anchor text and URL, canonical final URL, and redirect chain;
 - retrieval time, status, declared media type, encoded/decoded byte counts, truncation state, and
   response `ETag`/`Last-Modified` when present;
@@ -224,6 +237,15 @@ bibliographic relationships, but its current terms prohibit copying, storing, do
 other use of site content without prior approval and prohibit commercial use without a licence.
 Reverie therefore does not automate the site through this gateway without written permission or a
 supported licensed feed.
+
+The 2026-09-07 coverage review added three explicit non-active profiles. `smdaviesauthor.com`
+remains `pending`: its public books page exposes the repeated `High King 1` / `High King 2` catalog
+shape and its privacy page identifies the author-operated site, but no affirmative automation or
+reuse permission was found and the technical robots review is incomplete. `alihazelwood.com` and
+`penguinrandomhouse.com` are `manual_only` because their linked terms prohibit robots or similar
+automated extraction. Recording these decisions improves registry coverage but activates no new
+origin. Details are in
+`packages/series-source-trial/reports/authority-origin-coverage-evaluation-2026-09-07.md`.
 
 ## Trial acceptance gates
 

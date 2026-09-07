@@ -300,10 +300,15 @@ adds a second strict, no-tools model pass only when the first pass is unresolved
 binds citations and source kind to the retrieved child manifest, hash-checks the packet, and skips
 the model entirely when the exact target title or author is absent. Post-validation requires a
 non-heading evidence line to join the exact target title to each claimed bibliographic series or
-affirmative standalone statement;
-position and membership role survive only on that same relationship line. This prevents a model
-from joining one book's identity to another book's series facts on a multi-book page. The packet is
-stripped before returning or caching results. Exercise the boundary with:
+affirmative standalone statement. A narrow catalog exception exists only when the current
+human-reviewed origin profile grants `repeated_numbered_catalog_headings`; the gateway binds that
+capability into the manifest, and provider conversion verifies it again. The page must still be a
+shallow, query-free catalog with two or more distinct numbered-title headings sharing one
+non-generic series prefix and an exact target-title match. Position and membership role survive
+only on that same relationship line or exact catalog entry. This prevents a model from joining one
+book's identity to another book's series facts on a multi-book page. The packet is stripped before
+returning or caching results.
+Exercise the boundary with:
 
 Cleaning also drops a membership whose cited sources were all deterministically demoted while
 retaining a separately supported membership in the same proposal. An originally uncited
@@ -320,10 +325,12 @@ pnpm series:authority:acquire -- --scope gold --max 10 --retrieval
 ```
 
 With the committed registry, only `authorljshen.com` may perform bounded retrieval, and only until
-its profile expires on 2026-10-07. Other real-origin entries remain pending or manual-only, so the
-command records `origin_pending` and does not fetch them. An unchanged successful second-pass
-interpretation is cached by packet hash without retaining evidence text. Origin activation requires
-a separate human rights/access review and cannot be supplied by model output or a CLI flag.
+its profile expires on 2026-10-07. `smdaviesauthor.com` is pending; `alihazelwood.com`,
+`penguinrandomhouse.com`, and `penguin.co.uk` are manual-only. The command therefore records
+`origin_pending` and does not fetch those sites. An unchanged successful second-pass interpretation
+is cached by packet hash without retaining evidence text. Origin activation requires a separate
+human rights/access review and cannot be supplied by model output or a CLI flag. No committed real
+origin currently has the catalog-heading capability.
 
 Run a small gold holdout before a broader capability evaluation:
 
@@ -379,6 +386,10 @@ cleanup are recorded in `reports/authority-origin-evaluation-2026-09-05.md`.
 The adaptive first-party discovery experiment, explicit series-name extraction correction, and
 fresh 12-case development validation slice are recorded in
 `reports/authority-discovery-recall-pilot-2026-09-07.md`.
+
+The follow-up origin coverage review, explicit manual-only decisions, pending S. M. Davies profile,
+and repeated-numbered catalog safeguard are recorded in
+`reports/authority-origin-coverage-evaluation-2026-09-07.md`.
 
 The two-stage 1,200-case target and complete five-work 2024 Kindle Storyteller development frame
 are recorded in `reports/authority-development-frame-2024-2026-09-06.md`.
