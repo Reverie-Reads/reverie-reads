@@ -37,6 +37,7 @@
     "series:trial": "pnpm --filter @reverie/series-source-trial trial",
     "series:resolve": "pnpm --filter @reverie/series-source-trial resolver",
     "series:authority:acquire": "pnpm --filter @reverie/series-source-trial authority:acquire",
+    "series:authority:locate": "pnpm --filter @reverie/series-source-trial authority:locate",
     "series:authority:discovery:score": "pnpm --filter @reverie/series-source-trial authority:discovery:score",
     "series:trial:score": "pnpm --filter @reverie/series-source-trial score",
     "series:sample:audit": "pnpm --filter @reverie/series-source-trial sample:audit",

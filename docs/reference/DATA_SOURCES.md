@@ -143,6 +143,19 @@ origin has a human-reviewed profile, and ordinary deterministic validation remai
 Neither path writes authority gold, Supabase, or the corpus, and both remain production-blocked by
 the same safety, rights, privacy, latency, cost, and fixed-sample gates as the resolver.
 
+An independent-index locator is evaluated separately from the model scout. Its fixed queries receive
+the same truth-blind title, author, and optional publication year, and its URLs exist only in memory
+long enough to compute discovery recall against a frozen development benchmark. It does not pass a
+search result into provider evidence, the resolver, retrieval profiles, Supabase, or the corpus.
+Only aggregate recall, request count, latency, error count, and estimated cost may be persisted;
+queries, provider responses, result titles, snippets, URLs, and case-level provider output are not
+retained. The locator refuses any benchmark marked as the qualification partition. Brave is the
+first trial because its index is independent of the hosted-search index and its request cost is
+low, but its ordinary API terms require a storage-enabled plan before returned content may be
+stored. A live run therefore remains a source-recall experiment, not a new evidence source. Its
+acceptance measure is incremental known-origin and exact-page recovery beyond the fixed Luna-low
+baseline on the same slice.
+
 Search-index recall is not repaired by letting the model fetch arbitrary URLs. The bounded trial
 uses a single-hop, navigation-aware retrieval gateway: only a hosted-search-manifest URL on a
 reviewed author/publisher origin may enter it; deterministic code may fetch that parent and one
