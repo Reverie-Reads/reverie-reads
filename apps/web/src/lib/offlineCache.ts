@@ -40,7 +40,12 @@ const rowKey = (userId: string): string => `react-query:${userId}`
  * app entry point.
  */
 export function isOfflinePersistableQueryKey(queryKey: readonly unknown[]): boolean {
-  return queryKey[0] !== 'series' && queryKey[0] !== 'series-strip' && queryKey[0] !== 'household'
+  return (
+    queryKey[0] !== 'series' &&
+    queryKey[0] !== 'series-strip' &&
+    queryKey[0] !== 'household' &&
+    queryKey[0] !== 'catalog-cover-review'
+  )
 }
 
 // Identity comes from storedSession.ts, which reads the persisted session synchronously and — since

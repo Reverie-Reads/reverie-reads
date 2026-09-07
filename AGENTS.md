@@ -196,6 +196,13 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   callback object: WDK serializes a step call's `this` receiver, and a receiver containing another
   function fails before the first checkpoint. Keep the compiler-backed Workflow integration test in
   the ordinary web test command; unit calls treat `use step` as a no-op and cannot catch this class.
+- **Catalog cover review is explicit and shared-only.** `/catalog/covers` reads bounded pages of
+  shared works; only corpus administrators can save decisions. An approval is bound to the exact
+  identity/cover fingerprint and review revision. Changed records require a fresh review. Browser
+  dimensions are observations, never edition certification. Replace through `set_corpus_work_cover`
+  inside the review transaction; never update personal covers or bibliographic choices as a side
+  effect. Administrator notes/history stay outside the offline cache. See
+  `docs/reference/COVER_SOURCING_AND_STUDIO.md`.
 - **Structured rows own personal series membership.** `series` + live `series_entries` are the
   authority; `books.series`, `position`, and `series_count` are a compatibility projection of one
   explicit `is_primary` entry. A book may have multiple live memberships, but at most one primary;

@@ -11,6 +11,15 @@ Priorities mean:
 - **P2 — planned:** valuable work with no current blocking dependency.
 - **P3 — deferred/monitor:** revisit on evidence, schedule, or an explicit owner decision.
 
+## Active catalog quality follow-up
+
+The cover review workspace is implemented for review in [PR #460](https://github.com/Reverie-Reads/reverie-reads/pull/460); see
+[the acceptance brief](docs/tasks/catalog-cover-review.md). It adds deliberate administrator review
+of shared covers, durable concerns/decisions, edition comparison, and stale-record protection. It
+preserves personal cover choices. The reviewed September catalog findings still need owner curation;
+this feature does not automatically repair those records. Reader-loop validation follows a bounded
+catalog cleanup and release verification.
+
 ## Production baseline recorded before this release
 
 The original prototype-to-product roadmap is complete. Reverie Reads is a React/TypeScript,
