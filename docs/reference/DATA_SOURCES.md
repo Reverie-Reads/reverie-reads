@@ -155,10 +155,13 @@ structured paraphrase, never page text. The design and acceptance gates are in
 [ADR 0009](../decisions/0009-authority-retrieval-gateway.md). The trial CLI exposes this path only
 behind `--retrieval`. The resolver's optional `--authority` input accepts the acquisition report,
 but only a selected retrieval pass can cross the automatic-evidence gate. The only active real
-origin is the owner-reviewed, time-boxed `authorljshen.com` trial profile through 2026-10-07.
-`smdaviesauthor.com` remains pending, while `alihazelwood.com`, `penguinrandomhouse.com`, and
-`penguin.co.uk` are manual-only under their reviewed access terms. No real origin currently has the
-catalog-heading capability; nothing is connected to production.
+origins are the owner-reviewed, time-boxed `authorljshen.com` and `smdaviesauthor.com` trial
+profiles through 2026-10-07. The S. M. Davies profile alone has the catalog-heading capability,
+after its public-network, redirect, robots, navigation, and contact-path review passed. The profile
+remains no-write and review-only; its owner decision is recorded in
+`packages/series-source-trial/reports/authority-origin-approval-sm-davies-2026-09-07.md`.
+`alihazelwood.com`, `penguinrandomhouse.com`, and `penguin.co.uk` are manual-only under their
+reviewed access terms. Nothing is connected to production.
 
 Acquisition cleaning also distinguishes bibliographic membership from reading dependence. When an
 author or publisher both assigns the exact work to a named series and markets it as independently

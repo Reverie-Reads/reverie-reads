@@ -191,8 +191,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   contributed several consulted URLs, select
   a shallow catalog-style hub before its homepage or a detail page so the single child hop is spent
   on exact-title evidence; source kind, depth, and lexical order remain deterministic tie-breakers.
-  The repository activates only the owner-reviewed, time-boxed `authorljshen.com` trial profile
-  through 2026-10-07, and only in this no-write trial path. See
+  The repository activates only the owner-reviewed, time-boxed `authorljshen.com` and
+  `smdaviesauthor.com` trial profiles through 2026-10-07, and only in this no-write trial path. The
+  S. M. Davies profile alone grants `repeated_numbered_catalog_headings` after its bounded technical
+  access review; it still cannot inject a URL into truth-blind discovery or write a result. See
   `docs/decisions/0009-authority-retrieval-gateway.md`.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
   title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
