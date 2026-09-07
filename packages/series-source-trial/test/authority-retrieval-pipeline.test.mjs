@@ -413,7 +413,6 @@ test('keeps non-approved real origins out of retrieval', async () => {
   let calls = 0
   for (const url of [
     'https://www.pipwritesfiction.com/',
-    'https://www.authorljshen.com/all-books/',
     'https://www.penguin.co.uk/series/ATTV/assistant-to-the-villain',
   ]) {
     const result = await augmentAuthorityAcquisition(
@@ -432,6 +431,26 @@ test('keeps non-approved real origins out of retrieval', async () => {
     assert.equal(result.selectedPass, 'first')
   }
   assert.equal(calls, 0)
+})
+
+test('activates the owner-reviewed L.J. Shen origin only inside its trial window', () => {
+  const approved = selectRetrievalParent(
+    ['https://www.authorljshen.com/all-books/'],
+    authorityRetrievalProfiles,
+    new Date('2026-09-07T06:40:09.000Z'),
+  )
+
+  assert.equal(approved.status, 'selected')
+  assert.equal(approved.profile.profileVersion, 'authorljshen-approved-trial-v1')
+
+  const expired = selectRetrievalParent(
+    ['https://www.authorljshen.com/all-books/'],
+    authorityRetrievalProfiles,
+    new Date('2026-10-07T06:40:08.000Z'),
+  )
+
+  assert.equal(expired.status, 'skipped')
+  assert.equal(expired.reason, 'origin_pending')
 })
 
 test('fails optional retrieval closed when the gateway throws', async () => {

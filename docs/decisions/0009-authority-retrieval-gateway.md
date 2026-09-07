@@ -202,12 +202,22 @@ not exact-work relational evidence. The correct result is therefore unresolved. 
 extractor are unchanged: a future decision to accommodate Wix-sized pages or treat accessible
 control labels as evidence needs separate justification, tests, and security review.
 
-`https://www.authorljshen.com` is also `pending`. A bounded delegated probe reached the public
+`https://www.authorljshen.com` was `pending` during the initial probe. A bounded delegated probe
+reached the public
 _Ruthless Rival_ title page from `/all-books/` within the ordinary three-request path and extracted
 the exact `Cruel Castaways #1` metadata, but that title URL is the case's declared selection frame.
 The anti-leakage policy correctly demoted it to identity-only, so it did not count as a successful
 classification. The site exposed a permissive robots rule outside `/wp-admin/` and linked a privacy
-page but no site-specific terms; that is still not an affirmative rights review or an activation.
+page but no site-specific terms. Those observations alone were not an affirmative rights review or
+an activation.
+
+On 2026-09-06 America/Los_Angeles, the Reverie owner approved a 30-day, no-write internal trial for
+this one origin after reviewing that distinction. Profile `authorljshen-approved-trial-v1` expires
+on 2026-10-07T06:40:08Z and fails closed after expiry. The approval permits only the existing
+bounded static retrieval path; it is not permission from the site owner, does not broaden the
+anti-leakage policy, and does not connect the retriever to Supabase, corpus writes, or production.
+The contemporaneous decision record is
+`packages/series-source-trial/reports/authority-origin-approval-pilot-2026-09-06.md`.
 
 `https://www.penguin.co.uk` is `manual_only`. Its public title and series pages contain strong
 bibliographic relationships, but its current terms prohibit copying, storing, downloading, or

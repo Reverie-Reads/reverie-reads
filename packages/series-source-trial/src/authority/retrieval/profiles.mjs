@@ -1,4 +1,4 @@
-export const AUTHORITY_RETRIEVAL_PROFILES_VERSION = 'authority-retrieval-profiles-v2'
+export const AUTHORITY_RETRIEVAL_PROFILES_VERSION = 'authority-retrieval-profiles-v3'
 
 export const authorityRetrievalProfiles = [
   {
@@ -16,16 +16,16 @@ export const authorityRetrievalProfiles = [
   },
   {
     schemaVersion: 1,
-    profileVersion: 'authorljshen-pending-v1',
+    profileVersion: 'authorljshen-approved-trial-v1',
     canonicalOrigin: 'https://www.authorljshen.com',
     canonicalAliases: ['https://authorljshen.com'],
     sourceKind: 'author',
-    status: 'pending',
-    termsReviewedAt: null,
-    expiresAt: null,
-    reviewedBy: null,
+    status: 'approved_trial',
+    termsReviewedAt: '2026-09-07T06:40:08.000Z',
+    expiresAt: '2026-10-07T06:40:08.000Z',
+    reviewedBy: 'reverie-owner',
     reviewReference:
-      'packages/series-source-trial/reports/authority-origin-evaluation-2026-09-05.md#lj-shen-author-site',
+      'packages/series-source-trial/reports/authority-origin-approval-pilot-2026-09-06.md',
   },
   {
     schemaVersion: 1,

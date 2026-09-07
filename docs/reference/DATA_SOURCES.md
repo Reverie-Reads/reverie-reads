@@ -136,8 +136,9 @@ pass. Reports and caches retain the applicable selected-source manifest and stru
 paraphrase, never page text. The design and acceptance gates are in
 [ADR 0009](../decisions/0009-authority-retrieval-gateway.md). The trial CLI exposes this path only
 behind `--retrieval`. The resolver's optional `--authority` input accepts the acquisition report,
-but only a selected retrieval pass can cross the automatic-evidence gate. No real origin is active
-and nothing is connected to production.
+but only a selected retrieval pass can cross the automatic-evidence gate. The only active real
+origin is the owner-reviewed, time-boxed `authorljshen.com` trial profile through 2026-10-07;
+nothing is connected to production.
 
 Acquisition cleaning also distinguishes bibliographic membership from reading dependence. When an
 author or publisher both assigns the exact work to a named series and markets it as independently

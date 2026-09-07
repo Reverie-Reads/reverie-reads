@@ -187,7 +187,8 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   redacted before persistence. When one reviewed origin contributed several consulted URLs, select
   a shallow catalog-style hub before its homepage or a detail page so the single child hop is spent
   on exact-title evidence; source kind, depth, and lexical order remain deterministic tie-breakers.
-  The repository still activates no real origin. See
+  The repository activates only the owner-reviewed, time-boxed `authorljshen.com` trial profile
+  through 2026-10-07, and only in this no-write trial path. See
   `docs/decisions/0009-authority-retrieval-gateway.md`.
 - **Corpus cover recovery is bounded, resumable, and independent of classification.** The
   administrator completion pipeline never walks the whole household library in one RPC. It calls
