@@ -64,6 +64,9 @@ export function buildEvidencePacket(testCase, runs) {
         role: claim.role ?? 'unknown',
         sourceRef: claim.sourceRef ?? null,
         sourceLineage: claim.sourceLineage ?? null,
+        ...(claim.sourceKind ? { sourceKind: claim.sourceKind } : {}),
+        ...(claim.evidenceSummary ? { evidenceSummary: claim.evidenceSummary } : {}),
+        ...(claim.authorityPass ? { authorityPass: claim.authorityPass } : {}),
       })
     }
   }
@@ -312,8 +315,10 @@ const safeClaims = (packet, resolution) => {
   const dataUsePriority = new Map([
     ['durable_cc0', 0],
     ['trial_pending_rights_review', 1],
-    ['decision_input_pending_terms', 2],
-    ['blocked_pending_profile', 3],
+    ['trial_authority_claim_pending_rights', 2],
+    ['decision_input_pending_terms', 3],
+    ['trial_authority_candidate_pending_review', 4],
+    ['blocked_pending_profile', 5],
   ])
   return resolution.output.memberships.map((membership) => {
     const cited = membership.evidenceIds.map((id) => evidence.get(id)).filter(Boolean)

@@ -2,6 +2,22 @@ import { lineageKey } from '../lineage.mjs'
 import { normalize } from '../normalize.mjs'
 
 export const PROVIDER_PROFILES = {
+  'authority-retrieval': {
+    sourceRole: 'reviewed_first_party_retrieval',
+    membershipRule: 'direct_authority_relationship',
+    positionRule: 'direct_authority_relationship',
+    mayCorroborate: true,
+    dataUse: 'trial_authority_claim_pending_rights',
+    note: 'Only a policy-safe, hash-checked retrieval pass from a human-reviewed origin enters this profile.',
+  },
+  'authority-scout': {
+    sourceRole: 'first_party_search_candidate',
+    membershipRule: 'never',
+    positionRule: 'never',
+    mayCorroborate: false,
+    dataUse: 'trial_authority_candidate_pending_review',
+    note: 'A grounded hosted-search URL proves consultation, not automatic authority; first-pass claims remain review-only.',
+  },
   'google-books': {
     sourceRole: 'identity_only',
     membershipRule: 'never',

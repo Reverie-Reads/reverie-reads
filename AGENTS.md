@@ -138,13 +138,15 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   Hardcover relation remains a candidate until independent open relational evidence agrees.
   Self-titled Hardcover relations, universe groupings, reading-, publication-, chronological-, and
   recommended-order containers, fractional Hardcover positions, and competing relationships are
-  review-only; current community-source order needs independent agreement. The separate authority
-  scout may propose first-party confirmation for review, but it does not upgrade a Hardcover-only
-  resolver packet. Wikidata entity URLs and Inventaire `wd:` identifiers normalize to the
-  same lineage. Unknown providers cannot corroborate until profiled. The model may select, explain,
-  review, or abstain, but only deterministic eligibility can make a proposal automatic and only
-  affirmative authority evidence can establish standalone status. The model uses strict structured
-  output, has no Supabase write path, and cannot invent a field or citation absent from the packet.
+  review-only; current community-source order needs independent agreement. A first-pass authority
+  scout may join the resolver packet for review, but cannot upgrade a Hardcover-only candidate. The
+  optional no-write authority join admits only a selected, policy-safe, hash-checked retrieval from
+  a human-reviewed origin as relational evidence. Wikidata entity URLs and Inventaire `wd:`
+  identifiers normalize to the same lineage. Unknown providers cannot corroborate until profiled.
+  The model may select, explain, review, or abstain, but only deterministic eligibility can make a
+  proposal automatic and only affirmative authority evidence can establish standalone status. The
+  model uses strict structured output, has no Supabase write path, and cannot invent a field or
+  citation absent from the packet.
   Inventaire, BookBrainz, and the resolver stay trial-only until the reviewed accuracy,
   standalone-safety, rights, privacy, latency, and cost gates pass. See
   `docs/reference/DATA_SOURCES.md`.
