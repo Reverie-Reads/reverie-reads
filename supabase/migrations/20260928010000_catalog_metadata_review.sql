@@ -35,7 +35,7 @@ returns text[] language sql immutable security definer set search_path = '' as $
 $$;
 revoke all on function public.catalog_review_isbns(text[]) from public, anon, authenticated, service_role;
 -- Index expressions also run during service-role writes; this pure helper reveals no records.
-grant execute on function public.catalog_review_isbns(text[]) to authenticated, service_role;
+grant execute on function public.catalog_review_isbns(text[]) to service_role;
 create index works_review_isbns_idx on public.works using gin (public.catalog_review_isbns(isbns));
 create index works_review_identity_idx on public.works (public.library_work_key(title, author_text));
 

@@ -17,6 +17,7 @@ select ok(has_table_privilege(r,t,op) = (r='service_role' or (r='authenticated' 
 from unnest(array['public.corpus_metadata_reviews','public.corpus_metadata_review_events']) t
 cross join unnest(array['SELECT','INSERT','UPDATE','DELETE']) op
 cross join unnest(array['anon','authenticated','service_role']) r;
+select ok(not has_function_privilege('authenticated','public.catalog_review_isbns(text[])','EXECUTE'),'normalization helper is not a reader endpoint');
 select ok(not has_function_privilege('anon', f, 'EXECUTE'),f || ' anonymous execute denied')
 from unnest(array['public.admin_list_corpus_metadata_reviews(text,text,text,integer,integer,uuid)',
 'public.admin_review_corpus_metadata(uuid,text,integer,text,text,text,text,boolean)',

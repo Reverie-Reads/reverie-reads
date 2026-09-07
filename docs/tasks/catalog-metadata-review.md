@@ -45,8 +45,9 @@ backup or offline cache. Account deletion can anonymize attribution without dele
 
 A work-and-evidence fingerprint plus review revision prevents stale decisions. Relevant changes to
 related records reopen an older assessment too. Description/source audit records remain separate from
-administrator assessment notes. The normalization helper is pure and executable by authenticated and
-service roles because expression indexes need it during authorized catalog writes.
+administrator assessment notes. The normalization helper is pure and executable by the
+service role because expression indexes need it during authorized maintenance writes. Authenticated
+corrections run inside the administrator RPC; readers do not call the helper directly.
 
 ## Verification and release
 
