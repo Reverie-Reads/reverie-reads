@@ -25,15 +25,25 @@ const outputContent = (response) => {
 const uniqueUrls = (values) => [
   ...new Set(values.filter((value) => typeof value === 'string' && value.startsWith('https://'))),
 ]
+const uniqueStrings = (values) => [
+  ...new Set(
+    values
+      .filter((value) => typeof value === 'string' && value.trim())
+      .map((value) => value.trim()),
+  ),
+]
 
 export const responseWebEvidence = (response) => {
   const searchedUrls = []
+  const searchedQueries = []
   const citationUrls = []
   let webSearchCalls = 0
 
   for (const item of response.output ?? []) {
     if (item.type !== 'web_search_call') continue
     webSearchCalls += 1
+    if (typeof item.action?.query === 'string') searchedQueries.push(item.action.query)
+    for (const query of item.action?.queries ?? []) searchedQueries.push(query)
     for (const source of item.action?.sources ?? []) searchedUrls.push(source?.url)
   }
 
@@ -44,6 +54,7 @@ export const responseWebEvidence = (response) => {
   }
 
   return {
+    searchedQueries: uniqueStrings(searchedQueries),
     searchedUrls: uniqueUrls(searchedUrls),
     citationUrls: uniqueUrls(citationUrls),
     consultedUrls: uniqueUrls([...searchedUrls, ...citationUrls]),

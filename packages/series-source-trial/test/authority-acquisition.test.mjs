@@ -10,7 +10,11 @@ import {
   shouldRepairAuthorityAcquisition,
   validateAuthorityAcquisition,
 } from '../src/authority/evidence.mjs'
-import { acquireAuthorityEvidence, repairAuthorityEvidence } from '../src/authority/openai.mjs'
+import {
+  acquireAuthorityEvidence,
+  repairAuthorityEvidence,
+  responseWebEvidence,
+} from '../src/authority/openai.mjs'
 import {
   AUTHORITY_ACQUISITION_PROMPT_VERSION,
   authorityAcquisitionInstructions,
@@ -62,13 +66,30 @@ const seriesOutput = {
 test('instructs the scout to distinguish direct numbered sequences from lone numerals', () => {
   assert.equal(
     AUTHORITY_ACQUISITION_PROMPT_VERSION,
-    'authority-acquisition-v7-attribution-preserving-evidence',
+    'authority-acquisition-v11-preserve-series-label',
   )
   assert.match(authorityAcquisitionInstructions, /directly compares the exact target/)
   assert.match(authorityAcquisitionInstructions, /lone numeral, a numbered edition/)
   assert.match(authorityAcquisitionInstructions, /establishes reading independence only/)
   assert.match(authorityAcquisitionInstructions, /attributed statements remain third-party/)
   assert.match(authorityAcquisitionInstructions, /Never\s+paraphrase away the attribution/)
+  assert.match(
+    authorityAcquisitionInstructions,
+    /finding a first-party origin as a separate objective/,
+  )
+  assert.match(authorityAcquisitionInstructions, /Do not batch all fallback queries/)
+  assert.match(authorityAcquisitionInstructions, /site:<discovered-host>/)
+  assert.match(authorityAcquisitionInstructions, /same-origin follow-up takes priority/)
+  assert.match(authorityAcquisitionInstructions, /do not spend another search/)
+  assert.match(authorityAcquisitionInstructions, /Never guess, synthesize, or construct a URL/)
+  assert.match(authorityAcquisitionInstructions, /Copy every proposed URL exactly/)
+  assert.match(
+    authorityAcquisitionInstructions,
+    /bibliographic series label stated in the relationship itself/,
+  )
+  assert.match(authorityAcquisitionInstructions, /Do not\s+substitute a page, collection, box-set/)
+  assert.match(authorityAcquisitionInstructions, /Preserve articles and named-form words/)
+  assert.match(authorityAcquisitionInstructions, /source's complete series label exactly/)
 })
 
 test('repairs only the observed series-without-membership structural failure', () => {
@@ -184,6 +205,24 @@ test('canonicalizes citations to the declared source manifest without inventing 
   assert.deepEqual(canonicalizeAuthorityAcquisition(variantOnly).identity.evidenceUrls, [
     publisherUrl,
   ])
+
+  const discoveryOnly = {
+    ...structuredClone(seriesOutput),
+    classification: 'unresolved',
+    memberships: [],
+    authoritySources: [],
+  }
+  discoveryOnly.identity.evidenceUrls = []
+  const unresolved = canonicalizeAuthorityAcquisition(discoveryOnly, [])
+  assert.deepEqual(unresolved.identity, {
+    matched: false,
+    confidence: 'none',
+    evidenceUrls: [],
+  })
+  assert.equal(
+    validateAuthorityAcquisition(buildAuthorityTarget(testCase), unresolved, []).valid,
+    true,
+  )
 })
 
 test('drops unconsulted redundant sources but never salvages an unsupported claim', () => {
@@ -675,6 +714,7 @@ test('sends a bounded, stateless web-search request and captures all consulted U
             type: 'web_search_call',
             action: {
               type: 'search',
+              queries: ['"Second Book" "Ada Reader" official'],
               sources: [
                 { type: 'url', url: publisherUrl },
                 { type: 'url', url: 'https://discovery.example/result' },
@@ -719,8 +759,30 @@ test('sends a bounded, stateless web-search request and captures all consulted U
   )
   assert.equal(requestBody.input.includes('"truth"'), false)
   assert.deepEqual(result.consultedUrls, [publisherUrl, 'https://discovery.example/result'])
+  assert.deepEqual(result.searchedQueries, ['"Second Book" "Ada Reader" official'])
   assert.equal(result.webSearchCalls, 1)
   assert.deepEqual(result.output, seriesOutput)
+})
+
+test('captures and deduplicates scalar and batched search-query telemetry', () => {
+  const evidence = responseWebEvidence({
+    output: [
+      { type: 'web_search_call', action: { query: 'exact title official', sources: [] } },
+      {
+        type: 'web_search_call',
+        action: {
+          queries: ['exact title official', 'site:author.example exact title'],
+          sources: [],
+        },
+      },
+    ],
+  })
+
+  assert.deepEqual(evidence.searchedQueries, [
+    'exact title official',
+    'site:author.example exact title',
+  ])
+  assert.equal(evidence.webSearchCalls, 2)
 })
 
 test('uses a bounded no-tools call to repair structural output', async () => {
@@ -849,6 +911,23 @@ test('treats a generic publisher series suffix as naming drift, not a false memb
 
   assert.equal(score.capability.membershipPrecision, 1)
   assert.equal(score.capability.membershipRecall, 1)
+
+  const crimeFiction = structuredClone(seriesOutput)
+  crimeFiction.memberships[0].series = 'The Sequence crime fiction series'
+  const crimeFictionResult = {
+    ...result,
+    output: crimeFiction,
+    validation: validateAuthorityAcquisition(buildAuthorityTarget(testCase), crimeFiction, [
+      publisherUrl,
+    ]),
+  }
+  const crimeFictionScore = scoreAuthorityAcquisition(
+    { cases: [testCase] },
+    [crimeFictionResult],
+    'test-model',
+  )
+  assert.equal(crimeFictionScore.capability.membershipPrecision, 1)
+  assert.equal(crimeFictionScore.capability.membershipRecall, 1)
 })
 
 test('separates usable candidate proposals from unresolved and quarantined output', () => {

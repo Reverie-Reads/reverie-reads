@@ -245,6 +245,21 @@ connected-world noise, and cite only pages it actually consulted? It uses the Re
 hosted `web_search` tool with live access, strict structured output, `store: false`, and at most
 three web-search calls per book by default.
 
+The scout now treats first-party location as its own bounded objective. It starts with the exact
+title and author plus an official-source signal, inspects that result, and then searches inside a
+newly discovered author or publisher host before trying a generic publisher fallback. It does not
+batch all fallback queries before learning that host and may cite only exact URLs returned in the
+consulted-source manifest. Once a discovery-only result establishes identity, it stops searching for
+more aggregators. The report records the API's search queries and consulted URLs so recall failures
+can be diagnosed without adding a known authority URL to the model input. When the source's page or
+collection heading differs from the bibliographic relationship stated in its prose, the scout uses
+the explicit relationship label rather than promoting the heading into a series name. It preserves
+articles and named forms such as duology or trilogy instead of shortening them into a plausible but
+different series name. Deterministic cleanup clears a claimed identity when no eligible authority
+identity source survives, while retaining the separate consulted-URL and query telemetry for
+diagnosis. The scorer treats only a bounded set of generic descriptor tails as naming drift; it does
+not change the model proposal or create a relationship.
+
 This remains a shadow evaluation. The model receives only title, author, and an optional publication
 year; existing truth labels, authority URLs, sample sources, and provider packets are withheld.
 Deterministic validation rejects an unconsulted URL, an unsupported membership or position, and a
@@ -360,6 +375,10 @@ model check are recorded in
 
 The 99-case acquisition baseline, source-profile decisions, live one-hop gate, and dependent-claim
 cleanup are recorded in `reports/authority-origin-evaluation-2026-09-05.md`.
+
+The adaptive first-party discovery experiment, explicit series-name extraction correction, and
+fresh 12-case development validation slice are recorded in
+`reports/authority-discovery-recall-pilot-2026-09-07.md`.
 
 The two-stage 1,200-case target and complete five-work 2024 Kindle Storyteller development frame
 are recorded in `reports/authority-development-frame-2024-2026-09-06.md`.

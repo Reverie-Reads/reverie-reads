@@ -1,5 +1,5 @@
 export const AUTHORITY_ACQUISITION_PROMPT_VERSION =
-  'authority-acquisition-v7-attribution-preserving-evidence'
+  'authority-acquisition-v11-preserve-series-label'
 export const AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION =
   'authority-acquisition-repair-v1-structure-only'
 
@@ -10,9 +10,29 @@ decision.
 Rules:
 - Search the live web. Do not answer from memory.
 - Match the exact title and author before classifying the work.
-- If the first search finds a first-party identity page but not direct classification evidence, run
-  a second focused search for the author's series/standalone bibliography or publisher series page.
-  Use a third focused search when needed; stop early once the evidence is definitive.
+- Treat finding a first-party origin as a separate objective from classification. An unresolved
+  result with a consulted author or publisher catalog is useful because a reviewed retrieval
+  gateway may navigate it later.
+- Use an adaptive locator sequence. Do not batch all fallback queries into the first tool call; each
+  web-search tool call should contain only the single query for its current stage. First search for
+  the quoted exact title, quoted exact author, and the word official, then inspect the results.
+- When a likely author or publisher origin appears but the exact work relationship is absent, use
+  the next search on that discovered host: site:<discovered-host> plus the quoted exact title and
+  series, books, bibliography, or reading order. This same-origin follow-up takes priority over a
+  generic publisher search.
+- If the first search exposes no likely first-party origin, next search for the quoted exact author
+  plus official website and books or reading order. If that locates an origin, use the remaining
+  search for the same-origin follow-up. Only when no first-party origin appears should the final
+  search target the quoted exact title and author plus publisher and series or standalone.
+- Consult a likely first-party homepage, book list, bibliography, reading-order page, or publisher
+  catalog even when its search snippet does not contain the relationship. Stop early once the
+  evidence is definitive.
+- After a discovery-only source has matched the exact title and author, do not spend another search
+  on more retailers, reviews, libraries, or aggregators. Use the remaining search budget to locate
+  an author or publisher origin.
+- Never guess, synthesize, or construct a URL or path, including a plausible path on a discovered
+  official domain. Copy every proposed URL exactly from the search tool's consulted sources. If the
+  exact page is absent from those sources, return unresolved rather than citing it.
 - Prefer the author's official site or author-controlled post, then the publisher's book or catalog
   page. Retailers, link hubs, Goodreads, Wikipedia, fan wikis, review sites, library catalogs,
   search snippets, and data aggregators are discovery aids only and must not appear as
@@ -22,6 +42,13 @@ Rules:
   collection, trilogy, or duology, or explicitly number the work inside the named grouping. Merely
   listing several books under a genre, trope, trigger-warning, world, or marketing heading is
   insufficient, as is a title pattern, retailer breadcrumb, or provider label.
+- Use the bibliographic series label stated in the relationship itself. Prefer the name directly
+  attached to words such as series, duology, trilogy, or a numbered-book statement. Do not
+  substitute a page, collection, box-set, bundle, universe, campaign, or search-result heading when
+  the source gives a different explicit series label in its prose. You may omit only a generic
+  trailing word such as series or books. Preserve articles and named-form words such as duology,
+  trilogy, quartet, cycle, chronicles, or saga when the source includes them; otherwise preserve
+  the source's complete series label exactly.
 - A first-party source that directly compares the exact target as a distinctly named work 2 with
   the correspondingly named work 1 is explicit numbered-sequence evidence. Use their shared
   distinctive name as the bibliographic series and report position 2. Do not apply this rule to a
