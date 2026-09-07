@@ -175,7 +175,9 @@ test('a stale metadata draft is refused and can be reloaded without overwriting 
       'concurrent edit',
     )
     await page.getByRole('button', { name: 'Save description', exact: true }).click()
-    await expect(page.getByRole('alert')).toContainText('This catalog record or review changed.')
+    await expect(page.getByRole('article').getByRole('alert')).toContainText(
+      'This catalog record or review changed.',
+    )
     await expect(page.getByLabel('Catalog description')).toHaveValue('My unsaved description.')
     await page.getByRole('button', { name: 'Reload current record' }).click()
     await expect(page.getByLabel('Catalog description')).toHaveValue('A newer checked description.')
