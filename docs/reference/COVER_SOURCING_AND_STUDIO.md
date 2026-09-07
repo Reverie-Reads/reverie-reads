@@ -181,8 +181,36 @@ Implement next, in order:
    source selection if another stable size is justified.
 4. Add source, rights mode, dimensions, and quality language to Cover Studio.
 5. Run the bounded ISBNdb miss trial and seek written Hardcover cover-use terms.
-6. Add a calm batch queue for soft, ambiguous, missing, and broken images.
+6. The administrator catalog queue is implemented at `/catalog/covers` (details below). A personal
+   post-import Cover Studio queue remains separate work.
 
 For landing pages and other marketing surfaces, curate exact editions manually, confirm natural image
 dimensions in a real browser, and keep the provider-compliant display path. Do not auto-fill marketing
 screens from a changing enrichment result. The landing's current six-book sample follows this approach.
+
+## Shared catalog cover review
+
+Settings → Library tools → **Review catalog covers** opens the administrator workspace. It reads
+shared works directly; a reviewer does not need a personal copy. Search by title, author, or ISBN,
+and use Needs attention, For later, Reviewed, or All books. Pages contain 20 works; recorded identity
+and artwork concerns precede missing images. Unmeasured images are not silently classified as soft.
+
+Open a work to see its title, author, recorded ISBNs, complete cover, source link, and decoded image
+size. Alternatives load only on request. The default searches the work; selecting an ISBN deliberately
+narrows the edition. Compare current and proposed art, confirm the printed identity, and approve,
+flag a specific concern, or set the work aside. A larger image alone is not proof of the right edition.
+Google stays linked; eligible provider art uses the existing corpus-owned ingestion path.
+
+Decisions retain an administrator note, image measurement, and audit history. The current review is
+bound to a fingerprint of the catalog identity and cover fields, plus a review revision. Changes
+invalidate prior approval; a concurrent edit refuses the stale save and offers a refresh. Opening the
+workspace never writes data, and approvals are never queued offline. The bounded queue has no
+background provider crawl or automatic approval. Recent history shows the latest ten decisions.
+
+Only the shared work's cover changes. A reader's own cover, bibliographic choices, possession, and
+reading history remain unchanged. Identity concerns are recorded for curation, not automatically
+rewritten. The September audit remains evidence for deliberate review, not an automatic data repair.
+
+This workspace requires migration `20260927010000_catalog_cover_review.sql` after merge, operated
+through the production deploy guard by the owner. It reuses the existing covers Edge Function and
+needs no new provider credential or function deployment.

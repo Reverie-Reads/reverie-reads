@@ -614,6 +614,16 @@ function SettingsScreen() {
 
         <Section title="Library tools">
           <div className="flex flex-wrap gap-2">
+            {isCorpusAdmin && (
+              <Link
+                to="/catalog/covers"
+                search={{ state: 'attention', q: '', page: 0, work: undefined }}
+                className="skin-control inline-flex min-h-11 items-center border border-line px-4 text-sm font-semibold text-ink"
+                style={{ background: 'var(--card-solid)' }}
+              >
+                Review catalog covers
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setShowDupes((v) => !v)}

@@ -693,3 +693,22 @@ there is no deferred offline write queue. Backup v9 adds counted `discovery_sess
 containing only `id` and `document`. Restore validates snapshots before any writes, checks the
 combined saved-session limit, and writes only under the receiving account. Older backups without
 this section remain supported. Account deletion cascades the rows.
+
+## Administrator catalog cover review
+
+`corpus_cover_reviews` holds one current decision per shared work: the work fingerprint, revision,
+state (`approved`, `flagged`, `deferred`), optional concern and note, browser image measurement,
+reviewer, and timestamp. `corpus_cover_review_events` retains append-only decision history, including
+previous/next cover and review values. Both tables reset platform grants explicitly; authenticated
+read access is RLS-limited to corpus administrators and all reader writes are refused.
+
+`admin_list_corpus_cover_reviews` reads a bounded, searchable page (maximum 25). A work whose
+identity or cover fields no longer match its saved fingerprint returns as unreviewed. Missing images
+and recorded identity/artwork concerns receive priority; unmeasured image quality stays unknown.
+
+`admin_review_corpus_cover` locks the administrator and exact work, checks the supplied fingerprint
+and review revision, and saves one explicit keep/replace/flag/defer/reopen decision. Approval requires
+an attributed decoded-image measurement and a deliberate identity confirmation. Replacement invokes
+`set_corpus_work_cover` inside the same transaction, retaining its source/Storage validation and
+existing metadata audit. A review has no personal-copy writer and never modifies `books`, reading
+history, possession, or the reader's chosen edition. No pre-existing work is backfilled by migration.

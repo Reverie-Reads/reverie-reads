@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { mayIngestCover } from '@reverie/core'
+import { coverResolutionLabel, mayIngestCover } from '@reverie/core'
 import { matchesCoverEdition } from '../data/coverSheet'
 import type { EditionOption } from '../lib/covers'
 import { CoverImage } from './CoverImage'
@@ -18,13 +18,7 @@ export function CoverEditionOption({
 }) {
   const [image, setImage] = useState<{ url: string; width: number; height: number } | null>(null)
   const [unavailable, setUnavailable] = useState(false)
-  const quality = !image
-    ? 'Checking image…'
-    : image.width >= 800 && image.height >= 1200
-      ? 'Sharp in detail'
-      : image.width >= 480 && image.height >= 720
-        ? 'Sharp on cards'
-        : 'May look soft'
+  const quality = image ? coverResolutionLabel(image) : 'Checking image…'
   return (
     <button
       type="button"

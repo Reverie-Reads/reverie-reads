@@ -34,6 +34,8 @@ export const RECONCILIATION_BACKUP_PRIMARY_KEYS: Record<string, readonly string[
   work_metadata_edits: ['id'],
   corpus_admins: ['user_id'],
   corpus_cover_recovery_marks: ['book_id'],
+  corpus_cover_reviews: ['work_id'],
+  corpus_cover_review_events: ['id'],
   corpus_sweep_runs: ['id'],
   corpus_sweep_run_items: ['run_id', 'work_id'],
   work_tropes: ['work_id', 'trope_id'],

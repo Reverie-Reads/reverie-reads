@@ -138,6 +138,24 @@ export const USER_OWNED_TABLES: OwnedTable[] = [
     },
   },
   {
+    table: 'corpus_cover_reviews',
+    owner: 'reviewed_by',
+    collective: true,
+    plan: {
+      backup: false,
+      why: 'A shared catalog decision tied to a work fingerprint, not a personal cover choice. A personal restore must not replay administrator approval.',
+    },
+  },
+  {
+    table: 'corpus_cover_review_events',
+    owner: 'editor_id',
+    collective: true,
+    plan: {
+      backup: false,
+      why: 'Append-only administrator cover history stays with the shared work. Attribution survives account deletion anonymously and cannot be recreated by a personal restore.',
+    },
+  },
+  {
     table: 'corpus_admins',
     owner: 'user_id',
     collective: true,

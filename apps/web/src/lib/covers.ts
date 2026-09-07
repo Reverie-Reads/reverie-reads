@@ -31,18 +31,22 @@ export interface IngestResult {
 export type IngestOutcome = { status: 'ok'; data: IngestResult } | { status: 'error'; code: string }
 
 /** Fetch alternate editions for a book (Hardcover + Google, server-cached per book). */
-export async function fetchEditions(input: {
-  isbn?: string
-  title?: string
-  author?: string
-}): Promise<EditionOption[]> {
+export async function fetchEditions(
+  input: {
+    isbn?: string
+    title?: string
+    author?: string
+  },
+  options: { throwOnError?: boolean } = {},
+): Promise<EditionOption[]> {
   try {
     const { data, error } = await supabase.functions.invoke('covers', {
       body: { action: 'editions', ...input },
     })
-    if (error) return []
+    if (error) throw error
     return ((data as { editions?: EditionOption[] })?.editions ?? []).filter((e) => e.cover)
-  } catch {
+  } catch (error) {
+    if (options.throwOnError) throw error
     return []
   }
 }
