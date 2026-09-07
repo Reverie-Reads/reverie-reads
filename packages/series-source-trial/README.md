@@ -18,8 +18,8 @@ useful for measuring coverage and discovering disagreements, but they do not con
 accuracy until an authority source has been reviewed.
 
 The current development sample contains one difficult work from each of Reverie's 69 distinct
-seeded series plus external sampling frames: 306 selected works, of which 177 are
-authority-reviewed. The reviewed set contains 141 positive series cases and 36 confirmed standalone
+seeded series plus external sampling frames: 329 selected works, of which 202 are
+authority-reviewed. The reviewed set contains 141 positive series cases and 61 confirmed standalone
 controls. Some reviewed cases replace seed references, so the final distinct-case count is printed
 at runtime.
 

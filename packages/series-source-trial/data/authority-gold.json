@@ -6209,9 +6209,601 @@
         ],
         "reviewNote": "Alastair Reynolds's current biography identifies Eversion as his 2022 standalone story and contrasts it with the named Revelation Space and Prefect Dreyfus sequence works around it. The exact affirmative statement establishes the negative truth."
       }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-witch",
+      "title": "The Witch",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2026,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Witch under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-divorce",
+      "title": "The Divorce",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2026,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Divorce under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-dear-debbie",
+      "title": "Dear Debbie",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2026,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list Dear Debbie under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-intruder",
+      "title": "The Intruder",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2025,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Intruder under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-tenant",
+      "title": "The Tenant",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2025,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Tenant under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-crash",
+      "title": "The Crash",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2025,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Crash under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-boyfriend",
+      "title": "The Boyfriend",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2024,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Boyfriend under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-teacher",
+      "title": "The Teacher",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2024,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Teacher under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-coworker",
+      "title": "The Coworker",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2023,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Coworker under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-ward-d",
+      "title": "Ward D",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2023,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list Ward D under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-never-lie",
+      "title": "Never Lie",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2022,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list Never Lie under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-inmate",
+      "title": "The Inmate",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2022,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Inmate under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-do-you-remember",
+      "title": "Do You Remember?",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2022,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list Do You Remember? under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-do-not-disturb",
+      "title": "Do Not Disturb",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2021,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list Do Not Disturb under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-locked-door",
+      "title": "The Locked Door",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2021,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Locked Door under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-want-to-know-a-secret",
+      "title": "Want to Know a Secret?",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2021,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list Want to Know a Secret? under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-one-by-one",
+      "title": "One by One",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2020,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list One by One under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-wife-upstairs",
+      "title": "The Wife Upstairs",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2020,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Wife Upstairs under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-perfect-son",
+      "title": "The Perfect Son",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2019,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Perfect Son under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-ex",
+      "title": "The Ex",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2019,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Ex under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-the-surrogate-mother",
+      "title": "The Surrogate Mother",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2018,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list The Surrogate Mother under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-brain-damage",
+      "title": "Brain Damage",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2016,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list Brain Damage under Standalone Thrillers, separately from the explicitly numbered Housemaid series. This is affirmative first-party classification, not an inference from missing series metadata."
+      }
+    },
+    {
+      "id": "freida-mcfadden-standalone-dead-med",
+      "title": "Dead Med",
+      "authors": ["Freida McFadden"],
+      "sampleOrigin": "external_sample",
+      "strata": ["standalone_control"],
+      "publicationYear": 2024,
+      "selectionFrame": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "sampleSources": [
+        { "kind": "author", "url": "https://www.freidamcfadden.com/books/" },
+        {
+          "kind": "author",
+          "url": "https://www.freidamcfadden.com/printable-booklist/"
+        }
+      ],
+      "truth": {
+        "status": "reviewed",
+        "standalone": true,
+        "membershipsComplete": true,
+        "memberships": [],
+        "sourceGroups": ["freida_mcfadden_current_standalone_thrillers"],
+        "sources": [],
+        "reviewNote": "The author's current Books and Printable Booklist pages list Dead Med under Standalone Thrillers, separately from the explicitly numbered Housemaid series. The author's FAQ identifies it as a rewritten successor to the out-of-print Suicide Med, so this case records the current Dead Med work identity and 2024 publication rather than conflating it with the 2014 title."
+      }
     }
   ],
   "sharedSources": {
+    "freida_mcfadden_current_standalone_thrillers": [
+      {
+        "kind": "author",
+        "url": "https://www.freidamcfadden.com/books/",
+        "note": "The author explicitly lists every selected title under Standalone Thrillers, separately from her named series and other categories."
+      },
+      {
+        "kind": "author",
+        "url": "https://www.freidamcfadden.com/printable-booklist/",
+        "note": "The author's dated printable bibliography repeats the Standalone Thrillers section and supplies publication dates."
+      },
+      {
+        "kind": "author",
+        "url": "https://www.freidamcfadden.com/about/faqs/",
+        "note": "The author's FAQ says titles are standalone unless specifically marked as a series and explains the Dead Med rewrite identity."
+      }
+    ],
     "standalone_negative": [
       {
         "kind": "publisher",

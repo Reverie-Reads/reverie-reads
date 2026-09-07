@@ -269,6 +269,18 @@
       "selectionRule": "Include all 47 distinct titles under Standalones and Standalones (continued) in the author's current complete book-list PDF, in listed publication order, with no provider-result filtering. Do not include the separately labelled Arrangement Novels or The Messes Series. The selection heading is a challenge label, not gold truth; every title remains unresolved until exact-work authority evidence confirms or contradicts it."
     },
     {
+      "id": "freida_mcfadden_current_standalone_thrillers_2026_09_06",
+      "label": "Complete current Freida McFadden standalone thriller catalog frame",
+      "expectedCases": 23,
+      "strata": ["standalone_control"],
+      "observedOn": "2026-09-06",
+      "source": {
+        "kind": "author",
+        "url": "https://www.freidamcfadden.com/books/"
+      },
+      "selectionRule": "Include all 23 titles under Standalone Thrillers on the author's current complete Books page, in displayed order, with no provider-result filtering. Do not include the separately labelled Housemaid Series, Women's Fiction, or Short Stories. Confirm the same title set and publication years against the author's Printable Booklist."
+    },
+    {
       "id": "prh_2026_fantasy_science_fiction_observed_2026_09_06",
       "label": "Complete Penguin Random House 2026 fantasy and science fiction list observed 2026-09-06",
       "expectedCases": 30,
