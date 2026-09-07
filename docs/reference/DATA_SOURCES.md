@@ -102,6 +102,11 @@ Revisions and mirrors of a catalog with a demonstrated relational contradiction 
 they cannot corroborate one another or establish classification merely because their URLs differ.
 An exact-work page on the same author or publisher origin remains independently eligible when it
 directly states the relationship.
+First-party hosting does not promote third-party words: an attributed review, endorsement, blurb,
+testimonial, retailer description, or quotation remains discovery-only even when an author or
+publisher page reproduces it. The scout must preserve that attribution in its evidence summary, and
+deterministic cleaning strips classification support from an attributed summary instead of treating
+the page owner's domain as the speaker.
 The model cannot assign authority to its own source. Scout output never writes authority gold,
 Supabase, or the corpus and remains production-blocked by the same safety, rights, privacy, latency,
 cost, and fixed-sample gates as the resolver.

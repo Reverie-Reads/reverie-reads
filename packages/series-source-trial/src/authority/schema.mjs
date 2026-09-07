@@ -1,5 +1,5 @@
 export const AUTHORITY_ACQUISITION_PROMPT_VERSION =
-  'authority-acquisition-v6-reading-independence-evidence'
+  'authority-acquisition-v7-attribution-preserving-evidence'
 export const AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION =
   'authority-acquisition-repair-v1-structure-only'
 
@@ -30,6 +30,12 @@ Rules:
 - A standalone classification requires an author or publisher source that affirmatively calls the
   exact work standalone or explicitly places it in a complete standalone bibliography. Silence,
   absence from a series list, or failure to find a series is not standalone evidence.
+- A publisher or author page may reproduce reviews, praise, endorsements, testimonials, retailer
+  copy, or another person's quoted words. Those attributed statements remain third-party evidence
+  even when they appear on a first-party domain and cannot establish series or standalone truth.
+  If the relevant claim appears only inside attributed material, return unresolved. Never
+  paraphrase away the attribution: evidenceSummary must say that the claim came from a review,
+  blurb, quotation, or named third party rather than presenting it as the page owner's statement.
 - "Standalone" may describe reading independence rather than bibliographic classification. If a
   qualifying source also assigns the exact work to a named bibliographic series, classify it as
   series and describe the independently-readable claim in uncertainties. Use standalone only when

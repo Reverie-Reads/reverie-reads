@@ -119,6 +119,13 @@ const knownClassificationRisk = (source) => {
 
 const knownMembershipEvidenceRisk = (source) => {
   const summary = source?.evidenceSummary ?? ''
+  if (
+    /\b(?:attribut(?:ed|ion)|blurb|endorsement|praise|quot(?:e|ed|ation)|review|testimonial)\b/i.test(
+      summary,
+    )
+  ) {
+    return 'third_party_attribution'
+  }
   if (/\b(?:trigger[- ]?warnings?|tropes?)\b/i.test(summary)) {
     return 'non_bibliographic_taxonomy'
   }
@@ -140,6 +147,13 @@ const knownMembershipEvidenceRisk = (source) => {
 
 const knownStandaloneEvidenceRisk = (source) => {
   const summary = source?.evidenceSummary ?? ''
+  if (
+    /\b(?:attribut(?:ed|ion)|blurb|endorsement|praise|quot(?:e|ed|ation)|review|testimonial)\b/i.test(
+      summary,
+    )
+  ) {
+    return 'third_party_attribution'
+  }
   if (
     /\b(?:works?|functions?|reads?) as (?:an? )?stand-?alone\b/i.test(summary) ||
     /\b(?:can|could|may|might) be (?:read|enjoyed|understood) (?:as (?:an? )?stand-?alone|independently)\b/i.test(
