@@ -156,6 +156,12 @@ const resultClassification = (result) =>
     ? result.output.classification
     : 'unresolved'
 
+const policyResolved = (result) =>
+  result?.status === 'completed' &&
+  result?.validation?.valid === true &&
+  result?.validation?.policySafe === true &&
+  resultClassification(result) !== 'unresolved'
+
 export function scoreAuthorityDiscovery(caseSet, benchmark, run, options = {}) {
   const audit = auditAuthorityDiscoveryHoldout(caseSet, benchmark, options)
   const errors = [...audit.errors]
@@ -231,7 +237,8 @@ export function scoreAuthorityDiscovery(caseSet, benchmark, run, options = {}) {
       channelOriginDiscovered: discoveredChannelOrigins.length > 0,
       exactPageDiscovered: exactPages.length > 0,
       expectedOriginCited: citedExpectedOrigins.length > 0,
-      resolved: resultClassification(result) !== 'unresolved',
+      policySafe: result?.validation?.policySafe === true,
+      resolved: policyResolved(result),
       proposedClassification: resultClassification(result),
       retrievalStatus: result?.retrieval?.status ?? 'not_enabled',
       retrievalReason: result?.retrieval?.reason ?? null,
@@ -307,7 +314,7 @@ export function renderAuthorityDiscoveryMarkdown(score) {
     '| --- | --- | --- | --- | --- | --- | --- |',
     ...score.details.map(
       (detail) =>
-        `| ${detail.title} — ${detail.author} | ${detail.cell} | ${detail.discoveredOrigins.join(', ') || 'no'} | ${detail.discoveredChannelOrigins.join(', ') || 'no'} | ${detail.exactPageDiscovered ? 'yes' : 'no'} | ${detail.proposedClassification} | ${detail.retrievalReason ?? detail.retrievalStatus} |`,
+        `| ${detail.title} — ${detail.author} | ${detail.cell} | ${detail.discoveredOrigins.join(', ') || 'no'} | ${detail.discoveredChannelOrigins.join(', ') || 'no'} | ${detail.exactPageDiscovered ? 'yes' : 'no'} | ${detail.resolved ? detail.proposedClassification : 'unresolved'} | ${detail.retrievalReason ?? detail.retrievalStatus} |`,
     ),
     '',
     `Operations: ${operations.modelCalls ?? 0} model calls; ${operations.webSearchCalls ?? 0} hosted searches; ${operations.inputTokens ?? 0}/${operations.outputTokens ?? 0} input/output tokens; ${operations.errors ?? 0} errors.`,

@@ -397,6 +397,10 @@ The subsequent S. M. Davies technical access review, owner-approved 30-day profi
 miss, and successful manifest-grounded downstream isolation are recorded in
 `reports/authority-origin-approval-sm-davies-2026-09-07.md`.
 
+The frozen 22-work first-party discovery benchmark, its 81.8% known-origin recall, the CWA
+source-ownership correction, and the zero-cost policy replay are recorded in
+`reports/authority-discovery-recall-holdout-2026-09-07.md`.
+
 The first-party discovery benchmark is frozen in `data/authority-discovery-holdout.json`. Its 22
 works had never been sent through any authority-acquisition prompt at freeze time, have distinct
 authors, and are balanced between series/standalone truth plus author/publisher discovery cells.

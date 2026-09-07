@@ -71,6 +71,7 @@ test('discovery score separates origin, channel, exact page, citation, and resol
         classification: index === 1 ? cell.classification : 'unresolved',
         authoritySources: index === 2 ? [{ url: source.url }] : [],
       },
+      validation: { valid: true, policySafe: true },
     }
   })
   const run = {

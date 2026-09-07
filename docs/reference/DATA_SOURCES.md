@@ -127,6 +127,14 @@ testimonial, retailer description, or quotation remains discovery-only even when
 publisher page reproduces it. The scout must preserve that attribution in its evidence summary, and
 deterministic cleaning strips classification support from an attributed summary instead of treating
 the page owner's domain as the speaker.
+An author profile does not make its host author-controlled. Professional-association directories,
+including Crime Writers’ Association member pages, remain discovery-only even when the model labels
+their source kind `author`; deterministic host policy strips their classification support. The
+frozen 22-work discovery holdout found this attribution failure without changing the prompt: known
+direct author or publisher origins were consulted for 81.8% of cases, exact reviewed pages for
+72.7%, and the corrected cached replay retained 100% resolved accuracy with zero false series or
+false standalone decisions at 68.2% resolution. This set is now a regression benchmark, not a
+fresh tuning set.
 The model cannot assign authority to its own source. First-pass scout output may join a resolver
 packet as review evidence, but it can never become membership-eligible. Only a later selected
 retrieval result can enter the no-write resolver score as relational evidence, and only when its
