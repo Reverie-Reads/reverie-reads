@@ -1,6 +1,6 @@
 # Cover sourcing, quality, and Cover Studio
 
-Status: **current product policy and ordered implementation plan**, revised 2026-09-05. The source
+Status: **current product policy and ordered implementation plan**, revised 2026-09-06. The source
 rights analysis in `reverie-metadata-sourcing.md` remains authoritative when it is more restrictive.
 
 ## What “best cover” means
@@ -173,8 +173,10 @@ Implemented in this change:
 Implement next, in order:
 
 1. Add Google Books result links and the required attribution to every Google-backed display.
-2. Add candidate quality metadata and edition-confidence scoring without changing a reader-locked
-   choice.
+2. The edition chooser now shows decoded image dimensions, resolution labels, and exact-ISBN
+   matches first (Discover quality follow-up). Provider title searches require conservative work
+   identity, and saving linked images retains their working fallback. Persisted quality metadata and broader
+   edition-confidence evaluation remain separate work; never change a reader-locked choice.
 3. Measure transfer size and cache hit rate for the new 720px card derivative, then add responsive
    source selection if another stable size is justified.
 4. Add source, rights mode, dimensions, and quality language to Cover Studio.

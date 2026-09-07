@@ -229,6 +229,13 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   backup/restore coverage, and account-deletion cascade. Opening a preview or saving a shortlist
   never creates a personal book. Series invitations require active personal membership and confirmed
   shared work/order evidence, suppressing removed categories, uncertain order, and private reordering.
+- **Discover quality is evidence-bound.** Balance bounded query groups before the candidate cap;
+  exclude any held matching copy even when personal detail navigation is ambiguous. An incomplete
+  semantic batch must not outrank unscored candidates merely because it finished first. Shared works
+  with multiple ISBNs do not imply a selected edition. Cover quality labels measure the image that
+  actually loaded, never the size of its CSS box; reader replacement remains explicit. Alternate
+  cover searches require exact ISBN or conservative title/author identity; search rank alone is not
+  evidence. Preserve a working linked-image fallback when saving a reader's choice.
 - **No aggregate rating.** Never compute or display an averaged star rating anywhere.
   Keep the reader's own rating (`rating` on the book + per-read). Others' opinions appear only
   as an opt-in list of **individual** reviews on the book screen — never a single number.

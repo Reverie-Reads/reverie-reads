@@ -158,3 +158,11 @@ describe('catalog to a stable discovery decision', () => {
     expect(mocks.invoke).not.toHaveBeenCalled()
   })
 })
+
+it('does not choose the first of several catalog ISBNs as the reader edition', async () => {
+  mocks.rows=[row('Several editions','A complete description.',{isbns:['9780306406157','9780140328721']}),
+    row('One edition','A complete description.',{id:id.replace(/1$/,'2'),isbns:['9780306406157']})]
+  const result=await createDiscoverySession({kind:'genre',genre:'fantasy'},[],new AbortController().signal)
+  expect(result.picks.find(p=>p.book.title==='Several editions')?.book.isbn).toBe('')
+  expect(result.picks.find(p=>p.book.title==='One edition')?.book.isbn).toBe('9780306406157')
+})

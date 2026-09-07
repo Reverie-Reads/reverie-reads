@@ -18,6 +18,7 @@ import {
   sourceRect,
   type CropState,
 } from '../lib/cropMath'
+import { CoverEditionOption } from './CoverEditionOption'
 import { Surface } from './Surface'
 
 // The cover sheet — the cover is the door. Four ways in: shoot your own copy, upload an image, pick
@@ -224,37 +225,18 @@ export function CoverSheet({ book, onClose }: { book: Book; onClose: () => void 
       {(editions ?? []).length > 0 && (
         <ul className="flex max-h-64 flex-col gap-1.5 overflow-y-auto pr-1">
           {(editions ?? []).map((e, i) => (
-            <li key={e.isbn13 || e.cover || i}>
-              <button
-                type="button"
+            <li key={`${e.isbn13 || i}:${e.cover}`}>
+              <CoverEditionOption
+                edition={e}
+                isbn={book.isbn}
                 disabled={saving}
-                onClick={() => apply({ source: e.source, url: e.cover, sourceUrl: e.cover }, e)}
-                className="flex w-full items-center gap-3 skin-tile border border-line p-2 text-left disabled:opacity-50"
-                style={{ background: 'var(--field)' }}
-              >
-                <span
-                  className="block w-10 flex-none overflow-hidden rounded border border-line"
-                  style={{ aspectRatio: '2 / 3' }}
-                >
-                  <img src={e.cover} alt="" loading="lazy" className="h-full w-full object-cover" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block break-words text-[13.5px] font-semibold text-ink">
-                    {[e.format, e.year].filter(Boolean).join(' · ') || 'Edition'}
-                  </span>
-                  <span className="block break-words text-[12px] text-muted">
-                    {[e.publisher, e.pages ? `${e.pages} pp` : null].filter(Boolean).join(' · ') ||
-                      e.title}
-                  </span>
-                </span>
-                <span className="flex-none text-right text-[10px] uppercase tracking-wide text-muted">
-                  {e.source}
-                  {/* Google can be shown but not stored — say so before the tap, not after. */}
-                  {!mayIngestCover(e.source, e.cover) && (
-                    <span className="block normal-case tracking-normal">linked, not saved</span>
-                  )}
-                </span>
-              </button>
+                onSelect={(selected) =>
+                  apply(
+                    { source: selected.source, url: selected.cover, sourceUrl: selected.cover },
+                    selected,
+                  )
+                }
+              />
             </li>
           ))}
         </ul>

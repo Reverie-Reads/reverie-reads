@@ -40,7 +40,12 @@ import {
   isTrustedCoverSourceUrl,
   UnsafeRemoteUrlError,
 } from '../_shared/publicRemoteUrl.ts'
-import { workIdentityPart } from '../_shared/workIdentity.ts'
+import {
+  editionsCacheKey,
+  hardcoverCoverBookId,
+  matchesGoogleCover,
+  uniqueCoverBookId,
+} from './editionIdentity.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -70,7 +75,6 @@ const THUMB_EDGE = 720 // long-edge cap for the responsive grid/spine card deriv
 const EDITIONS_TTL_DAYS = 7
 
 const cleanIsbn = (s: string) => (s || '').replace(/[^0-9Xx]/g, '').toUpperCase()
-const norm = workIdentityPart
 
 // ── magick-wasm init (once per isolate; the wasm ships inside the npm package) ──
 let magickReady: Promise<void> | null = null
@@ -590,7 +594,7 @@ const HC_EDITION_FIELDS = `
   id title isbn_13 isbn_10 pages release_year release_date edition_format physical_format
   cached_image image { url } publisher { name } reading_format { format } users_count`
 
-/** Hardcover: resolve a book id (by ISBN, else by title search), then list its editions. ≤2 calls. */
+/** Hardcover: exact ISBN or unambiguous title/author identity, then related editions. ≤3 calls. */
 async function hardcoverEditions(input: EditionsInput): Promise<EditionOption[]> {
   if (!hardcoverAuth()) return []
   let bookId: number | null = null
@@ -598,19 +602,19 @@ async function hardcoverEditions(input: EditionsInput): Promise<EditionOption[]>
   const isbn = cleanIsbn(input.isbn ?? '')
   if (isbn.length >= 10) {
     const d = (await hardcoverGql(
-      `query($i:String!){ editions(where:{_or:[{isbn_13:{_eq:$i}},{isbn_10:{_eq:$i}}]}, limit:1){ book_id } }`,
+      `query($i:String!){ editions(where:{_or:[{isbn_13:{_eq:$i}},{isbn_10:{_eq:$i}}]}, distinct_on:book_id, order_by:{book_id:asc}, limit:2){ book_id } }`,
       { i: isbn },
     )) as { editions?: { book_id?: number }[] } | null
-    bookId = d?.editions?.[0]?.book_id ?? null
+    const matches = d?.editions ?? []
+    bookId = uniqueCoverBookId(matches.map((edition) => edition.book_id))
+    if (matches.length && bookId == null) return [] // conflicting ISBN relationships need review
   }
-  if (bookId == null && input.title) {
+  if (bookId == null && input.title && input.author) {
     const d = (await hardcoverGql(
-      `query($q:String!){ search(query:$q, query_type:"Book", per_page:1){ results } }`,
+      `query($q:String!){ search(query:$q, query_type:"Book", per_page:5){ results } }`,
       { q: [input.title, input.author].filter(Boolean).join(' ') },
-    )) as { search?: { results?: { hits?: { document?: { id?: unknown } }[] } } } | null
-    const id = d?.search?.results?.hits?.[0]?.document?.id
-    bookId = typeof id === 'string' ? Number(id) : typeof id === 'number' ? id : null
-    if (bookId != null && !Number.isFinite(bookId)) bookId = null
+    )) as { search?: { results?: { hits?: unknown } } } | null
+    bookId = hardcoverCoverBookId(input, d?.search?.results?.hits)
   }
   if (bookId == null) return []
 
@@ -657,7 +661,7 @@ async function googleEditions(input: EditionsInput): Promise<EditionOption[]> {
   const isbn = cleanIsbn(input.isbn ?? '')
   const queries: string[] = []
   if (isbn.length >= 10) queries.push(`isbn:${isbn}`)
-  if (input.title)
+  if (input.title && input.author)
     queries.push(
       `intitle:${encodeURIComponent(`"${input.title}"`)}${input.author ? `+inauthor:${encodeURIComponent(`"${input.author}"`)}` : ''}`,
     )
@@ -676,6 +680,7 @@ async function googleEditions(input: EditionsInput): Promise<EditionOption[]> {
   const out: EditionOption[] = []
   for (const it of items) {
     const v = it.volumeInfo ?? {}
+    if (!matchesGoogleCover(input, v)) continue
     const cover = bestGoogleCoverLink(v.imageLinks)
     if (!cover) continue
     const ids =
@@ -698,13 +703,6 @@ async function googleEditions(input: EditionsInput): Promise<EditionOption[]> {
     })
   }
   return out
-}
-
-const editionsCacheKey = (input: EditionsInput): string => {
-  const isbn = cleanIsbn(input.isbn ?? '')
-  return isbn.length >= 10
-    ? `editions:isbn:${isbn}`
-    : `editions:ta:${norm(input.title ?? '')}|${norm(input.author ?? '')}`
 }
 
 async function readEditionsCache(key: string): Promise<EditionOption[] | null> {
