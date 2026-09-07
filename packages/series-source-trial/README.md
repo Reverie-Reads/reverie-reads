@@ -124,14 +124,16 @@ validation rejects unsupported values and keeps singleton or conflicting relatio
 Before a packet reaches the model, a deterministic cleaner assigns each claim a source role,
 membership rule, lineage, risk flags, and separate membership/order eligibility:
 
-| Source       | Usable resolver input               | Automatic membership rule                    | Automatic order rule                    |
-| ------------ | ----------------------------------- | -------------------------------------------- | --------------------------------------- |
-| Google Books | Work identity only                  | Never                                        | Never                                   |
-| Open Library | Exact structured relationship       | Non-singleton exact-work relation            | Independent agreement                   |
-| Wikidata     | Exact P179 relationship             | Non-singleton exact-work relation            | Independent agreement on P1545          |
-| Inventaire   | Exact `serie-parts` roster relation | Non-singleton; `wd:` mirrors remain Wikidata | Independent non-mirror agreement        |
-| BookBrainz   | Exact series-roster relation        | Non-singleton exact-work relation            | Never until dependable order is exposed |
-| Hardcover    | Exact `book_series` relation        | Independent open relational agreement        | Independent agreement                   |
+| Source              | Usable resolver input                 | Automatic membership rule                    | Automatic order rule                    |
+| ------------------- | ------------------------------------- | -------------------------------------------- | --------------------------------------- |
+| Google Books        | Work identity only                    | Never                                        | Never                                   |
+| Open Library        | Exact structured relationship         | Non-singleton exact-work relation            | Independent agreement                   |
+| Wikidata            | Exact P179 relationship               | Non-singleton exact-work relation            | Independent agreement on P1545          |
+| Inventaire          | Exact `serie-parts` roster relation   | Non-singleton; `wd:` mirrors remain Wikidata | Independent non-mirror agreement        |
+| BookBrainz          | Exact series-roster relation          | Non-singleton exact-work relation            | Never until dependable order is exposed |
+| Hardcover           | Exact `book_series` relation          | Independent open relational agreement        | Independent agreement                   |
+| Authority scout     | Grounded first-pass candidate         | Never                                        | Never                                   |
+| Authority retrieval | Hash-checked reviewed-origin relation | Direct exact-work relationship               | Same direct relationship                |
 
 This is deliberately asymmetric. Hardcover adds broad candidate coverage, but the complete 209-case
 development frame showed that an ordinary exact-work, non-singleton relationship can still carry a
@@ -144,10 +146,13 @@ Unknown providers cannot corroborate a source until a profile is added.
 
 The LLM's job is to select, explain, or route these cleaned claims—not to make an unsafe claim true.
 It can suppress a Hardcover false positive by choosing review or abstain, but a Hardcover-only
-candidate is deterministically ineligible even when the model accepts it. The separate authority
-scout may find first-party confirmation for review; its output is not yet merged into this resolver
-packet. Declaring a book standalone still requires affirmative author/publisher evidence; silence
-from another dataset is never enough.
+candidate is deterministically ineligible even when the model accepts it. An optional authority
+report can now join the shadow resolver packet. A grounded first-pass scout claim remains
+deterministically review-only. Only a selected, policy-safe retrieval interpretation whose output
+matches its persisted interpretation and whose citations stay inside its hash-checked child
+manifest enters as eligible relational evidence from a human-reviewed origin. Declaring a book
+standalone still requires affirmative author/publisher evidence; silence from another dataset is
+never enough.
 
 Put the server-side API key in `packages/series-source-trial/.env.local`:
 
@@ -164,6 +169,20 @@ pnpm series:resolve -- \
   --scope gold \
   --max 10
 ```
+
+Join an authority-acquisition report and target exact stable case IDs when evaluating the
+adjudication boundary:
+
+```sh
+pnpm series:resolve -- \
+  --input packages/series-source-trial/private-results/your-provider-trial.json \
+  --authority packages/series-source-trial/private-results/your-authority-trial.json \
+  --scope gold \
+  --ids case-one,case-two
+```
+
+The committed origin registry still activates no real retrieval origin. Current live scout reports
+therefore enrich review packets only; they cannot make a Hardcover candidate automatic.
 
 Requests use strict JSON Schema output and `store: false`. Responses are cached by the complete
 evidence packet, model, and prompt version under ignored `private-results/resolver-cache/`, so an
@@ -235,8 +254,10 @@ conflicting source taxonomies such as Hachette's standalone marketing lists. It 
 membership support inferred only from spin-off/companion context, trigger-warning or trope
 taxonomies, and unlabelled headings. “Valid” therefore means well-formed and grounded;
 “policy-safe” additionally means the proposed evidence survived those deterministic source rules.
-Even a policy-safe result is always review-only and cannot write authority gold, Supabase, or the
-corpus.
+Even a policy-safe first-pass result is always review-only and cannot write authority gold,
+Supabase, or the corpus. The optional resolver join admits only a later selected retrieval result
+that also passes the reviewed-origin, packet-hash, child-manifest, and ordinary claim-validation
+gates. That eligibility exists only in the no-write shadow score.
 
 If the only structural failure is a `series` result with no membership object, the trial may make
 one bounded no-tools repair call. That call can only reorganize facts and URLs already present in
@@ -312,10 +333,11 @@ candidate run can prioritize human review but does not convert candidate output 
 pnpm series:authority:acquire -- --scope candidate --max 10
 ```
 
-The current design keeps acquisition and resolution separate on purpose. This scout proposes
-first-party evidence for review; the existing resolver reconciles approved provider evidence under
-its deterministic source profiles. A future production orchestrator may call both, but neither model
-is allowed to promote its own output into trusted corpus data.
+The current design keeps acquisition and resolution as separate calls with an explicit typed join.
+The scout proposes first-party evidence for review; the resolver reconciles provider evidence and,
+when supplied, eligible retrieval evidence under deterministic source profiles. A future production
+orchestrator may call both, but neither model is allowed to promote its own output into trusted
+corpus data.
 
 The first 12-case balanced gold holdout, nine-candidate queue trial, cost measurement, and
 source-policy correction are recorded in

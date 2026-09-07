@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { loadTrialCases, refreshRecordedCaseSet } from './cases.mjs'
 import { loadLocalEnvironment } from './env.mjs'
 import { annotateProviderResults } from './lineage.mjs'
+import { authorityProviderRuns } from './authority/provider-runs.mjs'
 import {
   buildEvidencePacket,
   canonicalizeResolutionDecision,
@@ -18,14 +19,16 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = resolve(packageRoot, '../..')
 
 const parseArgs = (argv) => {
-  const options = { input: null, out: null, scope: 'all', max: null }
+  const options = { input: null, authority: null, out: null, scope: 'all', max: null, ids: null }
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
     if (value === '--') continue
     if (value === '--input') options.input = argv[++index]
+    else if (value === '--authority') options.authority = argv[++index]
     else if (value === '--out') options.out = argv[++index]
     else if (value === '--scope') options.scope = argv[++index]
     else if (value === '--max') options.max = Number(argv[++index])
+    else if (value === '--ids') options.ids = argv[++index].split(',').filter(Boolean)
     else throw new Error(`Unknown argument ${value}`)
   }
   if (!options.input) throw new Error('Usage: pnpm resolver -- --input TRIAL_REPORT.json')
@@ -75,6 +78,7 @@ const renderMarkdown = (score) => {
 await loadLocalEnvironment(resolve(packageRoot, '.env.local'))
 const options = parseArgs(process.argv.slice(2))
 const inputPath = await resolveExisting(options.input)
+const authorityPath = options.authority ? await resolveExisting(options.authority) : null
 const [trial, currentCaseSet, policy] = await Promise.all([
   readFile(inputPath, 'utf8').then(JSON.parse),
   loadTrialCases(),
@@ -83,16 +87,25 @@ const [trial, currentCaseSet, policy] = await Promise.all([
 if (!trial.caseSet?.cases || !Array.isArray(trial.runs)) {
   throw new Error('Input must be a complete series trial JSON report with caseSet and runs')
 }
+const authorityReport = authorityPath
+  ? await readFile(authorityPath, 'utf8').then(JSON.parse)
+  : null
 
 const model = process.env.BOOK_RESOLVER_MODEL ?? 'gpt-5.6-luna'
 const refreshedCaseSet = refreshRecordedCaseSet(trial.caseSet, currentCaseSet)
-const cases = refreshedCaseSet.cases
-  .filter((entry) => {
-    if (options.scope === 'gold') return entry.truth?.status === 'reviewed'
-    if (options.scope === 'candidate') return entry.truth?.status === 'candidate'
-    return true
-  })
-  .slice(0, options.max ?? undefined)
+let cases = refreshedCaseSet.cases.filter((entry) => {
+  if (options.scope === 'gold') return entry.truth?.status === 'reviewed'
+  if (options.scope === 'candidate') return entry.truth?.status === 'candidate'
+  return true
+})
+if (options.ids) {
+  const eligibleById = new Map(cases.map((entry) => [entry.id, entry]))
+  const missing = options.ids.filter((id) => !eligibleById.has(id))
+  if (missing.length) throw new Error(`Unknown or out-of-scope case ids: ${missing.join(', ')}`)
+  const ids = new Set(options.ids)
+  cases = cases.filter((entry) => ids.has(entry.id))
+}
+cases = cases.slice(0, options.max ?? undefined)
 const selectedIds = new Set(cases.map((entry) => entry.id))
 const caseSet = {
   ...refreshedCaseSet,
@@ -103,7 +116,10 @@ const caseSet = {
     candidateCases: cases.filter((entry) => entry.truth?.status === 'candidate').length,
   },
 }
-const runs = trial.runs.map((run) => ({
+const runs = [
+  ...trial.runs,
+  ...(authorityReport ? authorityProviderRuns(authorityReport) : []),
+].map((run) => ({
   ...run,
   results: annotateProviderResults(
     run.provider,
@@ -195,6 +211,7 @@ await Promise.all([
       {
         schemaVersion: 1,
         sourceTrial: inputPath,
+        authorityEvidence: authorityPath,
         model,
         promptVersion: RESOLVER_PROMPT_VERSION,
         packets,

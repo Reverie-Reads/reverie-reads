@@ -68,12 +68,14 @@ candidate labels returned during ordinary Google Books/Open Library/Hardcover se
 relationship evidence. The complete 209-case development frame showed that structure and
 cardinality alone are insufficient for automatic membership: plausible wrong canonical names and a
 publication-order container survived the earlier semantic quarantine. Hardcover relationships are
-therefore candidates until independent open relational evidence agrees or a future integrated
-first-party adjudication path passes its own deterministic gate. The evidence model also accepts author, publisher,
-ISBN/ONIX, national-library, Wikidata, ISFDB, and Open Library observations as supported connectors
-are added; unavailable sources remain retryable and cannot become a negative ruling. Open Library's
-own guidance reserves its APIs for low-volume real-time use and points bulk consumers to monthly
-dumps, so a future corpus-wide connector must use the dumps rather than request every work live.
+therefore candidates until independent open relational evidence agrees or the optional no-write
+first-party adjudication join supplies a selected, policy-safe, hash-checked retrieval result from a
+human-reviewed origin. A grounded first-pass scout result remains review-only. The evidence model
+also accepts author, publisher, ISBN/ONIX, national-library, Wikidata, ISFDB, and Open Library
+observations as supported connectors are added; unavailable sources remain retryable and cannot
+become a negative ruling. Open Library's own guidance reserves its APIs for low-volume real-time use
+and points bulk consumers to monthly dumps, so a future corpus-wide connector must use the dumps
+rather than request every work live.
 
 Inventaire and BookBrainz are implemented in the reproducible trial only, not production
 classification. Inventaire's CC0 graph can add work-to-series relationships beyond Wikidata, but a
@@ -111,9 +113,13 @@ testimonial, retailer description, or quotation remains discovery-only even when
 publisher page reproduces it. The scout must preserve that attribution in its evidence summary, and
 deterministic cleaning strips classification support from an attributed summary instead of treating
 the page owner's domain as the speaker.
-The model cannot assign authority to its own source. Scout output never writes authority gold,
-Supabase, or the corpus and remains production-blocked by the same safety, rights, privacy, latency,
-cost, and fixed-sample gates as the resolver.
+The model cannot assign authority to its own source. First-pass scout output may join a resolver
+packet as review evidence, but it can never become membership-eligible. Only a later selected
+retrieval result can enter the no-write resolver score as relational evidence, and only when its
+persisted interpretation matches, its citations stay inside the hash-checked child manifest, its
+origin has a human-reviewed profile, and ordinary deterministic validation remains policy-safe.
+Neither path writes authority gold, Supabase, or the corpus, and both remain production-blocked by
+the same safety, rights, privacy, latency, cost, and fixed-sample gates as the resolver.
 
 Search-index recall is not repaired by letting the model fetch arbitrary URLs. The bounded trial
 uses a single-hop, navigation-aware retrieval gateway: only a hosted-search-manifest URL on a
@@ -129,7 +135,9 @@ pass, and its result replaces the first proposal only after those checks and ord
 pass. Reports and caches retain the applicable selected-source manifest and structured
 paraphrase, never page text. The design and acceptance gates are in
 [ADR 0009](../decisions/0009-authority-retrieval-gateway.md). The trial CLI exposes this path only
-behind `--retrieval`; no real origin is active and nothing is connected to production.
+behind `--retrieval`. The resolver's optional `--authority` input accepts the acquisition report,
+but only a selected retrieval pass can cross the automatic-evidence gate. No real origin is active
+and nothing is connected to production.
 
 Acquisition cleaning also distinguishes bibliographic membership from reading dependence. When an
 author or publisher both assigns the exact work to a named series and markets it as independently
