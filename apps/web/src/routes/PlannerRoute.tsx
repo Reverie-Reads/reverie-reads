@@ -1,11 +1,19 @@
 import { useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
-import { authorOf, formatPartialDate, hasDate, type Book } from '@reverie/core'
+import {
+  authorOf,
+  formatPartialDate,
+  hasDate,
+  summarizeReadingHistory,
+  type ReadingHistory,
+  type Book,
+} from '@reverie/core'
 import { rootRoute } from './RootRoute'
 import { CoverImage } from '../components/CoverImage'
 import { FromYourAuthors } from '../planner/FromYourAuthors'
 import { useBooks } from '../data/books'
-import { useAllReads } from '../data/reads'
+import { useReadingHistory } from '../data/readingHistory'
+import { Button } from '../components/Button'
 import { Modal } from '../components/Modal'
 import { MONTHS } from '../library/constants'
 import { Surface } from '../components/Surface'
@@ -62,13 +70,49 @@ function Stat({ n, label }: { n: number; label: string }) {
 }
 
 function Calendar({ books, openBook }: { books: Book[]; openBook: (id: string) => void }) {
-  const reads = useAllReads().data ?? []
+  const query = useReadingHistory()
+  if (!query.data)
+    return (
+      <div>
+        <p role={query.isError ? 'alert' : 'status'} className="mb-4 text-muted">
+          {query.isError
+            ? 'Your reading history could not be loaded.'
+            : query.isPaused
+              ? 'Connect to load your reading history.'
+              : 'Gathering your reading history…'}
+        </p>
+        {query.isError && <Button onClick={() => void query.refetch()}>Try again</Button>}
+      </div>
+    )
+  return (
+    <>
+      {query.isError && (
+        <p role="status" className="mb-4 text-sm text-muted">
+          Showing your last loaded reading history.{' '}
+          <button type="button" className="underline" onClick={() => void query.refetch()}>
+            Try updating again
+          </button>
+        </p>
+      )}
+      <CalendarView books={books} openBook={openBook} history={query.data} />
+    </>
+  )
+}
+
+function CalendarView({
+  books,
+  openBook,
+  history,
+}: {
+  books: Book[]
+  openBook: (id: string) => void
+  history: ReadingHistory
+}) {
   const now = new Date()
   const [cal, setCal] = useState({ y: now.getFullYear(), m: now.getMonth() })
   const [day, setDay] = useState<number | null>(null)
 
-  const byId = new Map(books.map((b) => [b.id, b]))
-  const dated = reads.filter((r) => r.read_on)
+  const summary = summarizeReadingHistory(history, cal.y)
 
   const map = new Map<number, { read: Book[]; plan: Book[] }>()
   const slot = (d: number) => {
@@ -76,11 +120,9 @@ function Calendar({ books, openBook }: { books: Book[]; openBook: (id: string) =
     map.set(d, cur)
     return cur
   }
-  for (const r of dated) {
-    const date = r.read_on as string
-    if (+date.slice(0, 4) === cal.y && +date.slice(5, 7) === cal.m + 1) {
-      const b = byId.get(r.book_id)
-      if (b) slot(+date.slice(8, 10)).read.push(b)
+  for (const read of summary.records) {
+    if (read.finished.m === cal.m + 1 && read.finished.d !== null) {
+      slot(read.finished.d).read.push(read.book)
     }
   }
   for (const b of books) {
@@ -97,9 +139,9 @@ function Calendar({ books, openBook }: { books: Book[]; openBook: (id: string) =
   const days = new Date(cal.y, cal.m + 1, 0).getDate()
   const isThisMonth = now.getFullYear() === cal.y && now.getMonth() === cal.m
 
-  const yearReads = dated.filter((r) => +(r.read_on as string).slice(0, 4) === cal.y)
-  const uniqueYear = new Set(yearReads.map((r) => r.book_id)).size
-  const readAllTime = books.filter((b) => b.readStatus === 'Read').length
+  const yearReads = summary.records
+  const uniqueYear = summary.distinctBooks.length
+  const readAllTime = history.knownReadBooks.length
   const planned = books.filter((b) => hasDate(b.plan)).length
   // Sort key, not a formatter: a missing month or day sorts before a stated one within the same
   // year, which is where a vaguer plan belongs. Local and throwaway — the calendar branch owns this.
@@ -115,7 +157,7 @@ function Calendar({ books, openBook }: { books: Book[]; openBook: (id: string) =
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Stat n={uniqueYear} label={`Books in ${cal.y}`} />
         <Stat n={yearReads.length} label="Reads incl. rereads" />
-        <Stat n={readAllTime} label="Read all-time" />
+        <Stat n={readAllTime} label="Books read · all time" />
         <Stat n={planned} label="Planned" />
       </div>
 
