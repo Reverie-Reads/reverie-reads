@@ -149,12 +149,13 @@ long enough to compute discovery recall against a frozen development benchmark. 
 search result into provider evidence, the resolver, retrieval profiles, Supabase, or the corpus.
 Only aggregate recall, request count, latency, error count, and estimated cost may be persisted;
 queries, provider responses, result titles, snippets, URLs, and case-level provider output are not
-retained. The locator refuses any benchmark marked as the qualification partition. Brave is the
-first trial because its index is independent of the hosted-search index and its request cost is
-low, but its ordinary API terms require a storage-enabled plan before returned content may be
-stored. A live run therefore remains a source-recall experiment, not a new evidence source. Its
-acceptance measure is incremental known-origin and exact-page recovery beyond the fixed Luna-low
-baseline on the same slice.
+retained. The locator refuses any benchmark marked as the qualification partition. The active first
+trial uses Exa Search because it provides a separate web index through a bounded API. It runs in
+ordinary `auto` mode with at most ten results and requests no page contents, highlights, summaries,
+synthesized output, deep search, or live crawl. A live run remains a source-recall experiment, not a
+new evidence source. Its acceptance measure is incremental known-origin and exact-page recovery
+beyond the fixed Luna-low baseline on the same slice; production use remains blocked on a separate
+rights, privacy, retention, cost, and quality review.
 
 Search-index recall is not repaired by letting the model fetch arbitrary URLs. The bounded trial
 uses a single-hop, navigation-aware retrieval gateway: only a hosted-search-manifest URL on a

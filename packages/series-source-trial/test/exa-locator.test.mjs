@@ -5,11 +5,11 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { loadTrialCases } from '../src/cases.mjs'
 import {
-  BRAVE_AUTHORITY_LOCATOR_VERSION,
-  buildBraveAuthorityQueries,
-  runBraveAuthorityLocator,
-  searchBrave,
-} from '../src/authority/brave-locator.mjs'
+  EXA_AUTHORITY_LOCATOR_VERSION,
+  buildExaAuthorityQueries,
+  runExaAuthorityLocator,
+  searchExa,
+} from '../src/authority/exa-locator.mjs'
 import {
   auditAuthorityLocatorBenchmark,
   scoreAuthorityLocator,
@@ -30,12 +30,12 @@ const loadFixture = async () => {
     ...discoveryBenchmark,
     id: 'authority-locator-test-v1',
     evaluationPartition: 'development',
-    locatorVersion: BRAVE_AUTHORITY_LOCATOR_VERSION,
+    locatorVersion: EXA_AUTHORITY_LOCATOR_VERSION,
   }
   return { caseSet, benchmark, authorityGoldText }
 }
 
-test('Brave locator queries use only the truth-blind target fields', () => {
+test('Exa locator queries use only the truth-blind target fields', () => {
   const authorityTarget = {
     schemaVersion: 1,
     caseId: 'case-one',
@@ -48,7 +48,7 @@ test('Brave locator queries use only the truth-blind target fields', () => {
     sources: ['https://known.example/book'],
   }
 
-  const queries = buildBraveAuthorityQueries(authorityTarget)
+  const queries = buildExaAuthorityQueries(authorityTarget)
 
   assert.deepEqual(queries, [
     '"The Book" "A. Writer" official 2026',
@@ -59,10 +59,10 @@ test('Brave locator queries use only the truth-blind target fields', () => {
   assert.equal(JSON.stringify(queries).includes('standalone'), false)
 })
 
-test('Brave search keeps the key in a header and returns only normalized HTTPS URLs', async () => {
+test('Exa search keeps the key in a header and returns only normalized HTTPS URLs', async () => {
   let observedUrl
   let observedRequest
-  const result = await searchBrave('a private query', {
+  const result = await searchExa('a private query', {
     apiKey: 'secret-test-key',
     fetchImpl: async (url, request) => {
       observedUrl = url
@@ -71,30 +71,36 @@ test('Brave search keeps the key in a header and returns only normalized HTTPS U
         ok: true,
         status: 200,
         json: async () => ({
-          web: {
-            results: [
-              { title: 'One', description: 'Not retained', url: 'https://www.example.com/book/' },
-              { title: 'Duplicate', url: 'https://example.com/book' },
-              { title: 'Unsafe', url: 'http://example.com/plaintext' },
-              { title: 'Invalid', url: 'not a URL' },
-            ],
-          },
+          requestId: 'not-retained',
+          results: [
+            { title: 'One', author: 'Not retained', url: 'https://www.example.com/book/' },
+            { title: 'Duplicate', url: 'https://example.com/book' },
+            { title: 'Unsafe', url: 'http://example.com/plaintext' },
+            { title: 'Invalid', url: 'not a URL' },
+          ],
         }),
       }
     },
   })
 
-  assert.equal(observedUrl.searchParams.get('q'), 'a private query')
-  assert.equal(observedUrl.toString().includes('secret-test-key'), false)
-  assert.equal(observedRequest.headers['X-Subscription-Token'], 'secret-test-key')
+  assert.equal(observedUrl, 'https://api.exa.ai/search')
+  assert.equal(observedRequest.headers['x-api-key'], 'secret-test-key')
+  assert.deepEqual(JSON.parse(observedRequest.body), {
+    query: 'a private query',
+    type: 'auto',
+    numResults: 10,
+    moderation: true,
+    userLocation: 'US',
+  })
+  assert.equal(observedRequest.body.includes('secret-test-key'), false)
   assert.deepEqual(result.urls, ['https://example.com/book'])
   assert.equal(JSON.stringify(result).includes('Not retained'), false)
 })
 
-test('Brave search retries a rate limit once without reading its response body', async () => {
+test('Exa search retries a rate limit once without reading its response body', async () => {
   let calls = 0
   const sleeps = []
-  const result = await searchBrave('retry me', {
+  const result = await searchExa('retry me', {
     apiKey: 'test-key',
     sleep: async (milliseconds) => sleeps.push(milliseconds),
     fetchImpl: async () => {
@@ -109,7 +115,7 @@ test('Brave search retries a rate limit once without reading its response body',
           },
         }
       }
-      return { ok: true, status: 200, json: async () => ({ web: { results: [] } }) }
+      return { ok: true, status: 200, json: async () => ({ results: [] }) }
     },
   })
 
@@ -119,9 +125,9 @@ test('Brave search retries a rate limit once without reading its response body',
   assert.equal(result.attempts, 2)
 })
 
-test('Brave authority locator preserves only ephemeral URL and aggregate operation data', async () => {
+test('Exa authority locator preserves only ephemeral URL and aggregate operation data', async () => {
   let calls = 0
-  const result = await runBraveAuthorityLocator(
+  const result = await runExaAuthorityLocator(
     {
       caseId: 'case-one',
       target: { title: 'The Book', authors: ['A. Writer'], publicationYear: null },
@@ -209,7 +215,7 @@ test('locator score persists aggregates without provider result content', async 
   const score = scoreAuthorityLocator(
     caseSet,
     benchmark,
-    { locatorVersion: BRAVE_AUTHORITY_LOCATOR_VERSION, results },
+    { locatorVersion: EXA_AUTHORITY_LOCATOR_VERSION, results },
     { authorityGoldText },
   )
   const persisted = JSON.stringify(score)
@@ -218,7 +224,7 @@ test('locator score persists aggregates without provider result content', async 
   assert.equal(score.summary.knownOriginDiscovered, 22)
   assert.equal(score.summary.exactKnownPageDiscovered, 22)
   assert.equal(score.operations.requests, 66)
-  assert.equal(score.operations.estimatedCostUsd, 0.33)
+  assert.equal(score.operations.estimatedCostUsd, 0.462)
   assert.equal(score.retention.caseLevelProviderOutputRetained, false)
   assert.equal(persisted.includes(benchmark.cases[0].id), false)
   assert.equal(persisted.includes(casesById.get(benchmark.cases[0].id).title), false)
@@ -260,7 +266,7 @@ test('locator score measures recovery beyond a compatible Luna acquisition run',
   const score = scoreAuthorityLocator(
     caseSet,
     benchmark,
-    { locatorVersion: BRAVE_AUTHORITY_LOCATOR_VERSION, results: locatorResults },
+    { locatorVersion: EXA_AUTHORITY_LOCATOR_VERSION, results: locatorResults },
     { authorityGoldText, baselineRun },
   )
 

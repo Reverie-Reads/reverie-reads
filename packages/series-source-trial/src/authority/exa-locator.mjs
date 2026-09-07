@@ -1,8 +1,8 @@
-const BRAVE_SEARCH_ENDPOINT = 'https://api.search.brave.com/res/v1/web/search'
+const EXA_SEARCH_ENDPOINT = 'https://api.exa.ai/search'
 
-export const BRAVE_AUTHORITY_LOCATOR_VERSION = 'brave-authority-locator-v1'
-export const BRAVE_SEARCH_REQUEST_USD = 0.005
-export const BRAVE_SEARCHES_PER_CASE = 3
+export const EXA_AUTHORITY_LOCATOR_VERSION = 'exa-authority-locator-v1'
+export const EXA_SEARCH_REQUEST_USD = 0.007
+export const EXA_SEARCHES_PER_CASE = 3
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -15,11 +15,11 @@ const cleanSearchTerm = (value) =>
 
 const quoted = (value) => `"${cleanSearchTerm(value)}"`
 
-export function buildBraveAuthorityQueries(authorityTarget) {
+export function buildExaAuthorityQueries(authorityTarget) {
   const target = authorityTarget?.target ?? authorityTarget
   const title = cleanSearchTerm(target?.title)
   const author = cleanSearchTerm(asArray(target?.authors)[0])
-  if (!title || !author) throw new Error('Brave authority locator requires a title and author')
+  if (!title || !author) throw new Error('Exa authority locator requires a title and author')
 
   const year = Number.isInteger(target?.publicationYear) ? ` ${target.publicationYear}` : ''
   return [
@@ -29,7 +29,7 @@ export function buildBraveAuthorityQueries(authorityTarget) {
   ]
 }
 
-export const normalizeBraveResultUrl = (value) => {
+export const normalizeExaResultUrl = (value) => {
   try {
     const url = new URL(value)
     if (url.protocol !== 'https:') return null
@@ -48,20 +48,9 @@ const retryDelayMs = (response) => {
   return Math.min(Math.max(retryAfter * 1_000, 250), 5_000)
 }
 
-const requestUrl = (query) => {
-  const url = new URL(BRAVE_SEARCH_ENDPOINT)
-  url.searchParams.set('q', query)
-  url.searchParams.set('count', '20')
-  url.searchParams.set('country', 'US')
-  url.searchParams.set('search_lang', 'en')
-  url.searchParams.set('safesearch', 'moderate')
-  url.searchParams.set('spellcheck', 'false')
-  return url
-}
-
-export async function searchBrave(query, options = {}) {
+export async function searchExa(query, options = {}) {
   const apiKey = options.apiKey?.trim()
-  if (!apiKey) throw new Error('BRAVE_SEARCH_API_KEY is required')
+  if (!apiKey) throw new Error('EXA_API_KEY is required')
   const fetchImpl = options.fetchImpl ?? fetch
   const sleep = options.sleep ?? wait
   const maxAttempts = options.maxAttempts ?? 2
@@ -73,12 +62,20 @@ export async function searchBrave(query, options = {}) {
     const timeout = setTimeout(() => controller.abort(), timeoutMs)
     let response
     try {
-      response = await fetchImpl(requestUrl(query), {
-        method: 'GET',
+      response = await fetchImpl(EXA_SEARCH_ENDPOINT, {
+        method: 'POST',
         headers: {
           Accept: 'application/json',
-          'X-Subscription-Token': apiKey,
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
         },
+        body: JSON.stringify({
+          query,
+          type: 'auto',
+          numResults: 10,
+          moderation: true,
+          userLocation: 'US',
+        }),
         signal: controller.signal,
       })
     } catch (error) {
@@ -127,8 +124,8 @@ export async function searchBrave(query, options = {}) {
     }
     const urls = [
       ...new Set(
-        asArray(payload?.web?.results)
-          .map((result) => normalizeBraveResultUrl(result?.url))
+        asArray(payload?.results)
+          .map((result) => normalizeExaResultUrl(result?.url))
           .filter(Boolean),
       ),
     ]
@@ -141,12 +138,12 @@ export async function searchBrave(query, options = {}) {
     }
   }
 
-  throw new Error('Brave authority locator exhausted an invalid attempt budget')
+  throw new Error('Exa authority locator exhausted an invalid attempt budget')
 }
 
-export async function runBraveAuthorityLocator(authorityTarget, options = {}) {
-  const queries = buildBraveAuthorityQueries(authorityTarget)
-  const search = options.search ?? searchBrave
+export async function runExaAuthorityLocator(authorityTarget, options = {}) {
+  const queries = buildExaAuthorityQueries(authorityTarget)
+  const search = options.search ?? searchExa
   const results = []
 
   for (const query of queries) {

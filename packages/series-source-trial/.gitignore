@@ -2,7 +2,7 @@
 private-inputs/
 private-results/
 
-# Keep a new authority-locator slice private until Brave and the paired Luna baseline have both run.
+# Keep a new authority-locator slice private until Exa and the paired Luna baseline have both run.
 # Publishing its truth cells earlier would make the supposedly untouched set searchable.
 data/authority-locator-development.json
 

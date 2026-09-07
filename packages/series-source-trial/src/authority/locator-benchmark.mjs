@@ -7,10 +7,10 @@ import {
   scoreAuthorityDiscovery,
 } from './discovery-benchmark.mjs'
 import {
-  BRAVE_AUTHORITY_LOCATOR_VERSION,
-  BRAVE_SEARCH_REQUEST_USD,
-  BRAVE_SEARCHES_PER_CASE,
-} from './brave-locator.mjs'
+  EXA_AUTHORITY_LOCATOR_VERSION,
+  EXA_SEARCH_REQUEST_USD,
+  EXA_SEARCHES_PER_CASE,
+} from './exa-locator.mjs'
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
 const rate = (numerator, denominator) => (denominator ? numerator / denominator : null)
@@ -21,8 +21,8 @@ export function auditAuthorityLocatorBenchmark(caseSet, benchmark, options = {})
   if (benchmark?.evaluationPartition !== 'development') {
     errors.push('authority locator may run only on a development partition')
   }
-  if (benchmark?.locatorVersion !== BRAVE_AUTHORITY_LOCATOR_VERSION) {
-    errors.push(`benchmark locatorVersion must be ${BRAVE_AUTHORITY_LOCATOR_VERSION}`)
+  if (benchmark?.locatorVersion !== EXA_AUTHORITY_LOCATOR_VERSION) {
+    errors.push(`benchmark locatorVersion must be ${EXA_AUTHORITY_LOCATOR_VERSION}`)
   }
   return { ...audit, valid: errors.length === 0, errors }
 }
@@ -157,7 +157,7 @@ export function scoreAuthorityLocator(
     benchmarkId: benchmark?.id ?? null,
     benchmarkSha256: benchmarkDigest,
     evaluationPartition: benchmark?.evaluationPartition ?? null,
-    provider: 'brave_search_api',
+    provider: 'exa_search_api',
     locatorVersion: locatorRun?.locatorVersion ?? null,
     retention: {
       providerPayloadRetained: false,
@@ -187,8 +187,8 @@ export function scoreAuthorityLocator(
     operations: {
       ...operations,
       errorCounts,
-      estimatedCostUsd: Number((operations.requests * BRAVE_SEARCH_REQUEST_USD).toFixed(6)),
-      priceAssumptionUsdPerThousandRequests: BRAVE_SEARCH_REQUEST_USD * 1_000,
+      estimatedCostUsd: Number((operations.requests * EXA_SEARCH_REQUEST_USD).toFixed(6)),
+      priceAssumptionUsdPerThousandRequests: EXA_SEARCH_REQUEST_USD * 1_000,
     },
     errors,
   }
@@ -201,7 +201,7 @@ export function renderAuthorityLocatorMarkdown(score) {
     '# Reverie independent authority-locator experiment',
     '',
     `Benchmark: ${score.benchmarkId}; partition: ${score.evaluationPartition}.`,
-    `Provider: Brave Search API; locator: ${score.locatorVersion}.`,
+    `Provider: Exa Search API; locator: ${score.locatorVersion}.`,
     `Status: ${score.valid ? 'valid frozen run' : 'invalid run'}.`,
     '',
     '| Cases | Complete | Partial | Failed | Known origin | Targeted channel | Exact known page |',
@@ -225,7 +225,7 @@ export function renderAuthorityLocatorMarkdown(score) {
       '',
       `Baseline: ${score.baseline.model ?? 'unknown'}; prompt: ${score.baseline.promptVersion ?? 'unknown'}.`,
       '',
-      '| Baseline origins | Brave-only recovery | Combined origins | Baseline exact pages | Brave-only exact recovery | Combined exact pages |',
+      '| Baseline origins | Exa-only recovery | Combined origins | Baseline exact pages | Exa-only exact recovery | Combined exact pages |',
       '| ---: | ---: | ---: | ---: | ---: | ---: |',
       `| ${score.summary.baselineKnownOriginDiscovered}/${score.summary.cases} | ${score.summary.locatorRecoveryAmongBaselineOriginMisses} | ${score.summary.combinedKnownOriginDiscovered}/${score.summary.cases} | ${score.summary.baselineExactKnownPageDiscovered}/${score.summary.cases} | ${score.summary.locatorRecoveryAmongBaselineExactPageMisses} | ${score.summary.combinedExactKnownPageDiscovered}/${score.summary.cases} |`,
     )
@@ -236,7 +236,7 @@ export function renderAuthorityLocatorMarkdown(score) {
     `Operations: ${score.operations.requests} requests; ${score.operations.queriesCompleted}/${score.operations.queriesPlanned} searches completed; ${score.operations.urlsInspected} result URLs inspected in memory; ${score.operations.latencyMs} ms cumulative latency; estimated $${score.operations.estimatedCostUsd.toFixed(4)} at $${score.operations.priceAssumptionUsdPerThousandRequests}/1,000 requests.`,
     '',
     'The locator received only title, author, and optional publication year. Known authority sources and classifications were used only after retrieval for aggregate scoring.',
-    'No Brave response, title, snippet, result URL, query, or case-level provider output is retained. The aggregate report cannot establish identity, series membership, position, or standalone status and has no Supabase or corpus write path.',
+    'No Exa response, title, author, result URL, query, request ID, or case-level provider output is retained. The aggregate report cannot establish identity, series membership, position, or standalone status and has no Supabase or corpus write path.',
   )
 
   if (score.errors.length) {
@@ -246,19 +246,19 @@ export function renderAuthorityLocatorMarkdown(score) {
 }
 
 export function authorityLocatorDryRun(audit) {
-  const requests = audit.caseCount * BRAVE_SEARCHES_PER_CASE
+  const requests = audit.caseCount * EXA_SEARCHES_PER_CASE
   return {
     schemaVersion: 1,
     valid: audit.valid,
     benchmarkId: audit.id,
     evaluationPartition: 'development',
-    provider: 'brave_search_api',
-    locatorVersion: BRAVE_AUTHORITY_LOCATOR_VERSION,
+    provider: 'exa_search_api',
+    locatorVersion: EXA_AUTHORITY_LOCATOR_VERSION,
     cases: audit.caseCount,
     distinctAuthors: audit.distinctAuthors,
     plannedSearches: requests,
-    estimatedCostUsd: Number((requests * BRAVE_SEARCH_REQUEST_USD).toFixed(6)),
-    priceAssumptionUsdPerThousandRequests: BRAVE_SEARCH_REQUEST_USD * 1_000,
+    estimatedCostUsd: Number((requests * EXA_SEARCH_REQUEST_USD).toFixed(6)),
+    priceAssumptionUsdPerThousandRequests: EXA_SEARCH_REQUEST_USD * 1_000,
     errors: audit.errors,
   }
 }

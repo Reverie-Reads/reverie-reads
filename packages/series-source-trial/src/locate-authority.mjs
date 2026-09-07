@@ -5,9 +5,9 @@ import { loadTrialCases } from './cases.mjs'
 import { loadLocalEnvironment } from './env.mjs'
 import { buildAuthorityTarget } from './authority/evidence.mjs'
 import {
-  BRAVE_AUTHORITY_LOCATOR_VERSION,
-  runBraveAuthorityLocator,
-} from './authority/brave-locator.mjs'
+  EXA_AUTHORITY_LOCATOR_VERSION,
+  runExaAuthorityLocator,
+} from './authority/exa-locator.mjs'
 import {
   auditAuthorityLocatorBenchmark,
   authorityLocatorDryRun,
@@ -54,18 +54,18 @@ if (options.dryRun) {
   process.exit(0)
 }
 
-const apiKey = process.env.BRAVE_SEARCH_API_KEY?.trim()
+const apiKey = process.env.EXA_API_KEY?.trim()
 if (!apiKey) {
-  throw new Error('BRAVE_SEARCH_API_KEY is required in packages/series-source-trial/.env.local')
+  throw new Error('EXA_API_KEY is required in packages/series-source-trial/.env.local')
 }
 
 const casesById = new Map(caseSet.cases.map((testCase) => [testCase.id, testCase]))
 const results = []
 for (const [index, selected] of benchmark.cases.entries()) {
   const target = buildAuthorityTarget(casesById.get(selected.id))
-  const result = await runBraveAuthorityLocator(target, { apiKey })
+  const result = await runExaAuthorityLocator(target, { apiKey })
   results.push(result)
-  console.error(`Brave locator ${index + 1}/${benchmark.cases.length}: ${result.status}`)
+  console.error(`Exa locator ${index + 1}/${benchmark.cases.length}: ${result.status}`)
 }
 
 const baselineRun = options.baseline
@@ -75,7 +75,7 @@ const score = scoreAuthorityLocator(
   caseSet,
   benchmark,
   {
-    locatorVersion: BRAVE_AUTHORITY_LOCATOR_VERSION,
+    locatorVersion: EXA_AUTHORITY_LOCATOR_VERSION,
     results,
   },
   { authorityGoldText, baselineRun },
