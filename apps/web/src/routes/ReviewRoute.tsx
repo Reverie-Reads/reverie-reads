@@ -1,3 +1,4 @@
+import { CatalogReviewNav } from '../components/catalog/CatalogReviewNav'
 import { useMemo, useState } from 'react'
 import { createRoute, Link } from '@tanstack/react-router'
 import type { Book, NeedsLookItem, NeedsLookReason } from '@reverie/core'
@@ -279,14 +280,7 @@ function ReviewScreen() {
         >
           Administrator review
         </h1>
-        <Link
-          to="/catalog/covers"
-          search={{ state: 'attention', q: '', page: 0, work: undefined }}
-          className="skin-control my-4 inline-flex min-h-11 items-center border border-line px-4 text-sm font-semibold text-ink"
-          style={{ background: 'var(--card-solid)' }}
-        >
-          Review catalog covers
-        </Link>
+        <CatalogReviewNav />
         <CorpusSeriesReview suggestions={seriesSuggestions} />
         <CorpusSeriesCatalog />
       </section>
@@ -307,16 +301,7 @@ function ReviewScreen() {
       >
         Import review
       </h1>
-      {isCorpusAdmin && (
-        <Link
-          to="/catalog/covers"
-          search={{ state: 'attention', q: '', page: 0, work: undefined }}
-          className="skin-control my-4 inline-flex min-h-11 items-center border border-line px-4 text-sm font-semibold text-ink"
-          style={{ background: 'var(--card-solid)' }}
-        >
-          Review catalog covers
-        </Link>
-      )}
+      {isCorpusAdmin && <CatalogReviewNav />}
       <p className="mb-4 text-[13px] text-muted">
         What came in, and what needs a look. Covers fill in as enrichment runs.
       </p>

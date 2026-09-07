@@ -13,12 +13,15 @@ Priorities mean:
 
 ## Active catalog quality follow-up
 
-The cover review workspace is implemented for review in [PR #460](https://github.com/Reverie-Reads/reverie-reads/pull/460); see
-[the acceptance brief](docs/tasks/catalog-cover-review.md). It adds deliberate administrator review
-of shared covers, durable concerns/decisions, edition comparison, and stale-record protection. It
-preserves personal cover choices. The reviewed September catalog findings still need owner curation;
-this feature does not automatically repair those records. Reader-loop validation follows a bounded
-catalog cleanup and release verification.
+The cover review workspace shipped in public PR #460 and private PR #34. The owner applied its
+migration; production build `a1f3275c1f46` was verified on September 7. The reviewed September catalog
+findings still need owner curation; shipping the controls did not repair the records automatically.
+
+The next slice is [catalog metadata review](docs/tasks/catalog-metadata-review.md): sourced description
+corrections, ISBN conflict and duplicate-identity comparison, persistent assessments, and stale-evidence
+protection. It is under implementation for public-first review. Shared identity reassignment/merge is
+a separate follow-up requiring explicit reconciliation of dependent records. Reader-loop validation
+follows bounded catalog cleanup and release verification.
 
 ## Production baseline recorded before this release
 

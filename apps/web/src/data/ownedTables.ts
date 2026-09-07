@@ -156,6 +156,18 @@ export const USER_OWNED_TABLES: OwnedTable[] = [
     },
   },
   {
+    table: 'corpus_metadata_reviews',
+    owner: 'reviewed_by',
+    collective: true,
+    plan: { backup: false, why: 'Administrator metadata assessments stay with the shared catalog and cannot be replayed by a personal restore.' },
+  },
+  {
+    table: 'corpus_metadata_review_events',
+    owner: 'editor_id',
+    collective: true,
+    plan: { backup: false, why: 'Administrator metadata assessments stay with the shared catalog and cannot be replayed by a personal restore.' },
+  },
+  {
     table: 'corpus_admins',
     owner: 'user_id',
     collective: true,

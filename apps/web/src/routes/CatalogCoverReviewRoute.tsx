@@ -1,3 +1,4 @@
+import { CatalogReviewNav } from '../components/catalog/CatalogReviewNav'
 import { useState } from 'react'
 import { createRoute, Link } from '@tanstack/react-router'
 import { coverResolutionLabel } from '@reverie/core'
@@ -80,6 +81,7 @@ function CatalogCoverReviewPage() {
           Give each book a cover that belongs to it. Review the title and author, compare the
           artwork, and keep a record of your choice.
         </p>
+        <CatalogReviewNav />
       </header>
       {saved && (
         <p

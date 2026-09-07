@@ -44,7 +44,8 @@ export function isOfflinePersistableQueryKey(queryKey: readonly unknown[]): bool
     queryKey[0] !== 'series' &&
     queryKey[0] !== 'series-strip' &&
     queryKey[0] !== 'household' &&
-    queryKey[0] !== 'catalog-cover-review'
+    queryKey[0] !== 'catalog-cover-review' &&
+    queryKey[0] !== 'catalog-metadata-review'
   )
 }
 
