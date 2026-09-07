@@ -30,14 +30,16 @@ lives in `ROADMAP.md`.
    reference. [Implementation notes](../docs/tasks/discover-implementation.md) record the source
    evidence, account/backup boundaries, and release checks. Future matching improvements should
    be measured against useful selections, not a larger feed or unverified explanations.
-3. **STATS + PLANNER FUNDAMENTAL OVERHAUL — ACTIVE DESIGN REVIEW.** The owner prioritized this
+3. **STATS + PLANNER FUNDAMENTAL OVERHAUL — IMPLEMENTATION IN PROGRESS.** The owner prioritized this
    paired redesign after catalog quality. [Reading life study](studies/reading-life/READING_LIFE.md)
    proposes Reflect, a private book-led reading record, and Plan, a flexible queue with direct
    editing and a calendar view. Shared period semantics, completed sessions versus distinct books,
    rereads/DNF, actual read formats, partial dates, and privacy precede new metrics. The standalone
    [preview guide](studies/reading-life/README.md) includes interactive sample histories and all nine
-   rooms. **Not implemented in the application yet.** Review the paired study before changing the
-   production screens or schema. This precedes import/restore preview and brand collateral.
+   rooms. The approved first implementation replaces Stats with Reflect and gives Planner the same
+   reading-history model; [implementation notes](../docs/tasks/reading-life-implementation.md) explain
+   the actual data limits. Plan queue persistence and the private retrospective are next. This
+   precedes import/restore preview and brand collateral.
 4. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
    icons, onboarding material, and one accurate demonstration. Preserve each room's own interface
    language. Do not reopen the chosen palette as a new concept exercise.

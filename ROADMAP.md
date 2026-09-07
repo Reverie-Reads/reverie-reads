@@ -1,6 +1,6 @@
 # Reverie Reads roadmap
 
-Current product priorities updated 2026-09-05. This file is the ordered project status. Historical briefs remain in
+Current product priorities updated 2026-09-07. This file is the ordered project status. Historical briefs remain in
 `docs/archive/`; detailed proposals that are not yet active remain in `docs/backlog/`; only work
 actually in flight belongs in `docs/tasks/`.
 
@@ -11,17 +11,36 @@ Priorities mean:
 - **P2 — planned:** valuable work with no current blocking dependency.
 - **P3 — deferred/monitor:** revisit on evidence, schedule, or an explicit owner decision.
 
-## Active catalog quality follow-up
+## Active product program: Reflect and Plan
 
-The cover review workspace shipped in public PR #460 and private PR #34. The owner applied its
-migration; production build `a1f3275c1f46` was verified on September 7. The reviewed September catalog
-findings still need owner curation; shipping the controls did not repair the records automatically.
+The owner approved the Reading Life study in public PR #471 and prioritized the Stats/Planner
+fundamental overhaul. This sequence takes precedence over the September 5 product queue below:
 
-The next slice is [catalog metadata review](docs/tasks/catalog-metadata-review.md): sourced description
-corrections, ISBN conflict and duplicate-identity comparison, persistent assessments, and stale-evidence
-protection. It is under implementation for public-first review. Shared identity reassignment/merge is
-a separate follow-up requiring explicit reconciliation of dependent records. Reader-loop validation
-follows bounded catalog cleanup and release verification.
+1. **Shared history and Reflect — implemented for public review.** Stats now uses a book-and-note
+   opening, a single period for every summary, and drilldowns to real reading records. Planner
+   shares the completion model. Undated reads, current DNF, and books marked read without logs
+   remain distinct; there is no invented session or average rating.
+2. **Plan — next implementation.** A flexible queue with direct edit/remove/undo, saved ordering,
+   and optional intentions. Preserve year/month/day precision and existing calendar entries;
+   decide explicit storage for undated queue membership before adding “Soon.”
+3. **Private retrospective and release horizon.** Reuse the reading model for a private period
+   story and integrate verified release precision. No derived analytics sharing/export.
+4. **Reader validation and remaining arrangements work.** Return to the first-use/return-loop
+   checks and modular arrangements after the paired reading experience is coherent.
+
+[Implementation notes](docs/tasks/reading-life-implementation.md) record the data contract,
+remaining persistence decisions, and release boundaries. No migration is needed for the first
+Reflect/shared-history slice. Public merge precedes private synchronization and web release.
+
+## Catalog quality follow-up
+
+The cover review workspace merged in public PR #460/private PR #34. Catalog metadata review
+merged in public PR #467/private PR #36; the owner reported its migration applied. The review
+controls do not automatically curate the catalog. Remaining record assessments and identity
+reconciliation are separate from the active reader-experience implementation.
+
+The September 7 dropdown accessibility fix is merged publicly in #471. Its private synchronization
+and web release are a separate release step from the new Reflect implementation.
 
 ## Production baseline recorded before this release
 
@@ -70,8 +89,9 @@ the shared nine-room renderer, Discover details, and permanent personal-series r
 production release is in progress. Those implementations replace the earlier mockup-stage plans;
 do not schedule them again because a historical brief still says proposed.
 
-The order below supersedes the older product ordering within P2/P3. Safety regressions still take
-precedence. Keep one product implementation and one small reader experiment active at a time.
+The September 5 order below superseded the older P2/P3 ordering; the active Reflect/Plan
+program above now takes precedence. Discover’s guided experience subsequently merged in #444.
+Safety regressions still take precedence. Keep one product implementation and one small reader experiment active at a time.
 
 | Order | Priority  | Next outcome                                                            | Completion gate                                                                                                                                                                                                                                                                                                                               |
 | ----: | :-------: | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
