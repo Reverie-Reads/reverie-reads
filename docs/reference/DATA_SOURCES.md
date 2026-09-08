@@ -166,6 +166,20 @@ policy-quarantined because it does not name a bibliographic series. A live run r
 source-recall experiment, not a new evidence source; production use remains blocked on a separate
 rights, privacy, retention, cost, quality, and locked-qualification review.
 
+The complete 209-work reviewed-development run exposed four additional deterministic boundaries.
+An author-style profile on a hosted discovery platform does not become author-controlled because
+the model labels it `author`; an unmapped translated-edition series label cannot silently replace
+the original-language series identity; a storefront title shaped like `Installment: Collection #1`
+is ambiguous when the target is the collection; and Hachette's known Violet Wars relationship stays
+quarantined because the author's direct statement identifies the grouped novels as unrelated
+standalones. Human source review also corrected one stale standalone truth after Micaiah Johnson's
+current site directly placed _The Space Between Worlds_ in The Ashtown Series, and added the
+publisher-supported singular _Time Tub Traveller_ alias. Replaying the same retained proposals
+after those changes produced 100% resolved accuracy and membership precision, 89.2% series recall,
+and zero false series or false standalone classifications at 80.9% resolution. Exa added eleven
+correct resolutions over the cleaned Luna-only baseline. These are development results, not
+production qualification.
+
 Search-index recall is not repaired by letting the model fetch arbitrary URLs. The bounded trial
 uses a single-hop, navigation-aware retrieval gateway: only a hosted-search-manifest URL on a
 reviewed author/publisher origin may enter it; deterministic code may fetch that parent and one

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-09-06",
+  "reviewedAt": "2026-09-07",
   "cases": [
     {
       "id": "gold-a-court-of-silver-flames",
@@ -1541,6 +1541,7 @@
       "authors": ["Micaiah Johnson"],
       "sampleOrigin": "authority_negative_control",
       "stratum": "standalone_negative",
+      "strata": ["standalone_control"],
       "selectionFrame": "prh_standalone_scifi_fantasy_2026_09_04",
       "sampleSources": [
         {
@@ -1548,7 +1549,25 @@
           "url": "https://www.penguinrandomhouse.com/the-read-down/standalone-scifi-fantasy-books"
         }
       ],
-      "truth": { "status": "reviewed", "standalone": true, "memberships": [], "sources": [] }
+      "truth": {
+        "status": "reviewed",
+        "standalone": false,
+        "memberships": [
+          {
+            "series": "Ashtown",
+            "aliases": ["The Ashtown Series", "Ashtown Series"],
+            "role": "primary",
+            "positions": []
+          }
+        ],
+        "sources": [
+          {
+            "kind": "author",
+            "url": "https://www.micaiahjohnson.com/ashtown"
+          }
+        ],
+        "reviewNote": "The author's current page is explicitly titled The Ashtown Series and directly presents The Space Between Worlds with Those Beyond the Wall. This newer exact author relationship supersedes the older publisher standalone-selection label; no numeric position is inferred."
+      }
     },
     {
       "id": "gold-standalone-version-zero",
@@ -7082,7 +7101,7 @@
         "memberships": [
           {
             "series": "Time Tub Travellers",
-            "aliases": [],
+            "aliases": ["Time Tub Traveller"],
             "role": "primary",
             "positions": [
               {

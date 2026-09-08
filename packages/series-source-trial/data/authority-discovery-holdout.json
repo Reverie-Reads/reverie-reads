@@ -5,7 +5,7 @@
   "promptVersion": "authority-acquisition-v11-preserve-series-label",
   "sourceDataset": {
     "path": "data/authority-gold.json",
-    "sha256": "7585c74d49d51eb3caab77e21af3a1829d232654254b8ebc8da15994b73f38e9"
+    "sha256": "5e67d250c5fb0644fe11f755f6453b117480b3bdfae702b3b8e214fc84b67eb2"
   },
   "selection": {
     "seed": "authority-discovery-recall-holdout-v1",

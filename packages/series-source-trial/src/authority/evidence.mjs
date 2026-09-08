@@ -10,6 +10,7 @@ const discoveryOnlyHosts = new Set([
   'barnesandnoble.com',
   'goodreads.com',
   'linktr.ee',
+  'mybookcave.com',
   'target.com',
   'thecwa.co.uk',
   'wikipedia.org',
@@ -118,6 +119,14 @@ const knownClassificationRisk = (source) => {
     // Locke Industries Series installment. Treat revisions and mirrors as one profiled taxonomy.
     return 'known_author_catalog_taxonomy_conflict'
   }
+  if (
+    rootHost === 'hachettebookgroup.com' &&
+    /\bthe violet wars\b/i.test(source?.evidenceSummary ?? '')
+  ) {
+    // Hachette assigns both Ymir and Annex to this catalog series even though Rich Larson's
+    // author-controlled biography explicitly calls the novels unrelated standalones.
+    return 'known_catalog_relationship_conflict'
+  }
   return null
 }
 
@@ -132,6 +141,17 @@ const knownMembershipEvidenceRisk = (source) => {
   }
   if (/\b(?:trigger[- ]?warnings?|tropes?)\b/i.test(summary)) {
     return 'non_bibliographic_taxonomy'
+  }
+  if (
+    /\b(?:translated|translation|localized|foreign-language)\b/i.test(summary) &&
+    /\b(?:series|trilogy|duology|collection|saga|cycle)\b/i.test(summary)
+  ) {
+    return 'unmapped_localized_taxonomy'
+  }
+  if (/\bexact work as\b.{0,120}:\s*[^#]{1,100}#\d+\b/i.test(summary)) {
+    // A storefront title shaped "Installment: Collection #1" can invert the target work and
+    // relationship names. It is useful discovery evidence but needs exact-title review.
+    return 'title_relationship_ambiguity'
   }
   if (
     /\bheading\b/i.test(summary) &&
