@@ -1040,6 +1040,65 @@ test('treats a generic publisher series suffix as naming drift, not a false memb
   )
   assert.equal(crimeFictionScore.capability.membershipPrecision, 1)
   assert.equal(crimeFictionScore.capability.membershipRecall, 1)
+
+  const leadingArticle = structuredClone(seriesOutput)
+  leadingArticle.memberships[0].series = 'The Sequence'
+  const leadingArticleScore = scoreAuthorityAcquisition(
+    {
+      cases: [{ ...testCase, truth: { ...testCase.truth, memberships: [{ series: 'Sequence' }] } }],
+    },
+    [
+      {
+        ...result,
+        output: leadingArticle,
+        validation: validateAuthorityAcquisition(buildAuthorityTarget(testCase), leadingArticle, [
+          publisherUrl,
+        ]),
+      },
+    ],
+    'test-model',
+  )
+  assert.equal(leadingArticleScore.capability.membershipPrecision, 1)
+  assert.equal(leadingArticleScore.capability.membershipRecall, 1)
+})
+
+test('quarantines a generic form that does not name a bibliographic series', () => {
+  const output = structuredClone(seriesOutput)
+  output.memberships[0].series = 'duology'
+  const validation = validateAuthorityAcquisition(buildAuthorityTarget(testCase), output, [
+    publisherUrl,
+  ])
+
+  assert.equal(validation.valid, true)
+  assert.equal(validation.policySafe, false)
+  assert.match(validation.policyViolations.join('\n'), /generic form instead of a named/)
+
+  const score = scoreAuthorityAcquisition(
+    {
+      cases: [
+        {
+          ...testCase,
+          truth: {
+            ...testCase.truth,
+            memberships: [{ ...testCase.truth.memberships[0], series: 'Named Duology' }],
+          },
+        },
+      ],
+    },
+    [
+      {
+        caseId: 'book',
+        status: 'completed',
+        cached: false,
+        billing: {},
+        output,
+        validation,
+      },
+    ],
+    'test-model',
+  )
+  assert.equal(score.capability.resolutionRate, 0)
+  assert.equal(score.capability.membershipPrecision, null)
 })
 
 test('separates usable candidate proposals from unresolved and quarantined output', () => {
@@ -1089,4 +1148,43 @@ test('does not report cached evidence tokens as new run consumption', () => {
   assert.equal(score.operations.repairCalls, 0)
   assert.equal(score.operations.repairInputTokens, 0)
   assert.equal(score.operations.repairOutputTokens, 0)
+})
+
+test('reports Exa fallback search, model, and cost separately', () => {
+  const result = {
+    caseId: 'book',
+    status: 'completed',
+    cached: false,
+    billing: { modelCalls: 2, webSearchCalls: 3, inputTokens: 300, outputTokens: 50 },
+    output: seriesOutput,
+    validation: validateAuthorityAcquisition(buildAuthorityTarget(testCase), seriesOutput, [
+      publisherUrl,
+    ]),
+    exaFallback: {
+      selected: true,
+      locator: {
+        operations: {
+          queriesCompleted: 3,
+          requests: 4,
+          urlsInspected: 24,
+          estimatedCostUsd: 0.028,
+        },
+      },
+      search: {
+        billing: { modelCalls: 1, webSearchCalls: 1, inputTokens: 120, outputTokens: 20 },
+      },
+    },
+  }
+
+  const score = scoreAuthorityAcquisition({ cases: [testCase] }, [result], 'test-model')
+
+  assert.equal(score.operations.exaFallbackAttempts, 1)
+  assert.equal(score.operations.exaFallbackSearchesCompleted, 3)
+  assert.equal(score.operations.exaFallbackRequests, 4)
+  assert.equal(score.operations.exaFallbackUrlsInspected, 24)
+  assert.equal(score.operations.exaFallbackEstimatedCostUsd, 0.028)
+  assert.equal(score.operations.exaFallbackModelCalls, 1)
+  assert.equal(score.operations.exaFallbackSelected, 1)
+  assert.equal(score.operations.exaFallbackInputTokens, 120)
+  assert.equal(score.operations.exaFallbackOutputTokens, 20)
 })

@@ -171,15 +171,18 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   third-party evidence when reproduced on an author or publisher page. Preserve the attribution in
   the evidence summary and demote its classification support; first-party hosting does not turn the
   quoted speaker into the page owner.
-- **Independent search-index experiments are locator-only and non-retaining.** They receive the same
-  truth-blind title, author, and optional publication year, and may compare result URLs with reviewed
-  sources only in memory. Persist aggregate recall/cost/latency/error metrics—never provider
-  responses, result titles, snippets, URLs, queries, or case-level provider output—unless a future
-  provider plan expressly grants storage rights and the design is reviewed again. Locator output
-  cannot become identity, membership, position, standalone, resolver, retrieval-profile, Supabase,
-  or corpus evidence. Refuse the qualification partition; first measure incremental origin and
-  exact-page recovery beyond Luna-low on a frozen development slice. See
-  `docs/reference/DATA_SOURCES.md`.
+- **Exa is a shadow locator, never authority evidence.** It receives the same truth-blind title,
+  author, and optional publication year, and may compare result URLs with reviewed sources only in
+  memory. Persist aggregate recall/cost/latency/error metrics—never Exa responses, result titles,
+  snippets, URLs, domains, queries, request IDs, or case-level provider output. The opt-in fallback
+  runs only after Luna is unresolved or policy-quarantined, ranks at most eight non-discovery-only
+  domains in memory, and gives them to a separate bounded Luna hosted-search call. Only URLs in
+  Luna's own consulted-source manifest may ground that proposal; safe resolved first passes make no
+  Exa request. Exa output cannot become identity, membership, position, standalone, provider,
+  resolver, retrieval-profile, Supabase, or corpus evidence. A generic-only membership label such
+  as `series`, `trilogy`, or `duology` is policy-quarantined because it does not name a bibliographic
+  series. The completed 18-work development result does not clear rights, privacy, retention, cost,
+  or locked-qualification gates. See `docs/reference/DATA_SOURCES.md`.
 - **Navigation-aware authority retrieval is a bounded trial primitive, not a crawler.** Only an
   exact URL from the scout's consulted-source manifest and a current, human-reviewed origin profile
   may enter it. Every DNS answer and redirect hop must remain public and profile-approved, and the

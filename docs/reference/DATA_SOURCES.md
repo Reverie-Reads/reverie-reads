@@ -149,13 +149,22 @@ long enough to compute discovery recall against a frozen development benchmark. 
 search result into provider evidence, the resolver, retrieval profiles, Supabase, or the corpus.
 Only aggregate recall, request count, latency, error count, and estimated cost may be persisted;
 queries, provider responses, result titles, snippets, URLs, and case-level provider output are not
-retained. The locator refuses any benchmark marked as the qualification partition. The active first
-trial uses Exa Search because it provides a separate web index through a bounded API. It runs in
-ordinary `auto` mode with at most ten results and requests no page contents, highlights, summaries,
-synthesized output, deep search, or live crawl. A live run remains a source-recall experiment, not a
-new evidence source. Its acceptance measure is incremental known-origin and exact-page recovery
-beyond the fixed Luna-low baseline on the same slice; production use remains blocked on a separate
-rights, privacy, retention, cost, and quality review.
+retained. The locator refuses any benchmark marked as the qualification partition. The completed
+first trial uses Exa Search because it provides a separate web index through a bounded API. It runs
+in ordinary `auto` mode with at most ten results and requests no page contents, highlights,
+summaries, synthesized output, deep search, or live crawl. On the frozen 18-work development slice
+it recovered all four first-party origins and six of seven exact pages missed by the paired Luna-low
+baseline. That clears a development gate, not a production gate.
+
+The opt-in shadow fallback runs only after Luna is unresolved or policy-quarantined. It ranks at
+most eight candidate domains in memory, excludes known discovery-only origins, and gives those
+domains to a separate bounded Luna hosted-search call. Exa URLs, domains, queries, results, and
+request IDs are not retained. Only the Luna call's own consulted-source manifest can ground a
+proposal, and ordinary authority validation still controls whether that proposal replaces the first
+pass. A generic-only membership form such as `series`, `trilogy`, or `duology` is
+policy-quarantined because it does not name a bibliographic series. A live run remains a
+source-recall experiment, not a new evidence source; production use remains blocked on a separate
+rights, privacy, retention, cost, quality, and locked-qualification review.
 
 Search-index recall is not repaired by letting the model fetch arbitrary URLs. The bounded trial
 uses a single-hop, navigation-aware retrieval gateway: only a hosted-search-manifest URL on a
