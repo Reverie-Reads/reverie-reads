@@ -452,6 +452,54 @@ minimum 1,500-case reviewed pool, complete provider-independent selection frames
 SHA-256 ranking, a maximum of two selected works per author identity, the exact 600 series / 400
 affirmative-standalone mix, Luna-low plus Exa fallback, and a $10 Exa ceiling.
 
+Build publisher-controlled selection frames through supported APIs rather than scraping retail
+pages. The PRH intake uses the public Enhanced PRH API, captures every English-language work in an
+explicit publication-date interval, verifies the API record count against unique work IDs, and
+resumes from private state after an infrastructure failure. It retains structured identity,
+category, series, and position metadata plus response hashes; it discards descriptions and never
+persists or logs the key.
+
+Register for a PRH developer key, then keep it beside the other local trial keys:
+
+```dotenv
+PRH_API_KEY=your-server-side-key
+```
+
+Preview a bounded frame without a key or network request:
+
+```sh
+pnpm series:authority:qualification:capture:prh -- \
+  --frame-id prh-us-2025-q1 \
+  --from 2025-01-01 \
+  --to 2025-03-31 \
+  --dry-run
+```
+
+Remove `--dry-run` to capture the frame. The output remains under ignored
+`private-results/authority-qualification/` and is intentionally a review queue. Exact structured
+series relationships are proposals, not gold truth. Self-titled, unnumbered, fractional,
+multi-series, and collection-like relationships are flagged. A work with no returned series is
+explicitly unresolved; it can become a standalone control only after a reviewer adds affirmative
+author or publisher evidence.
+
+After reviewers have changed every retained case to `truth.status: "reviewed"`, they must also add
+`reviewer`, `reviewedAt`, a substantive `reviewNote`, and
+`reviewBlindToSystemOutput: true`. The truth source must be separate from that case's selection
+frame. The merge rejects development overlap, duplicate works, incomplete frame accounting,
+missing review attestations, non-authority truth, self-validating selection evidence, or any
+remaining candidate:
+
+```sh
+pnpm series:authority:qualification:merge -- \
+  --input packages/series-source-trial/private-results/authority-qualification/prh-us-2025-q1.review.json \
+  --out packages/series-source-trial/private-results/authority-qualification/reviewed-pool.json
+```
+
+Use `--require-minimum` on the final merge to enforce the 1,500-case preregistered minimum before
+freezing. PRH covers only one traditional-publishing group, so it cannot satisfy the independent /
+Kindle-first floor or the author-evidence floor alone; those must come from separate complete award,
+platform, author-bibliography, or publisher frames.
+
 After blind authority review is complete, freeze the set:
 
 ```sh
