@@ -500,22 +500,23 @@ freezing. PRH covers only one traditional-publishing group, so it cannot satisfy
 Kindle-first floor or the author-evidence floor alone; those must come from separate complete award,
 platform, author-bibliography, or publisher frames.
 
-The independent intake captures the complete General, Regional, and Ebook medalist frames from the
-four official 2025 Independent Publisher Book Awards result pages. It honors the site's declared
-ten-second crawl delay and retains only winner identity, award category, medal, publisher label,
-and response hashes—never page HTML, images, or descriptions:
+The independent intake captures the complete General, Regional, and Ebook medalist frames from six
+official 2023-2025 Independent Publisher Book Awards result pages: four sectioned 2025 pages and one
+complete archive page for each earlier year. It honors the site's declared ten-second crawl delay
+and retains only winner identity, award category, medal, publisher label, and response hashes—never
+page HTML, images, or descriptions:
 
 ```sh
 pnpm series:authority:qualification:capture:ippy -- --dry-run
 pnpm series:authority:qualification:capture:ippy
 ```
 
-The fixed four-page capture has no category, title, or maximum selector. An award record establishes
-selection identity only: it cannot establish series membership or standalone status, and its own
-result page cannot be reused as a truth citation. Publication year and Reverie's publication-path
-label stay reviewer-verified; the 2025 award year is not silently treated as the book's publication
-year. Ambiguous contributor strings are flagged for manual splitting. Review the private output,
-then merge it with the PRH review queue using repeated `--input` arguments.
+The fixed six-page capture has no year, category, title, or maximum selector. An award record
+establishes selection identity only: it cannot establish series membership or standalone status,
+and its own result page cannot be reused as a truth citation. Publication year and Reverie's
+publication-path label stay reviewer-verified; an award year is not silently treated as the book's
+publication year. Ambiguous contributor strings are flagged for manual splitting. Review the
+private output, then merge it with the PRH review queue using repeated `--input` arguments.
 
 After blind authority review is complete, freeze the set:
 

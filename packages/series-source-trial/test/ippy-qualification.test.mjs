@@ -2,9 +2,10 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
   buildIppyCapture,
+  extractIppyArchiveMedalistRecords,
   extractIppyMedalistRecords,
   ippyQualificationStrata,
-  IPPY_2025_PAGES,
+  IPPY_QUALIFICATION_PAGES,
   parseIppyIdentity,
 } from '../src/authority/ippy-qualification.mjs'
 import {
@@ -24,6 +25,30 @@ const fixture = `
   <h3>15. Science Fiction</h3>
   <h4>SILVER</h4><p>Two-Part Title</p><p>Author: Writer Two (Other Press)</p>
 </main></body></html>`
+
+const archiveFixture = `
+<!doctype html><html><body>
+  <div class="wpr-promo-box-content">
+    <h3 class="wpr-promo-box-title">24. Mystery</h3>
+    <div class="wpr-promo-box-description">
+      <p>GOLD (tie):</p>
+      <p>Book by Design</p><p>Writer One</p><p>Press One</p>
+      <p>Book One B</p><p>by Writer One B</p><p>Press One B</p>
+      <p>SILVER (tie) :</p>
+      <p>Book Two</p><p>by Writer Two</p><p>Press Two</p>
+      <p>Book Three</p><p>by Writer Three</p>
+      <p>BRONZE :</p><p>Book Four by Writer Four</p><p>by illustrated by Artist Five</p>
+    </div>
+  </div>
+  <div class="wpr-promo-box-content">
+    <h3 class="wpr-promo-box-title">80. Book/Author/Publisher Website</h3>
+    <div class="wpr-promo-box-description">
+      <p>GOLD (tie):</p><p>https://one.example</p><p>https://two.example</p>
+      <p>SILVER:</p><p>https://three.example</p>
+      <p>BRONZE:</p><p>https://four.example</p>
+    </div>
+  </div>
+</body></html>`
 
 test('extracts only medalist lines in declared result sections', () => {
   assert.deepEqual(extractIppyMedalistRecords(fixture), [
@@ -74,6 +99,20 @@ test('parses factual identity while separating publisher and secondary contribut
     publisherLabel: 'Tight Press',
     reviewFlags: [],
   })
+  assert.deepEqual(parseIppyIdentity('Repair Credit by Writer Three (Repair Press'), {
+    eligible: true,
+    title: 'Repair Credit',
+    authors: ['Writer Three'],
+    publisherLabel: 'Repair Press',
+    reviewFlags: ['source_publisher_parenthesis_repaired'],
+  })
+  assert.deepEqual(parseIppyIdentity('House Book by House Press (House Press)'), {
+    eligible: true,
+    title: 'House Book',
+    authors: ['House Press'],
+    publisherLabel: 'House Press',
+    reviewFlags: ['verify_author_publisher_identity'],
+  })
   assert.deepEqual(
     parseIppyIdentity('Edited Work by Writer Four; edited by Editor Five (Editorial Press)'),
     {
@@ -84,7 +123,44 @@ test('parses factual identity while separating publisher and secondary contribut
       reviewFlags: [],
     },
   )
+  assert.deepEqual(
+    parseIppyIdentity('Audio Work written and narrated by Writer Five (Audio Press)').authors,
+    ['Writer Five'],
+  )
+  assert.deepEqual(
+    parseIppyIdentity('Picture Work by Writer Six by illustrated by Artist Seven (Art Press)')
+      .authors,
+    ['Writer Six'],
+  )
+  assert.deepEqual(
+    parseIppyIdentity('Anthology by Collective Authors edited by Editor Eight (Press)').reviewFlags,
+    ['verify_contributor_split'],
+  )
   assert.equal(parseIppyIdentity('A Title Without Attribution').eligible, false)
+})
+
+test('extracts archive cards structurally and accounts for the non-book website category', () => {
+  const records = extractIppyArchiveMedalistRecords(archiveFixture)
+  assert.equal(records.length, 9)
+  assert.deepEqual(records[0].identity, {
+    eligible: true,
+    title: 'Book by Design',
+    authors: ['Writer One'],
+    publisherLabel: 'Press One',
+    reviewFlags: [],
+  })
+  assert.deepEqual(records[4].identity, {
+    eligible: true,
+    title: 'Book Four',
+    authors: ['Writer Four'],
+    publisherLabel: null,
+    reviewFlags: ['publisher_label_missing', 'verify_contributor_split'],
+  })
+  assert.equal(
+    records.filter(({ exclusionReason }) => exclusionReason === 'non-book website award category')
+      .length,
+    4,
+  )
 })
 
 test('maps award categories without inferring an unverified publication year', () => {
@@ -101,12 +177,16 @@ test('deduplicates overlapping winners while preserving each complete selection 
     pages: [
       {
         id: 'frame-one',
+        year: 2025,
+        format: 'sectioned',
         url: 'https://ippyawards.com/blog/frame-one',
         responseSha256: 'one',
         records,
       },
       {
         id: 'frame-two',
+        year: 2024,
+        format: 'archive-card',
         url: 'https://ippyawards.com/blog/frame-two',
         responseSha256: 'two',
         records: [records[0]],
@@ -117,6 +197,7 @@ test('deduplicates overlapping winners while preserving each complete selection 
   assert.equal(capture.cases.length, 3)
   const overlapping = capture.cases.find(({ title }) => title === 'Creatures of Chaos')
   assert.deepEqual(overlapping.selectionFrameIds, ['frame-one', 'frame-two'])
+  assert.deepEqual(overlapping.reviewMetadata.awardYears, [2024, 2025])
   assert.equal(overlapping.truth.status, 'candidate')
   assert.equal(overlapping.truth.standalone, null)
   assert.deepEqual(overlapping.truth.sources, [])
@@ -135,6 +216,8 @@ test('accounts for ambiguous and development-overlap exclusions', () => {
     pages: [
       {
         id: 'frame-one',
+        year: 2025,
+        format: 'sectioned',
         url: 'https://ippyawards.com/blog/frame-one',
         responseSha256: 'one',
         records: [
@@ -156,11 +239,11 @@ test('accounts for ambiguous and development-overlap exclusions', () => {
   assert.equal(capture.selectionFrames[0].exclusions.length, 2)
 })
 
-test('requires the declared robots delay and keeps the capture fixed to four pages', async () => {
+test('requires the declared robots delay and keeps the capture fixed to six pages', async () => {
   const policy = ippyRobotsPolicy('User-agent: *\nDisallow:\nCrawl-delay: 10\n')
   assert.deepEqual(policy, { crawlDelaySeconds: 10, disallows: [] })
   assert.deepEqual(ippyRobotsPolicy('Crawl-delay: 10\nUser-agent: *\nDisallow:\n'), policy)
-  assert.equal(IPPY_2025_PAGES.length, 4)
+  assert.equal(IPPY_QUALIFICATION_PAGES.length, 6)
   const requested = []
   const waits = []
   const fetchImpl = async (url) => {
@@ -170,9 +253,24 @@ test('requires the declared robots delay and keeps the capture fixed to four pag
         headers: { 'content-type': 'text/plain' },
       })
     }
+    if (/\/blog\/202[34]-medalists$/.test(url)) {
+      const repeated = `<!doctype html><html><body>${Array.from(
+        { length: 120 },
+        (_, index) => `
+          <div class="wpr-promo-box-content">
+            <h3 class="wpr-promo-box-title">${index + 1}. Fiction</h3>
+            <div class="wpr-promo-box-description">
+              <p>GOLD:</p><p>Gold Book ${index}</p><p>Writer ${index} A</p><p>Press</p>
+              <p>SILVER:</p><p>Silver Book ${index}</p><p>Writer ${index} B</p><p>Press</p>
+              <p>BRONZE:</p><p>Bronze Book ${index}</p><p>Writer ${index} C</p><p>Press</p>
+            </div>
+          </div>`,
+      ).join('')}</body></html>`
+      return new Response(repeated, { headers: { 'content-type': 'text/html' } })
+    }
     const repeated = fixture.replace(
       '</main>',
-      `${Array.from({ length: 20 }, (_, index) => `<h3>${index}. Fiction</h3><h4>GOLD</h4><p>Book ${index} by Writer ${index} (Press)</p>`).join('')}</main>`,
+      `${Array.from({ length: 120 }, (_, index) => `<h3>${index}. Fiction</h3><h4>GOLD</h4><p>Book ${index} by Writer ${index} (Press)</p>`).join('')}</main>`,
     )
     return new Response(repeated, { headers: { 'content-type': 'text/html' } })
   }
@@ -180,9 +278,9 @@ test('requires the declared robots delay and keeps the capture fixed to four pag
     fetchImpl,
     wait: async (milliseconds) => waits.push(milliseconds),
   })
-  assert.equal(pages.length, 4)
-  assert.equal(requested.length, 5)
-  assert.deepEqual(waits, [10_000, 10_000, 10_000, 10_000])
+  assert.equal(pages.length, 6)
+  assert.equal(requested.length, 7)
+  assert.deepEqual(waits, [10_000, 10_000, 10_000, 10_000, 10_000, 10_000])
 })
 
 test('offers a dry-run-only command surface with no partial frame selector', () => {

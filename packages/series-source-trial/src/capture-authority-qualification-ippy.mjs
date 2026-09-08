@@ -5,8 +5,9 @@ import { fileURLToPath } from 'node:url'
 import { authorityWorkKey } from './authority-sample.mjs'
 import {
   buildIppyCapture,
+  extractIppyArchiveMedalistRecords,
   extractIppyMedalistRecords,
-  IPPY_2025_PAGES,
+  IPPY_QUALIFICATION_PAGES,
   IPPY_ORIGIN,
 } from './authority/ippy-qualification.mjs'
 import { loadTrialCases } from './cases.mjs'
@@ -100,19 +101,22 @@ async function boundedTextFetch(url, { fetchImpl = fetch, expectedType }) {
 export async function captureIppyPages({ fetchImpl = fetch, wait = sleep } = {}) {
   const robots = await boundedTextFetch(robotsUrl, { fetchImpl, expectedType: 'text/plain' })
   const policy = ippyRobotsPolicy(robots)
-  if (!IPPY_2025_PAGES.every(({ url }) => robotsAllows(policy, url))) {
-    throw new Error('IPPY robots policy does not allow every fixed 2025 medalist page')
+  if (!IPPY_QUALIFICATION_PAGES.every(({ url }) => robotsAllows(policy, url))) {
+    throw new Error('IPPY robots policy does not allow every fixed qualification page')
   }
   if (!Number.isFinite(policy.crawlDelaySeconds)) {
     throw new Error('IPPY robots policy does not declare a crawl delay')
   }
   const delayMilliseconds = Math.max(10_000, policy.crawlDelaySeconds * 1000)
   const pages = []
-  for (const page of IPPY_2025_PAGES) {
+  for (const page of IPPY_QUALIFICATION_PAGES) {
     await wait(delayMilliseconds)
     const html = await boundedTextFetch(page.url, { fetchImpl, expectedType: 'text/html' })
-    const records = extractIppyMedalistRecords(html)
-    if (records.length < 20) {
+    const records =
+      page.format === 'archive-card'
+        ? extractIppyArchiveMedalistRecords(html)
+        : extractIppyMedalistRecords(html)
+    if (records.length < page.minimumRecords) {
       throw new Error(`IPPY page structure is incomplete or changed: ${page.url}`)
     }
     pages.push({ ...page, records, responseSha256: sha256(html) })
@@ -126,7 +130,7 @@ export async function runIppyCapture(argv = process.argv.slice(2)) {
   const outputPath = resolve(
     repositoryRoot,
     options.out ??
-      'packages/series-source-trial/private-results/authority-qualification/ippy-2025.review.json',
+      'packages/series-source-trial/private-results/authority-qualification/ippy-2023-2025.review.json',
   )
   const nested = relative(privateRoot, outputPath)
   if (!nested || nested.startsWith('..') || isAbsolute(nested)) {
@@ -138,10 +142,10 @@ export async function runIppyCapture(argv = process.argv.slice(2)) {
     console.log(
       JSON.stringify(
         {
-          pages: IPPY_2025_PAGES,
+          pages: IPPY_QUALIFICATION_PAGES,
           robotsUrl,
           outputPath,
-          requests: 'one robots request and four fixed official result pages, sequentially paced',
+          requests: 'one robots request and six fixed official result pages, sequentially paced',
           truthBoundary:
             'Medalist identity and category are selection metadata only; every classification remains pending.',
         },
