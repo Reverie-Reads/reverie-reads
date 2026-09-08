@@ -501,6 +501,113 @@ test('keeps selection frames and known marketing taxonomies out of truth evidenc
   assert.deepEqual(cleanedAssociation.memberships, [])
 })
 
+test('keeps unverified hosted author profiles out of classification evidence', () => {
+  const profileUrl = 'https://mybookcave.com/profile/ada-reader/'
+  const output = structuredClone(seriesOutput)
+  output.identity.evidenceUrls = [profileUrl]
+  output.memberships[0].evidenceUrls = [profileUrl]
+  output.authoritySources = [
+    {
+      url: profileUrl,
+      kind: 'author',
+      supports: ['identity', 'series_membership', 'position'],
+      evidenceSummary: 'The hosted profile calls the exact title Sequence book two.',
+    },
+  ]
+
+  const raw = validateAuthorityAcquisition(buildAuthorityTarget(testCase), output, [profileUrl])
+  assert.equal(raw.valid, true)
+  assert.equal(raw.policySafe, false)
+  assert.ok(raw.policyViolations.some((error) => error.includes('known_discovery_only_host')))
+
+  const cleaned = canonicalizeAuthorityAcquisition(output, [profileUrl])
+  assert.deepEqual(cleaned.authoritySources[0].supports, ['identity'])
+  assert.deepEqual(cleaned.memberships, [])
+})
+
+test('quarantines the known Violet Wars catalog relationship conflict', () => {
+  const catalogUrl = 'https://www.hachettebookgroup.com/titles/rich-larson/ymir/9780316416573/'
+  const output = structuredClone(seriesOutput)
+  output.identity.evidenceUrls = [catalogUrl]
+  output.memberships[0].series = 'The Violet Wars'
+  output.memberships[0].position = null
+  output.memberships[0].evidenceUrls = [catalogUrl]
+  output.authoritySources = [
+    {
+      url: catalogUrl,
+      kind: 'publisher',
+      supports: ['identity', 'series_membership'],
+      evidenceSummary:
+        'Hachette identifies Ymir by Rich Larson and lists its series as The Violet Wars.',
+    },
+  ]
+
+  const raw = validateAuthorityAcquisition(buildAuthorityTarget(testCase), output, [catalogUrl])
+  assert.equal(raw.valid, true)
+  assert.equal(raw.policySafe, false)
+  assert.ok(
+    raw.policyViolations.some((error) => error.includes('known_catalog_relationship_conflict')),
+  )
+
+  const cleaned = canonicalizeAuthorityAcquisition(output, [catalogUrl])
+  assert.deepEqual(cleaned.authoritySources[0].supports, ['identity'])
+  assert.deepEqual(cleaned.memberships, [])
+})
+
+test('quarantines untranslated series labels for an original-language target', () => {
+  const translatedUrl = 'https://publisher.example/translated/second-book'
+  const output = structuredClone(seriesOutput)
+  output.identity.evidenceUrls = [translatedUrl]
+  output.memberships[0].series = 'Sekvence'
+  output.memberships[0].position = null
+  output.memberships[0].evidenceUrls = [translatedUrl]
+  output.authoritySources = [
+    {
+      url: translatedUrl,
+      kind: 'publisher_catalog',
+      supports: ['identity', 'series_membership'],
+      evidenceSummary:
+        'The catalog matches the original title and places the translated work in the named series Sekvence.',
+    },
+  ]
+
+  const raw = validateAuthorityAcquisition(buildAuthorityTarget(testCase), output, [translatedUrl])
+  assert.equal(raw.valid, true)
+  assert.equal(raw.policySafe, false)
+  assert.ok(raw.policyViolations.some((error) => error.includes('unmapped_localized_taxonomy')))
+
+  const cleaned = canonicalizeAuthorityAcquisition(output, [translatedUrl])
+  assert.deepEqual(cleaned.authoritySources[0].supports, ['identity'])
+  assert.deepEqual(cleaned.memberships, [])
+})
+
+test('quarantines a storefront title that inverts the work and relationship names', () => {
+  const storefrontUrl = 'https://publisher.example/products/first-installment'
+  const output = structuredClone(seriesOutput)
+  output.identity.evidenceUrls = [storefrontUrl]
+  output.memberships[0].series = 'Second Book'
+  output.memberships[0].position = 1
+  output.memberships[0].evidenceUrls = [storefrontUrl]
+  output.authoritySources = [
+    {
+      url: storefrontUrl,
+      kind: 'publisher',
+      supports: ['identity', 'series_membership', 'position'],
+      evidenceSummary:
+        'The publisher identifies the exact work as First Installment: Second Book #1.',
+    },
+  ]
+
+  const raw = validateAuthorityAcquisition(buildAuthorityTarget(testCase), output, [storefrontUrl])
+  assert.equal(raw.valid, true)
+  assert.equal(raw.policySafe, false)
+  assert.ok(raw.policyViolations.some((error) => error.includes('title_relationship_ambiguity')))
+
+  const cleaned = canonicalizeAuthorityAcquisition(output, [storefrontUrl])
+  assert.deepEqual(cleaned.authoritySources[0].supports, ['identity'])
+  assert.deepEqual(cleaned.memberships, [])
+})
+
 test('blocks only the actual selection-frame URL when a sample plan is available', () => {
   const frameUrl = 'https://awards.example/shortlist'
   const authorUrl = 'https://author.example/books/exact-work'

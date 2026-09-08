@@ -535,6 +535,16 @@ aggregates, but no Exa URL, domain, result, query, or request identifier. A gene
 such as `series`, `trilogy`, or `duology` is policy-quarantined rather than accepted as a named
 bibliographic membership.
 
+The subsequent complete 209-work reviewed-development run attempted Exa for 48 unsafe first
+passes. After deterministic replay and two human-reviewed gold corrections, it resolved 169 works
+with 100% resolved accuracy, 100% membership precision, 89.2% positive-series recall, and zero
+false series or false standalone classifications. Exa contributed eleven additional correct
+resolutions, including four additional positive-series works, for 144 requests and $1.008 in Exa
+cost. Unverified hosted author profiles, an explicitly known catalog-relationship conflict,
+unmapped translated series labels, and storefront titles that invert the work and relationship
+names now remain review-only. See
+`reports/authority-exa-full-development-hardening-2026-09-07.md`.
+
 This remains a no-write development arm. It does not replace Luna, change evidence eligibility, or
 clear production, rights, privacy, retention, cost, or locked-qualification gates.
 

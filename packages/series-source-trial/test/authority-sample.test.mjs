@@ -65,8 +65,8 @@ test('reports the exact reviewed and sampling gaps in the current authority set'
     selected: 335,
     reviewed: 209,
     candidate: 126,
-    reviewedPositive: 147,
-    reviewedStandalone: 62,
+    reviewedPositive: 148,
+    reviewedStandalone: 61,
     selectionTarget: 200,
     selectionGap: 0,
   })

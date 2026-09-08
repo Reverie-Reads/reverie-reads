@@ -159,9 +159,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   consultation, not source eligibility: the model cannot declare its own evidence authoritative.
   Link hubs and known discovery-only domains cannot establish classification. A blocked or risky
   source is demoted to identity-only; an independently supported claim may survive, but a claim
-  that depended on that source must not. Professional-association member directories are
-  discovery-only, not author-controlled evidence, even when the model labels the source `author`.
-  “Standalone” language means reading independence when the
+  that depended on that source must not. Professional-association member directories and
+  unverified profiles on hosted discovery platforms are discovery-only, not author-controlled
+  evidence, even when the model labels the source `author`. Unmapped translated-edition series
+  labels, storefront titles that invert the work and relationship names, and profiled catalog
+  contradictions remain review-only. “Standalone” language means reading independence when the
   same authority also assigns a bibliographic series; an unlabelled genre, trope, world, or
   trigger-warning heading is not series evidence. A spin-off, companion, shared-character, or
   same-world statement cannot be reversed into membership for the related work; require separate
