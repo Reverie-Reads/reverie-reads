@@ -30,6 +30,7 @@ import {
   useHouseholdLibraryAuthorization,
 } from '../data/household'
 import { useWorksLookup, workToHit, type WorkRow } from '../data/works'
+import { parseReleasePub } from '../data/releases'
 import { useCorpusAdminStatus } from '../data/enrichCorpus'
 import { resultIsbn, triageLabel, triageResults, type TriagedResult } from '../lib/addTriage'
 import { resolveCandidate, type ReviewAction } from '../data/duplicates'
@@ -294,6 +295,9 @@ function AddForm({
     genre: hit.genre ?? '',
     format: 'Paperback' as string,
     readStatus: 'unset' as Book['readStatus'],
+    // Release cards and the manual horizon form carry flexible precision into Add. Keeping this
+    // editable lets the reader correct a catalog date before it becomes their own record.
+    pub: hit.pub ?? '',
   })
   // Subgenres are a multi-pick; the first selection leads (drives the cover gradient).
   // Empty, not the skin genre's first subgenre. Pre-selecting one both stored an unchosen value and
@@ -310,6 +314,7 @@ function AddForm({
   // Position gets the same treatment Edit got in #78: one explicit parser, errors shown rather than
   // silently coerced. `Number(v) || ''` turned 0 into "unset" and quietly ate "1.5 (novella)".
   const [positionError, setPositionError] = useState<string | null>(null)
+  const [publicationError, setPublicationError] = useState<string | null>(null)
   // Track whether the user edited genre, so enrichment fills it but never overrides their choice.
   const genreEdited = useRef(false)
   // Same tracking for series: typed -> seriesUserChosen true; left as the verified corpus-prefilled
@@ -330,6 +335,7 @@ function AddForm({
   const set = (k: keyof typeof form, v: string) => {
     setForm((p) => ({ ...p, [k]: v }))
     if (k === 'position') setPositionError(null)
+    if (k === 'pub') setPublicationError(null)
   }
   const ownSubOptions = [
     ...subs.filter((x) => !subgenresForGenre(form.genre || skinGenre).includes(x)),
@@ -390,6 +396,11 @@ function AddForm({
       setPositionError(parsedPosition.error)
       return
     }
+    const parsedPub = form.pub.trim() ? parseReleasePub(form.pub) : parsePub('')
+    if (!parsedPub) {
+      setPublicationError('Use YYYY, YYYY-MM, or YYYY-MM-DD.')
+      return
+    }
     const f = form.format.toLowerCase()
     const isEbook = f.includes('ebook') || f.includes('kindle')
     const isAudio = f.includes('audio')
@@ -445,7 +456,7 @@ function AddForm({
       format: form.format,
       readStatus: form.readStatus,
       source: 'Owned',
-      pub: parsePub(hit.pub ?? ''),
+      pub: parsedPub,
     }
     // Dedup on intake: a strong match folds into the existing record instead of duplicating.
     // With auto-merge off, a match comes back for an inline decision instead.
@@ -650,10 +661,24 @@ function AddForm({
             </option>
           ))}
         </select>
+        <input
+          value={form.pub}
+          onChange={(e) => set('pub', e.target.value)}
+          placeholder="Publication date — YYYY, YYYY-MM, or YYYY-MM-DD"
+          aria-label="Publication date"
+          aria-invalid={!!publicationError}
+          className={`${inputClass} col-span-2 sm:col-span-3`}
+          style={inputStyle}
+        />
       </div>
       {positionError && (
         <p role="alert" className="mt-1.5 text-[12px]" style={{ color: 'var(--accent-ink)' }}>
           {positionError}
+        </p>
+      )}
+      {publicationError && (
+        <p role="alert" className="mt-1.5 text-[12px]" style={{ color: 'var(--accent-ink)' }}>
+          {publicationError}
         </p>
       )}
 

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Book } from '@reverie/core'
-import { releaseWindow, yourAuthors } from './releases'
-import type { DiscoverHit } from '../lib/discover'
+import { parseReleasePub, releaseDateLabel, releaseWindow, yourAuthors, type ReleaseHit } from './releases'
 
 const book = (b: { title: string; author: string; rating?: number; fave?: boolean; isbn?: string }): Book =>
   ({
@@ -12,7 +11,7 @@ const book = (b: { title: string; author: string; rating?: number; fave?: boolea
     contributors: [{ name: b.author, role: 'author' }],
   }) as unknown as Book
 
-const hit = (h: Partial<DiscoverHit>): DiscoverHit => ({ title: '', authors: [], cover: '', isbn: '', pub: '', ...h })
+const hit = (h: Partial<ReleaseHit>): ReleaseHit => ({ title: '', authors: [], cover: '', isbn: '', pub: '', ...h })
 
 describe('yourAuthors — the derived follow list', () => {
   const books = [
@@ -54,19 +53,35 @@ describe('releaseWindow — upcoming/recent, owned and stale excluded', () => {
     ],
     'Penn Cole': [
       hit({ title: 'Sooner Future', authors: ['Penn Cole'], pub: '2026-08-01' }),
-      hit({ title: 'Year Only', authors: ['Penn Cole'], pub: '2026' }), // year-only future-dated
+      hit({ title: 'Year Only', authors: ['Penn Cole'], pub: '2026' }),
+      hit({ title: 'Future Year', authors: ['Penn Cole'], pub: '2027' }),
     ],
   }
 
-  it('windows, owner-filters, and sorts (upcoming soonest-first, recent newest-first)', () => {
-    const { upcoming, recent } = releaseWindow(shelves, books, now)
-    expect(upcoming.map((r) => r.title)).toEqual(['Sooner Future', 'Future Book', 'Year Only'])
+  it('windows, owner-filters, and sorts without manufacturing a day for partial dates', () => {
+    const { upcoming, recent, uncertain } = releaseWindow(shelves, books, now)
+    expect(upcoming.map((r) => r.title)).toEqual(['Sooner Future', 'Future Book', 'Future Year'])
     expect(recent.map((r) => r.title)).toEqual(['Recent Book'])
+    expect(uncertain.map((r) => r.title)).toEqual(['Year Only'])
   })
 
   it('dedupes the same title across author shelves', () => {
     const dup = { A: [hit({ title: 'Co-Written', authors: ['A'], pub: '2026-08-02' })], B: [hit({ title: 'Co-Written', authors: ['A'], pub: '2026-08-02' })] }
     const { upcoming } = releaseWindow(dup, [], now)
     expect(upcoming).toHaveLength(1)
+  })
+})
+
+describe('release date input and display', () => {
+  it('preserves year, month, and day precision', () => {
+    expect(parseReleasePub('2027')).toEqual({ y: 2027, m: null, d: null })
+    expect(parseReleasePub('2027-03')).toEqual({ y: 2027, m: 3, d: null })
+    expect(parseReleasePub('2027-03-14')).toEqual({ y: 2027, m: 3, d: 14 })
+    expect(releaseDateLabel('2027-03')).toBe('Mar 2027')
+  })
+
+  it('rejects calendar-invalid input', () => {
+    expect(parseReleasePub('2027-02-29')).toBeNull()
+    expect(parseReleasePub('March 2027')).toBeNull()
   })
 })
