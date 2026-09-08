@@ -185,7 +185,7 @@ test('Reflect turns persisted reading history into an explorable private retrosp
 
     await page.getByRole('button', { name: /Iona Vale 2 reads/i }).click()
     await expect(page.getByRole('dialog')).toContainText(
-      'The voices you spent time with.: Iona Vale',
+      'The voices you spent time with: Iona Vale',
     )
     await page.getByRole('button', { name: /close/i }).click()
 

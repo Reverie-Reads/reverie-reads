@@ -125,6 +125,7 @@ function Breakdown({
   const unknown = missing(entries)
   const shown = known.slice(0, limit)
   const max = Math.max(1, ...shown.map((entry) => entry.records.length))
+  const detailTitle = title.replace(/[.!?]+$/u, '')
   return (
     <section className="reflect-breakdown">
       <p className="reflect-eyebrow">{eyebrow}</p>
@@ -137,10 +138,14 @@ function Breakdown({
               <button
                 type="button"
                 className="reflect-bar"
-                onClick={() => open({ title: `${title}: ${entry.label}`, records: entry.records })}
+                onClick={() =>
+                  open({ title: `${detailTitle}: ${entry.label}`, records: entry.records })
+                }
               >
                 <span className="reflect-bar-label">
-                  <span>{entry.label}</span>
+                  <span className={eyebrow === 'Genres' ? 'capitalize' : undefined}>
+                    {entry.label}
+                  </span>
                   <span>
                     {entry.records.length} {entry.records.length === 1 ? 'read' : 'reads'}
                   </span>
@@ -161,7 +166,7 @@ function Breakdown({
           className="reflect-text-link reflect-missing"
           onClick={() =>
             open({
-              title: `${title}: not recorded`,
+              title: `${detailTitle}: not recorded`,
               records: unknown.records,
               explanation:
                 'These reads stay in your totals. This detail is simply absent from the current book or read record.',
@@ -223,6 +228,10 @@ export function ReflectView({
       reads.length > (summary.months[winner]?.length ?? 0) ? index : winner,
     0,
   )
+  const busiestMonthCount = summary.months[busiestMonth]?.length ?? 0
+  const busiestMonthIsTied =
+    busiestMonthCount > 0 &&
+    summary.months.filter((reads) => reads.length === busiestMonthCount).length > 1
   const topGenre = recorded(summary.genres)[0]
   const topAuthor = recorded(summary.authors)[0]
   const topTrope = recorded(summary.tropes)[0]
@@ -396,7 +405,7 @@ export function ReflectView({
           </div>
           <p>
             {readsWithMonth > 0
-              ? `${MONTH_ABBR[busiestMonth]} held ${summary.months[busiestMonth]?.length ?? 0} ${summary.months[busiestMonth]?.length === 1 ? 'finish' : 'finishes'}. Choose a month to revisit it.`
+              ? `${MONTH_ABBR[busiestMonth]} ${busiestMonthIsTied ? 'was one of the fullest months' : 'was the fullest month'}, with ${busiestMonthCount} ${busiestMonthCount === 1 ? 'finish' : 'finishes'}. Choose a month to revisit it.`
               : 'No finish months are recorded for this period.'}
             <br />
             Finishes, never a measure of days spent reading.
@@ -672,14 +681,14 @@ export function ReflectView({
             <dl className="reflect-story-facts">
               {readsWithMonth > 0 && (
                 <div>
-                  <dt>The fullest month</dt>
+                  <dt>{busiestMonthIsTied ? 'One of the fullest months' : 'The fullest month'}</dt>
                   <dd>{MONTH_ABBR[busiestMonth]}</dd>
                 </div>
               )}
               {topGenre && (
                 <div>
                   <dt>Most visited genre</dt>
-                  <dd>{topGenre.label}</dd>
+                  <dd className="capitalize">{topGenre.label}</dd>
                 </div>
               )}
               {topAuthor && (
