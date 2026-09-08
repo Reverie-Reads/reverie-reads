@@ -171,6 +171,24 @@ test('comma-inverted full author and equivalent ISBN-10 match', () => {
   )
   assert.equal(result.proposals.length, 2)
 })
+
+test('a conflicting longer title cannot hide edition qualifiers behind the exact short title', () => {
+  const c = example()
+  for (const title_long of [
+    identity.title + ': Abridged Edition',
+    identity.title + ' (Graphic Novel)',
+    { malformed: true },
+  ]) {
+    const result = assessSupplement(c, planSupplement(c), response({ title_long }))
+    assert.equal(result.reason, 'qualified_title_review')
+    assert.deepEqual(result.proposals, [])
+  }
+  assert.equal(
+    assessSupplement(c, planSupplement(c), response({ title_long: identity.title })).proposals
+      .length,
+    2,
+  )
+})
 test('only missing pages and editionFormat are ephemeral candidates; forbidden source fields cannot leak', () => {
   const c = example()
   const result = assessSupplement(

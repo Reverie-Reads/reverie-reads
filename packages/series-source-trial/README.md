@@ -22,6 +22,8 @@ provider evidence, gold truth, or a live test case. Do not run it with `--live`.
 For real development cases, prepare an ignored local input file from actual returned baseline
 records. The runner validates identity agreement but does not fetch or authenticate those baseline
 observations: writing `source: "google"` is not proof of origin. Never invent baseline evidence.
+Keep baseline inputs short-lived and subject to each provider's retention rules; Git-ignored is
+not permission for permanent storage. Remove restricted baseline snapshots after the trial.
 The version-1 schema is illustrated above. Cases may contain at most two baseline records, one
 each from `google` and `openlibrary`. Both must agree on returned canonical ISBN, full title, and
 full author names. Initial-only author matches, mixed ISBNs, or edition-format conflicts stop the
@@ -44,6 +46,10 @@ Authorization header. Calls are serial, paced at 1.1 seconds, limited to 15 seco
 and never follow redirects or retry. Authentication/quota failures or two consecutive
 infrastructure failures stop further requests. Missing or unavailable records remain unresolved,
 not standalone.
+
+An ISBNdb longer title that differs from the expected full title requires review, even when its
+short title matches. Cosmetic subtitles can therefore reduce coverage; do not strip a qualifier
+merely to obtain a match. Baseline titles must likewise retain any returned subtitle/edition qualifier.
 
 Only page count and edition format can become ephemeral review candidates. Publisher, dates,
 contributors, covers, descriptions, and series are excluded. Candidate values remain in memory;

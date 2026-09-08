@@ -173,6 +173,13 @@ export function assessSupplement(c, plan, body) {
   const isbns = [b.isbn13, b.isbn10, b.isbn].filter((v) => v != null && v !== '')
   if (!exactIdentity({ isbns, title: b.title, authors: b.authors }, c.identity))
     return review('identity_mismatch')
+  // Do not hide adaptation, abridgement, or other qualifiers in the provider's longer title.
+  if (
+    b.title_long != null &&
+    b.title_long !== '' &&
+    (!text(b.title_long) || fold(b.title_long) !== fold(c.identity.title))
+  )
+    return review('qualified_title_review')
   const format = binding(b.binding)
   if (
     (b.binding != null && b.binding !== '' && !format) ||
