@@ -222,6 +222,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   S. M. Davies profile alone grants `repeated_numbered_catalog_headings` after its bounded technical
   access review; it still cannot inject a URL into truth-blind discovery or write a result. See
   `docs/decisions/0009-authority-retrieval-gateway.md`.
+- **The selective ISBNdb supplement is trial-only and gap-targeted.** Exact baseline returned-ISBN,
+  full-title, and full-author agreement precedes paid requests. Current/baseline values win; only
+  page count and edition format can become ephemeral review candidates, never possession changes.
+  The CLI emits aggregates only and has no LLM or corpus writer. Do not enable the legacy production
+  ISBNdb adapter from this trial result. See `packages/series-source-trial/README.md`.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
   title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
   edit shared metadata, after identity confirmation and a source/note; it never invokes the broad
