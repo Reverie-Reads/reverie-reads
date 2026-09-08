@@ -18,6 +18,13 @@ of rows and unique work IDs. This makes the API query an auditable identity-sele
 than a handpicked list. The qualification key and all case identities remain in ignored private
 storage.
 
+The optional numbered-series lane uses PRH's documented `hasSeriesNumber` filter together with the
+same explicit publication-date boundary and complete record-count reconciliation. This is an
+efficient selection frame for the preregistered series-positive challenge population, not a truth
+shortcut: the frame URL is classification-blocked and a reviewer must still verify the exact work's
+separate publisher relationship. Ordinary unfiltered date frames remain necessary for affirmative
+standalone controls and for relationship patterns that do not carry a series number.
+
 Use six official 2023-2025 Independent Publisher Book Awards medalist pages as separate, complete
 independent-publishing selection frames: four sectioned 2025 pages and one complete archive page for
 each earlier year. The fixed capture covers every distinct book medalist under General, Regional,
@@ -86,6 +93,7 @@ mix.
 
 - [PRH developer API home](https://developer.penguinrandomhouse.com/)
 - [Enhanced PRH API overview](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api)
+- [PRH common parameters, including `hasSeriesNumber`](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/resources/Common_Parameters)
 - [Work resource](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/resources/Work)
 - [Series resource](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/resources/Series)
 - [Works and ISBNs](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/concepts/Works_and_ISBNs)

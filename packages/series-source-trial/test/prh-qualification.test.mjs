@@ -28,24 +28,38 @@ test('builds a bounded first-party frame without persisting the API key', () => 
   assert.match(frame.url, /workOnSaleFrom=01%2F01%2F2025/)
   assert.match(frame.url, /rows=0/)
   assert.doesNotMatch(frame.url, /api_key/)
+  assert.doesNotMatch(frame.url, /hasSeriesNumber/)
+  assert.equal(frame.selectionConstraint, 'all_works_in_date_interval')
   const request = prhRequestUrl(frame.url, 'top-secret')
   assert.equal(request.searchParams.get('api_key'), 'top-secret')
   assert.doesNotMatch(sanitizePrhUrl(request), /top-secret|api_key/)
 })
 
+test('can preregister a complete date-bounded numbered-series challenge frame', () => {
+  const numberedFrame = buildPrhFrameSpec({
+    frameId: 'prh-us-2018-numbered-series',
+    from: '2018-01-01',
+    to: '2018-12-31',
+    numberedSeriesOnly: true,
+  })
+  assert.equal(numberedFrame.parameters.hasSeriesNumber, true)
+  assert.equal(numberedFrame.selectionConstraint, 'numbered_series_works_in_date_interval')
+  assert.match(numberedFrame.url, /hasSeriesNumber=true/)
+})
+
 test('rejects unbounded or ambiguous capture arguments', () => {
-  assert.deepEqual(
-    parsePrhCaptureArgs([
-      '--frame-id',
-      'prh-us-2025-q1',
-      '--from',
-      '2025-01-01',
-      '--to',
-      '2025-03-31',
-      '--dry-run',
-    ]).dryRun,
-    true,
-  )
+  const options = parsePrhCaptureArgs([
+    '--frame-id',
+    'prh-us-2025-q1',
+    '--from',
+    '2025-01-01',
+    '--to',
+    '2025-03-31',
+    '--numbered-series-only',
+    '--dry-run',
+  ])
+  assert.equal(options.dryRun, true)
+  assert.equal(options.numberedSeriesOnly, true)
   assert.throws(
     () => parsePrhCaptureArgs(['--frame-id', 'prh-us-2025-q1', '--from', '2025-01-01']),
     /requires --frame-id, --from, and --to/,
