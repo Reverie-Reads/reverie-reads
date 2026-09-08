@@ -46,6 +46,27 @@ including indie and Kindle Unlimited titles, _and_ being usable from a personal 
 cover-URL / upload field for ASIN-only stragglers. The app already does this chain at runtime;
 `scripts/enrich_covers.mjs` and `scripts/enrich_hardcover.mjs` pre-bake it into the seed.
 
+## Selective ISBNdb metadata trial
+
+The separate edition comparison covered 12 editions. Among nine fully observed three-source
+cases, ISBNdb offered five additional field opportunities over Google plus Open Library: two page
+counts and three edition formats, with no additional strict identities. Three cases lacked a
+complete baseline because of infrastructure errors. This small challenge sample supports a
+selective supplement, not a general accuracy claim or replacement catalog.
+
+The trial package now provides a baseline-first, gap-only ISBNdb evaluation command. Exact returned
+ISBN, full title, and full-author agreement is required before a paid lookup. Page count and edition
+format can become review-only candidates; existing values are never overwritten. Credentials stay
+in a header to a fixed host, and only aggregate results leave the runner. There is no public gold,
+training, search-index, corpus, or service export of provider values.
+
+This local experiment needs no migration, production flag, or new Supabase secret. It neither
+enables nor certifies the existing production ISBNdb enrichment adapter. A subscription is not
+blanket permission to persist or redistribute a catalog: account terms and retention/deletion
+requirements must be reviewed before adding persistence or production use. See the
+[trial instructions](../../packages/series-source-trial/README.md#selective-isbndb-edition-supplement-trial-only)
+and [implementation report](../../packages/series-source-trial/reports/isbndb-selective-supplement-2026-09-08.md).
+
 ## Series membership and order
 
 Series classification is a separate evidence problem from matching a book. A provider may identify

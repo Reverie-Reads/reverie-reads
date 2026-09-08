@@ -3,6 +3,61 @@
 This package compares book-series data providers against the same cases and acceptance policy.
 It does not write to Supabase or modify Reverie's corpus.
 
+## Selective ISBNdb edition supplement (trial only)
+
+This separate metadata experiment requests ISBNdb only when an exact Google/Open Library edition
+identity is present and page count or edition format is still missing. Existing and baseline
+values win; conflicts require review. It is not part of the series resolver or reader matching UI,
+and does not enable or change the older production ISBNdb enrichment adapter.
+
+From the repository root, run the synthetic example without credentials or network requests:
+
+```sh
+pnpm --filter @reverie/series-source-trial metadata:supplement --input data/metadata-supplement.example.json
+```
+
+The example combines a checksum-valid ISBN with fictional metadata. It is a dry-run fixture, not
+provider evidence, gold truth, or a live test case. Do not run it with `--live`.
+
+For real development cases, prepare an ignored local input file from actual returned baseline
+records. The runner validates identity agreement but does not fetch or authenticate those baseline
+observations: writing `source: "google"` is not proof of origin. Never invent baseline evidence.
+Keep baseline inputs short-lived and subject to each provider's retention rules; Git-ignored is
+not permission for permanent storage. Remove restricted baseline snapshots after the trial.
+The version-1 schema is illustrated above. Cases may contain at most two baseline records, one
+each from `google` and `openlibrary`. Both must agree on returned canonical ISBN, full title, and
+full author names. Initial-only author matches, mixed ISBNs, or edition-format conflicts stop the
+paid lookup. Add optional identity `language` as `en`, `es`, `fr`, `de`, `it`, `pt`, `ja`, `ko`, or
+`zh` when independently known. Do not include reader state or qualification identities.
+
+Pages must be an integer from 1 to 20,000 or null/omitted. Normalize a provider's invalid sentinel
+to unknown during input preparation; never hide a disputed valid value as a gap. Edition format
+is `paperback`, `hardcover`, `ebook`, or `audiobook`, or null/omitted. It describes the identified
+edition, never possession, owned formats, or the reader's reading format. Audiobooks do not receive
+page-count suggestions.
+
+Opt in with `--live`, set `--max-requests` (default 10, maximum 20), and optionally use `--env`
+with an absolute path to the existing local credential file. Otherwise the CLI reads this
+package's `.env.local`; it accepts `ISBNDB_API_KEY` or `ISBNDB_KEY`. No new Supabase secret is
+needed. The CLI defaults to dry-run and does not read credentials in that mode.
+
+Live requests send only the canonical ISBN to the fixed ISBNdb API host, with the key in the
+Authorization header. Calls are serial, paced at 1.1 seconds, limited to 15 seconds and 256 KiB,
+and never follow redirects or retry. Authentication/quota failures or two consecutive
+infrastructure failures stop further requests. Missing or unavailable records remain unresolved,
+not standalone.
+
+An ISBNdb longer title that differs from the expected full title requires review, even when its
+short title matches. Cosmetic subtitles can therefore reduce coverage; do not strip a qualifier
+merely to obtain a match. Baseline titles must likewise retain any returned subtitle/edition qualifier.
+
+Only page count and edition format can become ephemeral review candidates. Publisher, dates,
+contributors, covers, descriptions, and series are excluded. Candidate values remain in memory;
+the CLI prints aggregate counts only, has no output-file option, and never writes book data or
+calls an LLM. This is an evaluation command, not yet a persistent review queue or user-facing tool.
+Production use requires broader accuracy evaluation and review of account-specific storage and
+redistribution rights. See the [implementation report](reports/isbndb-selective-supplement-2026-09-08.md).
+
 ## What is measured
 
 - exact work matching;

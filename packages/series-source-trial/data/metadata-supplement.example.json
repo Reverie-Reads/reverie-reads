@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "purpose": "development",
+  "cases": [
+    {
+      "identity": {
+        "isbn": "9780316565202",
+        "title": "Synthetic metadata exercise",
+        "authors": ["Ada Example"]
+      },
+      "current": { "pages": null, "editionFormat": null },
+      "baseline": [
+        {
+          "source": "google",
+          "isbns": ["9780316565202"],
+          "title": "Synthetic metadata exercise",
+          "authors": ["Ada Example"],
+          "pages": null,
+          "editionFormat": null
+        }
+      ]
+    }
+  ]
+}
