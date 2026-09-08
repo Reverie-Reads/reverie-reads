@@ -55,6 +55,10 @@ export interface BookRow {
   plan_y: number | null
   plan_m: number | null
   plan_d: number | null
+  /** Optional only during the migration/web rolling window. */
+  plan_position?: number | null
+  /** Optional only during the migration/web rolling window. */
+  plan_intention?: string | null
   progress: number | null
   reading_position: number | null
   reading_now_hidden: boolean

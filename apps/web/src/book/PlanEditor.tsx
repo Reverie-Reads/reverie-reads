@@ -1,6 +1,15 @@
 import { useState } from 'react'
-import { parseNumericFields, PLAN_DAY, PLAN_MONTH, PLAN_YEAR, type Book } from '@reverie/core'
-import { useUpdateBook } from '../data/books'
+import {
+  hasDate,
+  isReadingPlan,
+  nextReadingPlanPosition,
+  parseNumericFields,
+  PLAN_DAY,
+  PLAN_MONTH,
+  PLAN_YEAR,
+  type Book,
+} from '@reverie/core'
+import { useBooks, useUpdateBook } from '../data/books'
 
 const planFieldClass =
   'skin-field h-10 w-full border border-line px-3 text-[14px] text-ink outline-none'
@@ -22,14 +31,42 @@ const planFieldStyle = { background: 'var(--field)' } as const
  * race to prefer. `useUpdateBook(book.id)` serializes what remains, since a reader can still leave
  * and re-enter the editor faster than a round trip.
  */
-export function PlanEditor({ book }: { book: Pick<Book, 'id' | 'plan'> }) {
+export function PlanEditor({
+  book,
+}: {
+  book: Pick<Book, 'id' | 'title' | 'plan' | 'planPosition' | 'planIntention' | 'addedTs'>
+}) {
   const updateBook = useUpdateBook(book.id)
+  const library = useBooks().data ?? []
   const [f, setF] = useState(() => ({
     y: book.plan.y == null ? '' : String(book.plan.y),
     m: book.plan.m == null ? '' : String(book.plan.m),
     d: book.plan.d == null ? '' : String(book.plan.d),
   }))
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const soon = book.planPosition != null && !hasDate(book.plan)
+
+  const clearFields = () => setF({ y: '', m: '', d: '' })
+  const chooseSoon = () => {
+    clearFields()
+    setErrors({})
+    if (soon) return
+    updateBook.mutate({
+      id: book.id,
+      patch: {
+        plan: { y: null, m: null, d: null },
+        planPosition: book.planPosition ?? nextReadingPlanPosition(library),
+      },
+    })
+  }
+  const removePlan = () => {
+    clearFields()
+    setErrors({})
+    updateBook.mutate({
+      id: book.id,
+      patch: { plan: { y: null, m: null, d: null }, planPosition: null, planIntention: '' },
+    })
+  }
 
   const commit = () => {
     const parsed = parseNumericFields({
@@ -52,7 +89,15 @@ export function PlanEditor({ book }: { book: Pick<Book, 'id' | 'plan'> }) {
     }
     setErrors({})
     if (next.y === book.plan.y && next.m === book.plan.m && next.d === book.plan.d) return
-    updateBook.mutate({ id: book.id, patch: { plan: next } })
+    updateBook.mutate({
+      id: book.id,
+      patch: hasDate(next)
+        ? {
+            plan: next,
+            planPosition: book.planPosition ?? nextReadingPlanPosition(library),
+          }
+        : { plan: next, planPosition: null, planIntention: '' },
+    })
   }
 
   const field = (k: 'y' | 'm' | 'd', label: string, errKey: string, placeholder: string) => (
@@ -80,18 +125,43 @@ export function PlanEditor({ book }: { book: Pick<Book, 'id' | 'plan'> }) {
   )
 
   return (
-    // React's onBlur is focusout, so it bubbles: moving BETWEEN the three inputs keeps
-    // relatedTarget inside this div and commits nothing, while leaving the group entirely (tab out,
-    // click away, focus lost to null) commits once with the whole trio.
-    <div
-      className="grid grid-cols-3 gap-3"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) commit()
-      }}
-    >
-      {field('y', 'Year', 'planY', '2026')}
-      {field('m', 'Month', 'planM', '1–12')}
-      {field('d', 'Day', 'planD', 'optional')}
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          aria-pressed={soon}
+          onClick={chooseSoon}
+          className="skin-control min-h-11 border border-line px-4 text-[13px] font-semibold text-ink"
+          style={
+            soon ? { background: 'var(--accent-fill)', color: 'var(--on-primary)' } : undefined
+          }
+        >
+          Soon
+        </button>
+        <span className="text-[12px] text-muted">No deadline</span>
+        {isReadingPlan(book) && (
+          <button
+            type="button"
+            onClick={removePlan}
+            className="ml-auto min-h-11 text-[12.5px] text-muted underline underline-offset-4"
+          >
+            Remove plan
+          </button>
+        )}
+      </div>
+      {/* React's onBlur is focusout, so it bubbles: moving BETWEEN the three inputs keeps
+          relatedTarget inside this div and commits nothing, while leaving the group entirely
+          commits once with the whole trio. */}
+      <div
+        className="grid grid-cols-3 gap-3"
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) commit()
+        }}
+      >
+        {field('y', 'Year', 'planY', '2026')}
+        {field('m', 'Month', 'planM', '1–12')}
+        {field('d', 'Day', 'planD', 'optional')}
+      </div>
     </div>
   )
 }

@@ -16,7 +16,10 @@ import type { Book } from '@reverie/core'
 // which is why it only failed at position 27 of 80 under load.
 
 const mutate = vi.fn()
-vi.mock('../data/books', () => ({ useUpdateBook: () => ({ mutate }) }))
+vi.mock('../data/books', () => ({
+  useUpdateBook: () => ({ mutate }),
+  useBooks: () => ({ data: [] }),
+}))
 
 const { PlanEditor } = await import('./PlanEditor')
 
@@ -24,7 +27,17 @@ beforeEach(() => mutate.mockClear())
 
 // PlanEditor declares `Pick<Book, 'id' | 'plan'>`, so the fixture is exactly what it reads —
 // no 40-field Book literal standing in for two used properties.
-const book = (plan: Book['plan']): Pick<Book, 'id' | 'plan'> => ({ id: 'b1', plan })
+const book = (
+  plan: Book['plan'],
+  planPosition: number | null = null,
+): Pick<Book, 'id' | 'title' | 'plan' | 'planPosition' | 'planIntention' | 'addedTs'> => ({
+  id: 'b1',
+  title: 'A Book',
+  plan,
+  planPosition,
+  planIntention: '',
+  addedTs: 1,
+})
 
 const empty = { y: null, m: null, d: null }
 
@@ -42,7 +55,10 @@ describe('PlanEditor writes once per edit, not once per field', () => {
     await user.tab() // → out of the group; the one and only commit
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
-    expect(mutate).toHaveBeenCalledWith({ id: 'b1', patch: { plan: { y: 2026, m: 3, d: 14 } } })
+    expect(mutate).toHaveBeenCalledWith({
+      id: 'b1',
+      patch: { plan: { y: 2026, m: 3, d: 14 }, planPosition: 1000 },
+    })
   })
 
   it('moving between the fields commits nothing until focus leaves the group', async () => {
@@ -70,7 +86,10 @@ describe('PlanEditor writes once per edit, not once per field', () => {
     await user.tab() // past the day field, out of the group
 
     await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
-    expect(mutate).toHaveBeenCalledWith({ id: 'b1', patch: { plan: { y: 2026, m: 3, d: null } } })
+    expect(mutate).toHaveBeenCalledWith({
+      id: 'b1',
+      patch: { plan: { y: 2026, m: 3, d: null }, planPosition: 1000 },
+    })
   })
 
   it('leaving an unchanged plan alone writes nothing at all', async () => {
@@ -96,5 +115,50 @@ describe('PlanEditor writes once per edit, not once per field', () => {
 
     expect(await screen.findByText('A plan needs a year.')).toBeInTheDocument()
     expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('clearing a dated plan removes queue membership and its intention', async () => {
+    const user = userEvent.setup()
+    render(<PlanEditor book={book({ y: 2026, m: 3, d: 14 }, 2000)} />)
+
+    const year = screen.getByLabelText('Planned read year')
+    await user.clear(year)
+    await user.tab()
+    const month = screen.getByLabelText('Planned read month')
+    await user.clear(month)
+    await user.tab()
+    const day = screen.getByLabelText('Planned read day')
+    await user.clear(day)
+    await user.tab()
+
+    await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1))
+    expect(mutate).toHaveBeenCalledWith({
+      id: 'b1',
+      patch: { plan: empty, planPosition: null, planIntention: '' },
+    })
+  })
+
+  it('creates an open-ended Soon plan without inventing a date', async () => {
+    const user = userEvent.setup()
+    render(<PlanEditor book={book(empty)} />)
+
+    await user.click(screen.getByRole('button', { name: 'Soon' }))
+
+    expect(mutate).toHaveBeenCalledWith({
+      id: 'b1',
+      patch: { plan: empty, planPosition: 1000 },
+    })
+  })
+
+  it('removes a Soon plan without touching reading history', async () => {
+    const user = userEvent.setup()
+    render(<PlanEditor book={book(empty, 2000)} />)
+
+    await user.click(screen.getByRole('button', { name: 'Remove plan' }))
+
+    expect(mutate).toHaveBeenCalledWith({
+      id: 'b1',
+      patch: { plan: empty, planPosition: null, planIntention: '' },
+    })
   })
 })

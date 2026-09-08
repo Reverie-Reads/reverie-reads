@@ -4,7 +4,14 @@ import { toBook, toBookRow } from './mappers'
 import type { BookRow } from './types'
 
 /** A books row with only what `toBook` needs, plus whatever plan shape the case is about. */
-function row(plan: Partial<Pick<BookRow, 'plan_y' | 'plan_m' | 'plan_d' | 'plan_date'>>): BookRow {
+function row(
+  plan: Partial<
+    Pick<
+      BookRow,
+      'plan_y' | 'plan_m' | 'plan_d' | 'plan_date' | 'plan_position' | 'plan_intention'
+    >
+  >,
+): BookRow {
   return {
     id: 'b1',
     owner_id: 'o1',
@@ -96,6 +103,25 @@ describe('plan round-trip through the mapper, at every precision', () => {
   it('no plan round-trips as no plan', () => {
     const back = roundTrip(emptyDate())
     expect(back).toEqual(emptyDate())
+  })
+})
+
+describe('plan queue fields', () => {
+  it('round-trips deliberate Soon membership and a private intention', () => {
+    const written = toBookRow({ planPosition: 2048, planIntention: 'For a quiet weekend.' })
+    expect(written).toEqual({
+      plan_position: 2048,
+      plan_intention: 'For a quiet weekend.',
+    })
+    const book = toBook(row({ plan_position: 2048, plan_intention: 'For a quiet weekend.' }))
+    expect(book.planPosition).toBe(2048)
+    expect(book.planIntention).toBe('For a quiet weekend.')
+  })
+
+  it('reads a pre-migration row as unpositioned with no intention', () => {
+    const book = toBook(row({}))
+    expect(book.planPosition).toBeNull()
+    expect(book.planIntention).toBe('')
   })
 })
 

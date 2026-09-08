@@ -25,7 +25,7 @@ import type { Book } from './types'
  * If a reader ever wants it, it belongs here as a third `kind`, not as a second surface.
  *
  * ── FIELDS THE UI MUST NOT OFFER, BECAUSE THE WRITE PATH WOULD IGNORE IT ─────────────────────────
- * `plan` moves WHOLE-OR-NOT-AT-ALL (merge_books' `take_plan` is decided once and all its columns
+ * `plan` moves WHOLE-OR-NOT-AT-ALL (merge_books_authoritative decides once and all five columns
  * follow), and `series_user_chosen` is DERIVED server-side rather than taken from the caller. A
  * checkbox for either would lie about what it does. They are excluded by construction below: the
  * options come from FILL_BLANK_FIELDS, which contains neither. Do not add them.

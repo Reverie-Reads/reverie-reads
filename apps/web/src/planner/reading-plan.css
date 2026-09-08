@@ -1,0 +1,425 @@
+.plan-layout {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 4rem);
+}
+
+.plan-eyebrow,
+.plan-date {
+  margin: 0 0 0.45rem;
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.plan-heading,
+.plan-calendar h2,
+.plan-current h2,
+.plan-promise h2,
+.plan-empty h3 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.08;
+}
+
+.plan-heading {
+  font-size: clamp(1.9rem, 5vw, 3rem);
+}
+
+.plan-current {
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.plan-current-cover {
+  display: block;
+  width: min(10rem, 60%);
+  margin: 1rem auto 1.25rem;
+  overflow: hidden;
+  aspect-ratio: 2 / 3;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--field);
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--ink) 16%, transparent);
+}
+
+.plan-current h2 {
+  font-size: 1.35rem;
+}
+.plan-current-copy > p {
+  color: var(--muted);
+}
+
+.plan-queue {
+  display: grid;
+  gap: 0;
+}
+.plan-queue > li {
+  display: grid;
+  grid-template-columns: 2rem 4.5rem minmax(0, 1fr) 2.75rem;
+  gap: 0.9rem;
+  align-items: start;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.plan-order {
+  padding-top: 0.25rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
+.plan-cover {
+  overflow: hidden;
+  aspect-ratio: 2 / 3;
+  border: 1px solid var(--line);
+  border-radius: max(2px, calc(var(--radius-card) * 0.65));
+  background: var(--field);
+}
+
+.plan-queue h3 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 3vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.plan-author {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.plan-intention {
+  margin-top: 0.7rem;
+  max-width: 52ch;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.93rem;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.plan-text-button {
+  min-height: 2.75rem;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 0.25rem;
+}
+.plan-text-button:hover {
+  color: var(--primary);
+}
+
+.plan-reorder {
+  display: grid;
+  gap: 0.2rem;
+}
+.plan-reorder button,
+.plan-calendar-heading > button {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: var(--field);
+}
+.plan-reorder button:disabled {
+  opacity: 0.35;
+}
+
+.plan-empty {
+  text-align: center;
+}
+.plan-empty h3 {
+  margin-bottom: 0.6rem;
+  font-size: 1.6rem;
+}
+.plan-empty p:not(.plan-eyebrow) {
+  margin: 0 auto 1.2rem;
+  max-width: 38ch;
+  color: var(--muted);
+}
+
+.plan-promise {
+  display: grid;
+  gap: 0.8rem 2rem;
+  align-items: end;
+}
+.plan-promise h2 {
+  font-size: 1.35rem;
+}
+.plan-promise > p {
+  max-width: 46ch;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.plan-calendar {
+  max-width: 58rem;
+  margin: 0 auto;
+}
+.plan-calendar-heading {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+.plan-calendar h2 {
+  font-size: clamp(1.6rem, 5vw, 2.5rem);
+}
+.plan-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+.plan-calendar-key {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: -0.4rem 0 1rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.plan-calendar-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.plan-calendar-key i,
+.plan-calendar-grid button small i {
+  display: inline-grid;
+  width: 0.75rem;
+  height: 0.75rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  color: var(--on-primary);
+  background: var(--primary);
+  font-size: 0.5rem;
+  font-style: normal;
+  line-height: 1;
+}
+.plan-calendar-key i.is-plan,
+.plan-calendar-grid button small i.is-plan {
+  border-radius: 50%;
+}
+.plan-calendar-key i.is-finished,
+.plan-calendar-grid button small i.is-finished {
+  border-radius: 1px;
+  color: var(--card-solid);
+  background: var(--ink);
+}
+.plan-weekday {
+  padding-bottom: 0.35rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-align: center;
+}
+.plan-calendar-grid button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.plan-calendar-grid button:hover {
+  border-color: var(--line);
+  color: var(--ink);
+}
+.plan-calendar-grid button.has-entry {
+  border-color: var(--line);
+  color: var(--ink);
+  background: var(--field);
+  font-weight: 700;
+}
+.plan-calendar-grid button small {
+  position: absolute;
+  right: 0.3rem;
+  bottom: 0.2rem;
+  color: var(--primary);
+  font-size: 0.58rem;
+}
+.plan-calendar-grid button small {
+  display: flex;
+  gap: 0.1rem;
+}
+
+.plan-flexible {
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 0.7rem 0.85rem;
+  color: var(--ink);
+  background: var(--field);
+  text-align: left;
+}
+.plan-flexible small {
+  flex: none;
+  color: var(--muted);
+}
+
+.plan-editor {
+  display: grid;
+  gap: 1.15rem;
+}
+.plan-editor-book {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+}
+.plan-editor-book > span {
+  overflow: hidden;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--radius-card);
+  background: var(--field);
+}
+.plan-editor-book h3 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+.plan-editor-book p {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.plan-editor fieldset > legend,
+.plan-editor > label {
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.plan-editor label small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.plan-precision {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+.plan-precision label {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: var(--field);
+  font-size: 0.75rem;
+}
+.plan-editor input[type='date'],
+.plan-editor input[type='month'],
+.plan-editor input[type='number'],
+.plan-editor textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 0.7rem 0.8rem;
+  color: var(--ink);
+  background: var(--field);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.plan-editor-hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.plan-undo {
+  position: fixed;
+  z-index: 80;
+  right: 1rem;
+  bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  left: 1rem;
+  display: flex;
+  max-width: 34rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 0.8rem 1rem;
+  color: var(--ink);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  font-size: 0.83rem;
+}
+.plan-undo button {
+  min-height: 2.75rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+@media (min-width: 800px) {
+  .plan-layout {
+    grid-template-columns: minmax(13rem, 0.34fr) minmax(0, 1fr);
+  }
+  .plan-current {
+    position: sticky;
+    top: 5.5rem;
+    align-self: start;
+    padding: 1.5rem;
+  }
+  .plan-promise {
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .plan-current-reading {
+    display: grid;
+    grid-template-columns: 5.25rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: center;
+    margin-top: 0.85rem;
+  }
+  .plan-current-cover {
+    width: 100%;
+    margin: 0;
+  }
+  .plan-current-copy > .skin-meter {
+    margin-top: 0.8rem;
+  }
+  .plan-queue > li {
+    grid-template-columns: 1.5rem 3.7rem minmax(0, 1fr) 2.75rem;
+    gap: 0.65rem;
+  }
+  .plan-precision {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .plan-calendar-grid {
+    gap: 0.15rem;
+  }
+}

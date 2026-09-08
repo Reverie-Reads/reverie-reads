@@ -84,12 +84,12 @@ async function stub(page: Page) {
   await page.route('**/books/v1/volumes**', (r) => r.fulfill({ json: { items: [] } }))
 }
 
-const makeBook = async (c: Client) => {
+const makeBook = async (c: Client, title = 'Plan Precision Book') => {
   const { data, error } = await c.sb
     .from('books')
     .insert({
       owner_id: c.uid,
-      title: 'Plan Precision Book',
+      title,
       author_first: 'Ines',
       author_last: 'Quill',
       genre: 'fantasy',
@@ -103,10 +103,18 @@ const makeBook = async (c: Client) => {
 }
 
 const planRow = async (c: Client, id: string) =>
-  (await c.sb.from('books').select('plan_y, plan_m, plan_d').eq('id', id).single()).data as {
+  (
+    await c.sb
+      .from('books')
+      .select('plan_y, plan_m, plan_d, plan_position, plan_intention')
+      .eq('id', id)
+      .single()
+  ).data as {
     plan_y: number | null
     plan_m: number | null
     plan_d: number | null
+    plan_position: number | null
+    plan_intention: string
   }
 
 const planField = (page: Page, label: string) => page.getByLabel(`Planned read ${label}`)
@@ -144,10 +152,9 @@ test('a month-only plan persists as a month, with no day invented anywhere', asy
     await expect(planField(page, 'month')).toHaveValue('3')
     await expect(planField(page, 'day')).toHaveValue('')
 
-    // And renders as a month wherever a plan is shown. Asserted on /planner's "Planned reads",
-    // which previously printed the raw ISO string.
+    // And renders as a month wherever a plan is shown, without printing a raw ISO string.
     await page.goto('/planner')
-    await expect(page.getByText('📅 Mar 2026')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByText('Mar 2026', { exact: true })).toBeVisible({ timeout: 20_000 })
   } finally {
     await reset(c)
   }
@@ -176,7 +183,51 @@ test('a full-precision plan still round-trips through the trio', async ({ page }
       .toMatchObject({ plan_y: 2026, plan_m: 3, plan_d: 14 })
 
     await page.goto('/planner')
-    await expect(page.getByText('📅 Mar 14, 2026')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByText('Mar 14, 2026', { exact: true })).toBeVisible({ timeout: 20_000 })
+  } finally {
+    await reset(c)
+  }
+})
+
+test('Soon, intention, reorder, remove and Undo survive the real persistence boundary', async ({
+  page,
+}) => {
+  test.setTimeout(180_000)
+  const c = await client()
+  await reset(c)
+  const firstId = await makeBook(c)
+  const secondId = await makeBook(c, 'Second Plan Book')
+  await stub(page)
+  try {
+    await signIn(page, c.session)
+    await page.goto(`/book/${firstId}`)
+    await page.getByRole('button', { name: 'Soon' }).click()
+    await expect
+      .poll(async () => await planRow(c, firstId), { timeout: 15_000 })
+      .toMatchObject({ plan_y: null, plan_position: 1000 })
+
+    await page.goto('/planner')
+    await page.getByRole('button', { name: 'Add to your plan' }).click()
+    await page.getByRole('button', { name: 'Choose Second Plan Book' }).click()
+    await page.getByPlaceholder('What draws you to this book?').fill('For a quiet weekend.')
+    await page.getByRole('button', { name: 'Save plan' }).click()
+
+    await expect(
+      page.getByLabel('Reading plan').getByText('For a quiet weekend.', { exact: true }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Move Second Plan Book earlier' }).click()
+    await expect
+      .poll(async () => (await planRow(c, secondId)).plan_position, { timeout: 15_000 })
+      .toBeLessThan((await planRow(c, firstId)).plan_position!)
+
+    await page.getByRole('button', { name: 'Remove Second Plan Book' }).click()
+    await expect
+      .poll(async () => (await planRow(c, secondId)).plan_position, { timeout: 15_000 })
+      .toBeNull()
+    await page.getByRole('button', { name: 'Undo' }).click()
+    await expect
+      .poll(async () => await planRow(c, secondId), { timeout: 15_000 })
+      .toMatchObject({ plan_y: null, plan_position: 0, plan_intention: 'For a quiet weekend.' })
   } finally {
     await reset(c)
   }

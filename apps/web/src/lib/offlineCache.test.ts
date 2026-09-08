@@ -52,6 +52,52 @@ describe('Dexie offline persister', () => {
     await persister.removeClient()
     expect(await persister.restoreClient()).toBeUndefined()
   })
+
+  it('keeps a Soon plan and its intention inside the personal books mirror', async () => {
+    signedInAs('user-a')
+    const planned = client('plan-v1')
+    planned.clientState.queries = [
+      {
+        queryKey: ['books'],
+        queryHash: '["books"]',
+        state: {
+          data: [
+            {
+              id: 'book-1',
+              title: 'A Book',
+              plan: { y: null, m: null, d: null },
+              planPosition: 1000,
+              planIntention: 'For a quiet weekend.',
+            },
+          ],
+          dataUpdateCount: 1,
+          dataUpdatedAt: 1,
+          error: null,
+          errorUpdateCount: 0,
+          errorUpdatedAt: 0,
+          fetchFailureCount: 0,
+          fetchFailureReason: null,
+          fetchMeta: null,
+          isInvalidated: false,
+          status: 'success',
+          fetchStatus: 'idle',
+        },
+      },
+    ]
+    const persister = createDexiePersister()
+    await persister.persistClient(planned)
+
+    const restored = await persister.restoreClient()
+    expect(restored?.clientState.queries[0]?.state.data).toEqual([
+      {
+        id: 'book-1',
+        title: 'A Book',
+        plan: { y: null, m: null, d: null },
+        planPosition: 1000,
+        planIntention: 'For a quiet weekend.',
+      },
+    ])
+  })
 })
 
 describe('query dehydration boundary', () => {

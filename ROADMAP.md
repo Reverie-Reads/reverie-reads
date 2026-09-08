@@ -16,21 +16,21 @@ Priorities mean:
 The owner approved the Reading Life study in public PR #471 and prioritized the Stats/Planner
 fundamental overhaul. This sequence takes precedence over the September 5 product queue below:
 
-1. **Shared history and Reflect — implemented for public review.** Stats now uses a book-and-note
+1. **Shared history and Reflect — implemented and released.** Stats now uses a book-and-note
    opening, a single period for every summary, and drilldowns to real reading records. Planner
    shares the completion model. Undated reads, current DNF, and books marked read without logs
    remain distinct; there is no invented session or average rating.
-2. **Plan — next implementation.** A flexible queue with direct edit/remove/undo, saved ordering,
-   and optional intentions. Preserve year/month/day precision and existing calendar entries;
-   decide explicit storage for undated queue membership before adding “Soon.”
+2. **Plan — implemented for public review.** The flexible queue supports direct edit/remove/undo,
+   saved ordering, optional intentions, and explicit undated “Soon” membership. It preserves
+   year/month/day precision, existing calendar entries, backup/offline behavior, and atomic merges.
 3. **Private retrospective and release horizon.** Reuse the reading model for a private period
    story and integrate verified release precision. No derived analytics sharing/export.
 4. **Reader validation and remaining arrangements work.** Return to the first-use/return-loop
    checks and modular arrangements after the paired reading experience is coherent.
 
 [Implementation notes](docs/tasks/reading-life-implementation.md) record the data contract,
-remaining persistence decisions, and release boundaries. No migration is needed for the first
-Reflect/shared-history slice. Public merge precedes private synchronization and web release.
+implemented persistence decisions, and release boundaries. Plan's migration changes stored
+data/write behavior and therefore waits for the owner's human confirmation after public merge.
 
 ## Catalog quality follow-up
 

@@ -423,6 +423,29 @@ beforeEach(() => {
 })
 
 describe('backup round trip — the data v4 dropped on the floor', () => {
+  it('preserves reading-plan membership, order, and intention with the book row', async () => {
+    Object.assign(db.books[0]!, {
+      plan_y: null,
+      plan_m: null,
+      plan_d: null,
+      plan_position: 2048,
+      plan_intention: 'Return when the weather turns.',
+    })
+    const json = await buildBackup()
+    wipeToFreshAccount()
+
+    await restoreBackup(json)
+
+    expect(db.books).toHaveLength(2)
+    expect(db.books.find((book) => book.title === 'Fourth Wing')).toMatchObject({
+      plan_y: null,
+      plan_m: null,
+      plan_d: null,
+      plan_position: 2048,
+      plan_intention: 'Return when the weather turns.',
+    })
+  })
+
   it('carries tropes, moods and followed authors through export → restore', async () => {
     const json = await buildBackup()
     wipeToFreshAccount()

@@ -45,15 +45,31 @@ The page uses existing room materials, fonts, tokens, cover sourcing, native dia
 return behavior. No new cover provider, atmosphere engine, analytics export, or public sharing
 surface is added. Notes in the review harness are explicitly fictional; the app uses real notes.
 
+## Plan
+
+The second slice turns Planner into a flexible reading queue. `books.plan_position` is both
+deliberate membership and preference order: a non-null position with an empty PartialDate means
+“Soon,” while an empty date and null position remains unplanned. Existing dated plans receive
+stable positions in their existing partial-date order. `books.plan_intention` is an optional
+300-character private note to the reader's future self; it is never a review or reading-log note.
+
+Queue reorder changes one spaced numeric key. Remove has a local Undo and clears only the five plan
+fields. The full editor supports Soon, year, month, and exact day; the book screen can create Soon
+or retain the existing three-field precision editor. Calendar dates and publication dates preserve
+their real precision. Merge keeps a stored primary plan whole or adopts the loser's complete plan,
+including Soon and intention. Raw book-row backup/restore and the existing IndexedDB book mirror
+carry both new fields without a second store or reconciliation path.
+
+This slice adds `20260929010000_reading_plan_queue.sql`. Its existing-plan backfill and merge RPC
+replacement change stored data/write behavior, so production deployment remains an owner-operated
+human confirmation after merge.
+
 ## Next slices
 
-1. **Plan queue and direct editing.** Preserve PartialDate and existing calendar entries. Design
-   storage for an undated “Soon” entry, ordering, and optional intention; null date currently means
-   no plan and must not silently become queue membership. Include backup/restore and offline rules.
-2. **Private retrospective.** Compose the same summary into a private period story. No derived
+1. **Private retrospective.** Compose the same summary into a private period story. No derived
    analytics export or share card.
-3. **Release horizon.** Integrate followed-author sources and honest publication precision into
+2. **Release horizon.** Integrate followed-author sources and honest publication precision into
    Plan; do not convert unknown months/days into January 1 or create plans automatically.
 
-No migration or Edge Function deployment is needed for this first slice. Public review/merge
-comes before private synchronization and a separate web release.
+Public review/merge comes before private synchronization. Reflect needs only a web release; Plan
+also needs the owner-operated migration before its web artifact is promoted.

@@ -877,8 +877,8 @@ export function BookDetailScreen() {
         </div>
 
         {/* plan */}
-        <Label>Plan a read date</Label>
-        <PlanEditor book={book} />
+        <Label>Plan a read</Label>
+        <PlanEditor key={book.id} book={book} />
 
         {householdWork ? (
           <Surface tone="field" radius="control" pad={2} className="mt-4 text-[12.5px] text-muted">
