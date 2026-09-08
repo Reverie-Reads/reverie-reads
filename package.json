@@ -37,6 +37,7 @@
     "series:trial": "pnpm --filter @reverie/series-source-trial trial",
     "series:resolve": "pnpm --filter @reverie/series-source-trial resolver",
     "series:authority:acquire": "pnpm --filter @reverie/series-source-trial authority:acquire",
+    "series:authority:qualification:capture:ippy": "pnpm --filter @reverie/series-source-trial authority:qualification:capture:ippy",
     "series:authority:qualification:capture:prh": "pnpm --filter @reverie/series-source-trial authority:qualification:capture:prh",
     "series:authority:qualification:freeze": "pnpm --filter @reverie/series-source-trial authority:qualification:freeze",
     "series:authority:qualification:merge": "pnpm --filter @reverie/series-source-trial authority:qualification:merge",
