@@ -303,11 +303,16 @@ pre-orders and author newsletters, and Goodreads (which did author-follow + new-
 closed its API. The viable model is **follow the authors you already own and check for their next
 book** (`scripts/fetch_upcoming.mjs`).
 
-| Source                   | Reliability /5    | Cost                                | How to get upcoming dates                                                                                                    |
-| ------------------------ | ----------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **Hardcover**            | 4                 | Free                                | GraphQL; editions carry `release_date` you can filter/sort. Query by author → `release_date >= today` → titles you don't own |
-| **Penguin Random House** | 3 (trad only)     | Free key (manual ~7-day activation) | Public title/author API; `onsale` is the public release date, filterable. PRH imprints only — blind to indie/KU              |
-| **Google Books**         | 3                 | Free                                | `inauthor:"…"` then keep results with a future `publishedDate`. Spotty on pre-orders but a fine keyless fallback             |
-| **ISBNdb**               | 2.5               | Paid                                | Pre-pub ISBNs exist but it isn't a "what's coming" feed; KU ebooks without ISBNs never appear                                |
-| **Amazon pre-orders**    | data 5 / usable 1 | Gated                               | Where indie dates actually are, but the API is closed to new sign-ups                                                        |
-| **Manual + newsletters** | 5                 | Free                                | You often know a date before any API does; the app takes flexible (year / month / full) future dates                         |
+| Source                   | Reliability /5    | Cost                         | How to get upcoming dates                                                                                                   |
+| ------------------------ | ----------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Hardcover**            | 4                 | Free                         | **Active primary discovery.** GraphQL editions provide date, format, publisher, territory, ISBN, and parent work by author. |
+| **Penguin Random House** | 3 (trad only)     | Free key (manual activation) | **Optional confirmation when `PRH_API_KEY` is configured.** `onsale` is authoritative for the PRH.US catalog only.          |
+| **Google Books**         | 3                 | Free                         | **Active fallback.** `inauthor:"…"` fills gaps; partial `publishedDate` values retain their year/month precision.           |
+| **ISBNdb**               | 2.5               | Paid                         | Pre-pub ISBNs exist but it isn't a "what's coming" feed; KU ebooks without ISBNs never appear                               |
+| **Amazon pre-orders**    | data 5 / usable 1 | Gated                        | Where indie dates actually are, but the API is closed to new sign-ups                                                       |
+| **Manual + newsletters** | 5                 | Free                         | **Active reader entry.** Planner → Releases accepts title, author, and a flexible year/month/full date before Add.          |
+
+The shared 24-hour `releases_cache` amortizes provider calls across readers. The cached hit keeps
+its provider, source URL, checked time, format, publisher, territory, and whether Hardcover can
+identify it as a new work or later edition. Personal `books.pub_*` remains the reader's flexible
+date; cached provider provenance is not copied into private book data.
