@@ -46,6 +46,27 @@ including indie and Kindle Unlimited titles, _and_ being usable from a personal 
 cover-URL / upload field for ASIN-only stragglers. The app already does this chain at runtime;
 `scripts/enrich_covers.mjs` and `scripts/enrich_hardcover.mjs` pre-bake it into the seed.
 
+## Selective ISBNdb metadata trial
+
+The separate edition comparison covered 12 editions. Among nine fully observed three-source
+cases, ISBNdb offered five additional field opportunities over Google plus Open Library: two page
+counts and three edition formats, with no additional strict identities. Three cases lacked a
+complete baseline because of infrastructure errors. This small challenge sample supports a
+selective supplement, not a general accuracy claim or replacement catalog.
+
+The trial package now provides a baseline-first, gap-only ISBNdb evaluation command. Exact returned
+ISBN, full title, and full-author agreement is required before a paid lookup. Page count and edition
+format can become review-only candidates; existing values are never overwritten. Credentials stay
+in a header to a fixed host, and only aggregate results leave the runner. There is no public gold,
+training, search-index, corpus, or service export of provider values.
+
+This local experiment needs no migration, production flag, or new Supabase secret. It neither
+enables nor certifies the existing production ISBNdb enrichment adapter. A subscription is not
+blanket permission to persist or redistribute a catalog: account terms and retention/deletion
+requirements must be reviewed before adding persistence or production use. See the
+[trial instructions](../../packages/series-source-trial/README.md#selective-isbndb-edition-supplement-trial-only)
+and [implementation report](../../packages/series-source-trial/reports/isbndb-selective-supplement-2026-09-08.md).
+
 ## Series membership and order
 
 Series classification is a separate evidence problem from matching a book. A provider may identify
@@ -255,6 +276,22 @@ to 92.9% precision and 1.6% false standalone, still below the production thresho
 is why Hardcover-only membership is now review-only. Production use remains blocked by the untouched
 1,000-case qualification partition and source data-use rights.
 
+That qualification partition is deliberately absent from the public development gold file. Build
+at least 1,500 authority-reviewed candidates under ignored private storage from complete,
+provider-independent identity frames with captured population, eligible, and exclusion counts;
+block each frame URL from establishing its own case
+classification; exclude every development work; then use the committed SHA-256 seed to select
+exactly 600 series-positive and 400 affirmative-standalone cases with at most two selected works
+per author identity. Before any model or Exa request, commit a non-secret lock containing the plan,
+private-dataset, and full acquisition-system hashes. The frozen run uses Luna low plus Exa fallback,
+no navigation retrieval, a qualification-only cache, and a $10 Exa ceiling. Only incomplete
+infrastructure failures may resume against the same lock. A completed run cannot be repeated; an
+inspected failure used for tuning burns the set into development and requires a new holdout. See
+`packages/series-source-trial/reports/authority-qualification-design-2026-09-07.md`.
+The run passes only with zero false-positive memberships, zero false standalones, at least 299
+evaluated membership claims, at least 85% series recall, at least 75% overall resolution, and no
+operational errors.
+
 The same profiles keep data-use boundaries visible to the resolver: Wikidata, Inventaire, and
 BookBrainz claims are durable CC0 inputs; Google is live identity-only; Open Library remains trial
 input pending its rights review; and Hardcover remains decision input pending usable terms. A
@@ -287,11 +324,16 @@ pre-orders and author newsletters, and Goodreads (which did author-follow + new-
 closed its API. The viable model is **follow the authors you already own and check for their next
 book** (`scripts/fetch_upcoming.mjs`).
 
-| Source                   | Reliability /5    | Cost                                | How to get upcoming dates                                                                                                    |
-| ------------------------ | ----------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **Hardcover**            | 4                 | Free                                | GraphQL; editions carry `release_date` you can filter/sort. Query by author → `release_date >= today` → titles you don't own |
-| **Penguin Random House** | 3 (trad only)     | Free key (manual ~7-day activation) | Public title/author API; `onsale` is the public release date, filterable. PRH imprints only — blind to indie/KU              |
-| **Google Books**         | 3                 | Free                                | `inauthor:"…"` then keep results with a future `publishedDate`. Spotty on pre-orders but a fine keyless fallback             |
-| **ISBNdb**               | 2.5               | Paid                                | Pre-pub ISBNs exist but it isn't a "what's coming" feed; KU ebooks without ISBNs never appear                                |
-| **Amazon pre-orders**    | data 5 / usable 1 | Gated                               | Where indie dates actually are, but the API is closed to new sign-ups                                                        |
-| **Manual + newsletters** | 5                 | Free                                | You often know a date before any API does; the app takes flexible (year / month / full) future dates                         |
+| Source                   | Reliability /5    | Cost                         | How to get upcoming dates                                                                                                   |
+| ------------------------ | ----------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Hardcover**            | 4                 | Free                         | **Active primary discovery.** GraphQL editions provide date, format, publisher, territory, ISBN, and parent work by author. |
+| **Penguin Random House** | 3 (trad only)     | Free key (manual activation) | **Optional confirmation when `PRH_API_KEY` is configured.** `onsale` is authoritative for the PRH.US catalog only.          |
+| **Google Books**         | 3                 | Free                         | **Active fallback.** `inauthor:"…"` fills gaps; partial `publishedDate` values retain their year/month precision.           |
+| **ISBNdb**               | 2.5               | Paid                         | Pre-pub ISBNs exist but it isn't a "what's coming" feed; KU ebooks without ISBNs never appear                               |
+| **Amazon pre-orders**    | data 5 / usable 1 | Gated                        | Where indie dates actually are, but the API is closed to new sign-ups                                                       |
+| **Manual + newsletters** | 5                 | Free                         | **Active reader entry.** Planner → Releases accepts title, author, and a flexible year/month/full date before Add.          |
+
+The shared 24-hour `releases_cache` amortizes provider calls across readers. The cached hit keeps
+its provider, source URL, checked time, format, publisher, territory, and whether Hardcover can
+identify it as a new work or later edition. Personal `books.pub_*` remains the reader's flexible
+date; cached provider provenance is not copied into private book data.

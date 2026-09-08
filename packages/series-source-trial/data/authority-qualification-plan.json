@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "reverie-authority-qualification-v1",
+  "evaluationPartition": "qualification",
+  "population": {
+    "description": "English-language books likely to enter a North American or UK personal-library catalog, spanning current releases and backlist, traditional and independent publication, fiction and nonfiction, and straightforward and structurally complex series relationships.",
+    "estimand": "Challenge-set performance at Reverie's fixed 60% series-positive and 40% affirmative-standalone mix; this is a safety qualification, not a prevalence estimate for all published books."
+  },
+  "selection": {
+    "algorithm": "sha256-ranked-greedy-coverage-v1",
+    "seed": "reverie-authority-qualification-v1-2026-09-07",
+    "candidatePoolMinimum": 1500,
+    "maximumSelectedWorksPerAuthor": 2,
+    "targetCases": 1000,
+    "targetSeriesCases": 600,
+    "targetStandaloneCases": 400,
+    "requirePublicationMetadata": true,
+    "allowedSelectionSourceKinds": [
+      "author_bibliography",
+      "publisher_catalog",
+      "platform_award",
+      "industry_press",
+      "library_bibliography"
+    ],
+    "prohibitedSelectionSourceKinds": [
+      "openlibrary",
+      "wikidata",
+      "google_books",
+      "hardcover",
+      "inventaire",
+      "bookbrainz",
+      "exa",
+      "model_output"
+    ],
+    "coverageMinimums": [
+      { "id": "tryst", "label": "Romance", "minimumSelected": 50 },
+      { "id": "grimoire", "label": "Fantasy", "minimumSelected": 50 },
+      { "id": "aphelion", "label": "Science fiction", "minimumSelected": 50 },
+      { "id": "marrow", "label": "Horror", "minimumSelected": 50 },
+      { "id": "umbra", "label": "Mystery and thriller", "minimumSelected": 50 },
+      { "id": "folio", "label": "Literary and general fiction", "minimumSelected": 50 },
+      { "id": "hearth", "label": "Cozy", "minimumSelected": 50 },
+      { "id": "almanac", "label": "Nonfiction", "minimumSelected": 50 },
+      { "id": "bloom", "label": "Young adult and children's", "minimumSelected": 50 },
+      {
+        "id": "recent_2021_plus",
+        "label": "Published from 2021 onward",
+        "minimumSelected": 500
+      },
+      {
+        "id": "backlist_pre_2021",
+        "label": "Backlist published before 2021",
+        "minimumSelected": 250
+      },
+      {
+        "id": "traditional",
+        "label": "Traditionally published",
+        "minimumSelected": 500
+      },
+      {
+        "id": "independent_or_kindle_first",
+        "label": "Independent or Kindle-first",
+        "minimumSelected": 200
+      },
+      {
+        "id": "complex_relationship",
+        "label": "Multi-series or connected-universe risk",
+        "minimumSelected": 100
+      },
+      {
+        "id": "author_truth",
+        "label": "Truth includes author-controlled evidence",
+        "minimumSelected": 250
+      },
+      {
+        "id": "publisher_truth",
+        "label": "Truth includes publisher evidence",
+        "minimumSelected": 500
+      }
+    ]
+  },
+  "truth": {
+    "authoritySourceKinds": ["author", "author_post", "publisher", "publisher_catalog"],
+    "reviewBlindToSystemOutput": true,
+    "requireAffirmativeStandaloneEvidence": true,
+    "requireCompleteComplexMembershipReview": true
+  },
+  "frozenSystem": {
+    "apiUrl": "https://api.openai.com/v1/responses",
+    "model": "gpt-5.6-luna",
+    "reasoningEffort": "low",
+    "searchContextSize": "medium",
+    "maxToolCalls": 3,
+    "concurrency": 2,
+    "focusedSearch": false,
+    "exaFallback": true,
+    "maximumExaSpendUsd": 10,
+    "retrieval": false
+  },
+  "runPolicy": {
+    "uses": "single-complete-run-with-resumable-infrastructure-failures",
+    "failedQualificationDisposition": "burn_into_development",
+    "rawCasesAndTruth": "private",
+    "publishableArtifacts": ["lock digest", "aggregate metrics", "methodology", "limitations"]
+  },
+  "researchBasis": [
+    {
+      "claim": "Sequestered blind data reduces train-test contamination risk.",
+      "url": "https://pages.nist.gov/ai-technology-evaluation/"
+    },
+    {
+      "claim": "Test data must not be used to make model choices.",
+      "url": "https://scikit-learn.org/stable/common_pitfalls.html"
+    },
+    {
+      "claim": "Internet-enabled evaluations can leak benchmark solutions through public artifacts.",
+      "url": "https://www.nist.gov/caisi/cheating-ai-agent-evaluations/2-examples-cheating-caisis-agent-evaluations"
+    },
+    {
+      "claim": "Benchmark interpretation depends on the defined item superpopulation and item-selection distribution.",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.800-3.pdf"
+    },
+    {
+      "claim": "Model behavior can change between snapshots; pin versions when possible and run evaluations.",
+      "url": "https://developers.openai.com/api/reference/overview"
+    }
+  ]
+}

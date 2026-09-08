@@ -914,8 +914,8 @@ test('keeps qualification cases isolated from development tuning gates', () => {
     qualificationGates: {
       confidenceLevel: 0.95,
       minimumReviewedCases: 1,
-      minimumReviewedPositiveCases: 1,
-      minimumReviewedStandaloneCases: 598,
+      minimumReviewedPositiveCases: 598,
+      minimumReviewedStandaloneCases: 1,
       minimumEvaluatedMembershipClaims: 299,
       minimumMembershipPrecision: 0.99,
       maximumFalseStandaloneRate: 0.005,

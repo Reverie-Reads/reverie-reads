@@ -1,8 +1,9 @@
 // The cached external-data layer (owner-approved releases run). One upstream lookup serves every
 // reader via the global releases_cache (enrichment_cache's sibling; 24h TTL). Two modes:
 //
-//   { mode: 'authors', names: string[] }  per-author recent + upcoming books (Google Books
-//       inauthor). Cached names return instantly; at most a few upstream fetches per request —
+//   { mode: 'authors', names: string[] }  per-author recent + upcoming books (Hardcover edition
+//       discovery, optional PRH confirmation, Google fill). Cached names return instantly; at most
+//       a few upstream author fetches per request —
 //       the client accumulates across calls exactly like the embed fn's rank mode.
 //       → { authors: { [name]: Hit[] }, pending: string[] }
 //   { mode: 'discover', genre, query }    a genre shelf (newest + relevance, quality-filtered
@@ -15,9 +16,19 @@
 // as a degraded fallback. Caller auth: any signed-in user (their token, verified) — cache access
 // itself is service-role.
 
+import { SourceBodyError, SourceHttpError } from '../_shared/httpClassify.ts'
 import { captureEdgeError } from '../_shared/observe.ts'
+import { envInt } from '../_shared/ratelimit.ts'
 import { mapGenre, normalizeGoogle } from '../enrich/merge.ts'
 import { blendCuratedPool, tierDiscoverShelf } from './curated.ts'
+import {
+  hardcoverEditionToRelease,
+  mergeAuthorReleases,
+  prhTitleToRelease,
+  releaseDatePrecision,
+  type ReleaseHit,
+  type ReleaseInfo,
+} from './source.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -30,6 +41,7 @@ const ANON = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const BOOKS_KEY = Deno.env.get('GOOGLE_BOOKS_KEY') ?? ''
 const REFERER = Deno.env.get('BOOKS_KEY_REFERER') ?? 'https://reveriereads.app/'
+const PRH_KEY = (Deno.env.get('PRH_API_KEY') ?? '').trim()
 
 /** Ceiling on the discover pool cached + returned per genre. Mirrors DISCOVER_POOL in
  *  apps/web/src/lib/discover.ts; the client pages it into batches of DISCOVER_BATCH.
@@ -68,6 +80,8 @@ interface Hit {
   genre?: string
   genres?: string[]
   description?: string
+  /** Release-only catalog provenance. Discover hits intentionally omit it. */
+  release?: ReleaseInfo
 }
 
 const norm = (s: string): string =>
@@ -115,13 +129,60 @@ function toHit(rec: any): Hit {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-async function googleVolumes(q: string, orderBy: 'newest' | 'relevance', max = 20): Promise<Hit[]> {
+function googleInfoLink(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  try {
+    const url = new URL(value.replace(/^http:/, 'https:'))
+    return url.protocol === 'https:' && url.hostname === 'books.google.com'
+      ? url.toString()
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+async function googleVolumes(
+  q: string,
+  orderBy: 'newest' | 'relevance',
+  max = 20,
+  releaseCheckedAt?: string,
+): Promise<Hit[]> {
   const key = BOOKS_KEY ? `&key=${BOOKS_KEY}` : ''
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&orderBy=${orderBy}&printType=books&langRestrict=en&maxResults=${max}${key}`
-  const res = await fetch(url, { headers: BOOKS_KEY ? { Referer: REFERER } : {} })
+  const endpoint = 'https://www.googleapis.com/books/v1/volumes'
+  const url = `${endpoint}?q=${encodeURIComponent(q)}&orderBy=${orderBy}&printType=books&langRestrict=en&maxResults=${max}${key}`
+  let res: Response
+  try {
+    res = await fetch(url, {
+      headers: BOOKS_KEY ? { Referer: REFERER } : {},
+      signal: AbortSignal.timeout(3500),
+    })
+  } catch {
+    // Network errors can echo the full URL. Keep the key-bearing request out of observability.
+    throw new Error(`Google Books release request failed for ${endpoint}`)
+  }
   if (!res.ok) throw new Error(`google ${res.status}`)
-  const body = (await res.json()) as { items?: unknown[] }
-  return (body.items ?? []).map((v) => toHit(normalizeGoogle(v)))
+  const body = (await res.json()) as {
+    items?: { volumeInfo?: { infoLink?: unknown } }[]
+  }
+  return (body.items ?? []).map((volume) => {
+    const hit = toHit(normalizeGoogle(volume))
+    if (!releaseCheckedAt) return hit
+    const precision = releaseDatePrecision(hit.pub)
+    return {
+      ...hit,
+      ...(precision
+        ? {
+            release: {
+              source: 'google' as const,
+              precision,
+              sourceUrl: googleInfoLink(volume.volumeInfo?.infoLink),
+              checkedAt: releaseCheckedAt,
+              confirmedBy: ['google' as const],
+            },
+          }
+        : {}),
+    }
+  })
 }
 
 function dedupe(hits: Hit[]): Hit[] {
@@ -136,18 +197,162 @@ function dedupe(hits: Hit[]): Hit[] {
   return out
 }
 
-/** An author's shelf, both orderings merged, sorted newest-first by REAL date (orderBy lies). */
+/** Consume a unit from a provider-wide budget shared by every caller and Edge Function. */
+async function globalBudget(name: string, max: number, windowSecs: number): Promise<boolean> {
+  if (!DB_URL || !SERVICE) return true
+  try {
+    const res = await fetch(`${DB_URL}/rest/v1/rpc/rate_limit_consume`, {
+      method: 'POST',
+      headers: svc,
+      body: JSON.stringify({ p_key: `${name}:global`, p_max: max, p_window_secs: windowSecs }),
+    })
+    if (!res.ok) return true
+    return !!((await res.json()) as { allowed?: boolean }).allowed
+  } catch {
+    return true
+  }
+}
+
+const hardcoverAuth = (): string | null => {
+  const raw = (Deno.env.get('HARDCOVER_TOKEN') ?? '')
+    .trim()
+    .replace(/^Bearer\s+/i, '')
+    .trim()
+  return raw ? `Bearer ${raw}` : null
+}
+
+async function hardcoverAuthorReleases(
+  name: string,
+  after: string,
+  checkedAt: string,
+): Promise<ReleaseHit[]> {
+  const auth = hardcoverAuth()
+  if (!auth) return []
+  if (!(await globalBudget('hardcover', envInt('HARDCOVER_RATE_MAX', 60), 60))) return []
+  const endpoint = 'https://api.hardcover.app/v1/graphql'
+  const query = `query AuthorEditions($name: String!, $after: date!) {
+    editions(
+      where: {
+        release_date: { _gte: $after }
+        book: { contributions: { author: { name: { _eq: $name } } } }
+        _or: [
+          { language: { code2: { _eq: "en" } } }
+          { language_id: { _is_null: true } }
+        ]
+      }
+      order_by: [{ release_date: asc }]
+      limit: 50
+    ) {
+      id isbn_13 isbn_10 edition_format physical_format release_date release_year cached_image
+      image { url }
+      publisher { name }
+      reading_format { format }
+      country { code2 }
+      book {
+        id title slug release_date release_year description cached_image image { url }
+        contributions(order_by: [{ id: asc }]) { author { name } }
+      }
+    }
+  }`
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { Authorization: auth, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables: { name, after } }),
+    signal: AbortSignal.timeout(3500),
+  })
+  if (!res.ok) throw new SourceHttpError(res.status, endpoint)
+  let body: { data?: { editions?: unknown[] }; errors?: unknown[] }
+  try {
+    body = (await res.json()) as typeof body
+  } catch {
+    throw new SourceBodyError(res.status, endpoint)
+  }
+  if (body.errors?.length) throw new Error('Hardcover release query returned errors')
+  return (body.data?.editions ?? [])
+    .map((edition) => hardcoverEditionToRelease(edition, checkedAt))
+    .filter((hit): hit is ReleaseHit => hit !== null)
+    .filter((hit) => hit.authors.some((author) => norm(author) === norm(name)))
+}
+
+const prhEndpoint = (path: string, params: Record<string, string>): string => {
+  const url = new URL(`https://api.penguinrandomhouse.com/resources/v2/title${path}`)
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value)
+  url.searchParams.set('api_key', PRH_KEY)
+  return url.toString()
+}
+
+async function prhJson(path: string, params: Record<string, string>): Promise<unknown> {
+  if (!(await globalBudget('prh', envInt('PRH_RATE_MAX', 30), 60))) return null
+  const safeEndpoint = `https://api.penguinrandomhouse.com/resources/v2/title${path}`
+  let res: Response
+  try {
+    res = await fetch(prhEndpoint(path, params), { signal: AbortSignal.timeout(3000) })
+  } catch {
+    // The real request URL contains PRH_API_KEY as a query parameter.
+    throw new Error(`PRH release request failed for ${safeEndpoint}`)
+  }
+  if (!res.ok) throw new SourceHttpError(res.status, safeEndpoint)
+  try {
+    return await res.json()
+  } catch {
+    throw new SourceBodyError(res.status, safeEndpoint)
+  }
+}
+
+async function prhAuthorReleases(
+  name: string,
+  after: Date,
+  checkedAt: string,
+): Promise<ReleaseHit[]> {
+  if (!PRH_KEY) return []
+  const search = (await prhJson('/domains/PRH.US/search/views/search-display', {
+    q: name,
+    docType: 'author',
+    rows: '5',
+  })) as { data?: { results?: { docType?: unknown; name?: unknown; authorId?: unknown }[] } } | null
+  const author = (search?.data?.results ?? []).find(
+    (candidate) =>
+      candidate.docType === 'author' &&
+      typeof candidate.name === 'string' &&
+      norm(candidate.name) === norm(name),
+  )
+  const authorId = String(author?.authorId ?? '')
+  if (!/^\d+$/.test(authorId)) return []
+  const from = `${String(after.getUTCMonth() + 1).padStart(2, '0')}/${String(after.getUTCDate()).padStart(2, '0')}/${after.getUTCFullYear()}`
+  const payload = (await prhJson(`/domains/PRH.US/authors/${authorId}/titles`, {
+    onSaleFrom: from,
+    rows: '50',
+    sort: 'onsale',
+    dir: 'asc',
+    returnEmptyLists: 'true',
+  })) as { data?: { titles?: unknown[] } } | null
+  return (payload?.data?.titles ?? [])
+    .map((title) => prhTitleToRelease(title, name, checkedAt))
+    .filter((hit): hit is ReleaseHit => hit !== null)
+}
+
+/** An author's useful release event per work. Hardcover discovers editions, PRH confirms its own
+ * catalog when configured, and Google fills gaps. One provider failure cannot erase the others. */
 async function fetchAuthor(name: string): Promise<Hit[]> {
   const q = `inauthor:"${name}"`
-  const [newest, relevant] = await Promise.all([
-    googleVolumes(q, 'newest'),
-    googleVolumes(q, 'relevance'),
+  const checkedAt = new Date().toISOString()
+  const after = new Date()
+  after.setUTCDate(after.getUTCDate() - 183)
+  const afterIso = after.toISOString().slice(0, 10)
+  const settled = await Promise.allSettled([
+    hardcoverAuthorReleases(name, afterIso, checkedAt),
+    prhAuthorReleases(name, after, checkedAt),
+    googleVolumes(q, 'newest', 20, checkedAt),
+    googleVolumes(q, 'relevance', 20, checkedAt),
   ])
-  // keep hits that actually list the author (inauthor matches loosely) and carry a date
-  const own = dedupe([...newest, ...relevant]).filter(
-    (h) => h.pub && h.authors.some((a) => norm(a) === norm(name)),
+  if (settled.every((result) => result.status === 'rejected'))
+    throw new Error('All release providers failed')
+  const hits = settled.flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
+  const own = hits.filter(
+    (hit): hit is ReleaseHit =>
+      !!hit.release && hit.authors.some((author) => norm(author) === norm(name)),
   )
-  return own.sort((a, b) => b.pub.localeCompare(a.pub)).slice(0, 25)
+  return mergeAuthorReleases(own, Date.now())
 }
 
 /** A genre shelf that actually reads "new & notable": both orderings pulled wide, quality-gated,
@@ -212,7 +417,8 @@ Deno.serve(async (req: Request) => {
       let budget = FETCH_BUDGET
       const t0 = Date.now()
       for (const name of names) {
-        const key = `author:${norm(name)}`
+        // v3 separates the source-aware shape from the old Google-only hit arrays.
+        const key = `author:v3:${norm(name)}`
         const cached = (await cacheGet(key)) as Hit[] | null
         if (cached) {
           authors[name] = cached

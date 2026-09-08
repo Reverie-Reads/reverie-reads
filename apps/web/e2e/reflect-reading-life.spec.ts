@@ -191,7 +191,7 @@ test('Reflect turns persisted reading history into an explorable private retrosp
 
     await page.getByRole('button', { name: 'Open your retrospective' }).click()
     const retrospective = page.getByRole('dialog')
-    await expect(retrospective).toContainText(`Private retrospective · ${fixture.year}`)
+    await expect(retrospective).toContainText(`A private retrospective · ${fixture.year}`)
     await expect(retrospective).toContainText('Most-read voice')
     await expect(retrospective).toContainText('Iona Vale')
     await expect(retrospective).toContainText(

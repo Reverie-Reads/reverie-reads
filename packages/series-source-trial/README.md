@@ -3,6 +3,61 @@
 This package compares book-series data providers against the same cases and acceptance policy.
 It does not write to Supabase or modify Reverie's corpus.
 
+## Selective ISBNdb edition supplement (trial only)
+
+This separate metadata experiment requests ISBNdb only when an exact Google/Open Library edition
+identity is present and page count or edition format is still missing. Existing and baseline
+values win; conflicts require review. It is not part of the series resolver or reader matching UI,
+and does not enable or change the older production ISBNdb enrichment adapter.
+
+From the repository root, run the synthetic example without credentials or network requests:
+
+```sh
+pnpm --filter @reverie/series-source-trial metadata:supplement --input data/metadata-supplement.example.json
+```
+
+The example combines a checksum-valid ISBN with fictional metadata. It is a dry-run fixture, not
+provider evidence, gold truth, or a live test case. Do not run it with `--live`.
+
+For real development cases, prepare an ignored local input file from actual returned baseline
+records. The runner validates identity agreement but does not fetch or authenticate those baseline
+observations: writing `source: "google"` is not proof of origin. Never invent baseline evidence.
+Keep baseline inputs short-lived and subject to each provider's retention rules; Git-ignored is
+not permission for permanent storage. Remove restricted baseline snapshots after the trial.
+The version-1 schema is illustrated above. Cases may contain at most two baseline records, one
+each from `google` and `openlibrary`. Both must agree on returned canonical ISBN, full title, and
+full author names. Initial-only author matches, mixed ISBNs, or edition-format conflicts stop the
+paid lookup. Add optional identity `language` as `en`, `es`, `fr`, `de`, `it`, `pt`, `ja`, `ko`, or
+`zh` when independently known. Do not include reader state or qualification identities.
+
+Pages must be an integer from 1 to 20,000 or null/omitted. Normalize a provider's invalid sentinel
+to unknown during input preparation; never hide a disputed valid value as a gap. Edition format
+is `paperback`, `hardcover`, `ebook`, or `audiobook`, or null/omitted. It describes the identified
+edition, never possession, owned formats, or the reader's reading format. Audiobooks do not receive
+page-count suggestions.
+
+Opt in with `--live`, set `--max-requests` (default 10, maximum 20), and optionally use `--env`
+with an absolute path to the existing local credential file. Otherwise the CLI reads this
+package's `.env.local`; it accepts `ISBNDB_API_KEY` or `ISBNDB_KEY`. No new Supabase secret is
+needed. The CLI defaults to dry-run and does not read credentials in that mode.
+
+Live requests send only the canonical ISBN to the fixed ISBNdb API host, with the key in the
+Authorization header. Calls are serial, paced at 1.1 seconds, limited to 15 seconds and 256 KiB,
+and never follow redirects or retry. Authentication/quota failures or two consecutive
+infrastructure failures stop further requests. Missing or unavailable records remain unresolved,
+not standalone.
+
+An ISBNdb longer title that differs from the expected full title requires review, even when its
+short title matches. Cosmetic subtitles can therefore reduce coverage; do not strip a qualifier
+merely to obtain a match. Baseline titles must likewise retain any returned subtitle/edition qualifier.
+
+Only page count and edition format can become ephemeral review candidates. Publisher, dates,
+contributors, covers, descriptions, and series are excluded. Candidate values remain in memory;
+the CLI prints aggregate counts only, has no output-file option, and never writes book data or
+calls an LLM. This is an evaluation command, not yet a persistent review queue or user-facing tool.
+Production use requires broader accuracy evaluation and review of account-specific storage and
+redistribution rights. See the [implementation report](reports/isbndb-selective-supplement-2026-09-08.md).
+
 ## What is measured
 
 - exact work matching;
@@ -443,6 +498,122 @@ holdout combined with ad-hoc scope, ID, or maximum selectors before making a mod
 requires the exact frozen target/result order and reports known-origin discovery, targeted-channel
 discovery, exact-page discovery, source citation, retrieval, and resolution as separate outcomes.
 
+### Freeze and run the production qualification set
+
+The 1,000-case qualification partition is a private, single-use holdout. Its candidate pool and
+selected truth file live only under ignored `private-results/`; do not append them to
+`authority-gold.json`. The committed `data/authority-qualification-plan.json` preregisters a
+minimum 1,500-case reviewed pool, complete provider-independent selection frames, deterministic
+SHA-256 ranking, a maximum of two selected works per author identity, the exact 600 series / 400
+affirmative-standalone mix, Luna-low plus Exa fallback, and a $10 Exa ceiling.
+
+Build publisher-controlled selection frames through supported APIs rather than scraping retail
+pages. The PRH intake uses the public Enhanced PRH API, captures every English-language work in an
+explicit publication-date interval, verifies the API record count against unique work IDs, and
+resumes from private state after an infrastructure failure. It retains structured identity,
+category, series, and position metadata plus response hashes; it discards descriptions and never
+persists or logs the key.
+
+Register for a PRH developer key, then keep it beside the other local trial keys:
+
+```dotenv
+PRH_API_KEY=your-server-side-key
+```
+
+Preview a bounded frame without a key or network request:
+
+```sh
+pnpm series:authority:qualification:capture:prh -- \
+  --frame-id prh-us-2025-q1 \
+  --from 2025-01-01 \
+  --to 2025-03-31 \
+  --dry-run
+```
+
+For the deliberately series-positive portion of the challenge set, add
+`--numbered-series-only`. This uses PRH's documented `hasSeriesNumber` catalog filter inside the
+same complete publication-date frame; it does not accept a series code, title query, maximum, or
+random result. The selection constraint is recorded in the frame manifest. Each retained
+relationship still requires human review of its separate exact-work publisher evidence before it
+can become gold truth.
+
+Remove `--dry-run` to capture the frame. The output remains under ignored
+`private-results/authority-qualification/` and is intentionally a review queue. Exact structured
+series relationships are proposals, not gold truth. Self-titled, unnumbered, fractional,
+multi-series, and collection-like relationships are flagged. A work with no returned series is
+explicitly unresolved; it can become a standalone control only after a reviewer adds affirmative
+author or publisher evidence.
+
+After reviewers have changed every retained case to `truth.status: "reviewed"`, they must also add
+`reviewer`, `reviewedAt`, a substantive `reviewNote`, and
+`reviewBlindToSystemOutput: true`. The truth source must be separate from that case's selection
+frame. The merge rejects development overlap, duplicate works, incomplete frame accounting,
+missing review attestations, non-authority truth, self-validating selection evidence, or any
+remaining candidate:
+
+```sh
+pnpm series:authority:qualification:merge -- \
+  --input packages/series-source-trial/private-results/authority-qualification/prh-us-2025-q1.review.json \
+  --out packages/series-source-trial/private-results/authority-qualification/reviewed-pool.json
+```
+
+Use `--require-minimum` on the final merge to enforce the 1,500-case preregistered minimum before
+freezing. PRH covers only one traditional-publishing group, so it cannot satisfy the independent /
+Kindle-first floor or the author-evidence floor alone; those must come from separate complete award,
+platform, author-bibliography, or publisher frames.
+
+The independent intake captures the complete General, Regional, and Ebook medalist frames from six
+official 2023-2025 Independent Publisher Book Awards result pages: four sectioned 2025 pages and one
+complete archive page for each earlier year. It honors the site's declared ten-second crawl delay
+and retains only winner identity, award category, medal, publisher label, and response hashes—never
+page HTML, images, or descriptions:
+
+```sh
+pnpm series:authority:qualification:capture:ippy -- --dry-run
+pnpm series:authority:qualification:capture:ippy
+```
+
+The fixed six-page capture has no year, category, title, or maximum selector. An award record
+establishes selection identity only: it cannot establish series membership or standalone status,
+and its own result page cannot be reused as a truth citation. Publication year and Reverie's
+publication-path label stay reviewer-verified; an award year is not silently treated as the book's
+publication year. Ambiguous contributor strings are flagged for manual splitting. Review the
+private output, then merge it with the PRH review queue using repeated `--input` arguments.
+
+After blind authority review is complete, freeze the set:
+
+```sh
+pnpm series:authority:qualification:freeze -- \
+  --input packages/series-source-trial/private-results/authority-qualification/reviewed-pool.json
+```
+
+The command writes the selected set to ignored private storage and creates a commit-ready
+`data/authority-qualification-lock.json` plus an aggregate lock report. It refuses to overwrite an
+existing set or lock. Commit and merge those public, non-secret artifacts before running; they
+contain hashes and counts, not case identities, truth, or authority URLs.
+
+Run the locked set only after the current source files reproduce the frozen system hash:
+
+```sh
+pnpm series:authority:acquire -- \
+  --qualification-lock packages/series-source-trial/data/authority-qualification-lock.json \
+  --exa-fallback
+```
+
+Qualification mode rejects `--ids`, `--max`, `--out`, `--refresh`, discovery holdouts, non-gold
+scopes, changed runtime controls, a changed dataset, development overlap, and a stale plan or
+system fingerprint before making a model call. It uses a qualification-only cache. Use `--resume`
+only after an incomplete infrastructure failure against the same lock. A completed run cannot be
+rerun; model drift, budget exhaustion, or a failed result inspected for tuning burns the set into
+development and requires a replacement holdout. The protocol and research basis are recorded in
+`reports/authority-qualification-design-2026-09-07.md`.
+
+Passing requires zero false-positive memberships and zero false standalones, at least 299 evaluated
+membership claims, at least 85% series recall, at least 75% overall resolution, and no operational
+errors. The zero-error rules give the 600 series-positive controls and 299 membership claims their
+configured one-sided 95% safety interpretation; the recall and resolution floors prevent abstention
+from masquerading as accuracy.
+
 The Luna/Terra/Sol comparison, cache-isolation fix, focused-search result, and rejected Wikidata and
 Open Library locator probes are recorded in
 `reports/authority-model-routing-experiment-2026-09-07.md`.
@@ -722,12 +893,13 @@ The program has two intentionally separate partitions:
   this locked set declare `"evaluationPartition": "qualification"` and are evaluated only after the
   system is frozen.
 
-The complete gold-program target is therefore 1,200 reviewed works. The qualification partition
-contains 400 series-positive works and 600 true standalone controls. With zero observed errors,
-598 standalone controls are required to support a 0.5% false-standalone ceiling at a one-sided 95%
-confidence level. A 99% membership-precision floor similarly requires at least 299 emitted
-membership claims with zero false positives. The 400 positive works make that claim denominator
-possible, but the qualification run must report the actual emitted-claim count.
+The minimum complete gold-program target is therefore 1,200 reviewed works. The qualification
+partition contains 600 series-positive works and 400 true standalone controls. With zero observed
+errors, 598 series-positive controls are required to support a 0.5% false-standalone ceiling at a
+one-sided 95% confidence level: false standalone means that a true series work was classified as
+standalone. A 99% membership-precision floor similarly requires at least 299 emitted membership
+claims with zero false positives. The qualification run must report the actual emitted-claim
+count.
 
 ## Decision rule
 

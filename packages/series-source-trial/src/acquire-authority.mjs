@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadTrialCases } from './cases.mjs'
 import samplePlan from '../data/authority-sample-plan.json' with { type: 'json' }
@@ -16,6 +16,7 @@ import {
 } from './authority/evidence.mjs'
 import { acquireAuthorityEvidence, repairAuthorityEvidence } from './authority/openai.mjs'
 import { augmentWithExaAuthorityFallback } from './authority/exa-fallback.mjs'
+import { EXA_SEARCH_REQUEST_USD, runExaAuthorityLocator } from './authority/exa-locator.mjs'
 import {
   discoveredAuthorityDomains,
   shouldSelectFocusedAuthoritySearch,
@@ -28,6 +29,13 @@ import {
 } from './authority/retrieval/profiles.mjs'
 import { AUTHORITY_ACQUISITION_PROMPT_VERSION } from './authority/schema.mjs'
 import { auditAuthorityDiscoveryHoldout } from './authority/discovery-benchmark.mjs'
+import qualificationPlan from '../data/authority-qualification-plan.json' with { type: 'json' }
+import evaluationPolicy from '../data/evaluation-policy.json' with { type: 'json' }
+import {
+  auditQualificationLock,
+  buildQualificationSystemManifest,
+  evaluateQualificationScore,
+} from './authority/qualification.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = resolve(packageRoot, '../..')
@@ -38,15 +46,20 @@ const parseArgs = (argv) => {
     max: null,
     ids: null,
     holdout: null,
+    qualificationLock: null,
+    resume: false,
     out: null,
     refresh: false,
     retrieval: false,
     model: process.env.BOOK_AUTHORITY_MODEL ?? 'gpt-5.6-luna',
+    apiUrl: process.env.BOOK_AUTHORITY_API_URL ?? 'https://api.openai.com/v1/responses',
     reasoningEffort: process.env.BOOK_AUTHORITY_REASONING ?? 'low',
     searchContextSize: process.env.BOOK_AUTHORITY_SEARCH_CONTEXT_SIZE ?? 'medium',
     maxToolCalls: Number(process.env.BOOK_AUTHORITY_MAX_TOOL_CALLS ?? 3),
+    concurrency: Number(process.env.BOOK_AUTHORITY_CONCURRENCY ?? 2),
     focusedSearch: false,
     exaFallback: false,
+    maximumExaSpendUsd: Number(process.env.BOOK_AUTHORITY_EXA_BUDGET_USD ?? 10),
   }
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
@@ -55,6 +68,7 @@ const parseArgs = (argv) => {
     else if (value === '--max') options.max = Number(argv[++index])
     else if (value === '--ids') options.ids = argv[++index].split(',').filter(Boolean)
     else if (value === '--holdout') options.holdout = argv[++index]
+    else if (value === '--qualification-lock') options.qualificationLock = argv[++index]
     else if (value === '--out') options.out = argv[++index]
     else if (value === '--model') options.model = argv[++index]
     else if (value === '--reasoning') options.reasoningEffort = argv[++index]
@@ -64,6 +78,7 @@ const parseArgs = (argv) => {
     else if (value === '--exa-fallback') options.exaFallback = true
     else if (value === '--refresh') options.refresh = true
     else if (value === '--retrieval') options.retrieval = true
+    else if (value === '--resume') options.resume = true
     else throw new Error(`Unknown argument ${value}`)
   }
   if (!['all', 'gold', 'candidate'].includes(options.scope)) {
@@ -74,6 +89,22 @@ const parseArgs = (argv) => {
   }
   if (options.holdout && (options.ids || options.max !== null || options.scope !== 'gold')) {
     throw new Error('Authority acquisition --holdout requires gold scope without --ids or --max')
+  }
+  if (options.qualificationLock) {
+    if (
+      options.holdout ||
+      options.ids ||
+      options.max !== null ||
+      options.scope !== 'gold' ||
+      options.out ||
+      options.refresh
+    ) {
+      throw new Error(
+        'Qualification acquisition requires gold scope and forbids --holdout, --ids, --max, --out, and --refresh',
+      )
+    }
+  } else if (options.resume) {
+    throw new Error('Authority acquisition --resume requires --qualification-lock')
   }
   if (!options.model?.trim()) throw new Error('Authority acquisition model is required')
   if (options.focusedSearch && options.exaFallback) {
@@ -100,6 +131,16 @@ const parseArgs = (argv) => {
   ) {
     throw new Error('Authority acquisition max tool calls must be an integer from 1 to 6')
   }
+  if (!Number.isFinite(options.maximumExaSpendUsd) || options.maximumExaSpendUsd <= 0) {
+    throw new Error('Authority acquisition Exa budget must be a positive number')
+  }
+  if (
+    !Number.isInteger(options.concurrency) ||
+    options.concurrency < 1 ||
+    options.concurrency > 4
+  ) {
+    throw new Error('Authority acquisition concurrency must be an integer from 1 to 4')
+  }
   return options
 }
 
@@ -112,11 +153,22 @@ const renderMarkdown = (score) =>
     '# Reverie authority-source acquisition shadow score',
     '',
     `Model: ${score.model}; reasoning: ${score.experiment.reasoningEffort}; search context: ${score.experiment.searchContextSize}; search budget: ${score.experiment.maxToolCalls}.`,
-    `Cases: ${score.scope.cases}; reviewed: ${score.scope.reviewedCases}; series: ${score.scope.positiveCases}; standalone: ${score.scope.standaloneCases}; candidates: ${score.scope.candidateCases}.`,
+    `Partition: ${score.evaluationPartition ?? 'development'}. Cases: ${score.scope.cases}; reviewed: ${score.scope.reviewedCases}; series: ${score.scope.positiveCases}; standalone: ${score.scope.standaloneCases}; candidates: ${score.scope.candidateCases}.`,
     '',
     '| Valid output | Policy-safe | Grounded URLs | Resolved | Resolved accuracy | Effective accuracy | Series precision | Series recall | False standalone | False series |',
     '| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
     `| ${percent(score.capability.validResponseRate)} | ${percent(score.capability.policySafeResponseRate)} | ${percent(score.capability.sourceGroundingRate)} | ${percent(score.capability.resolutionRate)} | ${percent(score.capability.resolvedAccuracy)} | ${percent(score.capability.effectiveAccuracy)} | ${percent(score.capability.membershipPrecision)} | ${percent(score.capability.membershipRecall)} | ${percent(score.capability.falseStandaloneRate)} | ${percent(score.capability.falseSeriesRate)} |`,
+    ...(score.qualification
+      ? [
+          '',
+          `Qualification: ${score.qualification.passed ? 'passed' : 'failed'}; evaluated membership claims: ${score.qualification.evaluatedMembershipClaims}; failed gates: ${
+            score.qualification.checks
+              .filter((check) => !check.passed)
+              .map((check) => check.id)
+              .join(', ') || 'none'
+          }.`,
+        ]
+      : []),
     '',
     `Model calls: ${score.operations.modelCalls}; cached: ${score.operations.cached}; web-search calls: ${score.operations.webSearchCalls}; input/output tokens: ${score.operations.inputTokens}/${score.operations.outputTokens}; errors: ${score.operations.errors}.`,
     `Focused search: ${score.operations.focusedSearchAttempts} attempted; ${score.operations.focusedSearchCalls} model calls; ${score.operations.focusedSearchSelected} selected; ${score.operations.focusedSearchInputTokens}/${score.operations.focusedSearchOutputTokens} input/output tokens.`,
@@ -138,8 +190,110 @@ const options = parseArgs(process.argv.slice(2))
 if (options.exaFallback && !process.env.EXA_API_KEY?.trim()) {
   throw new Error('EXA_API_KEY is required in packages/series-source-trial/.env.local')
 }
-const caseSet = await loadTrialCases()
+const developmentCaseSet = await loadTrialCases()
+let caseSet = developmentCaseSet
 let holdout = null
+let qualificationLock = null
+let qualificationLockPath = null
+let qualificationRunStatePath = null
+let qualificationRunState = null
+let qualificationStateWrite = Promise.resolve()
+if (options.qualificationLock) {
+  qualificationLockPath = resolve(repositoryRoot, options.qualificationLock)
+  qualificationLock = await readFile(qualificationLockPath, 'utf8').then(JSON.parse)
+  const qualificationSetPath = resolve(repositoryRoot, qualificationLock.dataset.file)
+  const privateSetRoot = resolve(packageRoot, 'private-results/authority-qualification')
+  const relativeSetPath = relative(privateSetRoot, qualificationSetPath)
+  if (!relativeSetPath || relativeSetPath.startsWith('..') || isAbsolute(relativeSetPath)) {
+    throw new Error('Qualification lock dataset must remain under private-results')
+  }
+  const qualificationSet = await readFile(qualificationSetPath, 'utf8').then(JSON.parse)
+  const runtime = {
+    apiUrl: options.apiUrl,
+    model: options.model,
+    reasoningEffort: options.reasoningEffort,
+    searchContextSize: options.searchContextSize,
+    maxToolCalls: options.maxToolCalls,
+    concurrency: options.concurrency,
+    focusedSearch: options.focusedSearch,
+    exaFallback: options.exaFallback,
+    maximumExaSpendUsd: options.maximumExaSpendUsd,
+    retrieval: options.retrieval,
+  }
+  const systemManifest = await buildQualificationSystemManifest(packageRoot, runtime)
+  const audit = auditQualificationLock({
+    lock: qualificationLock,
+    dataset: qualificationSet,
+    plan: qualificationPlan,
+    systemManifest,
+    developmentCases: developmentCaseSet.cases,
+  })
+  if (!audit.valid) throw new Error(`Invalid qualification lock: ${audit.errors.join('; ')}`)
+  caseSet = qualificationSet
+
+  const stateRoot = resolve(packageRoot, 'private-results/authority-qualification-runs')
+  qualificationRunStatePath = resolve(stateRoot, `${qualificationLock.id}.state.json`)
+  await mkdir(stateRoot, { recursive: true })
+  let existingState = null
+  try {
+    existingState = JSON.parse(await readFile(qualificationRunStatePath, 'utf8'))
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error
+  }
+  if (existingState?.status === 'completed') {
+    throw new Error(`Qualification ${qualificationLock.id} already completed and cannot be rerun`)
+  }
+  if (existingState?.status === 'burned') {
+    throw new Error(`Qualification ${qualificationLock.id} is burned and cannot be resumed`)
+  }
+  if (
+    existingState?.status === 'running' &&
+    Date.now() - Date.parse(existingState.heartbeatAt ?? existingState.startedAt) < 15 * 60 * 1000
+  ) {
+    throw new Error(`Qualification ${qualificationLock.id} already has an active run`)
+  }
+  if (existingState && !options.resume) {
+    throw new Error(
+      `Qualification ${qualificationLock.id} already started; use --resume only to recover incomplete infrastructure failures`,
+    )
+  }
+  if (existingState?.lockSha256 && existingState.lockSha256 !== qualificationLock.sha256) {
+    throw new Error('Qualification run state belongs to a different lock')
+  }
+  qualificationRunState = existingState
+    ? { ...existingState, status: 'running', resumedAt: new Date().toISOString() }
+    : {
+        schemaVersion: 1,
+        qualificationId: qualificationLock.id,
+        lockSha256: qualificationLock.sha256,
+        status: 'running',
+        startedAt: new Date().toISOString(),
+        heartbeatAt: new Date().toISOString(),
+        completedCases: 0,
+        exaReservedUsd: 0,
+      }
+  qualificationRunState.heartbeatAt = new Date().toISOString()
+  await writeFile(
+    qualificationRunStatePath,
+    `${JSON.stringify(qualificationRunState, null, 2)}\n`,
+    existingState ? undefined : { flag: 'wx', mode: 0o600 },
+  )
+}
+const persistQualificationRunState = async () => {
+  if (!qualificationRunStatePath || !qualificationRunState) return
+  const snapshot = `${JSON.stringify(qualificationRunState, null, 2)}\n`
+  qualificationStateWrite = qualificationStateWrite.then(() =>
+    writeFile(qualificationRunStatePath, snapshot),
+  )
+  await qualificationStateWrite
+}
+const qualificationHeartbeat = qualificationRunState
+  ? setInterval(() => {
+      qualificationRunState.heartbeatAt = new Date().toISOString()
+      void persistQualificationRunState().catch(() => {})
+    }, 60_000)
+  : null
+qualificationHeartbeat?.unref()
 if (options.holdout) {
   const holdoutPath = resolve(repositoryRoot, options.holdout)
   const authorityGoldPath = resolve(packageRoot, 'data/authority-gold.json')
@@ -158,6 +312,9 @@ if (options.holdout) {
   holdout = loadedHoldout
 }
 let cases = caseSet.cases.filter((testCase) => {
+  if (!qualificationLock && (testCase.evaluationPartition ?? 'development') !== 'development') {
+    return false
+  }
   if (options.scope === 'gold') return testCase.truth.status === 'reviewed'
   if (options.scope === 'candidate') return testCase.truth.status === 'candidate'
   return true
@@ -178,19 +335,40 @@ const experiment = {
   searchContextSize: options.searchContextSize,
   maxToolCalls: options.maxToolCalls,
 }
-const cacheRoot = resolve(packageRoot, 'private-results/authority-acquisition-cache')
+let reservedExaSpendUsd = Number(qualificationRunState?.exaReservedUsd ?? 0)
+let qualificationBudgetExhausted = false
+const qualificationExaLocator = async (target, locatorOptions) => {
+  if (!qualificationLock) return runExaAuthorityLocator(target, locatorOptions)
+  const budgetedFetch = async (...args) => {
+    if (reservedExaSpendUsd + EXA_SEARCH_REQUEST_USD > options.maximumExaSpendUsd) {
+      qualificationBudgetExhausted = true
+      throw new Error('qualification_exa_budget_exhausted')
+    }
+    reservedExaSpendUsd += EXA_SEARCH_REQUEST_USD
+    qualificationRunState.exaReservedUsd = Number(reservedExaSpendUsd.toFixed(6))
+    await persistQualificationRunState()
+    return fetch(...args)
+  }
+  return runExaAuthorityLocator(target, { ...locatorOptions, fetchImpl: budgetedFetch })
+}
+const qualificationCacheRoot = qualificationLock
+  ? resolve(packageRoot, 'private-results/authority-qualification-cache', qualificationLock.id)
+  : null
+const cacheRoot = qualificationCacheRoot
+  ? resolve(qualificationCacheRoot, 'first-pass')
+  : resolve(packageRoot, 'private-results/authority-acquisition-cache')
 await mkdir(cacheRoot, { recursive: true })
-const retrievalCacheRoot = resolve(
-  packageRoot,
-  'private-results/authority-retrieval-interpretation-cache',
-)
+const retrievalCacheRoot = qualificationCacheRoot
+  ? resolve(qualificationCacheRoot, 'retrieval-interpretation')
+  : resolve(packageRoot, 'private-results/authority-retrieval-interpretation-cache')
 if (options.retrieval) await mkdir(retrievalCacheRoot, { recursive: true })
-const focusedSearchCacheRoot = resolve(
-  packageRoot,
-  'private-results/authority-focused-search-cache',
-)
+const focusedSearchCacheRoot = qualificationCacheRoot
+  ? resolve(qualificationCacheRoot, 'focused-search')
+  : resolve(packageRoot, 'private-results/authority-focused-search-cache')
 if (options.focusedSearch) await mkdir(focusedSearchCacheRoot, { recursive: true })
-const exaFallbackCacheRoot = resolve(packageRoot, 'private-results/authority-exa-fallback-cache')
+const exaFallbackCacheRoot = qualificationCacheRoot
+  ? resolve(qualificationCacheRoot, 'exa-fallback')
+  : resolve(packageRoot, 'private-results/authority-exa-fallback-cache')
 if (options.exaFallback) await mkdir(exaFallbackCacheRoot, { recursive: true })
 const cacheKey = (target) =>
   createHash('sha256')
@@ -291,6 +469,7 @@ const restrictedSearchWithCache = async (
 
   try {
     const acquired = await acquireAuthorityEvidence(target, {
+      apiUrl: options.apiUrl,
       model,
       reasoningEffort: experiment.reasoningEffort,
       searchContextSize: experiment.searchContextSize,
@@ -302,7 +481,7 @@ const restrictedSearchWithCache = async (
     const output = canonicalizeAuthorityAcquisition(rawOutput, acquired.consultedUrls, policy)
     const validation = validateAuthorityAcquisition(target, output, acquired.consultedUrls, policy)
     const cacheRecord = { ...metadata, rawOutput, modelCallCount: 1 }
-    await writeFile(cachePath, `${JSON.stringify(cacheRecord, null, 2)}\n`)
+    await writeFile(cachePath, `${JSON.stringify(cacheRecord, null, 2)}\n`, { mode: 0o600 })
     return {
       status: 'completed',
       ...cacheRecord,
@@ -320,6 +499,7 @@ const restrictedSearchWithCache = async (
     return {
       status: 'error',
       error: String(error),
+      infrastructureFailure: error?.infrastructureFailure === true,
       cached: false,
       billing: emptyBilling(),
       webSearchCalls: 0,
@@ -374,7 +554,10 @@ const augmentWithFocusedSearch = async (target, firstPass, policy) => {
 
 const runOne = async (testCase) => {
   const target = buildAuthorityTarget(testCase)
-  const policy = authorityPolicyForCase(testCase, samplePlan)
+  const policy = authorityPolicyForCase(
+    testCase,
+    qualificationLock ? qualificationPlan : samplePlan,
+  )
   const finalize = async (firstPass) => {
     let searched = options.focusedSearch
       ? await augmentWithFocusedSearch(target, firstPass, policy)
@@ -382,6 +565,7 @@ const runOne = async (testCase) => {
     if (options.exaFallback) {
       searched = await augmentWithExaAuthorityFallback(target, searched, {
         apiKey: process.env.EXA_API_KEY,
+        locate: qualificationExaLocator,
         searchDomains: (restrictedTarget, domains) =>
           restrictedSearchWithCache(restrictedTarget, domains, policy, {
             cacheRoot: exaFallbackCacheRoot,
@@ -423,6 +607,7 @@ const runOne = async (testCase) => {
 
   try {
     const acquired = await acquireAuthorityEvidence(target, {
+      apiUrl: options.apiUrl,
       model,
       reasoningEffort: experiment.reasoningEffort,
       searchContextSize: experiment.searchContextSize,
@@ -435,6 +620,7 @@ const runOne = async (testCase) => {
     let repair = null
     if (shouldRepairAuthorityAcquisition(validation)) {
       repair = await repairAuthorityEvidence(target, output, validation.errors, {
+        apiUrl: options.apiUrl,
         model,
         reasoningEffort: experiment.reasoningEffort,
       })
@@ -458,7 +644,7 @@ const runOne = async (testCase) => {
       modelCallCount: repair ? 2 : 1,
       rawOutput,
     }
-    await writeFile(cachePath, `${JSON.stringify(cacheRecord, null, 2)}\n`)
+    await writeFile(cachePath, `${JSON.stringify(cacheRecord, null, 2)}\n`, { mode: 0o600 })
     return await finalize({
       caseId: target.caseId,
       status: 'completed',
@@ -478,6 +664,7 @@ const runOne = async (testCase) => {
       caseId: target.caseId,
       status: 'error',
       error: String(error),
+      infrastructureFailure: error?.infrastructureFailure === true,
       cached: false,
       latencyMs: null,
       webSearchCalls: 0,
@@ -485,7 +672,7 @@ const runOne = async (testCase) => {
   }
 }
 
-const concurrency = Math.max(1, Math.min(4, Number(process.env.BOOK_AUTHORITY_CONCURRENCY ?? 2)))
+const concurrency = options.concurrency
 const results = Array(cases.length)
 let nextIndex = 0
 let completed = 0
@@ -495,20 +682,79 @@ async function worker() {
     nextIndex += 1
     results[index] = await runOne(cases[index])
     completed += 1
+    if (qualificationRunState) {
+      qualificationRunState.completedCases = completed
+      qualificationRunState.heartbeatAt = new Date().toISOString()
+      await persistQualificationRunState()
+    }
     console.log(`authority acquisition ${completed}/${cases.length}`)
   }
 }
-await Promise.all(Array.from({ length: concurrency }, () => worker()))
+try {
+  await Promise.all(Array.from({ length: concurrency }, () => worker()))
+} finally {
+  if (qualificationHeartbeat) clearInterval(qualificationHeartbeat)
+}
 
 const selectedCaseSet = { ...caseSet, cases }
 const score = {
   ...scoreAuthorityAcquisition(selectedCaseSet, results, model),
   experiment,
+  evaluationPartition: qualificationLock ? 'qualification' : 'development',
 }
+if (qualificationLock) score.qualification = evaluateQualificationScore(score, evaluationPolicy)
+const qualificationErrorResults = results.filter((result) => result.status === 'error')
+const qualificationErrors = qualificationErrorResults.length
+const isResumableExaError = (code) =>
+  code === 'timeout' ||
+  code === 'network_error' ||
+  code === 'http_408' ||
+  code === 'http_429' ||
+  /^http_5\d\d$/.test(code)
+const qualificationExaFailureResults = results.filter((result) => {
+  const fallback = result.exaFallback
+  if (!fallback || fallback.status === 'skipped') return false
+  if (fallback.status === 'error' && !fallback.locator) return true
+  if (fallback.locator && fallback.locator.status !== 'completed') return true
+  return fallback.search?.status === 'error'
+})
+const qualificationExaInfrastructureFailures = qualificationExaFailureResults.filter((result) => {
+  const fallback = result.exaFallback
+  if (fallback.status === 'error' && !fallback.locator) return false
+  const codes = fallback.locator?.errorCodes ?? []
+  const locatorResumable =
+    fallback.locator?.status === 'completed' ||
+    (codes.length > 0 && codes.every(isResumableExaError))
+  const searchResumable =
+    fallback.search?.status !== 'error' || fallback.search.infrastructureFailure === true
+  return locatorResumable && searchResumable
+}).length
+const qualificationHasFailures =
+  qualificationErrors > 0 || qualificationExaFailureResults.length > 0
+const qualificationInfrastructureFailure =
+  qualificationLock &&
+  !qualificationBudgetExhausted &&
+  qualificationHasFailures &&
+  qualificationErrorResults.every((result) => result.infrastructureFailure) &&
+  qualificationExaInfrastructureFailures === qualificationExaFailureResults.length
+const qualificationUnrecoverableFailure =
+  qualificationLock && qualificationHasFailures && !qualificationInfrastructureFailure
+const qualificationResponseModels = [
+  ...new Set(
+    results
+      .filter((result) => result.status === 'completed')
+      .map((result) => result.responseModel)
+      .filter(Boolean),
+  ),
+]
+const qualificationModelDrift =
+  qualificationLock && qualificationErrors === 0 && qualificationResponseModels.length !== 1
 const basePath = resolve(
   repositoryRoot,
-  options.out ??
-    `packages/series-source-trial/private-results/authority-acquisition/${holdout?.id ?? options.scope}_${timestamp()}`,
+  qualificationLock
+    ? `packages/series-source-trial/private-results/authority-qualification-runs/${qualificationLock.id}`
+    : (options.out ??
+        `packages/series-source-trial/private-results/authority-acquisition/${holdout?.id ?? options.scope}_${timestamp()}`),
 )
 await mkdir(dirname(basePath), { recursive: true })
 await Promise.all([
@@ -520,7 +766,9 @@ await Promise.all([
         model,
         experiment,
         promptVersion: AUTHORITY_ACQUISITION_PROMPT_VERSION,
-        holdoutId: holdout?.id ?? null,
+        holdoutId: qualificationLock?.id ?? holdout?.id ?? null,
+        evaluationPartition: qualificationLock ? 'qualification' : 'development',
+        qualificationLockSha256: qualificationLock?.sha256 ?? null,
         retrievalEnabled: options.retrieval,
         focusedSearchEnabled: options.focusedSearch,
         exaFallbackEnabled: options.exaFallback,
@@ -532,9 +780,52 @@ await Promise.all([
       null,
       2,
     )}\n`,
+    { mode: 0o600 },
   ),
-  writeFile(`${basePath}.md`, renderMarkdown(score)),
+  writeFile(`${basePath}.md`, renderMarkdown(score), { mode: 0o600 }),
 ])
+
+if (qualificationRunStatePath) {
+  qualificationRunState = {
+    ...qualificationRunState,
+    status:
+      qualificationBudgetExhausted || qualificationModelDrift || qualificationUnrecoverableFailure
+        ? 'burned'
+        : qualificationInfrastructureFailure
+          ? 'incomplete'
+          : 'completed',
+    completedAt:
+      qualificationHasFailures || qualificationBudgetExhausted || qualificationModelDrift
+        ? null
+        : new Date().toISOString(),
+    qualificationPassed: score.qualification?.passed ?? null,
+    errorCases: qualificationErrors,
+    exaFailureCases: qualificationExaFailureResults.length,
+    exaInfrastructureFailureCases: qualificationExaInfrastructureFailures,
+    resumableInfrastructureFailure: qualificationInfrastructureFailure,
+    exaReservedUsd: Number(reservedExaSpendUsd.toFixed(6)),
+    exaBudgetExhausted: qualificationBudgetExhausted,
+    responseModelDrift: qualificationModelDrift,
+    responseModels: qualificationResponseModels,
+  }
+  await persistQualificationRunState()
+}
 
 console.log(renderMarkdown(score))
 console.log(`Wrote ${basePath}.json and ${basePath}.md`)
+if (
+  qualificationBudgetExhausted ||
+  qualificationModelDrift ||
+  qualificationUnrecoverableFailure ||
+  qualificationInfrastructureFailure
+) {
+  throw new Error(
+    qualificationBudgetExhausted
+      ? 'Qualification burned because the frozen Exa budget was exhausted'
+      : qualificationModelDrift
+        ? 'Qualification burned because the response model changed during the run'
+        : qualificationUnrecoverableFailure
+          ? 'Qualification burned because a non-infrastructure acquisition failure occurred'
+          : 'Qualification incomplete because of a resumable infrastructure failure',
+  )
+}

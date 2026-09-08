@@ -1,8 +1,8 @@
 # Reading life implementation
 
-September 7, 2026. The approved study is being implemented in slices. Reflect now replaces Stats,
-and Planner's completion counts/calendar entries use the same model. The route remains `/stats`;
-saved navigation arrangements retain their existing identifiers.
+September 7, 2026. The approved study is being implemented in slices. The first slice replaces
+Stats with Reflect and connects Planner's completion counts/calendar entries to the same model.
+The route remains `/stats`; saved navigation arrangements retain their existing identifiers.
 
 ## Record contract
 
@@ -38,15 +38,13 @@ used: the normal books query does not hydrate it.
 
 A saved reading note and the complete book jacket lead the page. Without a note, the opening
 uses the book's title and recorded finish. With no history, it explains how to log a first or
-past read. Metric, month, genre, author, trope, mood, format, undated, legacy, and current DNF
-controls reveal their underlying records. Labels are counted once per read even when duplicate
-case variants survive in imported metadata. Book controls navigate to the existing book detail
-and reading log.
+past read. Metric, month, genre, format, undated, legacy, and current DNF controls reveal their
+underlying records. Book controls navigate to the existing book detail and reading log.
 
-The selected year also shows the reader's private annual goal when one exists. A cover gathering
-opens a private retrospective assembled only from persisted facts and a real saved note. It has no
-aggregate rating, public score, analytics export, or share card, and it turns back toward Planner
-through the existing route.
+The fuller yearbook also keeps an optional reader-set goal in context without treating it as a
+score, renders each month's finished books as a readable rhythm, and adds evidence-bound author,
+trope, and reader-assigned mood drilldowns. Taxonomy labels are deduplicated case-insensitively
+within each read so aliases cannot inflate a count.
 
 The page uses existing room materials, fonts, tokens, cover sourcing, native dialogs, and focus
 return behavior. No new cover provider, atmosphere engine, analytics export, or public sharing
@@ -71,10 +69,27 @@ This slice adds `20260929010000_reading_plan_queue.sql`. Its existing-plan backf
 replacement change stored data/write behavior, so production deployment remains an owner-operated
 human confirmation after merge.
 
-## Next slice
+## Private retrospective
 
-1. **Release horizon.** Integrate followed-author sources and honest publication precision into
-   Plan; do not convert unknown months/days into January 1 or create plans automatically.
+Reflect now offers a private story for the selected period. It is composed directly from the same
+`summarizeReadingHistory` result that supplies the metrics and drilldowns: logged completions,
+distinct books, qualified return counts, recorded months, current genre, author, trope, and
+reader-assigned mood labels, and read-log formats. It shows a bounded set of complete, addressable
+book jackets and, when one exists, an actual saved reading note. Empty periods do not offer a
+retrospective, and an unknown earlier date keeps the return language explicitly uncertain.
 
-Public review/merge comes before private synchronization. Reflect needs only a web release; Plan
-also needs the owner-operated migration before its web artifact is promoted.
+The story uses the existing native modal and room tokens, returns focus when closed, lets a reader
+open one of the shown books, and provides a direct turn into Plan. It creates no persisted document,
+model output, public score, share card, image download, or derived analytics export.
+
+## Release horizon
+
+Public PR #482 implements source-aware release discovery in Plan. It preserves year/month/day
+precision, records provider provenance, supports explicit manual release entry, and never turns a
+release into a reading plan automatically. Hardcover supplies the primary followed-author horizon;
+an optional Penguin Random House confirmation path and Google Books fallback remain isolated and
+honestly labeled.
+
+Public review/merge comes before private synchronization. The retrospective and release horizon
+need only a web release; Plan's earlier queue work also needs the owner-operated migration before
+its web artifact is promoted.

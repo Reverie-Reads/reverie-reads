@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Book } from '@reverie/core'
+import { formatPartialDate, type Book, type PartialDate } from '@reverie/core'
 import { supabase } from '../lib/supabase'
 import { pageAll } from './paging'
 import { isOwned, ownedKeys, type DiscoverHit } from '../lib/discover'
@@ -12,6 +12,24 @@ import { isOwned, ownedKeys, type DiscoverHit } from '../lib/discover'
 // upstream fetches are budgeted per request), then windows/dedupes/owner-filters locally.
 
 export type FollowState = 'followed' | 'muted'
+export type ReleaseSource = 'prh' | 'hardcover' | 'google'
+
+export interface ReleaseInfo {
+  source: ReleaseSource
+  precision: 'year' | 'month' | 'day'
+  sourceUrl?: string
+  publisher?: string
+  formats?: string[]
+  territory?: string
+  kind?: 'new_work' | 'new_edition'
+  checkedAt: string
+  confirmedBy?: ReleaseSource[]
+}
+
+export interface ReleaseHit extends DiscoverHit {
+  /** Absent only on cached responses from the retired Google-only release shape. */
+  release?: ReleaseInfo
+}
 
 const primaryAuthor = (b: Book): string =>
   (b.contributors[0]?.name ?? [b.first, b.last].filter(Boolean).join(' ')).trim()
@@ -42,38 +60,82 @@ export function yourAuthors(books: readonly Book[], follows: Record<string, Foll
     .sort((a, b) => a.localeCompare(b))
 }
 
-export interface AuthorRelease extends DiscoverHit {
+export interface AuthorRelease extends ReleaseHit {
   author: string
 }
 
-/** Window an author-shelf map into the Planner's two external sections: upcoming (soonest first)
- *  and recently released (newest first, last ~6 months) — excluding anything already shelved. */
+/** Parse only the flexible date shapes the product can represent. Calendar-invalid days are
+ * rejected instead of rolling into the next month through Date.parse. */
+export function parseReleasePub(value: string): PartialDate | null {
+  const match = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/.exec(value.trim())
+  if (!match) return null
+  const y = Number(match[1])
+  const m = match[2] ? Number(match[2]) : null
+  const d = match[3] ? Number(match[3]) : null
+  if (y < 1000 || y > 9999 || (m != null && (m < 1 || m > 12)) || (d != null && m == null))
+    return null
+  if (d != null) {
+    const date = new Date(Date.UTC(y, (m ?? 1) - 1, d))
+    if (date.getUTCFullYear() !== y || date.getUTCMonth() !== (m ?? 1) - 1 || date.getUTCDate() !== d)
+      return null
+  }
+  return { y, m, d }
+}
+
+export function releaseDateLabel(value: string): string {
+  return formatPartialDate(parseReleasePub(value))
+}
+
+function dateBounds(value: string): { first: number; last: number } | null {
+  const pub = parseReleasePub(value)
+  if (!pub?.y) return null
+  const month = pub.m ?? 1
+  const day = pub.d ?? 1
+  const first = Date.UTC(pub.y, month - 1, day)
+  const last =
+    pub.d != null
+      ? first
+      : pub.m != null
+        ? Date.UTC(pub.y, month, 0, 23, 59, 59, 999)
+        : Date.UTC(pub.y, 11, 31, 23, 59, 59, 999)
+  return { first, last }
+}
+
+/** Window an author-shelf map into the Planner's external sections. A month or year that spans
+ * today is uncertain: Reverie keeps it in "date taking shape" rather than inventing a last day. */
 export function releaseWindow(
-  shelves: Record<string, DiscoverHit[]>,
+  shelves: Record<string, ReleaseHit[]>,
   books: readonly Book[],
   now: number,
-): { upcoming: AuthorRelease[]; recent: AuthorRelease[] } {
+): { upcoming: AuthorRelease[]; recent: AuthorRelease[]; uncertain: AuthorRelease[] } {
   const owned = ownedKeys(books)
   const seen = new Set<string>()
   const sixMonthsAgo = now - 183 * 864e5
   const upcoming: { r: AuthorRelease; t: number }[] = []
   const recent: { r: AuthorRelease; t: number }[] = []
+  const uncertain: { r: AuthorRelease; t: number }[] = []
   for (const [author, hits] of Object.entries(shelves)) {
     for (const h of hits) {
-      // a year-only date means "sometime this year, TBD" — parse to year-end so it windows as
-      // upcoming and sorts AFTER concretely-dated releases
-      const t = Date.parse(h.pub.length === 4 ? `${h.pub}-12-31` : h.pub)
-      if (Number.isNaN(t) || t < sixMonthsAgo) continue
+      const bounds = dateBounds(h.pub)
+      if (!bounds || bounds.last < sixMonthsAgo) continue
       if (isOwned(h, owned)) continue
       const k = `${h.title.toLowerCase()}|${(h.authors[0] ?? '').toLowerCase()}`
       if (seen.has(k)) continue
       seen.add(k)
-      ;(t > now ? upcoming : recent).push({ r: { ...h, author }, t })
+      const entry = { r: { ...h, author }, t: bounds.first }
+      if (bounds.first > now) upcoming.push(entry)
+      else if (bounds.last >= now) uncertain.push(entry)
+      else recent.push({ ...entry, t: bounds.last })
     }
   }
   upcoming.sort((a, b) => a.t - b.t)
   recent.sort((a, b) => b.t - a.t)
-  return { upcoming: upcoming.map((x) => x.r), recent: recent.map((x) => x.r) }
+  uncertain.sort((a, b) => a.t - b.t)
+  return {
+    upcoming: upcoming.map((x) => x.r),
+    recent: recent.map((x) => x.r),
+    uncertain: uncertain.map((x) => x.r),
+  }
 }
 
 export const followsKey = ['author-follows'] as const
@@ -137,7 +199,7 @@ export function useSetFollow() {
  *  return instantly; each call spends a small upstream budget). Progressive: partial shelves
  *  render as they land. Unavailability leaves the map empty — the rail simply doesn't render. */
 export function useAuthorReleases(names: readonly string[]) {
-  const [shelves, setShelves] = useState<Record<string, DiscoverHit[]>>({})
+  const [shelves, setShelves] = useState<Record<string, ReleaseHit[]>>({})
   const namesKey = names.join('|')
   const running = useRef<string | null>(null)
 
@@ -160,7 +222,7 @@ export function useAuthorReleases(names: readonly string[]) {
             if (++misses >= 3) return
             continue
           }
-          const d = data as { authors: Record<string, DiscoverHit[]>; pending?: string[] }
+          const d = data as { authors: Record<string, ReleaseHit[]>; pending?: string[] }
           if (!cancelled) setShelves((old) => ({ ...old, ...d.authors }))
           remaining = d.pending ?? []
         } catch {

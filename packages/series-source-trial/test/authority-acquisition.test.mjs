@@ -904,6 +904,33 @@ test('sends a bounded, stateless web-search request and captures all consulted U
   assert.deepEqual(result.output, seriesOutput)
 })
 
+test('marks only transient API failures as resumable infrastructure errors', async () => {
+  const target = buildAuthorityTarget(testCase)
+  const rejectedWith = async (fetchImpl) => {
+    try {
+      await acquireAuthorityEvidence(target, {
+        apiKey: 'test-key',
+        fetchImpl,
+      })
+      assert.fail('expected authority acquisition to reject')
+    } catch (error) {
+      return error
+    }
+  }
+  const transient = await rejectedWith(async () => new Response('unavailable', { status: 503 }))
+  assert.equal(transient.infrastructureFailure, true)
+  assert.equal(transient.httpStatus, 503)
+
+  const invalid = await rejectedWith(async () => new Response('bad request', { status: 400 }))
+  assert.equal(invalid.infrastructureFailure, false)
+  assert.equal(invalid.httpStatus, 400)
+
+  const network = await rejectedWith(async () => {
+    throw new TypeError('fetch failed')
+  })
+  assert.equal(network.infrastructureFailure, true)
+})
+
 test('captures and deduplicates scalar and batched search-query telemetry', () => {
   const evidence = responseWebEvidence({
     output: [

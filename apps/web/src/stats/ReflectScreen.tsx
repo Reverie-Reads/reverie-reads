@@ -192,7 +192,7 @@ function CoverGathering({ books }: { books: Book[] }) {
 export function ReflectView({
   history,
   openBook,
-  openPlanner = () => {},
+  openPlan = () => {},
   editGoal = () => {},
   goalYear = null,
   goalTarget = 0,
@@ -200,7 +200,7 @@ export function ReflectView({
 }: {
   history: ReadingHistory
   openBook: (id: string) => void
-  openPlanner?: () => void
+  openPlan?: () => void
   editGoal?: () => void
   goalYear?: number | null
   goalTarget?: number | null
@@ -227,6 +227,7 @@ export function ReflectView({
   const topAuthor = recorded(summary.authors)[0]
   const topTrope = recorded(summary.tropes)[0]
   const topMood = recorded(summary.moods)[0]
+  const topFormat = recorded(summary.formats)[0]
   const notedReads = summary.records.filter((read) => read.notes?.trim())
   const showGoal = period === currentYear && goalYear === currentYear
   const activeGoal = showGoal ? Math.max(0, goalTarget ?? 0) : 0
@@ -250,6 +251,7 @@ export function ReflectView({
             onChange={(event) => {
               setPeriod(event.target.value === 'all' ? 'all' : Number(event.target.value))
               setDetail(null)
+              setRetrospectiveOpen(false)
             }}
             className="skin-field"
           >
@@ -513,7 +515,9 @@ export function ReflectView({
               A private retrospective made only from these books, the details you recorded, and the
               notes you chose to keep.
             </p>
-            <Button onClick={() => setRetrospectiveOpen(true)}>Open your retrospective</Button>
+            <Button onClick={() => setRetrospectiveOpen(true)} aria-haspopup="dialog">
+              Open your retrospective
+            </Button>
           </div>
           <CoverGathering books={summary.distinctBooks} />
         </section>
@@ -625,22 +629,53 @@ export function ReflectView({
 
       {retrospectiveOpen && (
         <Modal
-          title={`Private retrospective · ${periodLabel}`}
+          title={period === 'all' ? 'Your reading, gathered here' : `Your ${period} in books`}
           onClose={() => setRetrospectiveOpen(false)}
           wide
         >
           <div className="reflect-retrospective">
-            <p className="reflect-eyebrow">Made from your record · kept for you</p>
+            <p className="reflect-eyebrow">
+              A private retrospective · {period === 'all' ? 'All recorded years' : period}
+            </p>
             <h2>{periodTitle}</h2>
-            <CoverGathering books={summary.distinctBooks} />
+
+            <ul className="reflect-story-covers" aria-label="Books in this retrospective">
+              {summary.distinctBooks.slice(0, 7).map((book) => (
+                <li key={book.id}>
+                  <button
+                    type="button"
+                    onClick={() => openBook(book.id)}
+                    aria-label={`Open ${book.title}`}
+                  >
+                    <CoverImage book={book} thumb className="reflect-story-cover object-contain" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {summary.distinctBooks.length > 7 && (
+              <p className="reflect-story-caption">
+                Seven of {summary.distinctBooks.length} distinct books are gathered here.
+              </p>
+            )}
             <p className="reflect-retrospective-lead">
-              {summary.records.length} completed {summary.records.length === 1 ? 'read' : 'reads'}{' '}
-              across {summary.distinctBooks.length} different{' '}
+              {summary.records.length} logged {summary.records.length === 1 ? 'read' : 'reads'}{' '}
+              across {summary.distinctBooks.length}{' '}
               {summary.distinctBooks.length === 1 ? 'book' : 'books'}.
-              {summary.returns > 0 &&
-                ` ${summary.returnsAreMinimum ? 'At least ' : ''}${summary.returns} ${summary.returns === 1 ? 'was a return' : 'were returns'} to familiar company.`}
+              {summary.returns === 1 &&
+                ` ${summary.returnsAreMinimum ? 'At least one' : 'One'} was a return to familiar company.`}
+              {summary.returns > 1 &&
+                ` ${summary.returnsAreMinimum ? 'At least ' : ''}${summary.returns} were returns to familiar company.`}
+              {summary.returns === 0 &&
+                summary.returnsAreMinimum &&
+                ' Missing dates leave the number of returns open.'}
             </p>
             <dl className="reflect-story-facts">
+              {readsWithMonth > 0 && (
+                <div>
+                  <dt>The fullest month</dt>
+                  <dd>{MONTH_ABBR[busiestMonth]}</dd>
+                </div>
+              )}
               {topGenre && (
                 <div>
                   <dt>Most visited genre</dt>
@@ -665,6 +700,12 @@ export function ReflectView({
                   <dd>{topMood.label}</dd>
                 </div>
               )}
+              {topFormat && (
+                <div>
+                  <dt>A format in the record</dt>
+                  <dd>{topFormat.label}</dd>
+                </div>
+              )}
               <div>
                 <dt>Notes kept</dt>
                 <dd>{notedReads.length}</dd>
@@ -677,8 +718,8 @@ export function ReflectView({
               </blockquote>
             )}
             <p className="reflect-private-note">
-              This retrospective stays inside your private reading life. Reverie does not create a
-              public score or share card from it.
+              Kept here for you. Reverie does not create a public score or share card from this
+              view.
             </p>
             <div className="reflect-story-actions">
               <Button variant="secondary" onClick={() => setRetrospectiveOpen(false)}>
@@ -687,7 +728,7 @@ export function ReflectView({
               <Button
                 onClick={() => {
                   setRetrospectiveOpen(false)
-                  openPlanner()
+                  openPlan()
                 }}
               >
                 Turn toward what’s next
@@ -705,6 +746,7 @@ export function ReflectScreen() {
   const profile = useProfile()
   const navigate = useNavigate()
   const openBook = (id: string) => void navigate({ to: '/book/$bookId', params: { bookId: id } })
+  const openPlan = () => void navigate({ to: '/planner' })
   if (!history.data)
     return (
       <section className="reflect">
@@ -736,7 +778,7 @@ export function ReflectScreen() {
         goalYear={profile.data?.goalYear}
         goalTarget={profile.data?.goalTarget}
         editGoal={() => void navigate({ to: '/settings' })}
-        openPlanner={() => void navigate({ to: '/planner' })}
+        openPlan={openPlan}
       />
     </>
   )
