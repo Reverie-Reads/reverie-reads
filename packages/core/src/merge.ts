@@ -1,7 +1,7 @@
 import type { Book, List, ReadEntry } from './types'
 import { norm } from './normalize'
 import { mergePossession } from './ownership'
-import { hasDate } from './partialDate'
+import { isReadingPlan } from './readingPlan'
 import { normalizeBookGenres } from './genreNormalize'
 
 /** The slice of library state the merge engine reads and rewrites. */
@@ -133,13 +133,16 @@ export function mergeBooks(
     const pp = all.map((b) => b.pub).find((v) => v && v.y)
     if (pp) p.pub = pp
   }
-  // The plan unions as ONE OBJECT keyed on the year, exactly like `pub` two lines up and exactly
-  // like merge_books' `take_plan` — take some other book's whole plan, or leave the primary's
-  // alone. Never assembled from parts: a per-field fill could take the year from one book and the
-  // month from another and produce a date neither reader ever chose.
-  if (!hasDate(p.plan)) {
-    const pl = all.map((b) => b.plan).find((v) => hasDate(v))
-    if (pl) p.plan = pl
+  // Plan membership is one object: date precision, queue order, and future-self intention travel
+  // together. A positioned book with no date is the deliberate "Soon" state, so a loser's dated
+  // plan must not overwrite it merely because `plan.y` is null.
+  if (!isReadingPlan(p)) {
+    const winner = all.find(isReadingPlan)
+    if (winner) {
+      p.plan = winner.plan
+      p.planPosition = winner.planPosition
+      p.planIntention = winner.planIntention
+    }
   }
 
   const statuses = all.map((b) => b.readStatus)

@@ -272,6 +272,13 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   and missing finish dates stay outside a selected year. Formats come from read logs, genre
   buckets deduplicate within each read, and return counts preserve earlier-period context.
   See `docs/tasks/reading-life-implementation.md` for the precision and legacy-data boundaries.
+- **A reading plan is five fields that move together.** `plan_y/m/d` retain flexible date
+  precision; `plan_position` is deliberate membership plus preference order, so non-null position
+  with no date means Soon and null position with no date means unplanned. `plan_intention` is a
+  private future-self note, never a reading-log note. Reorder one spaced numeric key. Removing a
+  plan clears only those five fields and never reading history. Merge decides against the stored
+  primary and keeps or adopts the whole object, including Soon. Raw book-row backup/restore and the
+  existing IndexedDB mirror own persistence; do not add a second plan store.
 - **No aggregate rating.** Never compute or display an averaged star rating anywhere.
   Keep the reader's own rating (`rating` on the book + per-read). Others' opinions appear only
   as an opt-in list of **individual** reviews on the book screen — never a single number.

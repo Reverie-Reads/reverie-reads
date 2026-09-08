@@ -108,6 +108,8 @@ export function toBook(row: BookRow): Book {
     pub: { y: row.pub_y, m: row.pub_m, d: row.pub_d },
     reads: [],
     plan: { y: row.plan_y, m: row.plan_m, d: row.plan_d },
+    planPosition: row.plan_position == null ? null : Number(row.plan_position),
+    planIntention: row.plan_intention ?? '',
     progress: row.progress ?? 0,
     readingPosition: row.reading_position,
     readingNowHidden: row.reading_now_hidden ?? false,
@@ -188,6 +190,8 @@ export function toBookRow(patch: Partial<Book>): Partial<BookRow> {
     row.plan_d = patch.plan.d
     // plan_date is not written and no longer exists — dropped in 20260805010000.
   }
+  if (patch.planPosition !== undefined) row.plan_position = patch.planPosition
+  if (patch.planIntention !== undefined) row.plan_intention = patch.planIntention
   if (patch.progress !== undefined) row.progress = patch.progress
   if (patch.readingPosition !== undefined) row.reading_position = patch.readingPosition
   if (patch.readingNowHidden !== undefined) row.reading_now_hidden = patch.readingNowHidden

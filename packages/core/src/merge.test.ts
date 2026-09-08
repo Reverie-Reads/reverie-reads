@@ -243,7 +243,7 @@ describe('plan union — one object, never assembled from parts', () => {
   // THE OBJECT-LEVEL DISCRIMINATOR, and the reason this rule is not three `??`s. The primary has
   // said "sometime in 2026" and nothing more. A per-field fill would borrow the loser's month and
   // day and produce March 14th 2026 — a date neither reader ever chose, presented as the plan.
-  // Matches merge_books' `take_plan`, which decides once and moves all four columns together.
+  // Matches merge_books_authoritative, which decides once and moves all five columns together.
   it('a year-only primary is NOT completed from the loser’s month and day', () => {
     const merged = mergeBooks(lib({ y: 2026, m: null, d: null }, { y: 2026, m: 3, d: 14 }), 'p', [
       'l',
@@ -257,7 +257,7 @@ describe('plan union — one object, never assembled from parts', () => {
   })
 
   // The stale-cache shape, on the client side of the boundary. When the cached primary carries no
-  // plan, the union has nothing to carry forward and the payload sent to merge_books is all-null.
+  // plan, the union has nothing to carry forward and the payload sent to the merge RPC is all-null.
   // That is CORRECT here and is precisely why the RPC cannot treat an incoming null as an
   // instruction: `take_plan` reads the STORED row, sees a plan the client never knew about, and
   // declines the write. Covered end-to-end in supabase/tests/merge_plan_test.sql; this pins the
@@ -267,5 +267,26 @@ describe('plan union — one object, never assembled from parts', () => {
     expect(merged.plan.y).toBeNull()
     expect(merged.plan.m).toBeNull()
     expect(merged.plan.d).toBeNull()
+  })
+
+  it('a primary Soon plan keeps its membership and intention when the loser has a date', () => {
+    const state = lib(noPlan(), { y: 2027, m: 1, d: 5 })
+    state.books[0]!.planPosition = 1000
+    state.books[0]!.planIntention = 'When the mood comes.'
+    state.books[1]!.planPosition = 2000
+    const merged = mergeBooks(state, 'p', ['l']).books[0]!
+    expect(merged.plan).toEqual(noPlan())
+    expect(merged.planPosition).toBe(1000)
+    expect(merged.planIntention).toBe('When the mood comes.')
+  })
+
+  it('an unplanned primary adopts the loser’s complete Soon plan', () => {
+    const state = lib(noPlan(), noPlan())
+    state.books[1]!.planPosition = 2000
+    state.books[1]!.planIntention = 'For a rainy afternoon.'
+    const merged = mergeBooks(state, 'p', ['l']).books[0]!
+    expect(merged.plan).toEqual(noPlan())
+    expect(merged.planPosition).toBe(2000)
+    expect(merged.planIntention).toBe('For a rainy afternoon.')
   })
 })

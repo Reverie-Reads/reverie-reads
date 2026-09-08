@@ -193,6 +193,10 @@ export interface Book {
   reads: ReadEntry[]
   /** planned "need to read" date, at whatever precision the reader actually has */
   plan: PlanDate
+  /** Queue membership and private preference order. Non-null with an empty date means "Soon". */
+  planPosition?: number | null
+  /** Optional note to the reader's future self for this plan; never a review or reading note. */
+  planIntention?: string
   progress: number // 0..100 while Reading
   /** manual Reading Now order (spaced numeric; null = unordered, sorts by recency) */
   readingPosition?: number | null

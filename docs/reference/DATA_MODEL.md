@@ -107,7 +107,9 @@ comments. Reproduced here with the parts that most often get guessed wrong calle
   source: string,
   pub: { y, m, d },            // any part may be null (flexible precision)
   reads: [ { date, format, rating, notes } ],   // reread log; format read may differ from owned
-  plan: string | null,         // planned "need to read" date, YYYY-MM-DD
+  plan: { y, m, d },           // any part may be null; no date + a position means "Soon"
+  planPosition?: number | null,// queue membership/order; non-null + no date means "Soon"
+  planIntention?: string,      // optional private note to the reader's future self
   progress: number,            // 0..100 while Reading
   readingPosition?: number | null,   // manual Reading Now order (spaced numeric)
   readingNowHidden?: boolean,        // hidden from Reading Now without changing status/progress
@@ -236,7 +238,8 @@ books               (id pk, owner_id fk→profiles, corpus_work_id fk→works no
                      read_status text not null default 'unset',
                                           -- books_read_status_check: unset|Unread|Reading|Read|DNF
                      source, pub_y, pub_m, pub_d,     -- flexible precision; m/d range-checked
-                     plan_y, plan_m, plan_d, progress smallint,
+                     plan_y, plan_m, plan_d, plan_position numeric,
+                     plan_intention text not null default '', progress smallint,
                      reading_position numeric, reading_now_hidden bool,
                      enriched_at, tropes_suggested_at,
                      added_at, updated_at,
