@@ -1,6 +1,6 @@
 # Reverie Reads roadmap
 
-Current product priorities updated 2026-09-07. This file is the ordered project status. Historical briefs remain in
+Current product priorities updated 2026-09-08. This file is the ordered project status. Historical briefs remain in
 `docs/archive/`; detailed proposals that are not yet active remain in `docs/backlog/`; only work
 actually in flight belongs in `docs/tasks/`.
 
@@ -23,8 +23,11 @@ fundamental overhaul. This sequence takes precedence over the September 5 produc
 2. **Plan — implemented for public review.** The flexible queue supports direct edit/remove/undo,
    saved ordering, optional intentions, and explicit undated “Soon” membership. It preserves
    year/month/day precision, existing calendar entries, backup/offline behavior, and atomic merges.
-3. **Private retrospective and release horizon.** Reuse the reading model for a private period
-   story and integrate verified release precision. No derived analytics sharing/export.
+3. **Private retrospective and release horizon — implemented for public review.** Reflect now
+   composes its selected-period summary into a private story with real covers and saved notes. The
+   same record supplies every fact, uncertain return counts stay qualified, and the view has no
+   derived analytics sharing/export. Public PR #482 added source-aware release discovery with
+   honest date precision, provider provenance, manual entry, and no automatic reading plans.
 4. **Reader validation and remaining arrangements work.** Return to the first-use/return-loop
    checks and modular arrangements after the paired reading experience is coherent.
 

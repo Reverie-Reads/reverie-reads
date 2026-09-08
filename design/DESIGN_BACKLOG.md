@@ -39,8 +39,10 @@ lives in `ROADMAP.md`.
    rooms. The approved first implementation replaces Stats with Reflect and gives Planner the same
    reading-history model; [implementation notes](../docs/tasks/reading-life-implementation.md) explain
    the actual data limits. Plan now has explicit Soon membership, preference order, direct
-   edit/remove/undo, future-self notes, and a precision-safe calendar. The private retrospective is
-   next. This precedes import/restore preview and brand collateral.
+   edit/remove/undo, future-self notes, a precision-safe calendar, and a source-aware release
+   horizon. Reflect now composes the same selected-period record into a private retrospective with
+   real covers and saved notes, without creating a score, share card, or analytics export. This
+   precedes import/restore preview and brand collateral.
 4. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
    icons, onboarding material, and one accurate demonstration. Preserve each room's own interface
    language. Do not reopen the chosen palette as a new concept exercise.
