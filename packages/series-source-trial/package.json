@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "authority:acquire": "node src/acquire-authority.mjs",
+    "authority:locate": "node src/locate-authority.mjs",
     "trial": "node src/run.mjs",
     "resolver": "node src/resolve.mjs",
     "score": "node src/score-file.mjs",

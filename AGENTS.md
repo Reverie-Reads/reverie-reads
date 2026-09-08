@@ -171,6 +171,15 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   third-party evidence when reproduced on an author or publisher page. Preserve the attribution in
   the evidence summary and demote its classification support; first-party hosting does not turn the
   quoted speaker into the page owner.
+- **Independent search-index experiments are locator-only and non-retaining.** They receive the same
+  truth-blind title, author, and optional publication year, and may compare result URLs with reviewed
+  sources only in memory. Persist aggregate recall/cost/latency/error metrics—never provider
+  responses, result titles, snippets, URLs, queries, or case-level provider output—unless a future
+  provider plan expressly grants storage rights and the design is reviewed again. Locator output
+  cannot become identity, membership, position, standalone, resolver, retrieval-profile, Supabase,
+  or corpus evidence. Refuse the qualification partition; first measure incremental origin and
+  exact-page recovery beyond Luna-low on a frozen development slice. See
+  `docs/reference/DATA_SOURCES.md`.
 - **Navigation-aware authority retrieval is a bounded trial primitive, not a crawler.** Only an
   exact URL from the scout's consulted-source manifest and a current, human-reviewed origin profile
   may enter it. Every DNS answer and redirect hop must remain public and profile-approved, and the

@@ -447,6 +447,71 @@ The Luna/Terra/Sol comparison, cache-isolation fix, focused-search result, and r
 Open Library locator probes are recorded in
 `reports/authority-model-routing-experiment-2026-09-07.md`.
 
+### Test an independent search index
+
+Luna-low remains the reference scout. The next experiment isolates search-index recall from model
+reasoning by running three fixed, truth-blind title/author queries against Exa Search. Exa
+[documents its Search endpoint](https://exa.ai/docs/reference/search) and
+[prices Search at $7 per 1,000 requests](https://exa.ai/pricing?tab=api), including up to ten
+results per request. The frozen 18-work development slice therefore plans 54 requests, or $0.378
+before free account credits. It contains 18 distinct authors and excludes every work matched to a prior
+authority-acquisition cache or frozen acquisition benchmark. It is not the locked qualification
+partition. Its case list stays ignored and local until both the first Exa run and paired Luna
+baseline are complete; publishing the truth cells before those runs would make the untouched set
+searchable. The frozen benchmark and aggregate findings can be committed afterward.
+
+The locator parses URLs only in memory, compares them with reviewed sources only after retrieval,
+and persists aggregate recall, request, latency, error-count, and estimated-cost metrics. It never
+retains an Exa response, result title, result author, URL, query, request ID, or case-level provider
+output. It requests Search results only—no page text, highlights, summaries, synthesized output,
+deep search, or live crawl. This tool is discovery measurement only: it cannot establish book
+identity, series membership, position, or standalone status and has no provider-evidence, resolver,
+Supabase, or corpus write path. Retaining Exa result content would require a separate rights and
+design review.
+
+Put a trial key in `packages/series-source-trial/.env.local`:
+
+```dotenv
+EXA_API_KEY=your-server-side-key
+```
+
+Audit the frozen slice and planned spend without a key or network request:
+
+```sh
+pnpm series:authority:locate -- --dry-run
+```
+
+Run the independent locator first so the works remain unseen by Luna, writing only an aggregate
+report:
+
+```sh
+pnpm series:authority:locate -- \
+  --out packages/series-source-trial/private-results/exa-locator-development.json
+```
+
+Then run the controlled Luna-low baseline on the same slice. Because Exa result content is not
+retained, repeat the inexpensive locator with the baseline report to compute paired incremental and
+combined recall in memory:
+
+```sh
+pnpm series:authority:acquire -- \
+  --holdout packages/series-source-trial/data/authority-locator-development.json \
+  --model gpt-5.6-luna \
+  --reasoning low \
+  --search-context medium \
+  --max-tool-calls 3 \
+  --out packages/series-source-trial/private-results/luna-locator-development \
+  --refresh
+
+pnpm series:authority:locate -- \
+  --baseline packages/series-source-trial/private-results/luna-locator-development.json \
+  --out packages/series-source-trial/private-results/exa-plus-luna-development.json
+```
+
+The decision gate is incremental first-party origin and exact-page recovery beyond Luna-low, not
+raw Exa coverage. A positive result would justify using the independent locator only for
+unresolved or conflicting cases; it would not replace Luna or change evidence eligibility.
+
 The two-stage 1,200-case target and complete five-work 2024 Kindle Storyteller development frame
 are recorded in `reports/authority-development-frame-2024-2026-09-06.md`.
 
