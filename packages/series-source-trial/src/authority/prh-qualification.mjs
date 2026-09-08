@@ -47,7 +47,14 @@ export function sanitizePrhUrl(value) {
   return url.toString()
 }
 
-export function buildPrhFrameSpec({ frameId, from, to, domain = 'PRH.US', rows = 100 }) {
+export function buildPrhFrameSpec({
+  frameId,
+  from,
+  to,
+  domain = 'PRH.US',
+  rows = 100,
+  numberedSeriesOnly = false,
+}) {
   if (!/^[a-z0-9][a-z0-9-]{2,80}$/.test(frameId ?? '')) {
     throw new Error('frameId must be a 3-81 character lowercase slug')
   }
@@ -62,6 +69,7 @@ export function buildPrhFrameSpec({ frameId, from, to, domain = 'PRH.US', rows =
     language: 'E',
     workOnSaleFrom: apiDate(from),
     workOnSaleTo: apiDate(to),
+    ...(numberedSeriesOnly ? { hasSeriesNumber: true } : {}),
     sort: 'id',
     dir: 'asc',
     suppressLinks: true,
@@ -76,6 +84,9 @@ export function buildPrhFrameSpec({ frameId, from, to, domain = 'PRH.US', rows =
     from,
     to,
     rows,
+    selectionConstraint: numberedSeriesOnly
+      ? 'numbered_series_works_in_date_interval'
+      : 'all_works_in_date_interval',
     parameters,
     url: sanitizePrhUrl(url),
   }

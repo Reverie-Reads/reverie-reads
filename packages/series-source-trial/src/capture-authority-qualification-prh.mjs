@@ -41,6 +41,7 @@ export function parsePrhCaptureArgs(argv) {
     rows: 100,
     concurrency: 2,
     delayMs: 150,
+    numberedSeriesOnly: false,
     out: null,
     dryRun: false,
   }
@@ -63,7 +64,8 @@ export function parsePrhCaptureArgs(argv) {
         minimum: 0,
         maximum: 10_000,
       })
-    } else if (value === '--out') options.out = argv[++index]
+    } else if (value === '--numbered-series-only') options.numberedSeriesOnly = true
+    else if (value === '--out') options.out = argv[++index]
     else if (value === '--dry-run') options.dryRun = true
     else throw new Error(`Unknown argument ${value}`)
   }

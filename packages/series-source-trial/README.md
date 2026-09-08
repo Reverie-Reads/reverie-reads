@@ -475,6 +475,13 @@ pnpm series:authority:qualification:capture:prh -- \
   --dry-run
 ```
 
+For the deliberately series-positive portion of the challenge set, add
+`--numbered-series-only`. This uses PRH's documented `hasSeriesNumber` catalog filter inside the
+same complete publication-date frame; it does not accept a series code, title query, maximum, or
+random result. The selection constraint is recorded in the frame manifest. Each retained
+relationship still requires human review of its separate exact-work publisher evidence before it
+can become gold truth.
+
 Remove `--dry-run` to capture the frame. The output remains under ignored
 `private-results/authority-qualification/` and is intentionally a review queue. Exact structured
 series relationships are proposals, not gold truth. Self-titled, unnumbered, fractional,
