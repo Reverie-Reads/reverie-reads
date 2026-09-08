@@ -173,6 +173,16 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   third-party evidence when reproduced on an author or publisher page. Preserve the attribution in
   the evidence summary and demote its classification support; first-party hosting does not turn the
   quoted speaker into the page owner.
+- **Production qualification is private, locked, and single-use.** Never append qualification
+  identities or truth to the public development gold file. Build the reviewed oversample under
+  ignored `private-results/` from complete identity frames whose population, eligible, and
+  exclusion counts reconcile; select it only through the committed deterministic plan, and commit
+  the non-secret dataset/system lock before the run. Ordinary acquisition excludes qualification
+  cases. Qualification requires the exact frozen Luna-low plus Exa configuration, an isolated
+  cache, and the $10 Exa ceiling; partial selectors and refresh are forbidden. Resume is only for
+  incomplete infrastructure failures against the same lock. A completed run cannot be repeated,
+  and any inspected failure used to change the system burns that holdout into development. See
+  `packages/series-source-trial/reports/authority-qualification-design-2026-09-07.md`.
 - **Exa is a shadow locator, never authority evidence.** It receives the same truth-blind title,
   author, and optional publication year, and may compare result URLs with reviewed sources only in
   memory. Persist aggregate recall/cost/latency/error metrics—never Exa responses, result titles,
@@ -312,6 +322,7 @@ pnpm typecheck      # tsc --noEmit, all packages
 pnpm series:trial -- --scope all --providers openlibrary,wikidata  # provider evidence trial
 pnpm series:resolve -- --input <trial-report.json> --scope gold     # no-write LLM shadow trial
 pnpm series:authority:acquire -- --scope gold --max 10              # no-write source scout
+pnpm series:authority:qualification:freeze -- --input <private-pool.json> # seal private holdout
 pnpm db:start       # local Supabase stack   (db:stop / db:reset / db:status)
 pnpm db:migrate     # apply migrations + reload the PostgREST schema
 pnpm db:seed        # load the dev library
