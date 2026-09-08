@@ -29,8 +29,8 @@ The package command `metadata:supplement` runs a separate, no-write metadata exp
    pacing, bounded response/time/request budgets, no redirects, and no retries. Authentication,
    quota, and repeated infrastructure failures halt further requests.
 5. Validate the returned edition again. Contradictory format or supplied language, unknown binding,
-   title/long-title mismatch, and contributor mismatch cannot produce candidates. Only missing page count and
-   edition format can be proposed, with review-only source/time annotations in memory.
+   title/long-title mismatch, and contributor mismatch cannot produce candidates. Only missing
+   page count and edition format can be proposed, with review-only source/time annotations in memory.
 6. Emit aggregate counts only. No provider field values, identities, keys, URLs, raw responses, or
    raw errors are written to reports by the runner. It has no LLM, Supabase, corpus, or export writer.
 
@@ -55,18 +55,24 @@ nor verifies deployed flags. No new Supabase secret, migration, or deployment is
   baseline subtitles, with the same aggregate result. These checks verify wiring, not independent
   metadata accuracy, and do not change or rerun the frozen comparison.
 - This implementation added two ISBNdb requests (and two Google requests); cumulative ISBNdb
-  requests across the earlier pilot/comparison and these smokes are 24. There were no model calls, Exa requests, PRH requests,
+  requests across the earlier pilot/comparison and these smokes are 24. There were no model calls,
+  Exa requests, PRH requests,
   production writes, or qualification runs in this implementation.
 - Repository lint, type checking, and build passed. The local build emitted its expected warning
   about committed local-demo Supabase URLs; this was not a production build or deployment.
-- Initial full unit run: trial 278 passed; core 2,687 passed; web 863 passed and one failed. The failure was
-  the unchanged `AppRoomPreview` test exceeding its 5-second timeout. It was not rerun to obtain
+- Initial full unit run: trial 278 passed; core 2,687 passed; web 863 passed and one failed. The
+  failure was the unchanged `AppRoomPreview` test exceeding its 5-second timeout. It was not rerun to obtain
   a green result. The workflow integration test, skipped by the failed chained web command, was
   then run separately and passed (one test). The repository unit gate remains red.
 - The local reset applied migrations and seed but its final Storage health check timed out.
   Storage subsequently became healthy without a code change. The full browser suite then started
   under the shared stack lock against that freshly reset local database: 269 tests, default one
-  worker, retries zero. Final browser results are pending.
+  worker, retries zero. Result: 259 passed, 10 platform-specific skips, zero failures in 24.1 minutes.
+  No browser tests were retried or rerun. No app, core, database, or browser-test code changed during
+  the run; the final trial-only long-title guard was validated separately as described above.
+
+The branch remains a draft because the full unit gate is red. Passing trial/browser checks do not
+erase that timeout or clear the separate production-data gates below.
 
 ## Remaining gates
 
