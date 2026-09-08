@@ -211,11 +211,20 @@ const selfTitleKey = (value) => {
   return words.join(' ')
 }
 
+const genericOnlySeriesName = (value) => {
+  const words = normalize(value)
+    .split(' ')
+    .filter((word) => word && !['a', 'an', 'the'].includes(word))
+  return words.length > 0 && words.every((word) => genericSeriesTail.has(word))
+}
+
 const authoritySeriesMatches = (membership, actualSeries) =>
   seriesMatches(membership, actualSeries) ||
-  [membership.series, ...(membership.aliases ?? [])]
-    .map(genericSeriesKey)
-    .includes(genericSeriesKey(actualSeries))
+  [membership.series, ...(membership.aliases ?? [])].some(
+    (expectedSeries) =>
+      genericSeriesKey(expectedSeries) === genericSeriesKey(actualSeries) ||
+      selfTitleKey(expectedSeries) === selfTitleKey(actualSeries),
+  )
 
 export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, policy = {}) {
   if (!isObject(output) || !Array.isArray(output.authoritySources)) return output
@@ -431,6 +440,10 @@ export function validateAuthorityAcquisition(target, output, consultedUrls, poli
     }
     if (typeof membership.series !== 'string' || !membership.series.trim()) {
       errors.push(`membership ${index} requires a series`)
+    } else if (genericOnlySeriesName(membership.series)) {
+      policyViolations.push(
+        `membership ${index} uses a generic form instead of a named bibliographic series`,
+      )
     }
     if (membership.position !== null && !Number.isFinite(membership.position)) {
       errors.push(`membership ${index} position is invalid`)
@@ -682,6 +695,43 @@ export function scoreAuthorityAcquisition(caseSet, results, model) {
       ),
       focusedSearchOutputTokens: results.reduce(
         (total, result) => total + Number(result.focusedSearch?.billing?.outputTokens ?? 0),
+        0,
+      ),
+      exaFallbackAttempts: results.filter((result) => result.exaFallback?.locator).length,
+      exaFallbackSearchesCompleted: results.reduce(
+        (total, result) =>
+          total + Number(result.exaFallback?.locator?.operations?.queriesCompleted ?? 0),
+        0,
+      ),
+      exaFallbackRequests: results.reduce(
+        (total, result) => total + Number(result.exaFallback?.locator?.operations?.requests ?? 0),
+        0,
+      ),
+      exaFallbackUrlsInspected: results.reduce(
+        (total, result) =>
+          total + Number(result.exaFallback?.locator?.operations?.urlsInspected ?? 0),
+        0,
+      ),
+      exaFallbackEstimatedCostUsd: Number(
+        results
+          .reduce(
+            (total, result) =>
+              total + Number(result.exaFallback?.locator?.operations?.estimatedCostUsd ?? 0),
+            0,
+          )
+          .toFixed(6),
+      ),
+      exaFallbackModelCalls: results.reduce(
+        (total, result) => total + Number(result.exaFallback?.search?.billing?.modelCalls ?? 0),
+        0,
+      ),
+      exaFallbackSelected: results.filter((result) => result.exaFallback?.selected === true).length,
+      exaFallbackInputTokens: results.reduce(
+        (total, result) => total + Number(result.exaFallback?.search?.billing?.inputTokens ?? 0),
+        0,
+      ),
+      exaFallbackOutputTokens: results.reduce(
+        (total, result) => total + Number(result.exaFallback?.search?.billing?.outputTokens ?? 0),
         0,
       ),
       inputTokens,

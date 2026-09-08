@@ -10,6 +10,8 @@ import {
   runExaAuthorityLocator,
   searchExa,
 } from '../src/authority/exa-locator.mjs'
+import { augmentWithExaAuthorityFallback } from '../src/authority/exa-fallback.mjs'
+import { rankedAuthorityDomains } from '../src/authority/focused-search.mjs'
 import {
   auditAuthorityLocatorBenchmark,
   scoreAuthorityLocator,
@@ -125,6 +127,30 @@ test('Exa search retries a rate limit once without reading its response body', a
   assert.equal(result.attempts, 2)
 })
 
+test('ranks repeated candidate origins and excludes discovery-only domains', () => {
+  const domains = rankedAuthorityDomains(
+    [
+      {
+        urls: [
+          'https://retailer.example/book',
+          'https://author.example/book',
+          'https://www.goodreads.com/book/show/1',
+          'https://127.0.0.1/private',
+        ],
+      },
+      {
+        urls: ['https://author.example/books', 'https://publisher.example/title'],
+      },
+      {
+        urls: ['https://publisher.example/catalog', 'https://author.example/about'],
+      },
+    ],
+    2,
+  )
+
+  assert.deepEqual(domains, ['author.example', 'publisher.example'])
+})
+
 test('Exa authority locator preserves only ephemeral URL and aggregate operation data', async () => {
   let calls = 0
   const result = await runExaAuthorityLocator(
@@ -158,6 +184,7 @@ test('Exa authority locator preserves only ephemeral URL and aggregate operation
 
   assert.equal(result.status, 'partial')
   assert.deepEqual(result.urls, ['https://example.com/book'])
+  assert.deepEqual(result.candidateDomains, ['example.com'])
   assert.deepEqual(result.errorCodes, ['http_503'])
   assert.deepEqual(result.operations, {
     queriesPlanned: 3,
@@ -165,6 +192,99 @@ test('Exa authority locator preserves only ephemeral URL and aggregate operation
     requests: 4,
     urlsInspected: 1,
     latencyMs: 4,
+  })
+})
+
+test('uses Exa candidates only to focus a second grounded model search', async () => {
+  const firstPass = {
+    caseId: 'case-one',
+    status: 'completed',
+    output: { classification: 'unresolved' },
+    validation: { valid: true, policySafe: true },
+    consultedUrls: ['https://first.example/book'],
+    searchedQueries: ['first query'],
+    webSearchCalls: 1,
+    modelCallCount: 1,
+    latencyMs: 10,
+    usage: { input_tokens: 100, output_tokens: 20, total_tokens: 120 },
+    billing: { modelCalls: 1, webSearchCalls: 1, inputTokens: 100, outputTokens: 20 },
+    cached: false,
+  }
+  let observedKey
+  let observedDomains
+  const augmented = await augmentWithExaAuthorityFallback(
+    { caseId: 'case-one', target: { title: 'Book', authors: ['Writer'] } },
+    firstPass,
+    {
+      apiKey: 'secret-key',
+      locate: async (_target, options) => {
+        observedKey = options.apiKey
+        return {
+          status: 'completed',
+          urls: ['https://exa-only.example/result'],
+          candidateDomains: ['exa-only.example'],
+          errorCodes: [],
+          operations: {
+            queriesPlanned: 3,
+            queriesCompleted: 3,
+            requests: 3,
+            urlsInspected: 20,
+            latencyMs: 30,
+          },
+        }
+      },
+      searchDomains: async (_target, domains) => {
+        observedDomains = domains
+        return {
+          status: 'completed',
+          output: { classification: 'series' },
+          validation: { valid: true, policySafe: true },
+          consultedUrls: ['https://publisher.example/book'],
+          searchedQueries: ['restricted query'],
+          webSearchCalls: 1,
+          modelCallCount: 1,
+          latencyMs: 40,
+          usage: { input_tokens: 50, output_tokens: 10, total_tokens: 60 },
+          billing: { modelCalls: 1, webSearchCalls: 1, inputTokens: 50, outputTokens: 10 },
+          cached: false,
+        }
+      },
+    },
+  )
+
+  assert.equal(observedKey, 'secret-key')
+  assert.deepEqual(observedDomains, ['exa-only.example'])
+  assert.equal(augmented.selectedPass, 'exa_fallback')
+  assert.equal(augmented.output.classification, 'series')
+  assert.equal(augmented.exaFallback.selected, true)
+  assert.equal(augmented.exaFallback.baseline.output.classification, 'unresolved')
+  assert.equal(augmented.exaFallback.candidateDomainCount, 1)
+  assert.equal(augmented.exaFallback.locator.operations.estimatedCostUsd, 0.021)
+  assert.equal(JSON.stringify(augmented.exaFallback).includes('secret-key'), false)
+  assert.equal(JSON.stringify(augmented.exaFallback).includes('exa-only.example/result'), false)
+  assert.equal(augmented.billing.modelCalls, 2)
+  assert.equal(augmented.billing.webSearchCalls, 2)
+})
+
+test('does not spend Exa requests after a safe resolved first pass', async () => {
+  let locatorCalls = 0
+  const firstPass = {
+    status: 'completed',
+    output: { classification: 'standalone' },
+    validation: { valid: true, policySafe: true },
+  }
+  const augmented = await augmentWithExaAuthorityFallback({}, firstPass, {
+    locate: async () => {
+      locatorCalls += 1
+    },
+    searchDomains: async () => {},
+  })
+
+  assert.equal(locatorCalls, 0)
+  assert.deepEqual(augmented.exaFallback, {
+    status: 'skipped',
+    reason: 'first_pass_resolved',
+    selected: false,
   })
 })
 
@@ -187,6 +307,29 @@ test('locator benchmark is valid, distinct, and qualification-safe', async () =>
   )
 })
 
+test('committed Exa development benchmark matches its completed blind run', async () => {
+  const [caseSet, benchmark, authorityGoldText] = await Promise.all([
+    loadTrialCases(),
+    readFile(resolve(packageRoot, 'data/authority-locator-development.json'), 'utf8').then(
+      JSON.parse,
+    ),
+    readFile(resolve(packageRoot, 'data/authority-gold.json'), 'utf8'),
+  ])
+  const audit = auditAuthorityLocatorBenchmark(caseSet, benchmark, { authorityGoldText })
+
+  assert.equal(audit.valid, true, audit.errors.join('\n'))
+  assert.equal(audit.caseCount, 18)
+  assert.equal(audit.distinctAuthors, 18)
+  assert.deepEqual(
+    audit.cells.map(({ id, selected }) => [id, selected]),
+    [
+      ['standalone_author', 3],
+      ['series_author', 7],
+      ['series_publisher', 8],
+    ],
+  )
+})
+
 test('locator score persists aggregates without provider result content', async () => {
   const { caseSet, benchmark, authorityGoldText } = await loadFixture()
   const casesById = new Map(caseSet.cases.map((testCase) => [testCase.id, testCase]))
@@ -201,6 +344,7 @@ test('locator score persists aggregates without provider result content', async 
       caseId: selected.id,
       status: 'completed',
       urls: [source.url],
+      candidateDomains: [source.origin],
       errorCodes: [],
       operations: {
         queriesPlanned: 3,
@@ -229,6 +373,7 @@ test('locator score persists aggregates without provider result content', async 
   assert.equal(persisted.includes(benchmark.cases[0].id), false)
   assert.equal(persisted.includes(casesById.get(benchmark.cases[0].id).title), false)
   assert.equal(persisted.includes(results[0].urls[0]), false)
+  assert.equal(persisted.includes(results[0].candidateDomains[0]), false)
 })
 
 test('locator score measures recovery beyond a compatible Luna acquisition run', async () => {

@@ -1,8 +1,11 @@
+import { rankedAuthorityDomains } from './focused-search.mjs'
+
 const EXA_SEARCH_ENDPOINT = 'https://api.exa.ai/search'
 
 export const EXA_AUTHORITY_LOCATOR_VERSION = 'exa-authority-locator-v1'
 export const EXA_SEARCH_REQUEST_USD = 0.007
 export const EXA_SEARCHES_PER_CASE = 3
+export const EXA_AUTHORITY_CANDIDATE_DOMAIN_LIMIT = 8
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -164,6 +167,7 @@ export async function runExaAuthorityLocator(authorityTarget, options = {}) {
     caseId: authorityTarget.caseId,
     status: completed === results.length ? 'completed' : completed > 0 ? 'partial' : 'error',
     urls,
+    candidateDomains: rankedAuthorityDomains(results, EXA_AUTHORITY_CANDIDATE_DOMAIN_LIMIT),
     errorCodes: results.map((result) => result.errorCode).filter(Boolean),
     operations: {
       queriesPlanned: queries.length,

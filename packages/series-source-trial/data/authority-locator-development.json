@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "id": "authority-independent-locator-development-v1",
+  "frozenAt": "2026-09-07T23:22:26.000Z",
+  "evaluationPartition": "development",
+  "promptVersion": "authority-acquisition-v11-preserve-series-label",
+  "locatorVersion": "exa-authority-locator-v1",
+  "sourceDataset": {
+    "path": "data/authority-gold.json",
+    "sha256": "7585c74d49d51eb3caab77e21af3a1829d232654254b8ebc8da15994b73f38e9"
+  },
+  "selection": {
+    "seed": "authority-independent-locator-development-v1",
+    "method": "Exclude every reviewed case matched to any local authority-acquisition cache or frozen acquisition benchmark before freeze, require a direct author or publisher authority origin, order each cell by SHA-256 of seed:caseId, and preserve distinct authors across cells in declared cell order.",
+    "priorAcquisitionCasesExcluded": 252,
+    "priorAcquisitionReviewedCasesExcluded": 166,
+    "priorAcquisitionCaseSetSha256": "9d17dfd77551125a624dc3aae9bd981eae657ad58c7a1bf7f437f0be3e442d19",
+    "excludedHostedPlatforms": [
+      "books.google.com",
+      "goodreads.com",
+      "linkedin.com",
+      "patreon.com",
+      "tiktok.com"
+    ]
+  },
+  "cells": [
+    {
+      "id": "standalone_author",
+      "classification": "standalone",
+      "channel": "author",
+      "target": 3
+    },
+    {
+      "id": "series_author",
+      "classification": "series",
+      "channel": "author",
+      "target": 7
+    },
+    {
+      "id": "series_publisher",
+      "classification": "series",
+      "channel": "publisher",
+      "target": 8
+    }
+  ],
+  "cases": [
+    {
+      "id": "freida-mcfadden-standalone-want-to-know-a-secret",
+      "cell": "standalone_author"
+    },
+    {
+      "id": "hachette-standalone-sff-scifi-eversion",
+      "cell": "standalone_author"
+    },
+    {
+      "id": "hachette-standalone-sff-horror-ghoster",
+      "cell": "standalone_author"
+    },
+    {
+      "id": "fern-michaels-2025-smugglers-cove",
+      "cell": "series_author"
+    },
+    {
+      "id": "kindle-storyteller-2021-escape-to-the-hummingbird-hotel",
+      "cell": "series_author"
+    },
+    {
+      "id": "kindle-storyteller-2024-jennifer",
+      "cell": "series_author"
+    },
+    {
+      "id": "kindle-storyteller-2024-hopes-and-dreams-on-foxglove-street",
+      "cell": "series_author"
+    },
+    {
+      "id": "crimereads-2023-resurrection-walk",
+      "cell": "series_author"
+    },
+    {
+      "id": "kindle-storyteller-2021-stranger-at-the-villa",
+      "cell": "series_author"
+    },
+    {
+      "id": "kindle-storyteller-2021-the-corfe-castle-murders",
+      "cell": "series_author"
+    },
+    {
+      "id": "prh-2026-sff-innamorata",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "prh-2026-sff-dominion",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "kindle-storyteller-2021-a-thousand-li-the-second-sect",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "prh-2026-sff-twelve-months",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "prh-2026-sff-strange-familiars",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "hachette-standalone-sff-horror-the-girl-with-all-the-gifts",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "prh-2026-sff-lore-olympus-volume-eleven",
+      "cell": "series_publisher"
+    },
+    {
+      "id": "prh-2026-sff-broken-dove",
+      "cell": "series_publisher"
+    }
+  ]
+}

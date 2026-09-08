@@ -15,6 +15,7 @@ import {
   validateAuthorityAcquisition,
 } from './authority/evidence.mjs'
 import { acquireAuthorityEvidence, repairAuthorityEvidence } from './authority/openai.mjs'
+import { augmentWithExaAuthorityFallback } from './authority/exa-fallback.mjs'
 import {
   discoveredAuthorityDomains,
   shouldSelectFocusedAuthoritySearch,
@@ -45,6 +46,7 @@ const parseArgs = (argv) => {
     searchContextSize: process.env.BOOK_AUTHORITY_SEARCH_CONTEXT_SIZE ?? 'medium',
     maxToolCalls: Number(process.env.BOOK_AUTHORITY_MAX_TOOL_CALLS ?? 3),
     focusedSearch: false,
+    exaFallback: false,
   }
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index]
@@ -59,6 +61,7 @@ const parseArgs = (argv) => {
     else if (value === '--search-context') options.searchContextSize = argv[++index]
     else if (value === '--max-tool-calls') options.maxToolCalls = Number(argv[++index])
     else if (value === '--focused-search') options.focusedSearch = true
+    else if (value === '--exa-fallback') options.exaFallback = true
     else if (value === '--refresh') options.refresh = true
     else if (value === '--retrieval') options.retrieval = true
     else throw new Error(`Unknown argument ${value}`)
@@ -73,6 +76,11 @@ const parseArgs = (argv) => {
     throw new Error('Authority acquisition --holdout requires gold scope without --ids or --max')
   }
   if (!options.model?.trim()) throw new Error('Authority acquisition model is required')
+  if (options.focusedSearch && options.exaFallback) {
+    throw new Error(
+      'Authority acquisition focused search and Exa fallback are separate experiments',
+    )
+  }
   if (
     !['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'].includes(
       options.reasoningEffort,
@@ -112,6 +120,7 @@ const renderMarkdown = (score) =>
     '',
     `Model calls: ${score.operations.modelCalls}; cached: ${score.operations.cached}; web-search calls: ${score.operations.webSearchCalls}; input/output tokens: ${score.operations.inputTokens}/${score.operations.outputTokens}; errors: ${score.operations.errors}.`,
     `Focused search: ${score.operations.focusedSearchAttempts} attempted; ${score.operations.focusedSearchCalls} model calls; ${score.operations.focusedSearchSelected} selected; ${score.operations.focusedSearchInputTokens}/${score.operations.focusedSearchOutputTokens} input/output tokens.`,
+    `Exa fallback: ${score.operations.exaFallbackAttempts} attempted; ${score.operations.exaFallbackSearchesCompleted} searches; ${score.operations.exaFallbackRequests} requests; ${score.operations.exaFallbackUrlsInspected} URLs inspected in memory; ${score.operations.exaFallbackModelCalls} restricted model calls; ${score.operations.exaFallbackSelected} selected; ${score.operations.exaFallbackInputTokens}/${score.operations.exaFallbackOutputTokens} input/output tokens; estimated $${score.operations.exaFallbackEstimatedCostUsd.toFixed(4)} Exa cost.`,
     `Structural repair: ${score.operations.repairCalls} calls; ${score.operations.repairInputTokens}/${score.operations.repairOutputTokens} input/output tokens.`,
     `Retrieval: ${score.operations.retrievalAttempts} attempted; ${score.operations.retrievalSucceeded} retrieved; ${score.operations.retrievalSelected} selected; ${score.operations.retrievalRequests} HTTP requests; ${score.operations.retrievalEncodedBytes} encoded bytes; ${score.operations.secondModelCalls} second model calls; ${score.operations.secondCached} cached; ${score.operations.secondInputTokens}/${score.operations.secondOutputTokens} second-pass input/output tokens.`,
     ...(score.scope.candidateCases
@@ -126,6 +135,9 @@ const renderMarkdown = (score) =>
 
 await loadLocalEnvironment(resolve(packageRoot, '.env.local'))
 const options = parseArgs(process.argv.slice(2))
+if (options.exaFallback && !process.env.EXA_API_KEY?.trim()) {
+  throw new Error('EXA_API_KEY is required in packages/series-source-trial/.env.local')
+}
 const caseSet = await loadTrialCases()
 let holdout = null
 if (options.holdout) {
@@ -178,6 +190,8 @@ const focusedSearchCacheRoot = resolve(
   'private-results/authority-focused-search-cache',
 )
 if (options.focusedSearch) await mkdir(focusedSearchCacheRoot, { recursive: true })
+const exaFallbackCacheRoot = resolve(packageRoot, 'private-results/authority-exa-fallback-cache')
+if (options.exaFallback) await mkdir(exaFallbackCacheRoot, { recursive: true })
 const cacheKey = (target) =>
   createHash('sha256')
     .update(
@@ -231,22 +245,31 @@ const addBilling = (...values) =>
     emptyBilling(),
   )
 
-const focusedCacheKey = (target, domains) =>
+const restrictedSearchCacheKey = (target, domains, searchStrategy) =>
   createHash('sha256')
     .update(
       JSON.stringify({
-        cacheVersion: 1,
+        cacheVersion: 2,
         model,
         experiment,
         promptVersion: AUTHORITY_ACQUISITION_PROMPT_VERSION,
         target: authorityAcquisitionCacheMaterial(target),
         domains,
+        searchStrategy,
       }),
     )
     .digest('hex')
 
-const focusedSearchWithCache = async (target, domains, policy) => {
-  const cachePath = resolve(focusedSearchCacheRoot, `${focusedCacheKey(target, domains)}.json`)
+const restrictedSearchWithCache = async (
+  target,
+  domains,
+  policy,
+  { cacheRoot, searchStrategy },
+) => {
+  const cachePath = resolve(
+    cacheRoot,
+    `${restrictedSearchCacheKey(target, domains, searchStrategy)}.json`,
+  )
   if (!options.refresh) {
     try {
       const cached = JSON.parse(await readFile(cachePath, 'utf8'))
@@ -273,7 +296,7 @@ const focusedSearchWithCache = async (target, domains, policy) => {
       searchContextSize: experiment.searchContextSize,
       maxToolCalls: Math.min(2, experiment.maxToolCalls),
       allowedDomains: domains,
-      searchStrategy: 'discovered-origin-focus',
+      searchStrategy,
     })
     const { output: rawOutput, ...metadata } = acquired
     const output = canonicalizeAuthorityAcquisition(rawOutput, acquired.consultedUrls, policy)
@@ -313,7 +336,10 @@ const augmentWithFocusedSearch = async (target, firstPass, policy) => {
       focusedSearch: { status: 'skipped', reason: 'no_discovered_authority_origin' },
     }
   }
-  const focusedPass = await focusedSearchWithCache(target, domains, policy)
+  const focusedPass = await restrictedSearchWithCache(target, domains, policy, {
+    cacheRoot: focusedSearchCacheRoot,
+    searchStrategy: 'discovered-origin-focus',
+  })
   const selected = shouldSelectFocusedAuthoritySearch(firstPass, focusedPass)
   const billing = addBilling(firstPass.billing, focusedPass.billing)
   const combined = {
@@ -350,9 +376,19 @@ const runOne = async (testCase) => {
   const target = buildAuthorityTarget(testCase)
   const policy = authorityPolicyForCase(testCase, samplePlan)
   const finalize = async (firstPass) => {
-    const searched = options.focusedSearch
+    let searched = options.focusedSearch
       ? await augmentWithFocusedSearch(target, firstPass, policy)
       : firstPass
+    if (options.exaFallback) {
+      searched = await augmentWithExaAuthorityFallback(target, searched, {
+        apiKey: process.env.EXA_API_KEY,
+        searchDomains: (restrictedTarget, domains) =>
+          restrictedSearchWithCache(restrictedTarget, domains, policy, {
+            cacheRoot: exaFallbackCacheRoot,
+            searchStrategy: 'exa-discovered-origin-focus',
+          }),
+      })
+    }
     return options.retrieval
       ? augmentAuthorityAcquisition(target, searched, {
           profiles: authorityRetrievalProfiles,
@@ -487,6 +523,7 @@ await Promise.all([
         holdoutId: holdout?.id ?? null,
         retrievalEnabled: options.retrieval,
         focusedSearchEnabled: options.focusedSearch,
+        exaFallbackEnabled: options.exaFallback,
         retrievalProfilesVersion: AUTHORITY_RETRIEVAL_PROFILES_VERSION,
         targets: cases.map(buildAuthorityTarget),
         results,

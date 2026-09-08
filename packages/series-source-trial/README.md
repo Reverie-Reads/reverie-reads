@@ -449,16 +449,18 @@ Open Library locator probes are recorded in
 
 ### Test an independent search index
 
-Luna-low remains the reference scout. The next experiment isolates search-index recall from model
-reasoning by running three fixed, truth-blind title/author queries against Exa Search. Exa
+Luna-low remains the reference scout. The completed development experiment isolates search-index
+recall from model reasoning by running three fixed, truth-blind title/author queries against Exa Search. Exa
 [documents its Search endpoint](https://exa.ai/docs/reference/search) and
 [prices Search at $7 per 1,000 requests](https://exa.ai/pricing?tab=api), including up to ten
 results per request. The frozen 18-work development slice therefore plans 54 requests, or $0.378
 before free account credits. It contains 18 distinct authors and excludes every work matched to a prior
 authority-acquisition cache or frozen acquisition benchmark. It is not the locked qualification
-partition. Its case list stays ignored and local until both the first Exa run and paired Luna
-baseline are complete; publishing the truth cells before those runs would make the untouched set
-searchable. The frozen benchmark and aggregate findings can be committed afterward.
+partition. Its case list stayed ignored and local until both the first Exa run and paired Luna
+baseline were complete; publishing the truth cells earlier would have made the untouched set
+searchable. The completed benchmark now lives in `data/authority-locator-development.json`, and the
+aggregate findings are recorded in
+`reports/authority-exa-locator-development-2026-09-07.md`.
 
 The locator parses URLs only in memory, compares them with reviewed sources only after retrieval,
 and persists aggregate recall, request, latency, error-count, and estimated-cost metrics. It never
@@ -509,8 +511,32 @@ pnpm series:authority:locate -- \
 ```
 
 The decision gate is incremental first-party origin and exact-page recovery beyond Luna-low, not
-raw Exa coverage. A positive result would justify using the independent locator only for
-unresolved or conflicting cases; it would not replace Luna or change evidence eligibility.
+raw Exa coverage. The locator recovered all four Luna origin misses and six of seven Luna exact-page
+misses, clearing that development gate. The acquisition command therefore exposes an opt-in shadow
+fallback only for an unresolved or policy-quarantined Luna result:
+
+```sh
+pnpm series:authority:acquire -- \
+  --holdout packages/series-source-trial/data/authority-locator-development.json \
+  --model gpt-5.6-luna \
+  --reasoning low \
+  --search-context medium \
+  --max-tool-calls 3 \
+  --exa-fallback \
+  --out packages/series-source-trial/private-results/luna-exa-fallback-development \
+  --refresh
+```
+
+Exa ranks at most eight non-discovery-only candidate domains in memory. Luna then performs a
+separate bounded search restricted to those domains. Only URLs in that Luna response's hosted-search
+manifest may ground a proposal; Exa results never become authority evidence. Safe resolved first
+passes make no Exa request. The report retains Exa request, latency, error, URL-count, and cost
+aggregates, but no Exa URL, domain, result, query, or request identifier. A generic-only series form
+such as `series`, `trilogy`, or `duology` is policy-quarantined rather than accepted as a named
+bibliographic membership.
+
+This remains a no-write development arm. It does not replace Luna, change evidence eligibility, or
+clear production, rights, privacy, retention, cost, or locked-qualification gates.
 
 The two-stage 1,200-case target and complete five-work 2024 Kindle Storyteller development frame
 are recorded in `reports/authority-development-frame-2024-2026-09-06.md`.
