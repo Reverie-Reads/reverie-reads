@@ -58,9 +58,12 @@ export const authorityPolicyForCase = (testCase, samplePlan = null) => {
     .filter((frame) => frameIds.has(frame?.id))
     .map((frame) => frame?.source?.url)
     .filter(Boolean)
+  const directSelectionSources = asArray(testCase?.selectionSources)
+    .map((source) => source?.url)
+    .filter(Boolean)
   return {
     classificationBlockedUrls: samplePlan
-      ? framedSources
+      ? [...new Set([...framedSources, ...directSelectionSources])]
       : asArray(testCase?.sampleSources)
           .map((source) => source?.url)
           .filter(Boolean),

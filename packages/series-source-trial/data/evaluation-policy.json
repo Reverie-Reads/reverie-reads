@@ -14,11 +14,15 @@
   "qualificationGates": {
     "confidenceLevel": 0.95,
     "minimumReviewedCases": 1000,
-    "minimumReviewedPositiveCases": 400,
-    "minimumReviewedStandaloneCases": 600,
+    "minimumReviewedPositiveCases": 600,
+    "minimumReviewedStandaloneCases": 400,
     "minimumEvaluatedMembershipClaims": 299,
     "minimumMembershipPrecision": 0.99,
-    "maximumFalseStandaloneRate": 0.005
+    "maximumFalseStandaloneRate": 0.005,
+    "maximumFalseStandaloneCases": 0,
+    "maximumFalsePositiveMembershipClaims": 0,
+    "minimumMembershipRecall": 0.85,
+    "minimumResolutionRate": 0.75
   },
   "eligibleProviderWeights": {
     "seriesCoverage": 0.25,
@@ -35,6 +39,6 @@
     "Candidate references contribute to coverage diagnostics only.",
     "A search-result series label is not relational membership evidence.",
     "The 200-case hard gate is the development comparison set; the separate 1000-case qualification partition stays locked during tuning.",
-    "With zero observed errors, 600 standalone controls and at least 299 emitted membership claims support the configured one-sided 95% rate bounds."
+    "With zero observed errors, 600 series-positive controls and at least 299 emitted membership claims support the configured one-sided 95% dangerous-error rate bounds."
   ]
 }

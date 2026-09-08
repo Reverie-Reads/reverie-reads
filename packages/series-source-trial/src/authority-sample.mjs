@@ -357,10 +357,10 @@ export function auditAuthoritySample(caseSet, plan, policy) {
 
   if (
     falseStandaloneMinimum !== null &&
-    finiteOrZero(qualificationGates.minimumReviewedStandaloneCases) < falseStandaloneMinimum
+    finiteOrZero(qualificationGates.minimumReviewedPositiveCases) < falseStandaloneMinimum
   ) {
     errors.push(
-      `qualificationGates: minimumReviewedStandaloneCases must be at least ${falseStandaloneMinimum} for the configured zero-error confidence bound`,
+      `qualificationGates: minimumReviewedPositiveCases must be at least ${falseStandaloneMinimum} for the configured zero-error confidence bound`,
     )
   }
   if (

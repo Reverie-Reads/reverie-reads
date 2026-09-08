@@ -33,6 +33,22 @@ const uniqueStrings = (values) => [
   ),
 ]
 
+const authorityApiError = (label, response, body) => {
+  const error = new Error(
+    `${label} ${response.status}: ${body?.error?.message ?? response.statusText}`,
+  )
+  error.infrastructureFailure =
+    response.status === 408 || response.status === 429 || response.status >= 500
+  error.httpStatus = response.status
+  return error
+}
+
+const authorityNetworkError = (label, cause) => {
+  const error = new Error(`${label} network error: ${cause?.message ?? String(cause)}`, { cause })
+  error.infrastructureFailure = true
+  return error
+}
+
 export const responseWebEvidence = (response) => {
   const searchedUrls = []
   const searchedQueries = []
@@ -79,50 +95,53 @@ export async function acquireAuthorityEvidence(
   if (!apiKey) throw new Error('OPENAI_API_KEY is required for the authority acquisition trial')
   const boundedToolCalls = Math.max(1, Math.min(6, Math.floor(maxToolCalls)))
   const started = performance.now()
-  const response = await fetchImpl(apiUrl, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      store: false,
-      reasoning: { effort: reasoningEffort },
-      max_output_tokens: 1400,
-      max_tool_calls: boundedToolCalls,
-      instructions: authorityAcquisitionInstructions,
-      input: JSON.stringify(target),
-      tools: [
-        {
-          type: 'web_search',
-          external_web_access: true,
-          search_context_size: searchContextSize,
-          ...(allowedDomains.length ? { filters: { allowed_domains: allowedDomains } } : {}),
-        },
-      ],
-      tool_choice: 'required',
-      include: ['web_search_call.action.sources'],
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'reverie_authority_source_proposal',
-          strict: true,
-          schema: authorityAcquisitionOutputSchema,
-        },
+  let response
+  try {
+    response = await fetchImpl(apiUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
-      metadata: {
-        prompt_version: AUTHORITY_ACQUISITION_PROMPT_VERSION,
-        case_id: target.caseId,
-        search_strategy: searchStrategy,
-      },
-    }),
-  })
+      body: JSON.stringify({
+        model,
+        store: false,
+        reasoning: { effort: reasoningEffort },
+        max_output_tokens: 1400,
+        max_tool_calls: boundedToolCalls,
+        instructions: authorityAcquisitionInstructions,
+        input: JSON.stringify(target),
+        tools: [
+          {
+            type: 'web_search',
+            external_web_access: true,
+            search_context_size: searchContextSize,
+            ...(allowedDomains.length ? { filters: { allowed_domains: allowedDomains } } : {}),
+          },
+        ],
+        tool_choice: 'required',
+        include: ['web_search_call.action.sources'],
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'reverie_authority_source_proposal',
+            strict: true,
+            schema: authorityAcquisitionOutputSchema,
+          },
+        },
+        metadata: {
+          prompt_version: AUTHORITY_ACQUISITION_PROMPT_VERSION,
+          case_id: target.caseId,
+          search_strategy: searchStrategy,
+        },
+      }),
+    })
+  } catch (error) {
+    throw authorityNetworkError('Authority acquisition API', error)
+  }
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(
-      `Authority acquisition API ${response.status}: ${body?.error?.message ?? response.statusText}`,
-    )
+    throw authorityApiError('Authority acquisition API', response, body)
   }
   const content = outputContent(body)
   const text = content.map((entry) => entry.text).join('')
@@ -154,38 +173,41 @@ export async function repairAuthorityEvidence(
 ) {
   if (!apiKey) throw new Error('OPENAI_API_KEY is required for the authority acquisition trial')
   const started = performance.now()
-  const response = await fetchImpl(apiUrl, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      store: false,
-      reasoning: { effort: reasoningEffort },
-      max_output_tokens: 1000,
-      instructions: authorityAcquisitionRepairInstructions,
-      input: JSON.stringify({ target, originalOutput, validationErrors }),
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'reverie_authority_source_proposal_repair',
-          strict: true,
-          schema: authorityAcquisitionOutputSchema,
+  let response
+  try {
+    response = await fetchImpl(apiUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        store: false,
+        reasoning: { effort: reasoningEffort },
+        max_output_tokens: 1000,
+        instructions: authorityAcquisitionRepairInstructions,
+        input: JSON.stringify({ target, originalOutput, validationErrors }),
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'reverie_authority_source_proposal_repair',
+            strict: true,
+            schema: authorityAcquisitionOutputSchema,
+          },
         },
-      },
-      metadata: {
-        prompt_version: AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION,
-        case_id: target.caseId,
-      },
-    }),
-  })
+        metadata: {
+          prompt_version: AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION,
+          case_id: target.caseId,
+        },
+      }),
+    })
+  } catch (error) {
+    throw authorityNetworkError('Authority acquisition repair API', error)
+  }
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    throw new Error(
-      `Authority acquisition repair API ${response.status}: ${body?.error?.message ?? response.statusText}`,
-    )
+    throw authorityApiError('Authority acquisition repair API', response, body)
   }
   const content = outputContent(body)
   const text = content.map((entry) => entry.text).join('')

@@ -255,6 +255,22 @@ to 92.9% precision and 1.6% false standalone, still below the production thresho
 is why Hardcover-only membership is now review-only. Production use remains blocked by the untouched
 1,000-case qualification partition and source data-use rights.
 
+That qualification partition is deliberately absent from the public development gold file. Build
+at least 1,500 authority-reviewed candidates under ignored private storage from complete,
+provider-independent identity frames with captured population, eligible, and exclusion counts;
+block each frame URL from establishing its own case
+classification; exclude every development work; then use the committed SHA-256 seed to select
+exactly 600 series-positive and 400 affirmative-standalone cases with at most two selected works
+per author identity. Before any model or Exa request, commit a non-secret lock containing the plan,
+private-dataset, and full acquisition-system hashes. The frozen run uses Luna low plus Exa fallback,
+no navigation retrieval, a qualification-only cache, and a $10 Exa ceiling. Only incomplete
+infrastructure failures may resume against the same lock. A completed run cannot be repeated; an
+inspected failure used for tuning burns the set into development and requires a new holdout. See
+`packages/series-source-trial/reports/authority-qualification-design-2026-09-07.md`.
+The run passes only with zero false-positive memberships, zero false standalones, at least 299
+evaluated membership claims, at least 85% series recall, at least 75% overall resolution, and no
+operational errors.
+
 The same profiles keep data-use boundaries visible to the resolver: Wikidata, Inventaire, and
 BookBrainz claims are durable CC0 inputs; Google is live identity-only; Open Library remains trial
 input pending its rights review; and Hardcover remains decision input pending usable terms. A

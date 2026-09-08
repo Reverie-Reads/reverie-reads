@@ -443,6 +443,49 @@ holdout combined with ad-hoc scope, ID, or maximum selectors before making a mod
 requires the exact frozen target/result order and reports known-origin discovery, targeted-channel
 discovery, exact-page discovery, source citation, retrieval, and resolution as separate outcomes.
 
+### Freeze and run the production qualification set
+
+The 1,000-case qualification partition is a private, single-use holdout. Its candidate pool and
+selected truth file live only under ignored `private-results/`; do not append them to
+`authority-gold.json`. The committed `data/authority-qualification-plan.json` preregisters a
+minimum 1,500-case reviewed pool, complete provider-independent selection frames, deterministic
+SHA-256 ranking, a maximum of two selected works per author identity, the exact 600 series / 400
+affirmative-standalone mix, Luna-low plus Exa fallback, and a $10 Exa ceiling.
+
+After blind authority review is complete, freeze the set:
+
+```sh
+pnpm series:authority:qualification:freeze -- \
+  --input packages/series-source-trial/private-results/authority-qualification/reviewed-pool.json
+```
+
+The command writes the selected set to ignored private storage and creates a commit-ready
+`data/authority-qualification-lock.json` plus an aggregate lock report. It refuses to overwrite an
+existing set or lock. Commit and merge those public, non-secret artifacts before running; they
+contain hashes and counts, not case identities, truth, or authority URLs.
+
+Run the locked set only after the current source files reproduce the frozen system hash:
+
+```sh
+pnpm series:authority:acquire -- \
+  --qualification-lock packages/series-source-trial/data/authority-qualification-lock.json \
+  --exa-fallback
+```
+
+Qualification mode rejects `--ids`, `--max`, `--out`, `--refresh`, discovery holdouts, non-gold
+scopes, changed runtime controls, a changed dataset, development overlap, and a stale plan or
+system fingerprint before making a model call. It uses a qualification-only cache. Use `--resume`
+only after an incomplete infrastructure failure against the same lock. A completed run cannot be
+rerun; model drift, budget exhaustion, or a failed result inspected for tuning burns the set into
+development and requires a replacement holdout. The protocol and research basis are recorded in
+`reports/authority-qualification-design-2026-09-07.md`.
+
+Passing requires zero false-positive memberships and zero false standalones, at least 299 evaluated
+membership claims, at least 85% series recall, at least 75% overall resolution, and no operational
+errors. The zero-error rules give the 600 series-positive controls and 299 membership claims their
+configured one-sided 95% safety interpretation; the recall and resolution floors prevent abstention
+from masquerading as accuracy.
+
 The Luna/Terra/Sol comparison, cache-isolation fix, focused-search result, and rejected Wikidata and
 Open Library locator probes are recorded in
 `reports/authority-model-routing-experiment-2026-09-07.md`.
@@ -722,12 +765,13 @@ The program has two intentionally separate partitions:
   this locked set declare `"evaluationPartition": "qualification"` and are evaluated only after the
   system is frozen.
 
-The complete gold-program target is therefore 1,200 reviewed works. The qualification partition
-contains 400 series-positive works and 600 true standalone controls. With zero observed errors,
-598 standalone controls are required to support a 0.5% false-standalone ceiling at a one-sided 95%
-confidence level. A 99% membership-precision floor similarly requires at least 299 emitted
-membership claims with zero false positives. The 400 positive works make that claim denominator
-possible, but the qualification run must report the actual emitted-claim count.
+The minimum complete gold-program target is therefore 1,200 reviewed works. The qualification
+partition contains 600 series-positive works and 400 true standalone controls. With zero observed
+errors, 598 series-positive controls are required to support a 0.5% false-standalone ceiling at a
+one-sided 95% confidence level: false standalone means that a true series work was classified as
+standalone. A 99% membership-precision floor similarly requires at least 299 emitted membership
+claims with zero false positives. The qualification run must report the actual emitted-claim
+count.
 
 ## Decision rule
 
