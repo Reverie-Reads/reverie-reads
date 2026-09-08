@@ -61,6 +61,10 @@ const reviewedCase = ({ id, title, author, standalone, publicationYear }) => ({
   ],
   truth: {
     status: 'reviewed',
+    reviewer: 'reviewer-test',
+    reviewedAt: '2026-09-07T12:30:00.000Z',
+    reviewBlindToSystemOutput: true,
+    reviewNote: 'Reviewed against the cited publisher authority.',
     standalone,
     memberships: standalone
       ? []
@@ -163,10 +167,41 @@ test('rejects incomplete or selectively counted identity frames', () => {
   assert.match(audit.errors.join('\n'), /expected 3 eligible reviewed cases; found 4/)
 })
 
+test('can enforce frame reconciliation before the full pool reaches its minimum size', () => {
+  const incompleteCases = cases.slice(0, 3)
+  const audit = auditQualificationPool(poolFor(incompleteCases), plan, {
+    requirePoolMinimum: false,
+    requireFrameReconciliation: true,
+  })
+
+  assert.equal(audit.valid, false)
+  assert.doesNotMatch(audit.errors.join('\n'), /requires at least 4 cases/)
+  assert.match(audit.errors.join('\n'), /expected 4 eligible reviewed cases; found 3/)
+})
+
 test('blocks each private selection source from establishing its own classification', () => {
   const policy = authorityPolicyForCase(cases[0], { selectionFrames: [] })
 
   assert.deepEqual(policy.classificationBlockedUrls, ['https://publisher.example/catalog'])
+})
+
+test('requires a dated blind-review attestation and separate classification evidence', () => {
+  const unattested = structuredClone(cases[0])
+  delete unattested.truth.reviewer
+  delete unattested.truth.reviewedAt
+  delete unattested.truth.reviewBlindToSystemOutput
+  unattested.truth.reviewNote = ''
+  unattested.truth.sources = [
+    {
+      kind: 'publisher',
+      url: 'https://publisher.example/catalog',
+    },
+  ]
+  const audit = auditQualificationPool(poolFor([unattested, ...cases.slice(1)]), plan)
+
+  assert.equal(audit.valid, false)
+  assert.match(audit.errors.join('\n'), /reviewed truth requires reviewer/)
+  assert.match(audit.errors.join('\n'), /selection-frame URL cannot also establish/)
 })
 
 test('lock binds the private dataset, plan, and complete acquisition system', () => {

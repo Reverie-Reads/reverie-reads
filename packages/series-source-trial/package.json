@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "authority:acquire": "node src/acquire-authority.mjs",
+    "authority:qualification:capture:prh": "node src/capture-authority-qualification-prh.mjs",
     "authority:qualification:freeze": "node src/freeze-authority-qualification.mjs",
+    "authority:qualification:merge": "node src/merge-authority-qualification-pool.mjs",
     "authority:locate": "node src/locate-authority.mjs",
     "trial": "node src/run.mjs",
     "resolver": "node src/resolve.mjs",

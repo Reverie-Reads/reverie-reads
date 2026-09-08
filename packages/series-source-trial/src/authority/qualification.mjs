@@ -106,7 +106,11 @@ const qualificationCounts = (cases) => ({
 export function auditQualificationPool(
   pool,
   plan,
-  { developmentCases = [], requirePoolMinimum = true } = {},
+  {
+    developmentCases = [],
+    requirePoolMinimum = true,
+    requireFrameReconciliation = requirePoolMinimum,
+  } = {},
 ) {
   const errors = []
   const cases = asArray(pool?.cases)
@@ -226,6 +230,18 @@ export function auditQualificationPool(
       errors.push(`${label}: qualification truth must be authority-reviewed before freezing`)
       continue
     }
+    if (
+      typeof testCase.truth.reviewer !== 'string' ||
+      !testCase.truth.reviewer.trim() ||
+      !Number.isFinite(Date.parse(testCase.truth.reviewedAt)) ||
+      testCase.truth.reviewBlindToSystemOutput !== true ||
+      typeof testCase.truth.reviewNote !== 'string' ||
+      !testCase.truth.reviewNote.trim()
+    ) {
+      errors.push(
+        `${label}: reviewed truth requires reviewer, reviewedAt, reviewBlindToSystemOutput=true, and reviewNote`,
+      )
+    }
     if (!Array.isArray(testCase.truth.memberships) || !Array.isArray(testCase.truth.sources)) {
       errors.push(`${label}: truth requires memberships and sources arrays`)
       continue
@@ -255,6 +271,14 @@ export function auditQualificationPool(
     }
 
     const sources = authoritySources(testCase, pool?.sharedSources)
+    const selectionUrls = new Set(
+      asArray(testCase.selectionSources)
+        .map((source) => source?.url)
+        .filter(Boolean),
+    )
+    if (sources.some((source) => selectionUrls.has(source?.url))) {
+      errors.push(`${label}: a selection-frame URL cannot also establish qualification truth`)
+    }
     if (
       !sources.some(
         (source) =>
@@ -309,7 +333,7 @@ export function auditQualificationPool(
     }
   }
 
-  if (requirePoolMinimum) {
+  if (requireFrameReconciliation) {
     for (const frame of selectionFrames) {
       const observed = cases.filter((testCase) =>
         asArray(testCase.selectionFrameIds).includes(frame.id),
