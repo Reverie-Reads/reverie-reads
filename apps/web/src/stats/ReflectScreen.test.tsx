@@ -12,8 +12,13 @@ const books = [
   makeBook({
     id: 'a',
     title: 'A familiar book',
+    first: 'Nell',
+    last: 'Stone',
+    contributors: [{ name: 'Nell Stone', role: 'author', position: 0 }],
     genre: 'literary',
     genres: ['literary'],
+    tropes: [{ id: 'found', name: 'Found family', emphasis: 'pinned' }],
+    moods: [{ id: 'hopeful', name: 'Hopeful' }],
     readStatus: 'DNF',
     format: 'Hardcover',
   }),
@@ -83,5 +88,42 @@ describe('Reflect uses the real reading record', () => {
     expect(screen.getByText('Your reading life begins with a book.')).toBeTruthy()
     expect(screen.queryByRole('blockquote')).toBeNull()
     expect(screen.getByRole('button', { name: /0 Logged reads/ })).toBeTruthy()
+  })
+
+  it('opens private taste details and composes a factual retrospective', () => {
+    const openBook = vi.fn()
+    const openPlanner = vi.fn()
+    render(
+      <ReflectView
+        history={history}
+        openBook={openBook}
+        openPlanner={openPlanner}
+        goalYear={2026}
+        goalTarget={12}
+        currentYear={2026}
+      />,
+    )
+    expect(
+      screen.getByText(
+        '1 of 12 books in 2026. Every finished book still belongs here if the goal changes.',
+      ),
+    ).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Nell Stone 1 read' }))
+    expect(within(screen.getByRole('dialog')).getByText('A familiar book')).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.getByRole('button', { name: 'Found family 1 read' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Hopeful 1 read' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open your retrospective' }))
+    const retrospective = screen.getByRole('dialog', {
+      name: 'Private retrospective · 2026',
+    })
+    expect(within(retrospective).getByText('Most-read voice')).toBeTruthy()
+    expect(within(retrospective).getByText('Made from your record · kept for you')).toBeTruthy()
+    expect(
+      within(retrospective).getByText(/does not create a public score or share card/),
+    ).toBeTruthy()
+    fireEvent.click(within(retrospective).getByRole('button', { name: 'Turn toward what’s next' }))
+    expect(openPlanner).toHaveBeenCalledOnce()
   })
 })

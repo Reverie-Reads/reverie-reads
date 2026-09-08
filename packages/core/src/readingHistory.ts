@@ -1,5 +1,7 @@
 import type { Book, PartialDate } from './types'
 import { bookGenres } from './genreNormalize'
+import { bylineAuthors } from './seriesIndex'
+import { bookTropeNames } from './tropes'
 
 /** Persisted completions, supplied separately from the base book query's unhydrated reads. */
 export interface ReadingLog {
@@ -86,17 +88,22 @@ function buckets(
   records: RecordedRead[],
   labels: (read: RecordedRead) => string[],
 ): ReadingBucket[] {
-  const grouped = new Map<string, RecordedRead[]>()
+  const grouped = new Map<string, ReadingBucket>()
   for (const read of records) {
-    for (const label of new Set(labels(read))) {
-      const group = grouped.get(label) ?? []
-      group.push(read)
-      grouped.set(label, group)
+    const seen = new Set<string>()
+    for (const rawLabel of labels(read)) {
+      const label = rawLabel.trim().replace(/\s+/g, ' ')
+      const key = label.toLocaleLowerCase()
+      if (!key || seen.has(key)) continue
+      seen.add(key)
+      const group = grouped.get(key) ?? { label, records: [] }
+      group.records.push(read)
+      grouped.set(key, group)
     }
   }
-  return [...grouped]
-    .map(([label, entries]) => ({ label, records: entries }))
-    .sort((a, b) => b.records.length - a.records.length || a.label.localeCompare(b.label))
+  return [...grouped.values()].sort(
+    (a, b) => b.records.length - a.records.length || a.label.localeCompare(b.label),
+  )
 }
 
 /** One scope for every chart. Repetitions are derived from log counts, not a guessed first-read
@@ -154,6 +161,18 @@ export function summarizeReadingHistory(history: ReadingHistory, year: number | 
         'special edition': 'Special Edition',
       }
       return [format ? (canonical[format.toLowerCase()] ?? format) : 'Not recorded']
+    }),
+    authors: buckets(records, (read) => {
+      const authors = bylineAuthors(read.book).map((author) => author.name)
+      return authors.length ? authors : ['Not recorded']
+    }),
+    tropes: buckets(records, (read) => {
+      const tropes = bookTropeNames(read.book)
+      return tropes.length ? tropes : ['Not recorded']
+    }),
+    moods: buckets(records, (read) => {
+      const moods = read.book.moods.map((mood) => mood.name)
+      return moods.length ? moods : ['Not recorded']
     }),
   }
 }

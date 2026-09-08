@@ -1,8 +1,8 @@
 # Reading life implementation
 
-September 7, 2026. The approved study is being implemented in slices. The first slice replaces
-Stats with Reflect and connects Planner's completion counts/calendar entries to the same model.
-The route remains `/stats`; saved navigation arrangements retain their existing identifiers.
+September 7, 2026. The approved study is being implemented in slices. Reflect now replaces Stats,
+and Planner's completion counts/calendar entries use the same model. The route remains `/stats`;
+saved navigation arrangements retain their existing identifiers.
 
 ## Record contract
 
@@ -38,8 +38,15 @@ used: the normal books query does not hydrate it.
 
 A saved reading note and the complete book jacket lead the page. Without a note, the opening
 uses the book's title and recorded finish. With no history, it explains how to log a first or
-past read. Metric, month, genre, format, undated, legacy, and current DNF controls reveal their
-underlying records. Book controls navigate to the existing book detail and reading log.
+past read. Metric, month, genre, author, trope, mood, format, undated, legacy, and current DNF
+controls reveal their underlying records. Labels are counted once per read even when duplicate
+case variants survive in imported metadata. Book controls navigate to the existing book detail
+and reading log.
+
+The selected year also shows the reader's private annual goal when one exists. A cover gathering
+opens a private retrospective assembled only from persisted facts and a real saved note. It has no
+aggregate rating, public score, analytics export, or share card, and it turns back toward Planner
+through the existing route.
 
 The page uses existing room materials, fonts, tokens, cover sourcing, native dialogs, and focus
 return behavior. No new cover provider, atmosphere engine, analytics export, or public sharing
@@ -64,11 +71,9 @@ This slice adds `20260929010000_reading_plan_queue.sql`. Its existing-plan backf
 replacement change stored data/write behavior, so production deployment remains an owner-operated
 human confirmation after merge.
 
-## Next slices
+## Next slice
 
-1. **Private retrospective.** Compose the same summary into a private period story. No derived
-   analytics export or share card.
-2. **Release horizon.** Integrate followed-author sources and honest publication precision into
+1. **Release horizon.** Integrate followed-author sources and honest publication precision into
    Plan; do not convert unknown months/days into January 1 or create plans automatically.
 
 Public review/merge comes before private synchronization. Reflect needs only a web release; Plan
