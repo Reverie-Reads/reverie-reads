@@ -154,6 +154,134 @@
   padding: 32px 0;
   border-top: 1px solid var(--line);
 }
+.reflect-retrospective-invite {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin: 4px 0 36px;
+  padding: 28px clamp(22px, 4vw, 40px);
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.reflect-retrospective-invite p:last-child {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.reflect-retrospective {
+  padding: 12px 6px 8px;
+  text-align: center;
+}
+.reflect-retrospective > h2 {
+  margin: 10px 0 26px;
+  font-size: clamp(34px, 7vw, 48px);
+  line-height: 1.08;
+}
+.reflect-story-covers {
+  display: flex;
+  justify-content: center;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: clamp(8px, 2vw, 16px);
+  margin: 0 auto 24px;
+  padding: 0;
+  list-style: none;
+}
+.reflect-story-covers li {
+  min-width: 0;
+}
+.reflect-story-covers button {
+  display: block;
+  width: clamp(46px, 10vw, 78px);
+  height: clamp(70px, 15vw, 118px);
+  overflow: hidden;
+  transition: transform var(--motion-duration) var(--motion-ease);
+}
+.reflect-story-covers button:hover {
+  transform: translateY(-4px);
+}
+.reflect-story-cover {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 8px 10px var(--line));
+}
+.reflect-story-caption,
+.reflect-story-private {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.reflect-story-caption {
+  margin: -10px 0 22px;
+}
+.reflect-story-summary {
+  max-width: 570px;
+  margin: 0 auto 28px;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 4vw, 26px);
+  line-height: 1.5;
+}
+.reflect-story-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 auto 30px;
+  padding: 22px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.reflect-story-details p {
+  min-width: 0;
+}
+.reflect-story-details span,
+.reflect-story-details strong,
+.reflect-story-details small {
+  display: block;
+}
+.reflect-story-details span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.reflect-story-details strong {
+  margin: 6px 0 4px;
+  overflow-wrap: anywhere;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.reflect-story-details small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.reflect-story-note {
+  max-width: 540px;
+  margin: 30px auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-display);
+  font-size: clamp(21px, 4vw, 27px);
+  line-height: 1.5;
+}
+.reflect-story-note cite {
+  display: block;
+  margin-top: 16px;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.6;
+}
+.reflect-story-private {
+  margin: 0 auto 18px;
+}
 .reflect-records {
   list-style: none;
   padding: 0;
@@ -243,5 +371,37 @@
   }
   .reflect-breakdowns {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .reflect-retrospective-invite {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .reflect-retrospective-invite .skin-control {
+    width: 100%;
+  }
+  .reflect-story-covers {
+    gap: 7px;
+  }
+  .reflect-story-covers button {
+    width: 68px;
+    height: 104px;
+  }
+  .reflect-story-details {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    text-align: center;
+  }
+  .reflect-story-details p + p {
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reflect-story-covers button {
+    transition: none;
+  }
+  .reflect-story-covers button:hover {
+    transform: none;
   }
 }

@@ -17,8 +17,12 @@ import { Modal } from '../components/Modal'
 import './reflect.css'
 
 type Detail = { title: string; explanation?: string; records?: RecordedRead[]; books?: Book[] }
+type ReadingSummary = ReturnType<typeof summarizeReadingHistory>
 const dateLabel = (read: RecordedRead) =>
   formatPartialDate(read.finished) || 'Finish date not recorded'
+
+const countLabel = (count: number, singular: string, plural = `${singular}s`) =>
+  `${count} ${count === 1 ? singular : plural}`
 
 function ReadList({
   records,
@@ -140,18 +144,143 @@ function Breakdown({
   )
 }
 
+function Retrospective({
+  period,
+  summary,
+  openBook,
+  openPlan,
+  onClose,
+}: {
+  period: number | 'all'
+  summary: ReadingSummary
+  openBook: (id: string) => void
+  openPlan: () => void
+  onClose: () => void
+}) {
+  const books = summary.distinctBooks.slice(0, 7)
+  const note = summary.records.find((read) => read.notes?.trim())
+  const peak = Math.max(0, ...summary.months.map((records) => records.length))
+  const peakMonths = summary.months
+    .map((records, index) => ({ index, count: records.length }))
+    .filter((month) => month.count === peak && peak > 0)
+  const genre = summary.genres.find((entry) => entry.label !== 'Not recorded')
+  const format = summary.formats.find((entry) => entry.label !== 'Not recorded')
+  const title = period === 'all' ? 'Your reading, gathered here' : `Your ${period} in books`
+  const returnSentence =
+    summary.returns === 1
+      ? `${summary.returnsAreMinimum ? 'At least one' : 'One'} was a return to familiar company.`
+      : summary.returns > 1
+        ? `${summary.returnsAreMinimum ? 'At least ' : ''}${summary.returns} were returns to familiar company.`
+        : summary.returnsAreMinimum
+          ? 'Missing dates leave the number of returns open.'
+          : null
+  return (
+    <Modal title={title} onClose={onClose} wide>
+      <div className="reflect-retrospective">
+        <p className="reflect-eyebrow">
+          A private retrospective · {period === 'all' ? 'All recorded years' : period}
+        </p>
+        <h2>{period === 'all' ? 'A reading life, gathered here.' : 'A chapter made of books.'}</h2>
+
+        <ul className="reflect-story-covers" aria-label="Books in this retrospective">
+          {books.map((book) => (
+            <li key={book.id}>
+              <button
+                type="button"
+                onClick={() => openBook(book.id)}
+                aria-label={`Open ${book.title}`}
+              >
+                <CoverImage book={book} thumb className="reflect-story-cover object-contain" />
+              </button>
+            </li>
+          ))}
+        </ul>
+        {summary.distinctBooks.length > books.length && (
+          <p className="reflect-story-caption">
+            Seven of {summary.distinctBooks.length} distinct books are gathered here.
+          </p>
+        )}
+
+        <p className="reflect-story-summary">
+          {period === 'all' ? 'Your record' : 'This chapter'} holds{' '}
+          {countLabel(summary.records.length, 'logged read')} across{' '}
+          {countLabel(summary.distinctBooks.length, 'book')}.
+          {returnSentence && <> {returnSentence}</>}
+        </p>
+
+        {(peakMonths.length > 0 || genre || format) && (
+          <div className="reflect-story-details" aria-label="A few details from this period">
+            {peakMonths[0] && (
+              <p>
+                <span>
+                  {peakMonths.length > 1 ? 'One of the fullest months' : 'The fullest month'}
+                </span>
+                <strong>{MONTH_ABBR[peakMonths[0].index]}</strong>
+                <small>
+                  {countLabel(peakMonths[0].count, 'recorded finish', 'recorded finishes')}
+                </small>
+              </p>
+            )}
+            {genre && (
+              <p>
+                <span>In the record</span>
+                <strong className="capitalize">{genre.label}</strong>
+                <small>
+                  {countLabel(genre.records.length, 'read')}{' '}
+                  {genre.records.length === 1 ? 'carries' : 'carry'} this genre
+                </small>
+              </p>
+            )}
+            {format && (
+              <p>
+                <span>In your hands or ears</span>
+                <strong>{format.label}</strong>
+                <small>{countLabel(format.records.length, 'read')} logged this way</small>
+              </p>
+            )}
+          </div>
+        )}
+
+        {note?.notes?.trim() && (
+          <blockquote className="reflect-story-note">
+            {note.notes}
+            <cite>
+              Your note on {note.book.title} · {authorOf(note.book)}
+            </cite>
+          </blockquote>
+        )}
+
+        <p className="reflect-story-private">
+          Kept here for you. Reverie does not create a public score or share card from this view.
+        </p>
+        <Button
+          onClick={() => {
+            onClose()
+            openPlan()
+          }}
+        >
+          Turn toward what’s next <span aria-hidden="true">→</span>
+        </Button>
+      </div>
+    </Modal>
+  )
+}
+
 /** The view accepts real, already scoped personal data; the query boundary stays outside it. */
 export function ReflectView({
   history,
   openBook,
+  openPlan,
   currentYear = new Date().getFullYear(),
 }: {
   history: ReadingHistory
   openBook: (id: string) => void
+  openPlan: () => void
   currentYear?: number
 }) {
   const [period, setPeriod] = useState<number | 'all'>(currentYear)
   const [detail, setDetail] = useState<Detail | null>(null)
+  const [retrospectiveOpen, setRetrospectiveOpen] = useState(false)
   const summary = useMemo(() => summarizeReadingHistory(history, period), [history, period])
   const years = [
     ...new Set([currentYear, ...history.years, ...(period === 'all' ? [] : [period])]),
@@ -178,6 +307,7 @@ export function ReflectView({
             onChange={(event) => {
               setPeriod(event.target.value === 'all' ? 'all' : Number(event.target.value))
               setDetail(null)
+              setRetrospectiveOpen(false)
             }}
             className="skin-field min-h-11 border border-line bg-card px-3 text-base text-ink"
           >
@@ -344,6 +474,19 @@ export function ReflectView({
         />
       </div>
 
+      {summary.records.length > 0 && (
+        <section className="reflect-retrospective-invite">
+          <div>
+            <p className="reflect-eyebrow">For your eyes only</p>
+            <h2>Spend a moment with {period === 'all' ? 'your reading' : period}.</h2>
+            <p>A quiet retrospective of these books and the notes you kept.</p>
+          </div>
+          <Button onClick={() => setRetrospectiveOpen(true)} aria-haspopup="dialog">
+            Open your retrospective <span aria-hidden="true">↗</span>
+          </Button>
+        </section>
+      )}
+
       <section className="reflect-history">
         <h2>Your record · {periodLabel}</h2>
         <p className="mb-4 text-sm text-muted">
@@ -441,6 +584,15 @@ export function ReflectView({
             ))}
         </Modal>
       )}
+      {retrospectiveOpen && (
+        <Retrospective
+          period={period}
+          summary={summary}
+          openBook={openBook}
+          openPlan={openPlan}
+          onClose={() => setRetrospectiveOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -449,6 +601,7 @@ export function ReflectScreen() {
   const history = useReadingHistory()
   const navigate = useNavigate()
   const openBook = (id: string) => void navigate({ to: '/book/$bookId', params: { bookId: id } })
+  const openPlan = () => void navigate({ to: '/planner' })
   if (!history.data)
     return (
       <section className="reflect">
@@ -473,7 +626,7 @@ export function ReflectScreen() {
           </button>
         </div>
       )}
-      <ReflectView history={history.data} openBook={openBook} />
+      <ReflectView history={history.data} openBook={openBook} openPlan={openPlan} />
     </>
   )
 }
