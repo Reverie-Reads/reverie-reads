@@ -203,7 +203,7 @@ function CurrentReading({ books, openBook }: { books: Book[]; openBook: (id: str
     <aside className="plan-current" aria-labelledby="plan-current-heading">
       <p className="plan-eyebrow">Reading now</p>
       {book ? (
-        <>
+        <div className="plan-current-reading">
           <button
             type="button"
             className="plan-current-cover"
@@ -212,21 +212,23 @@ function CurrentReading({ books, openBook }: { books: Book[]; openBook: (id: str
           >
             <CoverImage book={book} />
           </button>
-          <h2 id="plan-current-heading">{book.title}</h2>
-          <p>{authorOf(book)}</p>
-          <div className="skin-meter mt-4 h-1.5 overflow-hidden bg-field">
-            <span
-              className="skin-meter block h-full bg-primary"
-              style={{ width: `${Math.max(0, Math.min(100, book.progress))}%` }}
-            />
+          <div className="plan-current-copy">
+            <h2 id="plan-current-heading">{book.title}</h2>
+            <p>{authorOf(book)}</p>
+            <div className="skin-meter mt-4 h-1.5 overflow-hidden bg-field">
+              <span
+                className="skin-meter block h-full bg-primary"
+                style={{ width: `${Math.max(0, Math.min(100, book.progress))}%` }}
+              />
+            </div>
+            <p className="mt-2 text-[12px] text-muted">{book.progress}% · your current place</p>
+            {books.length > 1 && (
+              <p className="mt-5 border-t border-line pt-4 text-[12.5px] text-muted">
+                {books.length - 1} more {books.length === 2 ? 'book' : 'books'} in Reading now
+              </p>
+            )}
           </div>
-          <p className="mt-2 text-[12px] text-muted">{book.progress}% · your current place</p>
-          {books.length > 1 && (
-            <p className="mt-5 border-t border-line pt-4 text-[12.5px] text-muted">
-              {books.length - 1} more {books.length === 2 ? 'book' : 'books'} in Reading now
-            </p>
-          )}
-        </>
+        </div>
       ) : (
         <Surface tone="field" radius="card" pad={2}>
           <h2 id="plan-current-heading" className="text-[17px] text-ink">
