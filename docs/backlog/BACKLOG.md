@@ -577,11 +577,12 @@ Error(authFailure(context, DEV_EMAIL, error))`) and its writes through `ok`/`okD
   been a production privilege change made for the wrong reason. Nothing was lost: `setupFixtures`
   upserts the row on the stable key `'A11YSMOKE'`, so each run overwrites it rather than leaving
   an undeletable table to accumulate one row per run.
-- **Restore guardrail**: restoring into a non-empty library silently adds a second
-  one. Warn with real counts before it happens. Merge-routed restore stays blocked
-  on field-level merge picking — trading a visible duplicate for a silent loss is
-  the wrong direction.
-  <sub>**verified 2026-08-20** — still OPEN: `importExport.ts:695` restores without a pre-flight count check and `SettingsRoute.tsx:730` shows counts only after the fact; no warning-with-counts exists.</sub>
+- ~~**Restore guardrail**: restoring into a non-empty library silently adds a second
+  one. Warn with real counts before it happens.~~ — done. File selection now performs a local
+  integrity check and opens a review with current, incoming, and projected book counts plus the
+  backup's other reader records. Cancel is read-only; only the explicit Restore action writes.
+  Restore remains additive and merge-routed restore remains blocked. See
+  `docs/tasks/restore-preflight.md`.
 - **Flash of the wrong mode on a fresh device.** A reader whose profile `mode` is
   `dark`, on a device with no `reverie.mode` in localStorage — first-ever load, or
   right after the sign-out cache clear (`fix/offline-session`) — gets a light
