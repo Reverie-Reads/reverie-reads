@@ -112,6 +112,34 @@ frame and implementation before a live benchmark, preserve the completed result,
 development frame to test changes rather than rerunning inspected failures to improve a score.
 See the [20-edition preregistration](reports/metadata-baseline-plan-2026-09-08.md).
 
+Benchmark output version 2 adds finite `baselineReviewReasons`, separate `fieldEvidence` state
+counts for pages and edition format, and `protectedCurrent` counts. Input remains version 1.
+Reasons describe the first failing guard, not every defect in a record. Unrecognized reasons become
+`unspecified_reason`; raw provider explanations never enter these counters. The completed
+20-edition version-1 result is unchanged: these new reasons cannot retrospectively explain its
+review counts, and it must not be rerun to obtain them.
+
+Field evidence is descriptive, not a confidence probability or permission to fill a field:
+
+| State                 | Meaning                                                                          |
+| --------------------- | -------------------------------------------------------------------------------- |
+| `unavailable`         | A required provider attempt is incomplete or unrecognized.                       |
+| `identity_review`     | Identity or edition admission needs review; no fields are trusted from the pair. |
+| `identity_unresolved` | Both attempts completed but neither admitted an exact identity.                  |
+| `edition_conflict`    | Format disagreement prevents interpreting page-count agreement.                  |
+| `not_applicable`      | Page count is not applicable to the known audiobook format.                      |
+| `conflict`            | Providers disagree, or a provider disagrees with a protected current value.      |
+| `source_missing`      | Admitted identities have no observation for this field.                          |
+| `single_source`       | One admitted source supplies the field.                                          |
+| `source_agreement`    | Two admitted sources agree; independence and correctness remain unproven.        |
+
+The descriptor receives identity/current values and ephemeral baseline observations, never publisher
+reference truth. It emits no field values and always sets `automatic: false`. Current values are
+protected in every state, never a third corroborating vote; even an inapplicable page count is not
+deleted. These observations do not change the existing ISBNdb lookup gates, score source quality,
+feed the LLM, or write shared/personal data. No new live benchmark is required to test this reporting
+layer; synthetic offline tests cover the states and demonstrate reference-truth separation.
+
 ## What is measured
 
 - exact work matching;
