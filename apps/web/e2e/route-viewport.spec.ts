@@ -316,6 +316,7 @@ test('every route lays out at the viewport — no page-level horizontal overflow
   const routes: [string, string][] = [
     ['/', 'home'],
     ['/library', 'library'],
+    ['/covers', 'personal cover studio'],
     ['/shelves', 'shelves overview'],
     [`/shelf/${fx.listId}`, 'shelf detail (36-book fixture — the proven-harmful route)'],
     ['/planner', 'planner'],

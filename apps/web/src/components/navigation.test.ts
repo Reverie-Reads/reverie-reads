@@ -58,6 +58,7 @@ describe('navigation contract', () => {
     expect(navigationLabelForPath('/tropes/slow-burn')).toBe('Trope')
     expect(navigationLabelForPath('/book/abc-123')).toBe('Book record')
     expect(navigationLabelForPath('/add')).toBe('Add a book')
+    expect(navigationLabelForPath('/covers')).toBe('Cover Studio')
     expect(navigationLabelForPath('/something-new')).toBe('Reading room')
   })
 

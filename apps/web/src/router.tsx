@@ -23,6 +23,7 @@ import { moodRoute } from './routes/MoodRoute'
 import { reviewRoute } from './routes/ReviewRoute'
 import { catalogMetadataReviewRoute } from './routes/CatalogMetadataReviewRoute'
 import { catalogCoverReviewRoute } from './routes/CatalogCoverReviewRoute'
+import { coverStudioRoute } from './routes/CoverStudioRoute'
 import { authRoute } from './routes/AuthRoute'
 import { welcomeRoute } from './routes/WelcomeRoute'
 import { onboardingRoute } from './routes/OnboardingRoute'
@@ -54,6 +55,7 @@ const routeTree = rootRoute.addChildren([
   moodRoute,
   reviewRoute,
   catalogCoverReviewRoute,
+  coverStudioRoute,
   catalogMetadataReviewRoute,
   authRoute,
   welcomeRoute,

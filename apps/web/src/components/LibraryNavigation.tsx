@@ -4,6 +4,7 @@ const LIBRARY_VIEWS = [
   { key: 'books', label: 'Books', to: '/library' },
   { key: 'shelves', label: 'Shelves', to: '/shelves' },
   { key: 'series', label: 'Series', to: '/series' },
+  { key: 'covers', label: 'Covers', to: '/covers' },
 ] as const
 
 /** Related views of the personal library. Household membership has its own scope control. */

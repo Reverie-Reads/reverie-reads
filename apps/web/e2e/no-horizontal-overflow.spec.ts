@@ -167,6 +167,7 @@ test('the book edit dialog does not scroll sideways with contributors populated'
 // route without seeding a club would add a name to this array and no coverage at all.
 const ROUTES = [
   '/library',
+  '/covers',
   '/add',
   '/shelves',
   '/discover',

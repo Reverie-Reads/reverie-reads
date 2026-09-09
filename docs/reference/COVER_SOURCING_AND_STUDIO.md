@@ -169,6 +169,11 @@ Implemented in this change:
 - Google search, Discover, enrichment, and edition selection prefer the strongest official
   `imageLinks` field returned by the API;
 - new stored covers receive a 720px card derivative while retaining the 1,600px full image.
+- `/covers` provides a permanent personal Cover Studio with bounded Needs attention, automatic,
+  reader-chosen, and all-cover views; title/author/ISBN search; source and saved-versus-linked
+  language; observed loaded-image dimensions; camera/upload cropping; contextual edition choices;
+  and an explicit room-placeholder choice. A selected image or placeholder sets the existing
+  reader-choice guard, so enrichment cannot replace it.
 
 Implement next, in order:
 
@@ -179,10 +184,13 @@ Implement next, in order:
    edition-confidence evaluation remain separate work; never change a reader-locked choice.
 3. Measure transfer size and cache hit rate for the new 720px card derivative, then add responsive
    source selection if another stable size is justified.
-4. Add source, rights mode, dimensions, and quality language to Cover Studio.
+4. Persist source rights mode and reviewed quality observations if measurement proves the current
+   runtime-only labels insufficient. The personal Studio already shows current source,
+   saved-versus-linked status, and decoded dimensions without treating them as edition proof.
 5. Run the bounded ISBNdb miss trial and seek written Hardcover cover-use terms.
-6. The administrator catalog queue is implemented at `/catalog/covers` (details below). A personal
-   post-import Cover Studio queue remains separate work.
+6. The administrator catalog queue is implemented at `/catalog/covers` (details below). The
+   personal queue is implemented separately at `/covers`; it mutates only the reader's book and
+   never treats that choice as a shared catalog approval.
 
 For landing pages and other marketing surfaces, curate exact editions manually, confirm natural image
 dimensions in a real browser, and keep the provider-compliant display path. Do not auto-fill marketing

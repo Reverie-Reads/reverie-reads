@@ -342,8 +342,16 @@ function ReviewScreen() {
           </h2>
           <p className="mb-2 text-[12px] text-muted">
             Missing, low-confidence, or broken. Pick a found edition, confirm a match, or keep the
-            skin placeholder. Upload / photo come with the Studio design.
+            skin placeholder. Photograph, upload, and full edition details are available in your
+            permanent Cover Studio.
           </p>
+          <Link
+            to="/covers"
+            search={{ state: 'attention', q: '', page: 0, book: undefined }}
+            className="skin-control skin-btn-secondary mb-3 inline-flex min-h-11 items-center px-4 text-[13px] font-semibold"
+          >
+            Open Cover Studio
+          </Link>
           <ul className="flex flex-wrap gap-3">
             {shownTriage.map((i) => (
               <TriageTile

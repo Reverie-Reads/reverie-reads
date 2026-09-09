@@ -60,8 +60,11 @@ writes, migrations, function deployment, and deletion remain owner-run operation
       shortlist order; dismiss/undo; add a book; confirm owned/borrowed/wishlist state is visible.
 - [ ] **Coverless books:** inspect long one-word and multi-word placeholder titles in Discover and
       Library; no title should split mid-word, collide, clip silently, or make a card change height.
-- [ ] **Cover quality:** open a weak or missing cover, inspect alternatives, choose one explicitly,
-      reload, and confirm the working linked fallback remains available.
+- [ ] **Cover Studio:** open Needs attention from Library and Settings; confirm an unresolved
+      missing cover appears while an intentional room placeholder does not; inspect actual loaded
+      quality and source, compare editions, photograph/upload a copy, keep an automatic cover, and
+      choose a room placeholder. Reload and confirm each explicit choice stays protected while a
+      working linked fallback remains available.
 
 ## P1 — return experience
 

@@ -11,7 +11,22 @@ Priorities mean:
 - **P2 — planned:** valuable work with no current blocking dependency.
 - **P3 — deferred/monitor:** revisit on evidence, schedule, or an explicit owner decision.
 
-## Active product program: Reflect and Plan
+## Active product program: Collection care, then Calendar and Releases
+
+The owner approved this sequence on 2026-09-09 while reader recruitment is unavailable:
+
+1. **Personal Cover Studio — implemented for public review.** `/covers` turns the existing
+   camera/upload crop, edition comparison, linked-image, and room-placeholder controls into a
+   permanent reader workspace. Its bounded views distinguish broken, unresolved, automatic, and
+   reader-chosen covers; show the source and the dimensions of the image that actually loaded; and
+   protect an explicit cover or placeholder choice from enrichment. This adds no provider, shared
+   catalog mutation, or database migration.
+2. **Calendar and Releases redesign — next after Cover Studio review/release.** Revalidate the
+   existing scope against current Plan, Reflect, and the source-aware release horizon before
+   implementation. Keep recorded history distinct from flexible future intentions and preserve
+   honest year/month/day precision.
+
+## Completed product program: Reflect and Plan
 
 The owner approved the Reading Life study in public PR #471 and prioritized the Stats/Planner
 fundamental overhaul. This sequence takes precedence over the September 5 product queue below:
@@ -179,7 +194,7 @@ The remaining items are ordered within P2, but they do not block the P0/P1 seque
    product/monetization decision.
 2. **iOS barcode fallback:** revisit when tester/browser evidence justifies shipping a WASM decoder;
    the current unsupported-browser fallback is deliberate.
-3. **Year heatmap, dedicated Wrapped experience, Cover Studio, author following, bulk trope tagging,
+3. **Year heatmap, dedicated Wrapped experience, author following, bulk trope tagging,
    unattended bidirectional whole-library household sync, app-store packaging, social discovery,
    and premium corpus freshness:** separate product decisions, not launch blockers. Explicit Add and
    import destinations plus opt-in neutral peer-library additions are implemented; the deferred item

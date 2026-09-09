@@ -617,6 +617,13 @@ function SettingsScreen() {
 
         <Section title="Library tools">
           <div className="flex flex-wrap gap-2">
+            <Link
+              to="/covers"
+              search={{ state: 'attention', q: '', page: 0, book: undefined }}
+              className="skin-control skin-btn-secondary inline-flex min-h-11 items-center px-4 text-[13px] font-semibold"
+            >
+              Care for your covers
+            </Link>
             {isCorpusAdmin && <CatalogReviewNav />}
             <button
               type="button"

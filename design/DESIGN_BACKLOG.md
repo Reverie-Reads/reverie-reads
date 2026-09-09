@@ -44,7 +44,12 @@ lives in `ROADMAP.md`.
    real covers and saved notes, without creating a score, share card, or analytics export.
    Import/restore preview followed in PR #489. The next product gate is the five-session reader
    validation protocol; accepted brand collateral remains after that evidence.
-4. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
+4. **PERSONAL COVER STUDIO — IMPLEMENTED FOR REVIEW.** `/covers` now provides a permanent,
+   reader-owned care workspace around the existing photo/upload crop, edition chooser, linked
+   images, and room placeholders. It separates unresolved art from intentional placeholders, shows
+   actual loaded-image quality and provenance, and makes a confirmed cover a protected reader
+   choice. The administrator catalog queue remains a separate shared-data surface.
+5. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
    icons, onboarding material, and one accurate demonstration. Preserve each room's own interface
    language. Do not reopen the chosen palette as a new concept exercise.
 
@@ -90,10 +95,10 @@ lives in `ROADMAP.md`.
   screens (prompt: DESIGN_PROMPT_WRAPPED.md) ever came back is unverifiable from the tree —
   design/from-design-tool/ is gitignored except its README. If the screens exist in Greg's
   working tree, this is implement-next; if not, still in flight on the design side.
-- COVER STUDIO — per-book cover picking shipped (components/CoverPicker.tsx); the studio surface —
-  batch triage of missing/low-confidence/broken covers, photograph-your-copy — has no route or
-  component. PROMPT WRITTEN -> design/DESIGN_PROMPT_COVER_STUDIO.md. Scope in
-  docs/reference/COVER_SOURCING_AND_STUDIO.md. Needs its own look before any build.
+- COVER STUDIO — the personal workspace is implemented for review at `/covers`; per-book and
+  post-import entry points lead to the same camera/upload, edition, linked-image, and placeholder
+  choices. Persisted image measurements and a separate rights-mode column remain future data work,
+  not requirements for the reader-owned workflow.
 
 ## Next
 
