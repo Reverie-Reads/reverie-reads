@@ -1,11 +1,21 @@
 import { setTimeout as delay } from 'node:timers/promises'
-import { canonicalIsbn, exactIdentity, binding, language, validateInput } from './supplement.mjs'
+import {
+  canonicalIsbn,
+  identityReviewReason,
+  binding,
+  language,
+  validateInput,
+} from './supplement.mjs'
 
 const object = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
 const list = (v) => (Array.isArray(v) ? v : [])
 const pages = (v) => (Number.isInteger(v) && v > 0 && v <= 20000 ? v : null)
 const fullTitle = (b) =>
-  typeof b.subtitle === 'string' && b.subtitle.trim() ? `${b.title}: ${b.subtitle}` : b.title
+  typeof b.title !== 'string'
+    ? undefined
+    : typeof b.subtitle === 'string' && b.subtitle.trim()
+      ? `${b.title}: ${b.subtitle}`
+      : b.title
 const isbnFields = (b) =>
   list(b.industryIdentifiers)
     .filter((v) => ['ISBN_10', 'ISBN_13'].includes(v?.type))
@@ -31,18 +41,22 @@ export function approvedEditionRedirect(location) {
 
 function admit(record, identity, observedLanguage = null, rawSubtitle = null) {
   try {
+    if (rawSubtitle != null && typeof rawSubtitle !== 'string')
+      return { status: 'identity_review', reason: 'malformed_subtitle' }
+    if (record.isbns.some((i) => !canonicalIsbn(i)))
+      return { status: 'identity_review', reason: 'invalid_isbn' }
     validateInput({
       version: 1,
       purpose: 'development',
       cases: [{ identity, current: {}, baseline: [record] }],
     })
-    if (rawSubtitle != null && typeof rawSubtitle !== 'string') return { status: 'identity_review' }
-    if (!exactIdentity(record, identity)) return { status: 'identity_review' }
+    const reason = identityReviewReason(record, identity)
+    if (reason) return { status: 'identity_review', reason }
     if (identity.language && observedLanguage && language(observedLanguage) !== identity.language)
-      return { status: 'identity_review' }
+      return { status: 'identity_review', reason: 'language_mismatch' }
     return { status: 'matched', record }
   } catch {
-    return { status: 'identity_review' }
+    return { status: 'identity_review', reason: 'malformed_record' }
   }
 }
 
@@ -61,7 +75,7 @@ export function selectGoogleBaseline(body, identity) {
       (v) =>
         object(v) && isbnFields(v).some((i) => canonicalIsbn(i) === canonicalIsbn(identity.isbn)),
     )
-  if (matches.length > 1) return { status: 'identity_review' }
+  if (matches.length > 1) return { status: 'identity_review', reason: 'ambiguous_records' }
   if (!matches.length) return { status: body.totalItems === 0 ? 'not_found' : 'no_exact_isbn' }
   const b = matches[0]
   // BOOK means publication type, not binding. Digital availability does not certify this ISBN's format.
@@ -224,16 +238,17 @@ export function createBaselineClient({
     if (!isbns.some((i) => canonicalIsbn(i) === canonicalIsbn(identity.isbn)))
       return { status: 'no_exact_isbn' }
     // Identity contradictions are reviews, not missing observations. Resolve every author; no work-level fallback.
-    if (
-      isbns.some((i) => canonicalIsbn(i) !== canonicalIsbn(identity.isbn)) ||
-      !Array.isArray(b.authors) ||
-      !b.authors.length ||
-      b.authors.length > 8
-    )
-      return { status: 'identity_review' }
+    if (isbns.some((i) => !canonicalIsbn(i)))
+      return { status: 'identity_review', reason: 'invalid_isbn' }
+    if (isbns.some((i) => canonicalIsbn(i) !== canonicalIsbn(identity.isbn)))
+      return { status: 'identity_review', reason: 'isbn_mismatch' }
+    if (!Array.isArray(b.authors) || !b.authors.length)
+      return { status: 'identity_review', reason: 'missing_contributors' }
+    if (b.authors.length > 8) return { status: 'identity_review', reason: 'too_many_contributors' }
     const authors = []
     for (const author of b.authors) {
-      if (!/^\/authors\/OL\d+A$/.test(author?.key ?? '')) return { status: 'identity_review' }
+      if (!/^\/authors\/OL\d+A$/.test(author?.key ?? ''))
+        return { status: 'identity_review', reason: 'invalid_author_reference' }
       let record = authorCache.get(author.key)
       if (!record) {
         const authorResult = await request(
@@ -241,7 +256,8 @@ export function createBaselineClient({
           `https://openlibrary.org${author.key}.json`,
           headers,
         )
-        if (authorResult.status !== 'ok') return { status: 'incomplete_authors' }
+        if (authorResult.status !== 'ok')
+          return { status: 'incomplete_authors', reason: 'author_lookup_unavailable' }
         if (
           !object(authorResult.body) ||
           typeof authorResult.body.name !== 'string' ||
@@ -249,7 +265,7 @@ export function createBaselineClient({
           authorResult.body.name.length > 500 ||
           (authorResult.body.key != null && authorResult.body.key !== author.key)
         )
-          return { status: 'identity_review' }
+          return { status: 'identity_review', reason: 'author_record_mismatch' }
         record = authorResult.body.name
         authorCache.set(author.key, record)
       }
@@ -257,7 +273,7 @@ export function createBaselineClient({
     }
     const format = binding(b.physical_format)
     if (b.physical_format != null && b.physical_format !== '' && !format)
-      return { status: 'edition_review' }
+      return { status: 'edition_review', reason: 'unknown_binding' }
     if (
       b.languages != null &&
       (!Array.isArray(b.languages) ||
@@ -265,7 +281,7 @@ export function createBaselineClient({
           (v) => typeof v?.key !== 'string' || !/^\/languages\/[a-z]{3}$/.test(v.key),
         ))
     )
-      return { status: 'identity_review' }
+      return { status: 'identity_review', reason: 'malformed_language' }
     const languages = list(b.languages).map((v) => v.key.split('/').at(-1))
     const observedLanguage = languages.length > 1 ? 'multiple_languages' : languages[0]
     return admit(

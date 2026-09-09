@@ -127,8 +127,13 @@ test('digital access and BOOK do not imply an ebook/print binding; invalid pages
   for (const pageCount of [0, -1, 20001, 3.5, '300']) {
     const result = selectGoogleBaseline(
       {
-        ...google({ pageCount, printType: 'BOOK', description: 'private prose' }),
-        saleInfo: { isEbook: true },
+        totalItems: 1,
+        items: [
+          {
+            volumeInfo: book({ pageCount, printType: 'BOOK', description: 'private prose' }),
+            saleInfo: { isEbook: true },
+          },
+        ],
       },
       identity,
     )

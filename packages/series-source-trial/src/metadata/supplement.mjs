@@ -93,11 +93,18 @@ const sameAuthors = (actual, expected) =>
   actual.length === expected.length &&
   actual.every((a) => expected.some((e) => nameMatches(a, e))) &&
   expected.every((e) => actual.some((a) => nameMatches(a, e)))
-export const exactIdentity = (record, identity) =>
-  record.isbns.length > 0 &&
-  record.isbns.every((i) => canonicalIsbn(i) === canonicalIsbn(identity.isbn)) &&
-  fold(record.title) === fold(identity.title) &&
-  sameAuthors(record.authors, identity.authors)
+// Call after shape validation. Return a finite diagnostic, never provider text.
+export function identityReviewReason(record, identity) {
+  if (
+    !record.isbns.length ||
+    !record.isbns.every((i) => canonicalIsbn(i) === canonicalIsbn(identity.isbn))
+  )
+    return 'isbn_mismatch'
+  if (fold(record.title) !== fold(identity.title)) return 'title_mismatch'
+  if (!sameAuthors(record.authors, identity.authors)) return 'contributors_mismatch'
+  return null
+}
+export const exactIdentity = (record, identity) => identityReviewReason(record, identity) === null
 
 export function planSupplement(c) {
   // Caller-supplied baseline observations must be tied to returned edition ISBNs, not a rank.

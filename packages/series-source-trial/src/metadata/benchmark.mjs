@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { validateInput, planSupplement, assessSupplement } from './supplement.mjs'
+import { baselineReasonCode, describeBaselineFields } from './field-evidence.mjs'
 
 const fields = ['pages', 'editionFormat']
 const keys = (v, allowed) =>
@@ -85,11 +86,14 @@ export async function runMetadataBenchmark(
 ) {
   validateBenchmark(input)
   const summary = {
-    version: 1,
+    version: 2,
     mode: live ? 'live' : 'dry_run',
     frameSha256: createHash('sha256').update(JSON.stringify(input)).digest('hex'),
     cases: input.cases.length,
     baselineOutcomes: { google: {}, openlibrary: {} },
+    baselineReviewReasons: { google: {}, openlibrary: {} },
+    fieldEvidence: { pages: {}, editionFormat: {} },
+    protectedCurrent: { pages: 0, editionFormat: 0 },
     baselineFields: Object.fromEntries(
       ['google', 'openlibrary'].map((p) => [
         p,
@@ -110,10 +114,17 @@ export async function runMetadataBenchmark(
   if (!live) return summary
   for (const c of input.cases) {
     const acquired = await baselineClient.acquire(structuredClone(c.identity))
+    const evidence = describeBaselineFields({ identity: c.identity, current: c.current }, acquired)
+    for (const f of fields) {
+      count(summary.fieldEvidence[f], evidence[f].state)
+      if (evidence[f].currentProtected) summary.protectedCurrent[f]++
+    }
     const baseline = []
     for (const provider of ['google', 'openlibrary']) {
       const result = acquired[provider]
       count(summary.baselineOutcomes[provider], result.status)
+      if (['identity_review', 'edition_review', 'incomplete_authors'].includes(result.status))
+        count(summary.baselineReviewReasons[provider], baselineReasonCode(result.reason))
       if (result.status === 'matched') {
         baseline.push(result.record)
         for (const f of fields)
