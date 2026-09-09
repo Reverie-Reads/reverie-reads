@@ -3,6 +3,43 @@
   gap: clamp(1.5rem, 4vw, 4rem);
 }
 
+.plan-view-switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem;
+  margin: 1rem 0 clamp(1.75rem, 4vw, 3rem);
+}
+.plan-view-switcher button {
+  display: grid;
+  min-width: 0;
+  min-height: 3.65rem;
+  align-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  padding: 0.55rem 0.85rem;
+  color: var(--muted);
+  text-align: left;
+}
+.plan-view-switcher button strong {
+  color: inherit;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+.plan-view-switcher button span {
+  margin-top: 0.15rem;
+  overflow: hidden;
+  font-size: 0.68rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plan-view-switcher button[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--primary) 46%, var(--line));
+  color: var(--on-primary);
+  background: var(--accent-fill);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--on-primary) 10%, transparent);
+}
+
 .plan-eyebrow,
 .plan-date {
   margin: 0 0 0.45rem;
@@ -167,8 +204,30 @@
 }
 
 .plan-calendar {
-  max-width: 58rem;
+  max-width: 64rem;
   margin: 0 auto;
+}
+.plan-calendar-sheet {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 49.8%,
+      color-mix(in srgb, var(--line) 55%, transparent) 50%,
+      transparent 50.2%
+    ),
+    linear-gradient(180deg, color-mix(in srgb, var(--primary) 3%, transparent), transparent 24%);
+}
+.plan-calendar-sheet::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--line) 58%, transparent);
+  border-radius: max(2px, calc(var(--radius-panel) * 0.75));
+  content: '';
+  pointer-events: none;
 }
 .plan-calendar-heading {
   display: grid;
@@ -180,6 +239,49 @@
 }
 .plan-calendar h2 {
   font-size: clamp(1.6rem, 5vw, 2.5rem);
+}
+.plan-calendar-today {
+  min-height: 2.25rem;
+  margin-top: 0.3rem;
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 0.25rem;
+  text-transform: uppercase;
+}
+.plan-calendar-today:disabled {
+  color: var(--muted);
+  text-decoration: none;
+}
+.plan-calendar-instruction {
+  max-width: 50ch;
+  margin: 0 auto 1rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  text-align: center;
+}
+.plan-month-summary {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.plan-month-summary span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+.plan-month-summary strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 .plan-calendar-grid {
   display: grid;
@@ -230,24 +332,37 @@
 }
 .plan-calendar-grid button {
   position: relative;
-  display: grid;
+  display: block;
   min-width: 0;
-  aspect-ratio: 1;
-  place-items: center;
-  border: 1px solid transparent;
-  border-radius: var(--radius-control);
+  min-height: 4.4rem;
+  border: 1px solid color-mix(in srgb, var(--line) 42%, transparent);
+  border-radius: min(var(--radius-control), 0.75rem);
+  padding: 0.55rem;
   color: var(--muted);
   font-size: 0.78rem;
+  text-align: left;
 }
 .plan-calendar-grid button:hover {
-  border-color: var(--line);
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--line));
   color: var(--ink);
+  background: color-mix(in srgb, var(--field) 60%, transparent);
 }
 .plan-calendar-grid button.has-entry {
   border-color: var(--line);
   color: var(--ink);
-  background: var(--field);
+  background: color-mix(in srgb, var(--field) 82%, transparent);
   font-weight: 700;
+}
+.plan-calendar-grid button.is-today {
+  border-color: var(--primary);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+.plan-calendar-grid button.is-today > span:first-child {
+  text-decoration: underline;
+  text-decoration-color: var(--primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18rem;
 }
 .plan-calendar-grid button small {
   position: absolute;
@@ -277,6 +392,50 @@
 .plan-flexible small {
   flex: none;
   color: var(--muted);
+}
+
+.plan-loose {
+  margin-top: clamp(2rem, 5vw, 3.5rem);
+}
+.plan-loose-heading {
+  max-width: 48rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.plan-loose-heading h3 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  font-weight: 600;
+  line-height: 1.15;
+}
+.plan-loose-heading > p:last-child,
+.plan-loose-empty {
+  margin-top: 0.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.plan-loose-groups {
+  display: grid;
+  gap: 1.4rem;
+  margin-top: 1.25rem;
+}
+.plan-loose-group > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.plan-loose-group h4 {
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+.plan-loose-group header span {
+  color: var(--muted);
+  font-size: 0.7rem;
 }
 
 .plan-editor {
@@ -398,6 +557,17 @@
 }
 
 @media (max-width: 520px) {
+  .plan-view-switcher {
+    gap: 0.2rem;
+  }
+  .plan-view-switcher button {
+    min-height: 3.1rem;
+    padding: 0.45rem 0.55rem;
+    text-align: center;
+  }
+  .plan-view-switcher button span {
+    display: none;
+  }
   .plan-current-reading {
     display: grid;
     grid-template-columns: 5.25rem minmax(0, 1fr);
@@ -421,5 +591,18 @@
   }
   .plan-calendar-grid {
     gap: 0.15rem;
+  }
+  .plan-calendar-grid button {
+    min-height: 3.25rem;
+    padding: 0.35rem;
+  }
+  .plan-calendar-sheet {
+    margin-inline: -0.35rem;
+  }
+  .plan-calendar-heading {
+    gap: 0.45rem;
+  }
+  .plan-month-summary {
+    gap: 1rem;
   }
 }

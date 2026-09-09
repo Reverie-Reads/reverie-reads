@@ -15,16 +15,19 @@ Priorities mean:
 
 The owner approved this sequence on 2026-09-09 while reader recruitment is unavailable:
 
-1. **Personal Cover Studio — implemented for public review.** `/covers` turns the existing
+1. **Personal Cover Studio — released in public PR #500.** `/covers` turns the existing
    camera/upload crop, edition comparison, linked-image, and room-placeholder controls into a
    permanent reader workspace. Its bounded views distinguish broken, unresolved, automatic, and
    reader-chosen covers; show the source and the dimensions of the image that actually loaded; and
    protect an explicit cover or placeholder choice from enrichment. This adds no provider, shared
    catalog mutation, or database migration.
-2. **Calendar and Releases redesign — next after Cover Studio review/release.** Revalidate the
-   existing scope against current Plan, Reflect, and the source-aware release horizon before
-   implementation. Keep recorded history distinct from flexible future intentions and preserve
-   honest year/month/day precision.
+2. **Calendar and Releases redesign — implemented for public review.** Calendar now treats exact
+   dates as an almanac grid and groups month, year, and Soon plans by their real precision. Releases
+   is a bounded arrivals horizon with readable covers, provider state, source evidence, and a
+   precision-aware manual flow. The redesign removes the full backlist/unknown-date dump, preserves
+   the Add review boundary, and adds no migration or provider change. The current implementation
+   and verification contract live in
+   [task-calendar-cluster-scope.md](docs/tasks/task-calendar-cluster-scope.md).
 
 ## Completed product program: Reflect and Plan
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { Book } from '@reverie/core'
-import { parseReleasePub, releaseDateLabel, releaseWindow, yourAuthors, type ReleaseHit } from './releases'
+import {
+  parseReleasePub,
+  personalReleaseWindow,
+  releaseDateLabel,
+  releaseWindow,
+  yourAuthors,
+  type ReleaseHit,
+} from './releases'
 
 const book = (b: { title: string; author: string; rating?: number; fave?: boolean; isbn?: string }): Book =>
   ({
@@ -69,6 +76,42 @@ describe('releaseWindow — upcoming/recent, owned and stale excluded', () => {
     const dup = { A: [hit({ title: 'Co-Written', authors: ['A'], pub: '2026-08-02' })], B: [hit({ title: 'Co-Written', authors: ['A'], pub: '2026-08-02' })] }
     const { upcoming } = releaseWindow(dup, [], now)
     expect(upcoming).toHaveLength(1)
+  })
+})
+
+describe('personalReleaseWindow — the reader shelf stays focused on arrivals', () => {
+  const now = Date.parse('2026-07-06T12:00:00Z')
+  const saved = (title: string, pub: Book['pub']) =>
+    ({ ...book({ title, author: 'Shelf Author' }), pub }) as Book
+
+  it('separates future, recent, and current partial dates without including backlist or unknowns', () => {
+    const result = personalReleaseWindow(
+      [
+        saved('Near Future', { y: 2026, m: 8, d: 1 }),
+        saved('Far Future', { y: 2027, m: null, d: null }),
+        saved('Current Month', { y: 2026, m: 7, d: null }),
+        saved('Current Year', { y: 2026, m: null, d: null }),
+        saved('Recently Out', { y: 2026, m: 6, d: 1 }),
+        saved('Old Backlist', { y: 2015, m: 5, d: 5 }),
+        saved('Unknown', { y: null, m: null, d: null }),
+      ],
+      now,
+    )
+
+    expect(result.upcoming.map((entry) => entry.title)).toEqual(['Near Future', 'Far Future'])
+    expect(result.uncertain.map((entry) => entry.title)).toEqual([
+      'Current Year',
+      'Current Month',
+    ])
+    expect(result.recent.map((entry) => entry.title)).toEqual(['Recently Out'])
+  })
+
+  it('treats an exact release earlier today as newly arrived', () => {
+    const result = personalReleaseWindow(
+      [saved('Out Today', { y: 2026, m: 7, d: 6 })],
+      now,
+    )
+    expect(result.recent.map((entry) => entry.title)).toEqual(['Out Today'])
   })
 })
 
