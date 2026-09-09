@@ -664,7 +664,7 @@ Error(authFailure(context, DEV_EMAIL, error))`) and its writes through `ok`/`okD
 
   </details>
 
-- **`useRealtimeRefetch` should cover `lists` and `books`, not just clubs and
+- ~~**`useRealtimeRefetch` should cover `lists` and `books`, not just clubs and
   shared lists.** `fix/state-pills-flake` closed the reader-facing half of a
   stale-persisted-cache defect with `useConfirmedLookup` (below) — a route no
   longer trusts a restored-fresh absence without asking the server once. What it
@@ -685,7 +685,11 @@ Error(authFailure(context, DEV_EMAIL, error))`) and its writes through `ok`/`okD
   fix, and its own measurement (connection cost, invalidation-storm risk under a
   large library) belongs with it.
 
-  <sub>**verified 2026-08-20** — still OPEN: `useRealtimeRefetch` has exactly two call sites — `ClubRoute.tsx:50` (clubs/members/comments) and `SharedListRoute.tsx:78` (shared_docs); neither `books` nor `lists` is subscribed.</sub>
+  <sub>**CLOSED for review 2026-09-09.** `PersonalLibrarySync` uses one owner-authorized private
+  Database Broadcast topic for books, reads, lists, and list items. A content-free signal avoids
+  copying private row data into Realtime, covers deletes without exposing unfiltered Postgres
+  Changes payloads, coalesces burst invalidations, and removes the channel on reader change or
+  sign-out. `useConfirmedLookup` remains in place as the correctness guard when Realtime is absent.</sub>~~
 
 ## Conventions — established patterns, not open work
 

@@ -186,9 +186,12 @@ The remaining items are ordered within P2, but they do not block the P0/P1 seque
 3. **Calendar/Releases cluster.** The sparse calendar pass shipped. Revalidate the remaining
    Calendar/Releases route, density, mobile, and heatmap decisions in
    `docs/tasks/task-calendar-cluster-scope.md` before another implementation branch.
-4. **Library state and synchronization.** Decide URL precedence for filters; fix realtime lifecycle
-   across sign-out and assess personal-book/list subscriptions. Treat a true offline write queue as
-   its own subsystem, not a quick caching patch.
+4. **Library state and synchronization.** Implemented for review: personal books, reading history,
+   shelves, and shelf placements emit content-free, owner-scoped Broadcast signals to one private
+   reader channel; the client coalesces large write bursts, refreshes only affected cache families,
+   and removes the channel when the session leaves the app. This complements the confirmed-lookup
+   stale-cache guard. URL precedence for Library filters remains undecided. Treat a true offline
+   write queue as its own subsystem, not a quick caching patch.
 5. **Reader safeguards and polish.** The restore preflight with real counts, the fresh-device
    appearance handoff, and dense-grid state indicators are complete. Convert the remaining risky
    literal glyphs to controlled SVGs. See `docs/tasks/restore-preflight.md`,

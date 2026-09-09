@@ -11,6 +11,7 @@ import { VerifyEmail } from '../auth/VerifyEmail'
 import { ReadingRoomGate } from '../auth/ReadingRoomGate'
 import { authCallback } from '../lib/authCallback'
 import { useVoice } from '../skin/labels'
+import { PersonalLibrarySync } from '../components/PersonalLibrarySync'
 
 function RootLayout() {
   const { session, loading } = useAuth()
@@ -76,6 +77,7 @@ function RootLayout() {
   return (
     <ReadingRoomGate>
       <Sky />
+      {verified && <PersonalLibrarySync readerId={session.user.id} />}
       {!verified ? (
         <VerifyEmail email={session.user.email} />
       ) : onboarding ? (

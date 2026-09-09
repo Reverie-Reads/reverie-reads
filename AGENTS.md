@@ -345,6 +345,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   and missing finish dates stay outside a selected year. Formats come from read logs, genre
   buckets deduplicate within each read, and return counts preserve earlier-period context.
   See `docs/tasks/reading-life-implementation.md` for the precision and legacy-data boundaries.
+- **Personal Realtime carries signals, never library rows.** The signed-in app joins one private
+  `library:<reader id>` Broadcast topic authorized against `realtime.messages`. Triggers on books,
+  reads, lists, and list items emit only table and operation; the client debounces bursts and then
+  refetches through ordinary RLS-checked queries. Unmount/sign-out removes the channel. This speeds
+  cross-tab/device freshness but does not replace confirmed-lookup guards or create an offline write
+  queue.
 - **A reading plan is five fields that move together.** `plan_y/m/d` retain flexible date
   precision; `plan_position` is deliberate membership plus preference order, so non-null position
   with no date means Soon and null position with no date means unplanned. `plan_intention` is a
