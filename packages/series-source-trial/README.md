@@ -58,6 +58,60 @@ calls an LLM. This is an evaluation command, not yet a persistent review queue o
 Production use requires broader accuracy evaluation and review of account-specific storage and
 redistribution rights. See the [implementation report](reports/isbndb-selective-supplement-2026-09-08.md).
 
+### Acquired-baseline edition benchmark
+
+Use `metadata:benchmark` for live provenance: it acquires Google and Open Library responses itself,
+keeps them in memory, and applies the same selective ISBNdb gates. It accepts no caller-supplied
+baseline labels. The older `metadata:supplement` command remains a manual-input evaluation tool.
+
+```sh
+pnpm --filter @reverie/series-source-trial metadata:benchmark --input data/metadata-benchmark.example.json
+```
+
+This second example is also fictional and dry-run only. Real inputs use purpose
+`development-edition-benchmark`, 1–20 cases, exact `identity`, `current` fields, and a `reference`
+with optional/null pages and editionFormat, an HTTPS publisher reference URL, and `reviewedOn` date.
+Review the exact edition before collecting any provider output. The reference is a scoring target,
+not permission to overwrite existing data; neither references nor current fields enter baseline
+acquisition. Tested catalog/search providers are rejected as circular reference hosts, but this
+denylist is not authority certification. The operator still owns source/edition review and exclusion
+of qualification identities. Do not include reader data, provider snapshots, or qualification truth.
+
+Explicit live usage with an independently reviewed local frame:
+
+```sh
+pnpm --filter @reverie/series-source-trial metadata:benchmark \
+  --input private-inputs/reviewed-development-frame.json --live \
+  --max-isbndb-requests 20 --max-openlibrary-requests 80 \
+  --env /absolute/path/to/existing/.env.local
+```
+
+Google uses `GOOGLE_BOOKS_API_KEY` (`GOOGLE_BOOKS_KEY` alias) and optional
+`GOOGLE_BOOKS_REFERRER`. ISBNdb uses the credentials above. No keys are loaded in dry-run mode.
+Google is capped at one request per case; Open Library defaults to 80 actual HTTP requests (maximum
+200), including edition redirects and author lookups. ISBNdb defaults to 10 requests (maximum 20).
+No provider retries; each baseline provider is paced at 1.1 seconds and bounded to 15 seconds/512 KiB.
+The only permitted redirect is one canonical same-origin Open Library edition JSON path. Every
+listed edition author must resolve through a canonical Open Library author path; no work-level
+fallback, partial contributor list, or third-party URL is admitted. Successful author names may be
+reused only within the current process. Google credentials never reach Open Library or a redirect.
+
+An authentication/quota refusal or two consecutive infrastructure failures stops that provider.
+Both baseline attempts must complete before any paid lookup: transport failures, incomplete author
+resolution, malformed payloads, and exhausted budgets are unavailable, not metadata gaps. Returned
+identity or binding ambiguity on either baseline also blocks the paid lookup. A completed not-found
+response may coexist with one exact matched baseline. Google page counts are scored only after
+identity checks; `printType=BOOK` and ebook/preview availability never establish edition binding.
+
+Only aggregates leave the runner: provider outcomes, completed-baseline count (including completed
+reviews), planning decisions, candidate/reference agreement or disagreement, unscored fields,
+request counts, baseline HTTP elapsed time excluding pacing, and the canonical frame hash. A null
+reference is unscored, not agreement. No provider values, URLs, identities, raw error bodies, API
+keys, or model output are persisted. Redirect stdout only to an aggregate result file. Freeze the
+frame and implementation before a live benchmark, preserve the completed result, and use a new
+development frame to test changes rather than rerunning inspected failures to improve a score.
+See the [20-edition preregistration](reports/metadata-baseline-plan-2026-09-08.md).
+
 ## What is measured
 
 - exact work matching;

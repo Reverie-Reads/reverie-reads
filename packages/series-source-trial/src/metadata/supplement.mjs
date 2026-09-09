@@ -93,7 +93,7 @@ const sameAuthors = (actual, expected) =>
   actual.length === expected.length &&
   actual.every((a) => expected.some((e) => nameMatches(a, e))) &&
   expected.every((e) => actual.some((a) => nameMatches(a, e)))
-const exactIdentity = (record, identity) =>
+export const exactIdentity = (record, identity) =>
   record.isbns.length > 0 &&
   record.isbns.every((i) => canonicalIsbn(i) === canonicalIsbn(identity.isbn)) &&
   fold(record.title) === fold(identity.title) &&
@@ -123,7 +123,7 @@ export function planSupplement(c) {
   return { status: Object.values(fields).includes('gap') ? 'lookup' : 'skip', fields, knownFormat }
 }
 
-function binding(value) {
+export function binding(value) {
   if (typeof value !== 'string') return null
   const n = fold(value)
   if (
@@ -145,7 +145,7 @@ function binding(value) {
     return 'audiobook'
   return null
 }
-const language = (v) =>
+export const language = (v) =>
   typeof v === 'string'
     ? ({
         eng: 'en',

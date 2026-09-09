@@ -1,0 +1,116 @@
+{
+  "run": {
+    "runtimeCommit": "9d7f286bb32d53e190d8a0342e339c88270734cb",
+    "startedAt": "2026-09-08T23:48:31.465Z",
+    "finishedAt": "2026-09-08T23:49:49.903Z",
+    "wallMs": 78435,
+    "budgets": {
+      "google": 20,
+      "openlibrary": 80,
+      "isbndb": 20
+    },
+    "singleUse": true
+  },
+  "version": 1,
+  "mode": "live",
+  "frameSha256": "68f1ed4c3ac7ce5f826d406a72f45728913b3d8aca168754043aeec02b595be8",
+  "cases": 20,
+  "baselineOutcomes": {
+    "google": {
+      "matched": 10,
+      "identity_review": 7,
+      "not_found": 2,
+      "server_error": 1
+    },
+    "openlibrary": {
+      "identity_review": 12,
+      "matched": 6,
+      "not_found": 2
+    }
+  },
+  "baselineFields": {
+    "google": {
+      "pages": {
+        "available": 9,
+        "agrees": 1,
+        "differs": 8,
+        "unscored": 0
+      },
+      "editionFormat": {
+        "available": 0,
+        "agrees": 0,
+        "differs": 0,
+        "unscored": 0
+      }
+    },
+    "openlibrary": {
+      "pages": {
+        "available": 6,
+        "agrees": 5,
+        "differs": 1,
+        "unscored": 0
+      },
+      "editionFormat": {
+        "available": 5,
+        "agrees": 5,
+        "differs": 0,
+        "unscored": 0
+      }
+    }
+  },
+  "completeBaselineCases": 19,
+  "plans": {
+    "baseline_review": 12,
+    "skip": 5,
+    "identity_review": 2,
+    "baseline_unavailable": 1
+  },
+  "supplementOutcomes": {},
+  "supplementReasons": {},
+  "candidates": {
+    "pages": {
+      "available": 0,
+      "agrees": 0,
+      "differs": 0,
+      "unscored": 0
+    },
+    "editionFormat": {
+      "available": 0,
+      "agrees": 0,
+      "differs": 0,
+      "unscored": 0
+    }
+  },
+  "conflicts": {
+    "pages": 4,
+    "editionFormat": 0
+  },
+  "transport": {
+    "google": {
+      "requests": 20,
+      "stopped": null,
+      "elapsedMs": 16533,
+      "statuses": {
+        "ok": 19,
+        "server_error": 1
+      }
+    },
+    "openlibrary": {
+      "requests": 49,
+      "stopped": null,
+      "elapsedMs": 32758,
+      "statuses": {
+        "edition_redirect": 18,
+        "ok": 29,
+        "not_found": 2
+      }
+    },
+    "isbndb": {
+      "requests": 0,
+      "stopped": null
+    }
+  },
+  "productionWrites": 0,
+  "modelCalls": 0,
+  "retention": "aggregate_only"
+}

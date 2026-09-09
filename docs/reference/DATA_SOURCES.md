@@ -60,6 +60,14 @@ format can become review-only candidates; existing values are never overwritten.
 in a header to a fixed host, and only aggregate results leave the runner. There is no public gold,
 training, search-index, corpus, or service export of provider values.
 
+The acquired-baseline `metadata:benchmark` command now fetches and identity-checks Google and
+Open Library itself, instead of trusting operator-supplied source labels. Both attempts must
+complete; a provider outage, incomplete author list, ambiguous identity, or unknown binding cannot
+trigger a paid gap lookup. Google digital availability is not evidence of the ISBN's edition format.
+Publisher-referenced pages/formats score ephemeral candidates in memory; missing or conflicting
+reference facts remain unscored. Reports retain aggregates only. This is still a development
+benchmark, not a new LLM input, user-matching path, or persistence license.
+
 This local experiment needs no migration, production flag, or new Supabase secret. It neither
 enables nor certifies the existing production ISBNdb enrichment adapter. A subscription is not
 blanket permission to persist or redistribute a catalog: account terms and retention/deletion
