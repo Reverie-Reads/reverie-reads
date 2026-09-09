@@ -242,6 +242,14 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   purpose `development-page-review`. It does not change gap-only routing. Its per-field packet is
   memory-only and has no LLM or writer: retain eligible format fills independently from page
   conflicts, protect current values, and emit only aggregate comparisons, never a chosen correction.
+  The separate `metadata:value` subscription evaluation independently admits each provider against
+  the reviewed input identity; ISBNdb no longer depends on a free-provider match in that command
+  only. Compare free-only, selective, and ISBNdb-first policies without reference truth in routing.
+  Publisher, numeric-precision publication date, and language join pages/binding as ephemeral
+  factual observations. Cover/description/other-edition availability is never quality or a reuse
+  license. Deduplicate economic benefit by reviewed work group, penalize regressions and incorrect
+  values, and label monthly projections as scenarios, not observed savings or a renewal decision.
+  Preserve old commands' admission/routing and keep qualification and production adapters untouched.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
   title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
   edit shared metadata, after identity confirmation and a source/note; it never invokes the broad

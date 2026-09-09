@@ -73,8 +73,18 @@ when no gap exists. Its distinct development frame and paid routing do not alter
 benchmark. An in-memory per-field packet preserves eligible format fills beside page conflicts;
 current values remain protected, and no field is automatically corrected. References score only
 after routing and admission. The output contains aggregate paired comparisons, not provider
-values or a selected winner. This capability has synthetic tests but no live accuracy result yet;
-fresh-frame evaluation and rights/privacy review still precede any LLM or production integration.
+values or a selected winner. The completed [ten-edition page comparison](../../packages/series-source-trial/reports/metadata-page-results-2026-09-08.md)
+admitted three paid comparisons: two Google ties against publisher references and one ISBNdb-only
+agreement versus Open Library. Seven editions remained behind identity safeguards. This small,
+conditional result does not establish catalog-wide accuracy or qualify an automatic correction.
+
+The owner-requested `metadata:value` evaluation now measures subscription utility independently of
+free-provider success, with three truth-blind modeled policies (free, selective, ISBNdb-first).
+Publisher/date/language join pages/binding as ephemeral facts; cover, description and other-edition
+presence are availability only. Distinct-work benefit, regressions, wrong values, real request counts,
+and explicitly assumed monthly-cost scenarios are reported separately. This has synthetic coverage,
+not a live value result or an observed review-time saving. Old trial routing and production adapters
+are unchanged. See the [subscription-value protocol](../../packages/series-source-trial/reports/isbndb-subscription-value-design-2026-09-08.md).
 
 This local experiment needs no migration, production flag, or new Supabase secret. It neither
 enables nor certifies the existing production ISBNdb enrichment adapter. A subscription is not

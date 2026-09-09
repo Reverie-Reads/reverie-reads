@@ -7,6 +7,7 @@
     "metadata:supplement": "node src/supplement-metadata.mjs",
     "metadata:benchmark": "node src/benchmark-metadata.mjs",
     "metadata:review": "node src/review-metadata.mjs",
+    "metadata:value": "node src/value-metadata.mjs",
     "authority:acquire": "node src/acquire-authority.mjs",
     "authority:qualification:capture:ippy": "node src/capture-authority-qualification-ippy.mjs",
     "authority:qualification:capture:prh": "node src/capture-authority-qualification-prh.mjs",

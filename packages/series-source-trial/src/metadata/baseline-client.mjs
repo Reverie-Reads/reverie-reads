@@ -1,4 +1,5 @@
 import { setTimeout as delay } from 'node:timers/promises'
+import { valueMetadata } from './value-fields.mjs'
 import {
   canonicalIsbn,
   identityReviewReason,
@@ -60,7 +61,7 @@ function admit(record, identity, observedLanguage = null, rawSubtitle = null) {
   }
 }
 
-export function selectGoogleBaseline(body, identity) {
+export function selectGoogleBaseline(body, identity, includeValueMetadata = false) {
   if (
     !object(body) ||
     body.error ||
@@ -79,7 +80,7 @@ export function selectGoogleBaseline(body, identity) {
   if (!matches.length) return { status: body.totalItems === 0 ? 'not_found' : 'no_exact_isbn' }
   const b = matches[0]
   // BOOK means publication type, not binding. Digital availability does not certify this ISBN's format.
-  return admit(
+  const result = admit(
     {
       source: 'google',
       isbns: isbnFields(b),
@@ -92,6 +93,9 @@ export function selectGoogleBaseline(body, identity) {
     b.language,
     b.subtitle,
   )
+  if (includeValueMetadata && result.status === 'matched')
+    result.metadata = valueMetadata('google', b)
+  return result
 }
 
 export function createBaselineClient({
@@ -102,6 +106,7 @@ export function createBaselineClient({
   fetcher = fetch,
   sleeper = delay,
   now = Date.now,
+  includeValueMetadata = false,
 } = {}) {
   if (
     !Number.isInteger(maxGoogleRequests) ||
@@ -220,7 +225,9 @@ export function createBaselineClient({
       `https://www.googleapis.com/books/v1/volumes?${query}`,
       googleReferrer ? { Referer: googleReferrer, Origin: googleReferrer } : {},
     )
-    return result.status === 'ok' ? selectGoogleBaseline(result.body, identity) : result
+    return result.status === 'ok'
+      ? selectGoogleBaseline(result.body, identity, includeValueMetadata)
+      : result
   }
 
   async function openlibrary(identity) {
@@ -284,7 +291,7 @@ export function createBaselineClient({
       return { status: 'identity_review', reason: 'malformed_language' }
     const languages = list(b.languages).map((v) => v.key.split('/').at(-1))
     const observedLanguage = languages.length > 1 ? 'multiple_languages' : languages[0]
-    return admit(
+    const admitted = admit(
       {
         source: 'openlibrary',
         isbns,
@@ -297,6 +304,9 @@ export function createBaselineClient({
       observedLanguage,
       b.subtitle,
     )
+    if (includeValueMetadata && admitted.status === 'matched')
+      admitted.metadata = valueMetadata('openlibrary', b)
+    return admitted
   }
 
   async function acquire(identity) {

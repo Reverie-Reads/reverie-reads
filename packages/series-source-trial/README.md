@@ -3,6 +3,84 @@
 This package compares book-series data providers against the same cases and acceptance policy.
 It does not write to Supabase or modify Reverie's corpus.
 
+## ISBNdb subscription-value evaluation (trial only)
+
+`metadata:value` asks whether the recurring fee buys meaningful additional utility, rather than
+whether a narrowly gated lookup can fill a page or binding gap. It independently evaluates Google,
+Open Library, and ISBNdb against each reviewed ISBN/title/full-author identity. A failure or mismatch
+from either free provider does not block the independent ISBNdb observation. Exact ISBNs, complete
+author agreement, title qualifiers, and known binding/language checks are not loosened.
+
+Run the fictional fixture without keys or network requests:
+
+```sh
+pnpm --filter @reverie/series-source-trial metadata:value --input data/metadata-value.example.json
+pnpm --filter @reverie/series-source-trial metadata:value --help
+```
+
+This fixture's ISBN is checksum-valid but its title/author are fictional. Live mode rejects its
+`.example` reference origin. Do not substitute a real-looking origin to make it run.
+
+A separate, preregistered, reviewed development cohort has purpose `development-subscription-value`,
+1–20 distinct ISBNs, an explicit `requiredFields` list, `economics`, and cases with `workGroup`,
+`identity`, and `reference`. Different editions of one underlying work must share a work group.
+References follow the existing publisher-reference rules; no provider truth or qualification cases.
+Unknown facts and economic assumptions stay null. Only the input identity enters acquisition;
+reference fields, work groups, prices, and scoring thresholds never enter provider requests.
+
+`--live` requires an explicit `--max-isbndb-requests` covering every case (maximum 20), along with
+the existing fixed-host, header-key, response-size, pacing, deadline, and stop rules. Google has one
+request per selected edition; Open Library defaults to 80 HTTP requests, bounded at 200, including
+redirect/author hops. Stop conditions can leave an incomplete cohort; do not retry or replenish it
+to improve results. Freeze the clean runtime, entire frame, budget and exclusive start marker before
+a single-use live run as in the completed page trial. No live value result has been collected yet.
+
+The scorer fetches each provider once, then models three policies in memory:
+
+- **Free:** use independently admitted Google/Open Library observations; conflicting values wait.
+- **Selective:** consult ISBNdb when free identity or any requested factual field is incomplete or
+  conflicted. Combine admitted observations without resolving disagreement by source preference.
+- **ISBNdb-first:** stop at ISBNdb when it supplies the requested fields; otherwise combine with
+  free observations. Offline references can expose an incorrect early answer; they never select it.
+
+These are evaluation policies, not replacements for the older gap-only or page-review commands.
+Modeled provider lookups are not actual HTTP request counts: Open Library needs author/redirect
+requests, caches can differ by ordering, and policies are not live-replayed. Acquisition wall time
+includes pacing; it is not a production policy latency benchmark. Actual request totals are separate.
+
+Scored facts are pages, edition format, publisher, publication date, and language. Publication dates
+retain numeric precision: compatible partial dates are scored as less precise or more precise but
+unverified, not exact agreement or incorrect facts. Compatible provider date prefixes retain the
+most specific observed date; contradictory dates remain conflicts. Natural-language dates are
+unparsed rather than guessed. Publisher comparison normalizes case/spacing only, not imprint
+aliases. A language already present in the identity is a consistency check, not independent new
+identity evidence. Audiobook pages are not applicable; conflicting formats block page comparison.
+An unparsed date has its own counter rather than masquerading as absent provider data. Replacing
+only that parser limitation cannot count as an additional correctly improved work for economics.
+
+Only availability booleans are counted for covers, descriptions and alternate ISBNs. No images,
+text, URLs or alternate identifiers are emitted, rendered, downloaded, or put into a graph/LLM.
+Presence cannot establish correctness, usable image quality, membership, or redistribution rights.
+
+`additionalCorrectWorks` counts a work at most once: at least one requested fact now agrees where
+the free policy did not, without losing a previously correct fact or emitting a wrong/unscored
+value (including unverified date precision) on any sampled edition of that work. It measures reviewed factual opportunity, not accepted
+production writes or a completely resolved book. Field conflicts, missing values and wrong values
+remain separately visible. Independent paid-only identity matches are counted separately, splitting
+completed free misses from free infrastructure failures.
+
+Economic inputs are the actual `monthlySubscriptionUsd`, an explicitly assumed
+`monthlyDistinctWorks`, and an owner-selected `maxUsdPerAdditionalWork`; all may be null. The
+projection divides the monthly fee by assumed monthly works times the observed additional-work
+rate. A zero observed gain or unknown input yields null cost, never a zero-dollar success. The
+threshold result is **cost only**. Every report remains `not_qualified`: small-cohort uncertainty,
+permissions, and measured review time still prevent a keep/cancel verdict. See the
+[evaluation protocol](reports/isbndb-subscription-value-design-2026-09-08.md) before selecting cases.
+
+The separate command has no Supabase, personal-data, model, index, cache, or provider-value writer.
+It does not change or certify the existing production ISBNdb adapter. Public reports retain only
+aggregate metrics and a frame hash. Subscription access does not settle retention/display/LLM rights.
+
 ## Selective ISBNdb edition supplement (trial only)
 
 This separate metadata experiment requests ISBNdb only when an exact Google/Open Library edition

@@ -6,12 +6,23 @@ import { createBaselineClient } from './metadata/baseline-client.mjs'
 import { createIsbndbClient } from './metadata/isbndb-client.mjs'
 import { validateBenchmark, runMetadataBenchmark } from './metadata/benchmark.mjs'
 import { validatePageReview, runMetadataPageReview } from './metadata/page-review.mjs'
+import { validateSubscriptionValue, runSubscriptionValue } from './metadata/subscription-value.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export async function main(args = process.argv.slice(2), write = console.log, mode = 'gap') {
-  if (!['gap', 'page-review'].includes(mode)) throw new Error('invalid_mode')
-  const validate = mode === 'gap' ? validateBenchmark : validatePageReview
-  const run = mode === 'gap' ? runMetadataBenchmark : runMetadataPageReview
+  if (!['gap', 'page-review', 'subscription-value'].includes(mode)) throw new Error('invalid_mode')
+  const validate =
+    mode === 'gap'
+      ? validateBenchmark
+      : mode === 'page-review'
+        ? validatePageReview
+        : validateSubscriptionValue
+  const run =
+    mode === 'gap'
+      ? runMetadataBenchmark
+      : mode === 'page-review'
+        ? runMetadataPageReview
+        : runSubscriptionValue
   const options = {
     live: false,
     maxIsbndb: 10,
@@ -24,7 +35,7 @@ export async function main(args = process.argv.slice(2), write = console.log, mo
     if (flag === '--') continue
     if (flag === '--help') {
       write(
-        `metadata:${mode === 'gap' ? 'benchmark' : 'review'} --input <reviewed-development-frame.json> [--live] [--max-isbndb-requests 1..20] [--max-openlibrary-requests 1..200] [--env <local-env-file>]\nDry-run default. Live acquires Google/Open Library baselines in memory. Only aggregate metrics are emitted.`,
+        `metadata:${mode === 'gap' ? 'benchmark' : mode === 'page-review' ? 'review' : 'value'} --input <reviewed-development-frame.json> [--live] [--max-isbndb-requests 1..20] [--max-openlibrary-requests 1..200] [--env <local-env-file>]\nDry-run default. Live acquires providers in memory. Only aggregate metrics are emitted. Value mode requires an explicit ISBNdb budget covering every case; it does not depend on free-source admission.`,
       )
       return
     }
@@ -77,6 +88,18 @@ export async function main(args = process.argv.slice(2), write = console.log, mo
   } finally {
     await handle.close()
   }
+  if (
+    options.live &&
+    mode === 'subscription-value' &&
+    (!seen.has('--max-isbndb-requests') || options.maxIsbndb < input.cases.length)
+  )
+    throw new Error('incomplete_value_budget')
+  if (
+    options.live &&
+    mode === 'subscription-value' &&
+    input.cases.some((c) => new URL(c.reference.source).hostname.endsWith('.example'))
+  )
+    throw new Error('synthetic_frame_not_live')
   if (options.live) await loadLocalEnvironment(options.env)
   const baselineClient = options.live
     ? createBaselineClient({
@@ -84,6 +107,7 @@ export async function main(args = process.argv.slice(2), write = console.log, mo
         googleReferrer: process.env.GOOGLE_BOOKS_REFERRER,
         maxGoogleRequests: input.cases.length,
         maxOpenLibraryRequests: options.maxOpenLibrary,
+        includeValueMetadata: mode === 'subscription-value',
       })
     : undefined
   const isbndbClient = options.live
