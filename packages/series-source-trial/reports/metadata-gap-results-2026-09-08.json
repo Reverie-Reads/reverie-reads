@@ -1,0 +1,144 @@
+{
+  "run": {
+    "runtimeCommit": "35c214cd7e9d8244a61d7c72f0aa312fd9f6138b",
+    "startedAt": "2026-09-09T02:02:56.992Z",
+    "finishedAt": "2026-09-09T02:03:20.245Z",
+    "wallMs": 23248,
+    "budgets": {
+      "google": 10,
+      "openlibrary": 40,
+      "isbndb": 8
+    },
+    "singleUse": true
+  },
+  "version": 2,
+  "mode": "live",
+  "frameSha256": "5027f82d414c7bbf6cc7dc832aac5c82438a9b5b61acaebe02e60e14ea386367",
+  "cases": 10,
+  "baselineOutcomes": {
+    "google": {
+      "identity_review": 2,
+      "matched": 6,
+      "not_found": 1,
+      "server_error": 1
+    },
+    "openlibrary": {
+      "not_found": 7,
+      "identity_review": 2,
+      "matched": 1
+    }
+  },
+  "baselineReviewReasons": {
+    "google": {
+      "title_mismatch": 2
+    },
+    "openlibrary": {
+      "title_mismatch": 2
+    }
+  },
+  "fieldEvidence": {
+    "pages": {
+      "identity_review": 3,
+      "single_source": 5,
+      "identity_unresolved": 1,
+      "unavailable": 1
+    },
+    "editionFormat": {
+      "identity_review": 3,
+      "source_missing": 5,
+      "identity_unresolved": 1,
+      "unavailable": 1
+    }
+  },
+  "protectedCurrent": {
+    "pages": 0,
+    "editionFormat": 2
+  },
+  "baselineFields": {
+    "google": {
+      "pages": {
+        "available": 6,
+        "agrees": 0,
+        "differs": 6,
+        "unscored": 0
+      },
+      "editionFormat": {
+        "available": 0,
+        "agrees": 0,
+        "differs": 0,
+        "unscored": 0
+      }
+    },
+    "openlibrary": {
+      "pages": {
+        "available": 0,
+        "agrees": 0,
+        "differs": 0,
+        "unscored": 0
+      },
+      "editionFormat": {
+        "available": 0,
+        "agrees": 0,
+        "differs": 0,
+        "unscored": 0
+      }
+    }
+  },
+  "completeBaselineCases": 9,
+  "plans": {
+    "baseline_review": 3,
+    "lookup": 5,
+    "identity_review": 1,
+    "baseline_unavailable": 1
+  },
+  "supplementOutcomes": {
+    "review": 5
+  },
+  "supplementReasons": {},
+  "candidates": {
+    "pages": {
+      "available": 0,
+      "agrees": 0,
+      "differs": 0,
+      "unscored": 0
+    },
+    "editionFormat": {
+      "available": 5,
+      "agrees": 5,
+      "differs": 0,
+      "unscored": 0
+    }
+  },
+  "conflicts": {
+    "pages": 5,
+    "editionFormat": 0
+  },
+  "transport": {
+    "google": {
+      "requests": 10,
+      "stopped": null,
+      "elapsedMs": 3308,
+      "statuses": {
+        "ok": 9,
+        "server_error": 1
+      }
+    },
+    "openlibrary": {
+      "requests": 16,
+      "stopped": null,
+      "elapsedMs": 13423,
+      "statuses": {
+        "not_found": 7,
+        "edition_redirect": 3,
+        "ok": 6
+      }
+    },
+    "isbndb": {
+      "requests": 5,
+      "stopped": null
+    }
+  },
+  "productionWrites": 0,
+  "modelCalls": 0,
+  "retention": "aggregate_only"
+}
