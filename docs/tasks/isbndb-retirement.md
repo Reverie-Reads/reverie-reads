@@ -4,7 +4,15 @@ Owner decision: stop treating ISBNdb as a planned long-term data source. The com
 demonstrated useful edition metadata, but did not establish enough recurring value to justify
 subscription-dependent retention. This change does not rerun, reprice or reopen that study.
 
-## Implemented here; not yet deployed
+## Implemented and deployment verified
+
+Public PR #505 and private sync PR #42 are merged. The owner confirmed trial cancellation
+and deployed from `/Users/gregchism/dev/reverie` on private main
+`c620a81f59791a13a15e2acb1a7e16a065f87b74`. A subsequent read-only download verified ACTIVE
+`enrich` version 19 and an exact match of the deployed enrichment directory to that checkout,
+including the removed adapter and `no-isbndb-v1:` cache key. This was artifact verification,
+not an authenticated production request or a stored-data cleanup. The effective subscription-end
+date and obsolete hosted-secret removal remain unverified.
 
 - Remove the production enrichment HTTP adapter and its now-unused raw-response normalizers.
   Neither `ENRICH_SOURCES=isbndb` nor the old key/enable flag can activate it. The active roster
@@ -41,7 +49,8 @@ Relevant code: `enrich/index.ts` and `merge.ts`, `scripts/corpus-backfill.ts`,
 ## Read-only live inventory — September 9, 2026
 
 Target project was matched against both saved Reverie checkout links. The hosted `enrich`
-function was ACTIVE at version 18. That is the existing deployment, not this branch. Hosted
+function was ACTIVE at version 18 during the pre-deployment inventory. The subsequent version 19
+verification is recorded above; this section preserves the earlier audit. Hosted
 environment values and historical request logs were not retrieved.
 
 Its source was downloaded read-only into a temporary directory. The deployed entrypoint matched
@@ -72,11 +81,10 @@ embeddings or every historical data path. No rows were exported or changed.
 
 ## Remaining owner-controlled exit steps
 
-1. Cancel the ISBNdb trial/subscription in account settings before unwanted renewal; record the
-   actual effective end date. This session has not cancelled or checked account-specific renewal.
-2. After merge, deploy only the reviewed enrichment change through the normal guarded production
-   process. A merge does not deploy a Supabase function. Remove obsolete ISBNdb secrets/settings
-   deliberately, and verify that the retired deployment is no longer serving requests.
+1. Cancellation is owner-confirmed. Record the actual effective subscription-end date; it has
+   not been independently checked and must not be inferred from the cancellation message.
+2. The owner-run enrichment deployment is complete and its artifact verified. Remove obsolete
+   ISBNdb secrets/settings deliberately if still present; this session has not removed them.
 3. Check historical provider-use evidence and inventory other holdings before deciding whether any
    removal is required. The published [terms](https://isbndb.com/terms-and-conditions), last read
    September 9, require ending use and deleting ISBNdb-derived data within 30 days after the
@@ -92,8 +100,10 @@ not a legal opinion or a claim that every possible retained derivative has been 
 
 ## Next quality work without another paid feed
 
-Diagnose Google's page-count anomaly using fresh development cases (never the consumed reference
-set). Keep exact edition matching separate from work identity, then test field-specific trust,
+The [fresh six-edition diagnostic](google-edition-diagnostics.md) found search/detail page-count
+disagreement for the same Google volume IDs. Detail agreed with five publisher counts but still
+disagreed on one; it is not automatic-trust clearance. Keep exact edition matching separate from
+work identity, then test field-specific trust,
 publisher/imprint normalization and preservation-safe conflict handling. Measure improvements and
 abstentions separately. The existing LLM may select, corroborate or explain supplied evidence; it
 must not manufacture missing facts or rebrand restricted data as independently acquired evidence.

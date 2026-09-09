@@ -14,6 +14,12 @@ The study itself changed neither runtime nor stored data. The subsequent retirem
 read-only inventory are described in [the exit handoff](../tasks/isbndb-retirement.md); deployment
 and retention cleanup remain separate gates.
 
+**September 9 Google diagnostic:** a [fresh six-edition endpoint comparison](../tasks/google-edition-diagnostics.md)
+found search/detail page-count disagreement despite identical volume IDs and returned ISBNs.
+Detail agreed with five publisher counts, not all six. This is a development finding, not a
+production change or general accuracy estimate; work-level medians and search ranks must not be
+treated as exact-edition corroboration. The report defines the next bounded, no-write evidence test.
+
 | Source                      | Reliability /5 | Cost                                                  | How to grab data                                                                                                                                                                                        |
 | --------------------------- | -------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Google Books**            | 4.5            | Free; ~1,000 requests/day default, more on request    | `GET …/books/v1/volumes?q=isbn:X` or `intitle:"…"+inauthor:"…"`; JSON → `volumeInfo.imageLinks.thumbnail`. Optional API key                                                                             |
