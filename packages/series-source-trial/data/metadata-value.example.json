@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "purpose": "development-subscription-value",
+  "requiredFields": ["pages", "editionFormat", "publisher", "publicationDate", "language"],
+  "economics": {
+    "monthlySubscriptionUsd": null,
+    "monthlyDistinctWorks": null,
+    "maxUsdPerAdditionalWork": null
+  },
+  "cases": [
+    {
+      "workGroup": "synthetic-work",
+      "identity": {
+        "isbn": "9780316565202",
+        "title": "Synthetic subscription exercise",
+        "authors": ["Ada Example"]
+      },
+      "reference": {
+        "pages": 300,
+        "editionFormat": "paperback",
+        "publisher": "Example Press",
+        "publicationDate": "2026-02-28",
+        "language": "en",
+        "source": "https://publisher.example/synthetic",
+        "reviewedOn": "2026-09-08"
+      }
+    }
+  ]
+}
