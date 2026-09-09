@@ -110,7 +110,11 @@ identity key fails both ISBN/title cases by returning the retired fixture payloa
 a synthetic paid adapter fails the outbound-host assertion. Both mutations were reverted to the
 committed implementation and all nine handler tests passed again. HTTP stayed intercepted.
 
-Full repository/browser gate results are recorded in the PR. The initial local `pnpm lint` found
+One full fresh-local-database browser run passed: 265 passed, 10 skipped, zero failures, default
+one worker, retries zero, 24.3 minutes. The run used the retirement branch before importing the
+independent brand-tour PR #504 UI changes; current-main synchronization happened only afterward.
+Final merged-tree CI remains a separate gate. Full repository gate results are recorded in the PR.
+The initial local `pnpm lint` found
 an unused variable in an ignored private study-preparation script. Private trial input/result
 directories are now explicitly excluded from ESLint, leaving frozen artifacts untouched. No
 live book-provider requests are made by these tests, and no production behavior is verified by
