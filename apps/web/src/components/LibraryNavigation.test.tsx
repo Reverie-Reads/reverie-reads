@@ -52,8 +52,21 @@ describe('personal library navigation', () => {
         </>
       ),
     })
+    const covers = createRoute({
+      getParentRoute: () => root,
+      path: '/covers',
+      component: () => (
+        <>
+          <h1>My covers</h1>
+          <LibraryNavigation current="covers" />
+        </>
+      ),
+    })
     const history = createMemoryHistory({ initialEntries: ['/library?shelf=owned'] })
-    const router = createRouter({ routeTree: root.addChildren([books, shelves, series]), history })
+    const router = createRouter({
+      routeTree: root.addChildren([books, shelves, series, covers]),
+      history,
+    })
     render(<RouterProvider router={router} />)
     const user = userEvent.setup()
 
@@ -74,6 +87,10 @@ describe('personal library navigation', () => {
     await user.click(screen.getByRole('link', { name: 'Series' }))
     await screen.findByRole('heading', { name: 'My series' })
     expect(screen.getByRole('link', { name: 'Series' })).toHaveAttribute('aria-current', 'page')
+
+    await user.click(screen.getByRole('link', { name: 'Covers' }))
+    await screen.findByRole('heading', { name: 'My covers' })
+    expect(screen.getByRole('link', { name: 'Covers' })).toHaveAttribute('aria-current', 'page')
 
     await user.click(screen.getByRole('link', { name: 'Books' }))
     await screen.findByRole('heading', { name: 'My books' })

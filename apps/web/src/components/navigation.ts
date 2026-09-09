@@ -97,6 +97,7 @@ const DETAIL_DESTINATIONS = [
   ['/club/', 'Club'],
   ['/list/', 'Shared list'],
   ['/review', 'Review books'],
+  ['/covers', 'Cover Studio'],
   ['/add', 'Add a book'],
 ] as const
 

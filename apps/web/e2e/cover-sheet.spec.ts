@@ -288,3 +288,104 @@ test('placeholder affordance: the coverless grid card quietly invites "add a cov
     await removeFixture(dev, TITLE)
   }
 })
+
+test('personal Cover Studio separates unresolved art from an intentional room placeholder', async ({
+  page,
+}) => {
+  test.setTimeout(120_000)
+  const MISSING = 'Cover Studio Missing'
+  const PLACEHOLDER = 'Cover Studio Placeholder'
+  const UNCERTAIN = 'Cover Studio Uncertain'
+  const dev = await devClient()
+  await page.setViewportSize({ width: 390, height: 844 })
+  for (const title of [MISSING, PLACEHOLDER, UNCERTAIN]) {
+    await removeFixture(dev, title)
+  }
+  const inserted = await okData(
+    dev.sb
+      .from('books')
+      .insert([
+        {
+          owner_id: dev.uid,
+          title: MISSING,
+          ownership: 'owned',
+          cover_user_chosen: false,
+        },
+        {
+          owner_id: dev.uid,
+          title: PLACEHOLDER,
+          ownership: 'owned',
+          cover_user_chosen: true,
+        },
+        {
+          owner_id: dev.uid,
+          title: UNCERTAIN,
+          ownership: 'owned',
+          cover_url: STUB.pasted,
+          cover_thumb_url: STUB.pasted,
+          cover_source: 'google',
+          cover_source_url: 'https://books.google.com/books/content?id=cover-studio-test',
+          cover_confidence: 'low',
+          cover_user_chosen: false,
+        },
+      ])
+      .select('id,title'),
+    'cover-studio books insert',
+  )
+  const missingId = inserted.find((row) => row.title === MISSING)?.id
+  if (!missingId) throw new Error('cover-studio missing fixture id')
+  await stubCoversFunction(page)
+  try {
+    await signIn(page, dev.session)
+    await page.goto('/covers')
+    await expect(page.getByRole('heading', { name: 'Cover Studio' })).toBeVisible()
+    const queue = page.getByRole('list', { name: 'Personal cover queue' })
+    const missingLink = queue.getByRole('link', { name: new RegExp(MISSING) })
+    await expect(missingLink).toBeVisible()
+    await expect(queue.getByRole('link', { name: new RegExp(UNCERTAIN) })).toBeVisible()
+    await expect(queue.getByText(PLACEHOLDER)).toHaveCount(0)
+
+    await missingLink.click()
+    await expect(page.getByRole('heading', { name: MISSING })).toBeVisible()
+    await page.getByRole('button', { name: 'Use this room’s placeholder' }).click()
+    await expect(page.getByRole('status')).toContainText('placeholder is now your cover choice')
+
+    const stored = await okData(
+      dev.sb
+        .from('books')
+        .select('cover_url,cover_thumb_url,cover_source,cover_confidence,cover_user_chosen')
+        .eq('id', missingId)
+        .single(),
+      'cover-studio chosen placeholder readback',
+    )
+    expect(stored).toEqual({
+      cover_url: null,
+      cover_thumb_url: null,
+      cover_source: null,
+      cover_confidence: null,
+      cover_user_chosen: true,
+    })
+
+    const recordLink = page.getByRole('link', { name: 'Open the complete book record' })
+    const mobileDock = page.locator('nav.rv-mobile-dock')
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    await expect(recordLink).toBeVisible()
+    await expect(mobileDock).toBeVisible()
+    const recordBox = await recordLink.boundingBox()
+    const dockBox = await mobileDock.boundingBox()
+    if (!recordBox || !dockBox)
+      throw new Error('cover-studio mobile reachability boxes are missing')
+    expect(recordBox.y + recordBox.height).toBeLessThanOrEqual(dockBox.y)
+
+    const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+    const serious = axe.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
+    expect(
+      serious,
+      serious.map((v) => `${v.id}: ${v.nodes.map((n) => String(n.target)).join(', ')}`).join('\n'),
+    ).toHaveLength(0)
+  } finally {
+    for (const title of [MISSING, PLACEHOLDER, UNCERTAIN]) {
+      await removeFixture(dev, title)
+    }
+  }
+})
