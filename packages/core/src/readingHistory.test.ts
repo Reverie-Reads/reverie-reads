@@ -89,6 +89,43 @@ describe('a reading history with no invented sessions', () => {
     ).toHaveLength(1)
   })
 
+  it('summarizes authors, tropes, and reader-assigned moods without double-counting aliases', () => {
+    const history = buildReadingHistory(
+      [
+        book('a', {
+          contributors: [
+            { name: 'Nell Stone', role: 'author', position: 0 },
+            { name: 'Kai Reed', role: 'co_author', position: 1 },
+          ],
+          tropes: [
+            { id: 'found', name: 'Found family', emphasis: 'pinned' },
+            { id: 'found-again', name: 'found family', emphasis: 'present' },
+          ],
+          moods: [
+            { id: 'hopeful', name: 'Hopeful' },
+            { id: 'hopeful-again', name: 'hopeful' },
+          ],
+        }),
+        book('b', { first: '', last: '', contributors: [], tropes: [], tags: [], moods: [] }),
+      ],
+      [log('one', 'a', '2026-02-01'), log('two', 'b', '2026-03-01')],
+    )
+    const year = summarizeReadingHistory(history, 2026)
+    expect(year.authors.map((entry) => [entry.label, entry.records.length])).toEqual([
+      ['Kai Reed', 1],
+      ['Nell Stone', 1],
+      ['Not recorded', 1],
+    ])
+    expect(year.tropes.map((entry) => [entry.label, entry.records.length])).toEqual([
+      ['Found family', 1],
+      ['Not recorded', 1],
+    ])
+    expect(year.moods.map((entry) => [entry.label, entry.records.length])).toEqual([
+      ['Hopeful', 1],
+      ['Not recorded', 1],
+    ])
+  })
+
   it('retains earlier context when counting return reads within a year', () => {
     const history = buildReadingHistory(
       [book('a'), book('b')],

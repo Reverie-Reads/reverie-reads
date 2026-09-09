@@ -41,6 +41,11 @@ uses the book's title and recorded finish. With no history, it explains how to l
 past read. Metric, month, genre, format, undated, legacy, and current DNF controls reveal their
 underlying records. Book controls navigate to the existing book detail and reading log.
 
+The fuller yearbook also keeps an optional reader-set goal in context without treating it as a
+score, renders each month's finished books as a readable rhythm, and adds evidence-bound author,
+trope, and reader-assigned mood drilldowns. Taxonomy labels are deduplicated case-insensitively
+within each read so aliases cannot inflate a count.
+
 The page uses existing room materials, fonts, tokens, cover sourcing, native dialogs, and focus
 return behavior. No new cover provider, atmosphere engine, analytics export, or public sharing
 surface is added. Notes in the review harness are explicitly fictional; the app uses real notes.
@@ -68,10 +73,10 @@ human confirmation after merge.
 
 Reflect now offers a private story for the selected period. It is composed directly from the same
 `summarizeReadingHistory` result that supplies the metrics and drilldowns: logged completions,
-distinct books, qualified return counts, recorded months, current genre labels, and read-log
-formats. It shows a bounded set of complete book jackets and, when one exists, an actual saved
-reading note. Empty periods do not offer a retrospective, and an unknown earlier date keeps the
-return language explicitly uncertain.
+distinct books, qualified return counts, recorded months, current genre, author, trope, and
+reader-assigned mood labels, and read-log formats. It shows a bounded set of complete, addressable
+book jackets and, when one exists, an actual saved reading note. Empty periods do not offer a
+retrospective, and an unknown earlier date keeps the return language explicitly uncertain.
 
 The story uses the existing native modal and room tokens, returns focus when closed, lets a reader
 open one of the shown books, and provides a direct turn into Plan. It creates no persisted document,
