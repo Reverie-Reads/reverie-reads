@@ -1,4 +1,5 @@
 import { assertNoCrossWorkIsbnCollisions, canonicalIsbns } from './corpus-import-lib'
+import { enrichmentCacheKey } from '../supabase/functions/enrich/cacheKey'
 
 export interface BackfillWork {
   work_key: string
@@ -74,12 +75,14 @@ export async function runBackfill(store: CorpusBackfillStore): Promise<{
   updated: number
 }> {
   const works = await store.fetchWorks()
-  const hits = await store.fetchEnrichments(works.map((w) => `ta:${w.work_key}`))
+  const keys = works.map((w) => enrichmentCacheKey(`ta:${w.work_key}`))
+  const allowedKeys = new Set(keys)
+  const hits = (await store.fetchEnrichments(keys)).filter((hit) => allowedKeys.has(hit.key))
   const byKey = new Map(hits.map((hit) => [hit.key, hit]))
   const planned: { work: BackfillWork; patch: BackfillPatch }[] = []
 
   for (const work of works) {
-    const hit = byKey.get(`ta:${work.work_key}`)
+    const hit = byKey.get(enrichmentCacheKey(`ta:${work.work_key}`))
     if (!hit) continue
     const patch = backfillPatch(work, hit)
     if (Object.keys(patch).length) planned.push({ work, patch })

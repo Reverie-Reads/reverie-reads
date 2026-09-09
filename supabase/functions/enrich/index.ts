@@ -9,14 +9,13 @@
 // Sources are enabled via env, like the buy-link attributionMode:
 //   ENRICH_SOURCES   csv, default "openlibrary,google"
 //   HARDCOVER_TOKEN  present → Hardcover on (backend-only beta, best-effort, low-volume)
-//   ISBNDB_ENABLED   "true" AND ISBNDB_KEY present → ISBNdb on (PAID; OFF by default)
+// ISBNdb is retired: neither legacy flags nor ENRICH_SOURCES can enable paid acquisition.
 
 import {
   mergeRecords,
   withholdByConfidence,
   normalizeGoogle,
   normalizeHardcoverSearch,
-  normalizeIsbndb,
   normalizeOpenLibrary,
   type EnrichedRecord,
   type EnrichSource,
@@ -37,6 +36,7 @@ import {
 import { captureEdgeError } from '../_shared/observe.ts'
 import { olHeaders } from '../_shared/olIdentity.ts'
 import { workIdentityPart } from '../_shared/workIdentity.ts'
+import { enrichmentCacheKey } from './cacheKey.ts'
 
 /** A cover edition choice surfaced to the import review + Cover Studio (distilled E1 alternate). */
 interface CoverAlternate {
@@ -188,26 +188,13 @@ async function adapterHardcover(input: EnrichInput, tr?: Trace): Promise<SourceR
   return first ?? null
 }
 
-async function adapterIsbndb(input: EnrichInput, tr?: Trace): Promise<SourceRecord | null> {
-  if (!(await paceSource('isbndb', tr))) throw new Error('status 429')
-  const key = Deno.env.get('ISBNDB_KEY')
-  const isbn = cleanIsbn(input.isbn ?? '')
-  if (!key || !isbn) return null // ISBNdb is queried by ISBN (the completeness backstop)
-  const j = (await time(tr, 'fetch.isbndb', () =>
-    fetchJson(`https://api2.isbndb.com/book/${isbn}`, { headers: { Authorization: key } }),
-  )) as {
-    book?: unknown
-  }
-  return j?.book ? normalizeIsbndb(j) : null
-}
-
-const ADAPTERS: Record<EnrichSource, (i: EnrichInput, tr?: Trace) => Promise<SourceRecord | null>> =
+// Keep historical EnrichSource/provenance shapes readable; only these adapters can make requests.
+type ActiveSource = Exclude<EnrichSource, 'isbndb' | 'manual'>
+const ADAPTERS: Record<ActiveSource, (i: EnrichInput, tr?: Trace) => Promise<SourceRecord | null>> =
   {
     openlibrary: adapterOpenLibrary,
     google: adapterGoogle,
     hardcover: adapterHardcover,
-    isbndb: adapterIsbndb,
-    manual: async () => null,
   }
 
 // ── Search adapters: title+author → up to SEARCH_LIMIT candidates. The real catalog has NO ISBNs,
@@ -266,7 +253,7 @@ async function gatherCandidates(
   attempted: number
   failed: number
 }> {
-  const order: EnrichSource[] = ['hardcover', 'google', 'openlibrary']
+  const order: ActiveSource[] = ['hardcover', 'google', 'openlibrary']
   const enabled = new Set(enabledSources())
   const candidates: ResolveCandidate[] = []
   let rateLimited = false
@@ -303,14 +290,13 @@ function distillAlternates(alts: ResolveCandidate[]): CoverAlternate[] {
 }
 
 /** The enabled source roster, resolved from env (sources are pluggable like the buy-link mode). */
-function enabledSources(): EnrichSource[] {
+function enabledSources(): ActiveSource[] {
   const csv = (Deno.env.get('ENRICH_SOURCES') ?? 'openlibrary,google')
     .split(',')
     .map((s) => s.trim().toLowerCase())
-    .filter(Boolean) as EnrichSource[]
-  const set = new Set<EnrichSource>(csv.filter((s) => s in ADAPTERS && s !== 'manual'))
+    .filter((s): s is ActiveSource => Object.hasOwn(ADAPTERS, s))
+  const set = new Set<ActiveSource>(csv)
   if (Deno.env.get('HARDCOVER_TOKEN')) set.add('hardcover') // best-effort beta, backend-only
-  if (Deno.env.get('ISBNDB_ENABLED') === 'true' && Deno.env.get('ISBNDB_KEY')) set.add('isbndb') // paid, flag-gated OFF
   return [...set]
 }
 
@@ -362,7 +348,9 @@ Deno.serve(async (req: Request) => {
       // record is still kept as a fallback: bibliographic data beats nothing when no source has art.
       let fallback: { rec: SourceRecord; used: EnrichSource } | null = null
       for (const s of order.includes('openlibrary')
-        ? (['openlibrary', 'google'] as EnrichSource[])
+        ? (['openlibrary', 'google'].filter((s) =>
+            order.includes(s as ActiveSource),
+          ) as ActiveSource[])
         : order) {
         let candidate: SourceRecord | null = null
         try {
@@ -520,9 +508,15 @@ function toResponse(r: EnrichedRecord) {
 // ── enrichment_cache (global, service-role only) ──
 function cacheKeyFor(input: EnrichInput): string {
   const isbn = cleanIsbn(input.isbn ?? '')
-  return isbn.length >= 10
-    ? `isbn:${isbn}`
-    : `ta:${norm(input.title ?? '')}|${norm(input.author ?? '')}`
+  // Never reuse legacy mixed-source records: unioned authors/genres/ISBNs do not retain every
+  // contributor's lineage. A provenance-field filter cannot prove those records ISBNdb-free.
+  // A new namespace preserves the old rows for an owner-run retention audit, without serving or
+  // overwriting them. This is not deletion or certification of already persisted corpus data.
+  return enrichmentCacheKey(
+    isbn.length >= 10
+      ? `isbn:${isbn}`
+      : `ta:${norm(input.title ?? '')}|${norm(input.author ?? '')}`,
+  )
 }
 
 const DAY = 86_400_000

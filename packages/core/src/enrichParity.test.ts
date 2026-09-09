@@ -5,7 +5,6 @@ import {
   normalizeGoogle as coreNG,
   normalizeHardcover as coreNH,
   normalizeHardcoverSearch as coreNHS,
-  normalizeIsbndb as coreNI,
   normalizeOpenLibrary as coreNOL,
   withholdByConfidence as coreWithhold,
   type StampedSource,
@@ -18,7 +17,6 @@ import {
   normalizeGoogle as fnNG,
   normalizeHardcover as fnNH,
   normalizeHardcoverSearch as fnNHS,
-  normalizeIsbndb as fnNI,
   normalizeOpenLibrary as fnNOL,
   withholdByConfidence as fnWithhold,
 } from '../../../supabase/functions/enrich/merge'
@@ -36,7 +34,7 @@ import {
   selfIsbn13 as fnSelfIsbn,
 } from '../../../supabase/functions/enrich/resolve'
 
-// Captured raw fixtures spanning all four sources + edge cases (coded subjects, html, isbn-10).
+// Active source fixtures + edge cases (coded subjects, html, isbn-10).
 const GOOGLE = {
   id: 'v1',
   volumeInfo: {
@@ -81,20 +79,10 @@ const HC = {
   taggings: [{ tag: { tag: 'Dragon Riders' } }],
 }
 const ISBNDB = {
-  book: {
-    title: 'Haunting Adeline',
-    authors: ['H. D. Carlton'],
-    publisher: 'Self',
-    date_published: '2021-08-12',
-    pages: 532,
-    binding: 'Paperback',
-    language: 'en',
-    isbn13: '9781957635019',
-    isbn10: '1957635010',
-    subjects: ['Dark Romance', 'Thriller'],
-    synopsis: '<i>Cat</i> and mouse.',
-    image: 'https://i/ha.jpg',
-  },
+  // Synthetic already-normalized historical stamp, not a provider response or live acquisition.
+  pageCount: 532,
+  binding: 'Paperback',
+  description: 'Synthetic legacy record',
 }
 
 describe('enrich mirror ↔ core parity (golden fixtures)', () => {
@@ -102,7 +90,6 @@ describe('enrich mirror ↔ core parity (golden fixtures)', () => {
     expect(fnNG(GOOGLE)).toEqual(coreNG(GOOGLE))
     expect(fnNOL(OL)).toEqual(coreNOL(OL))
     expect(fnNH(HC)).toEqual(coreNH(HC))
-    expect(fnNI(ISBNDB)).toEqual(coreNI(ISBNDB))
     const HCS = {
       id: 714600,
       title: 'Fourth Wing',
@@ -142,7 +129,7 @@ describe('enrich mirror ↔ core parity (golden fixtures)', () => {
       { source: 'google', at, record: coreNG(GOOGLE) },
       { source: 'openlibrary', at, record: coreNOL(OL) },
       { source: 'hardcover', at, record: coreNH(HC) },
-      { source: 'isbndb', at, record: coreNI(ISBNDB) },
+      { source: 'isbndb', at, record: ISBNDB },
     ]
     expect(fnMerge(stamped)).toEqual(coreMerge(stamped))
     // with a user override too

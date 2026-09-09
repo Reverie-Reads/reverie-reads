@@ -1,5 +1,12 @@
 # Metadata enrichment strategy — most-complete record on every scan / add
 
+**Historical strategy, superseded where it recommends ISBNdb or unqualified series merging.**
+The owner dropped ISBNdb on September 9. The retirement patch removes its live adapter and starts
+a new enrichment cache namespace; it does not delete historical data or cancel billing. Existing
+relational series safeguards in `DATA_SOURCES.md` remain authoritative. The scalar merge still has
+quality limitations; neither longest description nor a work-level union certifies an exact edition.
+See the [exit audit and handoff](../tasks/isbndb-retirement.md) before using the old roadmap below.
+
 Goal: when a book enters the library (barcode scan, ISBN/title search, or manual add), end up
 with the most complete, accurate record possible — without blocking the user, blowing API
 quotas, or making the app brittle. This extends the shipped enrich Edge Function (A1), match.ts

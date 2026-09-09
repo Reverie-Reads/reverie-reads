@@ -5,7 +5,6 @@ import {
   normalizeGoogle,
   normalizeHardcover,
   normalizeHardcoverSearch,
-  normalizeIsbndb,
   normalizeOpenLibrary,
   withholdByConfidence,
   type StampedSource,
@@ -287,32 +286,7 @@ describe('source normalizers (captured fixtures)', () => {
     expect(r.ids).toEqual({ work: '714600' })
   })
 
-  it('normalizeIsbndb parses a {book} payload', () => {
-    const r = normalizeIsbndb({
-      book: {
-        title: 'Haunting Adeline',
-        authors: ['H. D. Carlton'],
-        publisher: 'Self',
-        date_published: '2021-08-12',
-        pages: 532,
-        binding: 'Paperback',
-        language: 'en',
-        isbn13: '9781957635019',
-        isbn10: '1957635010',
-        subjects: ['Dark Romance', 'Thriller'],
-        synopsis: '<i>A cat and mouse</i> game.',
-        image: 'https://isbndb/ha.jpg',
-      },
-    })
-    expect(r.title).toBe('Haunting Adeline')
-    expect(r.binding).toBe('Paperback')
-    expect(r.pageCount).toBe(532)
-    expect(r.categories).toEqual(['Dark Romance', 'Thriller'])
-    expect(r.description).toBe('A cat and mouse game.')
-    expect(r.isbn13).toBe('9781957635019')
-  })
-
-  it('an end-to-end merge of all four normalized sources fills across them by precedence', () => {
+  it('retains legacy stamped-record merge compatibility without a live ISBNdb normalizer', () => {
     const merged = mergeRecords([
       src('google', {
         ...normalizeGoogle({
@@ -328,16 +302,16 @@ describe('source normalizers (captured fixtures)', () => {
         ...normalizeOpenLibrary({ title: 'T', subject: ['Romance'], first_publish_year: 2020 }),
       }),
       src('isbndb', {
-        ...normalizeIsbndb({
-          book: { pages: 400, binding: 'Hardcover', synopsis: 'a longer synopsis from isbndb' },
-        }),
+        pageCount: 400,
+        binding: 'Hardcover',
+        description: 'a longer synthetic legacy synopsis',
       }),
     ])
     expect(merged.genre).toBe('romance')
     expect(merged.cover).toBe('https://c/g.jpg')
     expect(merged.pageCount).toBe(400)
     expect(merged.binding).toBe('Hardcover')
-    expect(merged.description).toBe('a longer synopsis from isbndb')
+    expect(merged.description).toBe('a longer synthetic legacy synopsis')
     expect(merged.pubY).toBe(2020)
   })
 })

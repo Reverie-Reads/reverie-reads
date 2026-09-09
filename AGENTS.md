@@ -266,8 +266,9 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   That study is complete: selective use improved 38/100 works but regressed 20 under the broad
   join. The owner's final decision drops ISBNdb from the planned source stack because its benefit
   does not justify retention/subscription dependence, superseding the report's initial targeted-keep
-  recommendation. No further paid acquisition without new owner approval. Billing and the legacy
-  production adapter are unchanged; do not infer hosted configuration or existing data holdings.
+  recommendation. No further paid acquisition without new owner approval. The study changed no
+  billing or runtime; the subsequent retirement section below governs the adapter/cache cutover.
+  Do not infer hosted configuration or existing data holdings from the study.
   Its frozen set is consumed; preserve its locks and attempt markers, never reacquire it from another
   clone. See `packages/series-source-trial/reports/isbndb-value-study-results-2026-09-09.md`.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
@@ -362,6 +363,17 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
 - **Mass import + mass merge.** Bulk-add (CSV today; bulk ISBN/title) and a bulk
   de-dupe flow that resolves all detected duplicate groups at once (run on import).
   Reuse the ported merge engine.
+
+## ISBNdb retirement
+
+**ISBNdb retirement (owner, September 9).** Production enrichment no longer has an ISBNdb HTTP
+adapter; old keys/flags/CSV cannot reactivate it. Enrichment and the owner-run corpus backfill share
+the `no-isbndb-v1:` cache namespace, with no fallback to historical mixed-source rows. Historical
+source types remain readable, not proof of a live provider. Do not delete old cache or catalog rows
+as part of this cutover: incomplete union/personal provenance prevents safe blanket cleanup.
+No further paid trial acquisition without new owner approval; consumed study locks stay intact.
+Billing, production deployment and any exact-target retention cleanup are separate owner actions.
+See `docs/tasks/isbndb-retirement.md` for the read-only inventory and remaining gates.
 
 ## Commands
 

@@ -41,7 +41,7 @@
 //
 // ── DECISIONS INHERITED, NOT INVENTED ───────────────────────────────────────────────────────────
 //   · Identity/normalizers come from corpus-import-lib.mjs (core norm / matchBook /
-//     normalizeImportGenres) — see its header for why 'ta:' + work_key IS an enrichment_cache key.
+//     normalizeImportGenres) — see its header for the versioned enrichment cache identity body.
 //   · Series: the name lands on books.series and works.series; NO position is invented (the CSV
 //     has none) and NO series row/entry is created. Per 20260817010000_sync_book_series.sql's own
 //     header, series-row/entry creation is deliberately CLIENT-side (getOrCreateSeries carries the
@@ -63,11 +63,11 @@
 //
 // ── ENRICHMENT BACKFILL (--backfill) ────────────────────────────────────────────────────────────
 //   For EVERY works row: look up enrichment_cache at key
-//   'ta:' + work_key (the exact construction — no re-matching), and copy the resolved identity
+//   enrichmentCacheKey('ta:' + work_key) (exact construction — no legacy-key fallback), and copy the resolved identity
 //   (work_id), cover fields, and canonical edition ISBNs out of the cached record. Existing ISBNs
 //   are unioned, never replaced. The ~new books rows enrich through the EXISTING per-book pipeline
 //   as the reader uses the app; this promotes those results into the corpus whenever it is re-run.
-//   The enrich fn itself is untouched.
+//   Retired-provider cache rows remain excluded, even when their scalar provenance looks free-only.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
