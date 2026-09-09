@@ -133,6 +133,13 @@ Field evidence is descriptive, not a confidence probability or permission to fil
 | `single_source`       | One admitted source supplies the field.                                          |
 | `source_agreement`    | Two admitted sources agree; independence and correctness remain unproven.        |
 
+The descriptor receives identity/current values and ephemeral baseline observations, never publisher
+reference truth. It emits no field values and always sets `automatic: false`. Current values are
+protected in every state, never a third corroborating vote; even an inapplicable page count is not
+deleted. These observations do not change the existing ISBNdb lookup gates, score source quality,
+feed the LLM, or write shared/personal data. No new live benchmark is required to test this reporting
+layer; synthetic offline tests cover the states and demonstrate reference-truth separation.
+
 ### Separate page-count review evaluation
 
 `metadata:review` is an opt-in comparison, not a change to the gap-only benchmark. Its input uses
@@ -166,13 +173,6 @@ to a model still requires separate rights/privacy approval. Only aggregate field
 observation/proposal agreement, and paired page comparisons leave the runner. Paired outcomes
 distinguish both agree, baseline only agrees, ISBNdb only agrees, neither agrees, and unscored;
 they never select a winning value. Existing completed reports remain unchanged.
-
-The descriptor receives identity/current values and ephemeral baseline observations, never publisher
-reference truth. It emits no field values and always sets `automatic: false`. Current values are
-protected in every state, never a third corroborating vote; even an inapplicable page count is not
-deleted. These observations do not change the existing ISBNdb lookup gates, score source quality,
-feed the LLM, or write shared/personal data. No new live benchmark is required to test this reporting
-layer; synthetic offline tests cover the states and demonstrate reference-truth separation.
 
 ## What is measured
 
