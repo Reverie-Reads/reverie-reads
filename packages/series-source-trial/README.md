@@ -3,6 +3,56 @@
 This package compares book-series data providers against the same cases and acceptance policy.
 It does not write to Supabase or modify Reverie's corpus.
 
+## Exact-edition page evidence (trial only)
+
+`metadata:pages` evaluates a separate Google detail plus Open Library exact-edition path.
+It does not change the consumed subscription study runtime or production enrichment.
+
+```sh
+pnpm --filter @reverie/series-source-trial metadata:pages --help
+pnpm --filter @reverie/series-source-trial metadata:pages --input data/edition-pages.example.json
+```
+
+The fixture is fictional and dry-only. A reviewed development frame uses purpose
+`development-edition-pages` and 1–20 distinct ISBN cases, each with `identity`, `current`, and
+an independently reviewed publisher `reference` (the fixture shows the shape). References are
+offline scoring data, never fetched by this command or passed to acquisition. Unknown facts stay
+null. Human review must exclude qualification cases and previously used development works,
+including translations and retitled editions that exact normalization cannot identify.
+
+Live mode additionally requires `--live --consumed-frame <original-100-work-frame.json>`.
+Before loading credentials it authenticates that complete frame against the committed consumed
+study lock and refuses overlapping canonical ISBNs or normalized base titles. This is read-only
+exclusion, not permission to repeat, reset, reinterpret, or partially replay the old study.
+The guard does not replace human overlap review against other development/qualification frames.
+Do not relabel the synthetic fixture's `.example` reference to make it live.
+
+Credentials use the existing `GOOGLE_BOOKS_API_KEY` (or `GOOGLE_BOOKS_KEY`) and optional
+`GOOGLE_BOOKS_REFERRER`, loaded from package `.env.local` or `--env <local-env-file>`.
+Google receives at most two calls per edition: one bounded ISBN search, then one detail call only
+after a unique returned ISBN/full-title/full-author match. The detail must repeat that identity,
+safe volume ID, and language observation. Only positive integer detail `pageCount` in 1–20,000
+is observed; neither search pages nor `printedPageCount` is a fallback or an independent vote.
+The existing exact-ISBN Open Library path resolves every author and validates every returned ISBN;
+work-level median pages are never used. Its default 80 HTTP-request ceiling includes author and
+redirect hops; `--max-openlibrary-requests` can set 1–200. Google has fixed-host/manual-redirect,
+15-second timeout, 512-KiB response, pacing, no-retry and stop-on-access/rate-limit safeguards.
+
+The memory-only packet records field-level source, endpoint, source identifier, target ISBN,
+time, value, and state. Cross-provider agreement is **not proven independent lineage** and never
+automatic eligibility. Ambiguity, edition conflicts, unavailable providers and audio withhold a
+candidate; a completed provider miss can leave a one-source review candidate. Existing pages are
+protected, disagreement remains visible, and all output remains review-only. This evaluation
+queries protected cases to measure conflicts; it is not yet a gap-only production policy.
+
+Only aggregate counts, request/status/time metrics and the input hash reach stdout. Acquisition
+wall time includes pacing; transport time measures requests alone. Provider
+payloads, values, identities, URLs and credentials are not persisted; packet JSON serialization
+is refused. There is no cache, corpus/personal patch, Supabase writer, ISBNdb request or model call.
+Mocked transport tests establish behavior, not live quality. A fresh broader publisher-referenced
+comparison and reviewed production qualification remain next; see the
+[Google diagnostic and implementation boundary](../../docs/tasks/google-edition-diagnostics.md).
+
 ## ISBNdb subscription-value evaluation (trial only)
 
 **Owner decision, September 9: drop ISBNdb from the planned source stack.** The completed

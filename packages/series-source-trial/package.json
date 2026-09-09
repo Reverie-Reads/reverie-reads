@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "metadata:pages": "node src/edition-pages.mjs",
     "metadata:supplement": "node src/supplement-metadata.mjs",
     "metadata:benchmark": "node src/benchmark-metadata.mjs",
     "metadata:review": "node src/review-metadata.mjs",
