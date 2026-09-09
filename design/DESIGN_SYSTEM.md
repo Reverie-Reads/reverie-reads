@@ -87,6 +87,11 @@ background never animate through a low-contrast midpoint.
 Every control has a visible `:focus-visible` outline, a clear disabled state, and conventional
 hover/pressed feedback. Motion is disabled under `prefers-reduced-motion`.
 
+Scrollbars retain the browser's native mechanics and user-selected width. Their thumb uses the
+current room's contrast-tested muted ink over a transparent track; forced-color mode returns to the
+system palette. Nested landing previews resolve the colors from their own room rather than the page
+around them.
+
 ## Atmosphere and background
 
 Atmosphere lives behind content. It may drift, breathe, pulse, or reveal room-specific structure,

@@ -29,6 +29,16 @@
     height: 100%;
   }
 
+  /* Keep native scroll mechanics and the user's preferred width, while letting every room tint
+     the viewport and its nested scroll areas. --muted already clears AA against page, card, and
+     field surfaces across all nine skins; a transparent track leaves each material uninterrupted.
+     Repeating the declaration at [data-skin] is intentional: landing previews carry their own
+     room tokens inside a differently themed page. */
+  html,
+  [data-skin] {
+    scrollbar-color: var(--muted) transparent;
+  }
+
   body {
     margin: 0;
     /* Solid base under the gradient so contrast tooling (and any non-gradient fallback)
@@ -50,6 +60,13 @@
   :focus-visible {
     outline: 2px solid var(--gold);
     outline-offset: 2px;
+  }
+}
+
+@media (forced-colors: active) {
+  html,
+  [data-skin] {
+    scrollbar-color: auto;
   }
 }
 
