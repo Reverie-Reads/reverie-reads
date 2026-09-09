@@ -5,6 +5,12 @@ It does not write to Supabase or modify Reverie's corpus.
 
 ## ISBNdb subscription-value evaluation (trial only)
 
+**Owner decision, September 9: drop ISBNdb from the planned source stack.** The completed
+[100-work comparison and decision](reports/isbndb-value-study-results-2026-09-09.md) remain an
+audit record, not authorization for another live run. The commands below document the retained
+harness; no further ISBNdb acquisition without new owner approval. Billing and production have
+not been changed, and the legacy production adapter has not been removed.
+
 `metadata:value` asks whether the recurring fee buys meaningful additional utility, rather than
 whether a narrowly gated lookup can fill a page or binding gap. It independently evaluates Google,
 Open Library, and ISBNdb against each reviewed ISBN/title/full-author identity. A failure or mismatch
@@ -33,7 +39,7 @@ the existing fixed-host, header-key, response-size, pacing, deadline, and stop r
 request per selected edition; Open Library defaults to 80 HTTP requests, bounded at 200, including
 redirect/author hops. Stop conditions can leave an incomplete cohort; do not retry or replenish it
 to improve results. Freeze the clean runtime, entire frame, budget and exclusive start marker before
-a single-use live run as in the completed page trial. No live value result has been collected yet.
+a single-use live run as in the completed page trial. The authorized live study is now complete.
 
 The scorer fetches each provider once, then models three policies in memory:
 
@@ -148,7 +154,7 @@ its public live CLI path is limited to the one approved ISBN set. No real frame 
 these examples.
 
 The authorized September 9 study is now complete: see the
-[keep-for-targeted-metadata recommendation](reports/isbndb-value-study-results-2026-09-09.md).
+[results and final owner drop decision](reports/isbndb-value-study-results-2026-09-09.md).
 Its exact set is consumed, not a reusable example. Do not reacquire it from another clone or
 delete its attempt state. The recommendation does not promote a production policy or clear rights.
 

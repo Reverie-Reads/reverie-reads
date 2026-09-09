@@ -1,4 +1,45 @@
-# ISBNdb subscription-value decision: keep for targeted metadata support
+# ISBNdb subscription-value decision: drop from the planned source stack
+
+## Final owner decision — September 9, 2026
+
+**Drop ISBNdb as a planned long-term dependency and refine the existing source pipeline.**
+This supersedes the initial targeted-keep recommendation below, not the measured results.
+ISBNdb added useful pages and formats, but the owner does not consider that benefit sufficient
+to justify continuing subscription dependence and potential data loss on exit. Recurring demand,
+review-time savings and performance against an improved free baseline remain unmeasured.
+
+The [published terms](https://isbndb.com/terms-and-conditions), updated September 7 and read on
+September 9, require ceasing use and deleting ISBNdb data within 30 days after subscription end,
+including incorporated records and backup copies. Bare ISBNs and independently created or obtained
+data are excepted. Reformatting or LLM approval does not establish independent sourcing. This is
+the basis for the product decision, not a legal opinion about an account-specific agreement.
+
+No further ISBNdb acquisition is authorized by this report. Preserve the consumed study's locks,
+attempt markers and unchanged aggregate result; do not rerun it to improve the free baseline.
+Preservation for this handoff does not establish indefinite retention rights for every artifact.
+Before subscription exit, inventory any ISBNdb-derived holdings and their lineage, then plan any
+required removal separately. This evaluation persisted no raw provider records and wrote no
+production data; that does not establish the contents of the pre-existing production system.
+
+The legacy production adapter remains in code. Hosted `ENRICH_SOURCES`, `ISBNDB_ENABLED` and
+actual use have not been audited as part of this decision. No billing, credential, production,
+deployment or deletion action has been taken. Cancellation remains an owner action.
+
+### Next work without ISBNdb
+
+1. Diagnose Google's anomalous page counts on fresh development cases; do not weaken exact-edition
+   identity checks or claim the improved policy has already been measured.
+2. Use field-specific trust and provenance across Google, Open Library, Hardcover and open graph
+   sources, with the existing independent relational safeguards for series. Free access does not
+   itself grant unrestricted retention or redistribution rights.
+3. Preserve trusted and reader-chosen values, normalize publisher/imprint distinctions carefully,
+   and defer conflicts. Keep work identity separate from edition-specific pages and binding.
+4. Let the LLM select or explain supported evidence and abstain on gaps. It cannot invent a fact,
+   convert a source's data into independently sourced data, or bypass deterministic admission.
+
+These are follow-up priorities, not implementation or qualification claims.
+
+## Initial evaluation recommendation — superseded
 
 **Recommendation: keep the $14.99/month Basic subscription for targeted, review-only edition
 metadata support; do not adopt ISBNdb-first or promote the broad joined packet to production.**
@@ -77,7 +118,7 @@ The broad join illustrates why source-specific treatment matters:
 - Google already supplied substantial date/language coverage. Those are not strong reasons to
   prefer ISBNdb wholesale.
 
-**Implementation direction, not an additional tested policy:** use ISBNdb as an exact-ISBN
+**Initial implementation direction, now superseded and never tested as an additional policy:** use ISBNdb as an exact-ISBN
 pages/binding candidate source; preserve existing trusted metadata, leave conflicts for explicit
 review, and handle publisher/imprint aliases separately. Do not use an LLM to certify unsupported
 values. A field-scoped, preservation-safe policy needs its own implementation verification before
@@ -161,7 +202,7 @@ applicable. API access and owner permission to evaluate are not a broad data-use
 - Retained study output is aggregate-only. Private references contain publisher facts/URLs/hashes,
   not tested-provider records or raw page bodies. Application model/Exa calls and production writes: zero.
 
-**Final decision: keep ISBNdb in the toolbox for pages and formats, with review and preservation
+**Initial recommendation, superseded by the owner decision above: keep ISBNdb in the toolbox for pages and formats, with review and preservation
 guards. Do not make it the primary catalog source, do not automatically deploy the tested broad
 join, and do not credit unmeasured cover/description potential as justification.** Billing stays
 with the owner. No additional ISBNdb contact was needed to reach this value decision.

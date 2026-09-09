@@ -263,8 +263,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   injected primitives to evade these boundaries. This is not production rights/retention clearance.
   See `reports/isbndb-source-use-review-2026-09-08.md` and the September 9 study plan.
   That study is complete: selective use improved 38/100 works but regressed 20 under the broad
-  join. The report recommends keeping ISBNdb for targeted pages/format support, not production
-  promotion or ISBNdb-first. Its frozen set is consumed; never reacquire it from another clone.
+  join. The owner's final decision drops ISBNdb from the planned source stack because its benefit
+  does not justify retention/subscription dependence, superseding the report's initial targeted-keep
+  recommendation. No further paid acquisition without new owner approval. Billing and the legacy
+  production adapter are unchanged; do not infer hosted configuration or existing data holdings.
+  Its frozen set is consumed; preserve its locks and attempt markers, never reacquire it from another
+  clone. See `packages/series-source-trial/reports/isbndb-value-study-results-2026-09-09.md`.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
   title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
   edit shared metadata, after identity confirmation and a source/note; it never invokes the broad
