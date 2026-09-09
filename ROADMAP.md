@@ -1,6 +1,6 @@
 # Reverie Reads roadmap
 
-Current product priorities updated 2026-09-08. This file is the ordered project status. Historical briefs remain in
+Current product priorities updated 2026-09-09. This file is the ordered project status. Historical briefs remain in
 `docs/archive/`; detailed proposals that are not yet active remain in `docs/backlog/`; only work
 actually in flight belongs in `docs/tasks/`.
 
@@ -20,20 +20,27 @@ fundamental overhaul. This sequence takes precedence over the September 5 produc
    opening, a single period for every summary, and drilldowns to real reading records. Planner
    shares the completion model. Undated reads, current DNF, and books marked read without logs
    remain distinct; there is no invented session or average rating.
-2. **Plan — implemented for public review.** The flexible queue supports direct edit/remove/undo,
-   saved ordering, optional intentions, and explicit undated “Soon” membership. It preserves
-   year/month/day precision, existing calendar entries, backup/offline behavior, and atomic merges.
-3. **Private retrospective and release horizon — implemented for public review.** Reflect now
-   composes its selected-period summary into a private story with real covers and saved notes. The
-   same record supplies every fact, uncertain return counts stay qualified, and the view has no
-   derived analytics sharing/export. Public PR #482 added source-aware release discovery with
-   honest date precision, provider provenance, manual entry, and no automatic reading plans.
-4. **Reader validation and remaining arrangements work.** Return to the first-use/return-loop
-   checks and modular arrangements after the paired reading experience is coherent.
+2. **Plan — merged; migration owner-reported complete.** The flexible queue supports direct
+   edit/remove/undo, saved ordering, optional intentions, and explicit undated “Soon” membership.
+   It preserves year/month/day precision, existing calendar entries, backup/offline behavior, and
+   atomic merges.
+3. **Private retrospective and release horizon — merged publicly.** Reflect composes its
+   selected-period summary into a private story with real covers and saved notes. The same record
+   supplies every fact, uncertain return counts stay qualified, and the view has no derived
+   analytics sharing/export. Public PR #482 added source-aware release discovery with honest date
+   precision, provider provenance, manual entry, and no automatic reading plans.
+4. **Reader validation — materials ready; observations remain.** The account-level modular
+   arrangements are already implemented. The next gate is five observed first-use and return-loop
+   sessions using the content-free protocol in
+   [reader-validation.md](docs/tasks/reader-validation.md). No invitation has been sent; outreach
+   still requires owner authorization.
 
 [Implementation notes](docs/tasks/reading-life-implementation.md) record the data contract,
-implemented persistence decisions, and release boundaries. Plan's migration changes stored
-data/write behavior and therefore waits for the owner's human confirmation after public merge.
+implemented persistence decisions, and release boundaries. The owner reported Plan's migration
+complete after its public merge; that report is release context rather than an independent
+production verification from this repository.
+The owner-run [manual product smoke register](docs/tasks/manual-product-smoke.md) keeps the wider
+release review prioritized without treating automated checks as human experience evidence.
 
 ## Catalog quality follow-up
 
@@ -96,15 +103,15 @@ The September 5 order below superseded the older P2/P3 ordering; the active Refl
 program above now takes precedence. Discover’s guided experience subsequently merged in #444.
 Safety regressions still take precedence. Keep one product implementation and one small reader experiment active at a time.
 
-| Order | Priority  | Next outcome                                                            | Completion gate                                                                                                                                                                                                                                                                                                                               |
-| ----: | :-------: | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|     1 |    P1     | Finish the approved release and verify app/landing aesthetics           | Matching private production build; all nine rooms use the same scenes, typography, and shared book controls; phone/desktop signed-in views are checked. The series-removal migration follows its owner-operated production gate.                                                                                                              |
-|     2 |    P1     | Keep a guest's chosen books, notes, and room through signup             | Explicit opt-in handoff, accurate preview/counts, duplicate and retry handling, cancellation and expiry, and a useful first reading action after authentication. Do not silently persist private guest notes or lose them behind a signup promise.                                                                                            |
-|     3 | P1 design | Design modular library arrangements                                     | Reviewed mobile/desktop presets, dock/rail ordering, Home module choices, hide/restore/defaults, accessible controls, and account persistence rules. Account-level implementation stays a later reviewed change. See `docs/backlog/task-modular-library-arrangements.md`.                                                                     |
-|     4 |    P1     | Make Discover worth spending time in                                    | First improve a bounded set of covers/descriptions and edition identity; preserve browse/filter/scroll context through addressable details; then add a few transparent author, feeling, or change-of-pace paths. Never infer genre from appearance or invent recommendation reasons.                                                          |
-|     5 |    P1     | Validate the complete first-use and return loop with readers            | Begin with five observed usability sessions, then use the original small-cohort validation plan. Separate assisted actions from independent outcomes and return from prompted check-ins. Import/reimport, possession, retained history, and Back navigation issues outrank cosmetic expansion. No invitations are sent without authorization. |
-|     6 |    P2     | Finish accepted brand assets and publish one accurate demonstration     | App/share icons and onboarding material follow Midnight & Lamplight; the clip uses the deployed guest experience and leads to a working destination. Publish only approved content, then judge useful outcomes rather than visits alone.                                                                                                      |
-|     7 |    P2     | Implement the reviewed arrangements and only evidence-backed paid depth | Use the design and reader findings; retain Free's core library, nine rooms, accessibility, export, and correction. Verify paid purchase/entitlement/cancellation before selling a new promise. Expand only within the profitable-side-business operating envelope.                                                                            |
+| Order | Priority  | Next outcome                                                        | Completion gate                                                                                                                                                                                                                                                                                                                                                               |
+| ----: | :-------: | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|     1 |    P1     | Finish the approved release and verify app/landing aesthetics       | Matching private production build; all nine rooms use the same scenes, typography, and shared book controls; phone/desktop signed-in views are checked. The series-removal migration follows its owner-operated production gate.                                                                                                                                              |
+|     2 |    P1     | Keep a guest's chosen books, notes, and room through signup         | Explicit opt-in handoff, accurate preview/counts, duplicate and retry handling, cancellation and expiry, and a useful first reading action after authentication. Do not silently persist private guest notes or lose them behind a signup promise.                                                                                                                            |
+|     3 | P1 design | Design modular library arrangements                                 | Reviewed mobile/desktop presets, dock/rail ordering, Home module choices, hide/restore/defaults, accessible controls, and account persistence rules. Account-level implementation stays a later reviewed change. See `docs/backlog/task-modular-library-arrangements.md`.                                                                                                     |
+|     4 |    P1     | Make Discover worth spending time in                                | First improve a bounded set of covers/descriptions and edition identity; preserve browse/filter/scroll context through addressable details; then add a few transparent author, feeling, or change-of-pace paths. Never infer genre from appearance or invent recommendation reasons.                                                                                          |
+|     5 |    P1     | Validate the complete first-use and return loop with readers        | Run the five-session [reader validation protocol](docs/tasks/reader-validation.md), then expand only if its process gate passes. Separate assisted actions from independent outcomes and return from prompted check-ins. Import/reimport, possession, retained history, and Back navigation issues outrank cosmetic expansion. No invitations are sent without authorization. |
+|     6 |    P2     | Finish accepted brand assets and publish one accurate demonstration | App/share icons and onboarding material follow Midnight & Lamplight; the clip uses the deployed guest experience and leads to a working destination. Publish only approved content, then judge useful outcomes rather than visits alone.                                                                                                                                      |
+|     7 |    P2     | Build only evidence-backed reader improvements and paid depth       | Use the reader findings; retain Free's core library, nine rooms, accessibility, export, and correction. Verify paid purchase/entitlement/cancellation before selling a new promise. Expand only within the profitable-side-business operating envelope.                                                                                                                       |
 
 The separate series-source trial continues within its evidence and rights gates. Its results may
 support catalog quality but are not automatic permission to write production classifications.

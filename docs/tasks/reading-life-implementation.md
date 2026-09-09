@@ -90,6 +90,7 @@ release into a reading plan automatically. Hardcover supplies the primary follow
 an optional Penguin Random House confirmation path and Google Books fallback remain isolated and
 honestly labeled.
 
-Public review/merge comes before private synchronization. The retrospective and release horizon
-need only a web release; Plan's earlier queue work also needs the owner-operated migration before
-its web artifact is promoted.
+The reading-history model, Plan queue, private retrospective, and release horizon merged publicly
+in PRs #473, #475, #486, and #482. The owner reported Plan's migration complete after merge. Private
+synchronization and the matching web release remain separate release evidence rather than an
+assumption made from the public tree.
