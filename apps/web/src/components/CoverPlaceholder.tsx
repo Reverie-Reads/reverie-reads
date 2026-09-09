@@ -9,34 +9,7 @@ import type { CSSProperties } from 'react'
 import { useEffectiveSkin } from '../skin/labels'
 import { useStructure } from '../skin/structure'
 
-/**
- * THE AUTHOR LINE'S OVERFLOW CONTRACT — one object, spread into every designed plate's author span.
- *
- * What it fixes: an author name is centred inside a panel that clips. A name too wide for the panel
- * overflowed it SYMMETRICALLY, so the clip removed characters from the START as well as the end —
- * "WILHELMINA FEATHERSTONEHAUGH MARCHBANKS" rendered as "WILHELMINA EATHERSTONEHAUGH MARCHBANKS",
- * with the leading F simply gone. That is worse than ugly: the plate stated a name that is not the
- * author's, with nothing to signal anything had been dropped.
- *
- * Why BOTH properties, and why line-clamp alone would not have been enough. The title span in each
- * plate already clamps, and clamping bounds HEIGHT — it does nothing for a single unbreakable word
- * wider than the box, which is precisely this defect. `overflow-wrap: anywhere` is the half that
- * fixes it: the word breaks onto the next line instead of spilling out of both edges. The clamp is
- * still needed, because a name now free to wrap could otherwise grow downward into whatever sits
- * below it — the same collision this component already showed in aphelion.
- *
- * Two lines, not one: one line reintroduces the clip for any name that needs to wrap, and these
- * panels have the vertical room. Names longer than two lines end in an ellipsis, which is an honest
- * signal in a way a silently missing first letter never was.
- *
- * The 'plain' plate at the bottom of this file already carried this shape and is left as it was.
- *
- * THE NOTE THAT USED TO SIT HERE SAID THE TITLE SPANS WERE LEFT UNFIXED because "no such title
- * exists in the corpus". That was true when it was written and stopped being true on 2026-08-23,
- * when the corpus import added 126 one-word titles. Closed by TITLE_OVERFLOW below; the forecast is
- * kept rather than deleted because it is the record of a defect predicted, deferred on a factual
- * premise, and then landed the moment that premise expired.
- */
+/** Author names may wrap, including inside an exceptionally long name, but never leave the plate. */
 const AUTHOR_OVERFLOW: CSSProperties = {
   display: '-webkit-box',
   WebkitLineClamp: 2,
@@ -45,31 +18,81 @@ const AUTHOR_OVERFLOW: CSSProperties = {
   overflowWrap: 'anywhere',
 }
 
+type TitleScale = { minPx: number; fluidCqw: number; maxPx: number }
+
 /**
- * THE TITLE'S OVERFLOW CONTRACT — the same fix as AUTHOR_OVERFLOW, one line count later.
- *
- * A title span is centred in a clipping panel exactly as the author span is, so it had exactly the
- * author bug: a single word wider than the panel spilled past BOTH clip edges instead of breaking
- * onto the next of its available lines. Measured on 2026-08-23 against real corpus titles at a
- * 390px viewport, before this existed — 'Accumulation' overflowed the marrow/box-lid plate by 61px
- * on ONE line, rendering as "Accumulatic"; 'Dreamcatcher' by 65px, 'Frankenstein' by 52px,
- * 'Hungerstone' by 50px, 'Meditations' by 37px. `overflow-wrap: anywhere` is the half that fixes
- * it; the clamp is still needed to bound the height once the word is free to wrap.
- *
- * WHY A FUNCTION RATHER THAN A SECOND CONSTANT. `AUTHOR_OVERFLOW` hardcodes two lines, and titles
- * use three (four on 'plain'). Reusing it wholesale would silently retune every plate's title from
- * three lines to two — a layout change smuggled in under a clipping fix.
- *
- * WHY IT IS NOT AUTHOR-SPECIFIC AND NEVER WAS. Nothing in the author fix depended on the text being
- * a name; it depended on the box clipping and the word being unbreakable. Both are true of titles.
+ * Size the longest word against the narrowest title panel used by the nine plates. Short titles
+ * retain their expressive display scale; long words shrink with the cover before reaching the
+ * readable pixel floor. The 82cqw budget includes a conservative glyph-width allowance, panel
+ * padding, uppercase tracking, and italic overhang.
  */
-const TITLE_OVERFLOW = (lines: number): CSSProperties => ({
-  display: '-webkit-box',
-  WebkitLineClamp: lines,
-  WebkitBoxOrient: 'vertical',
-  overflow: 'hidden',
-  overflowWrap: 'anywhere',
-})
+function fittedTitleSize(title: string, scale: TitleScale): string {
+  const longestWord = Math.max(
+    1,
+    ...title
+      .trim()
+      .split(/\s+/u)
+      .map((word) => Array.from(word).length),
+  )
+  const fittedCqw = Math.min(scale.fluidCqw, 82 / longestWord)
+  return `clamp(${scale.minPx}px, ${Number(fittedCqw.toFixed(2))}cqw, ${scale.maxPx}px)`
+}
+
+/**
+ * A one-word title must read as one typographic gesture. It scales to fit, then ellipsises at the
+ * readable floor instead of breaking into an arbitrary final fragment. Multi-word titles retain a
+ * bounded line clamp and balance at word boundaries, so their line breaks look composed.
+ */
+function titleFlow(title: string, lines: number): CSSProperties {
+  const oneWord = !/\s/u.test(title.trim())
+  return oneWord
+    ? {
+        display: 'block',
+        maxWidth: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }
+    : {
+        display: '-webkit-box',
+        maxWidth: '100%',
+        WebkitLineClamp: lines,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        overflowWrap: 'normal',
+        wordBreak: 'normal',
+        textWrap: 'balance',
+      }
+}
+
+function PlaceholderTitle({
+  title,
+  lines,
+  scale,
+  className,
+  style,
+}: {
+  title: string
+  lines: number
+  scale: TitleScale
+  className?: string
+  style: CSSProperties
+}) {
+  return (
+    <span
+      aria-hidden
+      className={className}
+      data-placeholder-title=""
+      style={{
+        ...style,
+        fontSize: fittedTitleSize(title, scale),
+        ...titleFlow(title, lines),
+      }}
+    >
+      {title}
+    </span>
+  )
+}
 
 /**
  * The placeholderCover slot (Fable 5 slot 9): a coverless book gets a DESIGNED plate, never a gray
@@ -162,22 +185,20 @@ function PlaceholderPlate({
         >
           ❦
         </span>
-        <span
-          aria-hidden
+        <PlaceholderTitle
+          title={title || 'Untitled'}
+          lines={3}
+          scale={{ minPx: 9, fluidCqw: oneWord ? 17 : 10, maxPx: oneWord ? 26 : 15 }}
           style={{
             position: 'relative',
             fontFamily: 'var(--font-display)',
             fontWeight: 600,
             fontStyle: 'italic',
-            fontSize: oneWord ? 'clamp(15px, 17cqw, 26px)' : 'clamp(11px, 10cqw, 15px)',
             lineHeight: 1.25,
             color: 'var(--ph-ink)',
             textAlign: 'center',
-            ...TITLE_OVERFLOW(3),
           }}
-        >
-          {title || 'Untitled'}
-        </span>
+        />
         <span
           aria-hidden
           style={{
@@ -308,8 +329,10 @@ function PlaceholderPlate({
             boxShadow: '0 0 8px var(--primary)',
           }}
         />
-        <span
-          aria-hidden
+        <PlaceholderTitle
+          title={title || 'Untitled'}
+          lines={3}
+          scale={{ minPx: 9, fluidCqw: oneWord ? 12 : 9.5, maxPx: oneWord ? 18 : 14 }}
           style={{
             position: 'absolute',
             left: '8%',
@@ -317,16 +340,12 @@ function PlaceholderPlate({
             bottom: '20%',
             fontFamily: 'var(--font-display)',
             fontWeight: 700,
-            fontSize: oneWord ? 'clamp(12px, 12cqw, 18px)' : 'clamp(10px, 9.5cqw, 14px)',
             lineHeight: 1.15,
             letterSpacing: oneWord ? '0.04em' : 0,
             textTransform: oneWord ? 'uppercase' : 'none',
             color: 'var(--ph-ink)',
-            ...TITLE_OVERFLOW(3),
           }}
-        >
-          {title || 'Untitled'}
-        </span>
+        />
         {author && (
           <span
             aria-hidden
@@ -444,22 +463,20 @@ function PlaceholderPlate({
         >
           {initial}
         </span>
-        <span
-          aria-hidden
+        <PlaceholderTitle
+          title={title || 'Untitled'}
+          lines={3}
+          scale={{ minPx: 9, fluidCqw: oneWord ? 18 : 10, maxPx: oneWord ? 27 : 15 }}
           style={{
             position: 'relative',
             fontFamily: 'var(--font-display)',
             fontWeight: 600,
             fontStyle: 'italic',
-            fontSize: oneWord ? 'clamp(16px, 18cqw, 27px)' : 'clamp(11px, 10cqw, 15px)',
             lineHeight: 1.22,
             color: 'var(--ph-ink)',
             textAlign: 'center',
-            ...TITLE_OVERFLOW(3),
           }}
-        >
-          {title || 'Untitled'}
-        </span>
+        />
         <span
           aria-hidden
           style={{
@@ -565,19 +582,18 @@ function PlaceholderPlate({
             textAlign: 'center',
           }}
         >
-          <span
+          <PlaceholderTitle
+            title={title || 'Untitled'}
+            lines={3}
             className="block"
+            scale={{ minPx: 9, fluidCqw: oneWord ? 17 : 9.5, maxPx: oneWord ? 26 : 14 }}
             style={{
               fontFamily: 'var(--font-display)',
               fontWeight: 600,
-              fontSize: oneWord ? 'clamp(15px, 17cqw, 26px)' : 'clamp(11px, 9.5cqw, 14px)',
               lineHeight: 1.2,
               color: 'var(--paper-ink)',
-              ...TITLE_OVERFLOW(3),
             }}
-          >
-            {title || 'Untitled'}
-          </span>
+          />
           <span
             className="mx-auto my-[6%] block"
             style={{
@@ -694,20 +710,19 @@ function PlaceholderPlate({
             textAlign: 'center',
           }}
         >
-          <span
+          <PlaceholderTitle
+            title={title || 'Untitled'}
+            lines={3}
             className="block uppercase"
+            scale={{ minPx: 8, fluidCqw: oneWord ? 14 : 9, maxPx: oneWord ? 20 : 13.5 }}
             style={{
               fontFamily: 'var(--font-mono)',
               fontWeight: 700,
-              fontSize: oneWord ? 'clamp(13px, 14cqw, 20px)' : 'clamp(10px, 9cqw, 13.5px)',
               lineHeight: 1.2,
               letterSpacing: '0.06em',
               color: 'var(--paper-ink)',
-              ...TITLE_OVERFLOW(3),
             }}
-          >
-            {title || 'Untitled'}
-          </span>
+          />
           {author && (
             <span
               className="mt-[5%] block uppercase"
@@ -813,22 +828,20 @@ function PlaceholderPlate({
         >
           A novel
         </span>
-        <span
-          aria-hidden
+        <PlaceholderTitle
+          title={title || 'Untitled'}
+          lines={3}
+          scale={{ minPx: 9, fluidCqw: oneWord ? 17 : 9.5, maxPx: oneWord ? 25 : 14 }}
           style={{
             fontFamily: 'var(--font-display)',
             fontWeight: 600,
             fontStyle: oneWord ? 'italic' : 'normal',
-            fontSize: oneWord ? 'clamp(16px, 17cqw, 25px)' : 'clamp(11px, 9.5cqw, 14px)',
             lineHeight: 1.25,
             fontFeatureSettings: "'onum' 1",
             color: 'var(--ph-ink)',
             textAlign: 'center',
-            ...TITLE_OVERFLOW(3),
           }}
-        >
-          {title || 'Untitled'}
-        </span>
+        />
         <span
           aria-hidden
           style={{ width: '20%', height: 1, background: 'var(--ph-muted)', margin: '8% 0' }}
@@ -925,19 +938,18 @@ function PlaceholderPlate({
             boxShadow: '0 3px 8px rgba(40, 28, 12, 0.3)',
           }}
         >
-          <span
+          <PlaceholderTitle
+            title={title || 'Untitled'}
+            lines={3}
             className="block"
+            scale={{ minPx: 9, fluidCqw: oneWord ? 16 : 9.5, maxPx: oneWord ? 23 : 14 }}
             style={{
               fontFamily: 'var(--font-display)',
               fontWeight: 600,
-              fontSize: oneWord ? 'clamp(15px, 16cqw, 23px)' : 'clamp(11px, 9.5cqw, 14px)',
               lineHeight: 1.25,
               color: 'var(--paper-ink)',
-              ...TITLE_OVERFLOW(3),
             }}
-          >
-            {title || 'Untitled'}
-          </span>
+          />
           <span
             aria-hidden
             className="mx-auto block"
@@ -1026,20 +1038,19 @@ function PlaceholderPlate({
           >
             Field reference
           </span>
-          <span
+          <PlaceholderTitle
+            title={title || 'Untitled'}
+            lines={3}
             className="block uppercase"
+            scale={{ minPx: 8, fluidCqw: oneWord ? 14 : 9, maxPx: oneWord ? 21 : 13.5 }}
             style={{
               fontFamily: 'var(--font-sans)',
               fontWeight: 700,
-              fontSize: oneWord ? 'clamp(14px, 14cqw, 21px)' : 'clamp(10.5px, 9cqw, 13.5px)',
               lineHeight: 1.2,
               letterSpacing: oneWord ? '0.06em' : '0.02em',
               color: 'var(--cta-ink)',
-              ...TITLE_OVERFLOW(3),
             }}
-          >
-            {title || 'Untitled'}
-          </span>
+          />
           {author && (
             <span
               className="block uppercase"
@@ -1175,19 +1186,18 @@ function PlaceholderPlate({
             boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.35), 0 5px 12px rgba(10, 10, 30, 0.35)',
           }}
         >
-          <span
+          <PlaceholderTitle
+            title={title || 'Untitled'}
+            lines={3}
             className="block"
+            scale={{ minPx: 9, fluidCqw: oneWord ? 16 : 9.5, maxPx: oneWord ? 24 : 14 }}
             style={{
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
-              fontSize: oneWord ? 'clamp(15px, 16cqw, 24px)' : 'clamp(11px, 9.5cqw, 14px)',
               lineHeight: 1.2,
               color: 'var(--paper-ink)',
-              ...TITLE_OVERFLOW(3),
             }}
-          >
-            {title || 'Untitled'}
-          </span>
+          />
           {author && (
             <span
               className="mt-[5%] block uppercase"
@@ -1262,20 +1272,18 @@ function PlaceholderPlate({
         className="block flex-none"
         style={{ height: 2, width: '34%', background: colors.color, opacity: 0.55 }}
       />
-      <span
-        aria-hidden
+      <PlaceholderTitle
+        title={title || 'Untitled'}
+        lines={4}
+        scale={{ minPx: 9, fluidCqw: 15, maxPx: 22 }}
         style={{
           fontFamily: 'var(--font-display)',
           fontStyle: 'italic',
           fontWeight: 600,
-          fontSize: 'clamp(11px, 15cqw, 22px)',
           lineHeight: 1.06,
           color: colors.color,
-          ...TITLE_OVERFLOW(4),
         }}
-      >
-        {title || 'Untitled'}
-      </span>
+      />
       {author && (
         <span
           aria-hidden

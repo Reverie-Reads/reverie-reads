@@ -69,59 +69,59 @@ describe('CoverPlaceholder renders the monogram plate beside the designed plate'
   })
 })
 
-/**
- * EVERY plate's title span carries the wrap contract — the registry-keyed half of the fix.
- *
- * WHAT THIS DOES AND DOES NOT PROVE. It proves the declaration is present on all ten variants,
- * which is what stops a NEW plate (or a restyle of an old one) from shipping without it. It does
- * NOT prove the visual defect is gone: jsdom lays nothing out, so a clipped word and a wrapped one
- * are byte-identical to it. Actual clipping is a layout fact, and it is measured in a real browser
- * by `e2e/placeholder-title-clip.spec.ts` — that is the layer that can see it.
- *
- * Keyed off the SKINS registry rather than a hand-listed array, on the same principle as the core
- * contrast tests: a tenth skin added tomorrow fails here until its plate carries the contract,
- * instead of quietly being the one variant nobody re-checked.
- */
-describe('every plate title wraps rather than clipping (feat/placeholder-title-overflow)', () => {
-  // 'Accumulation' is the real corpus title from the screenshot — it rendered as "Accumulatic" in
-  // the marrow/box-lid plate, overflowing by a measured 61px on a single line.
-  const book = { title: 'Accumulation', first: 'Aimee', last: 'Pokwatka' }
-
-  const titleSpan = (container: HTMLElement): HTMLElement | null => {
-    const wide = container.querySelector<HTMLElement>('.ph-plate-wide')
-    if (!wide) return null
-    return (
-      Array.from(wide.querySelectorAll<HTMLElement>('span')).find(
-        (el) => (el.textContent ?? '').trim() === book.title,
-      ) ?? null
-    )
+describe('every plate composes its placeholder title deliberately', () => {
+  const single = { title: 'Accumulation', first: 'Aimee', last: 'Pokwatka' }
+  const multiple = {
+    title: 'The Extraordinary Inheritance',
+    first: 'Nell',
+    last: 'Marrow',
   }
+
+  const titleSpan = (container: HTMLElement): HTMLElement | null =>
+    container.querySelector<HTMLElement>('.ph-plate-wide [data-placeholder-title]')
 
   for (const skin of Object.keys(SKINS) as SkinId[]) {
-    it(`${skin}: the title span declares overflow-wrap and keeps its clamp`, () => {
-      const { container } = render(<CoverPlaceholder book={book} skin={skin} />)
+    it(`${skin}: a one-word title stays one line and has an honest floor fallback`, () => {
+      const { container } = render(<CoverPlaceholder book={single} skin={skin} />)
       const el = titleSpan(container)
-      expect(el, `${skin}: no title span rendering "${book.title}"`).toBeTruthy()
-      // The half that fixes the clipping: an unbreakable word may break mid-word.
-      expect(el!.style.overflowWrap, `${skin}: title span may still clip a long word`).toBe(
-        'anywhere',
-      )
-      // The half that must SURVIVE it: free to wrap, the title could otherwise grow downward into
-      // whatever sits below. Both are required; neither alone is the contract.
-      expect(
-        Number(el!.style.webkitLineClamp),
-        `${skin}: title span lost its clamp`,
-      ).toBeGreaterThan(0)
+      expect(el, `${skin}: placeholder title missing`).toBeTruthy()
+      expect(el!.style.whiteSpace).toBe('nowrap')
+      expect(el!.style.textOverflow).toBe('ellipsis')
+      expect(el!.style.maxWidth).toBe('100%')
+      expect(el!.style.fontSize).toMatch(/^clamp\([\d.]+px, [\d.]+cqw, [\d.]+px\)$/)
+    })
+
+    it(`${skin}: a multi-word title balances whole words inside its clamp`, () => {
+      const { container } = render(<CoverPlaceholder book={multiple} skin={skin} />)
+      const el = titleSpan(container)
+      expect(el, `${skin}: placeholder title missing`).toBeTruthy()
+      expect(el!.style.textWrap).toBe('balance')
+      expect(el!.style.overflowWrap).toBe('normal')
+      expect(el!.style.wordBreak).toBe('normal')
+      expect(Number(el!.style.webkitLineClamp)).toBeGreaterThan(0)
     })
   }
+
+  it('shrinks a long word while keeping a short title at its display scale', () => {
+    const fluidCqw = (title: string): number => {
+      const { container } = render(
+        <CoverPlaceholder book={{ title, first: 'Nell', last: 'Marrow' }} skin="tryst" />,
+      )
+      const value = titleSpan(container)?.style.fontSize ?? ''
+      const match = value.match(/, ([\d.]+)cqw,/)
+      expect(match, `no fluid container size in ${value}`).toBeTruthy()
+      return Number(match![1])
+    }
+    expect(fluidCqw('Accumulation')).toBeLessThan(fluidCqw('Lure'))
+  })
 
   it('the narrow monogram plate is untouched — it never renders a title at all', () => {
     // Verified rather than assumed: both blocks are always in the DOM (a container query toggles
     // them), so "out of scope" needs checking, not asserting.
-    const { container } = render(<CoverPlaceholder book={book} />)
+    const { container } = render(<CoverPlaceholder book={single} />)
     const narrow = container.querySelector('.ph-plate-narrow')
     expect(narrow, 'narrow plate missing').toBeTruthy()
-    expect(narrow!.textContent).not.toContain(book.title)
-    expect(narrow!.textContent).toContain(monogram(book.title))
+    expect(narrow!.textContent).not.toContain(single.title)
+    expect(narrow!.textContent).toContain(monogram(single.title))
   })
 })
