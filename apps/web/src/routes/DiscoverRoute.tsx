@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { genreKey, SKINS, SKIN_ORDER, splitName, type Book, type TasteAnchors } from '@reverie/core'
+import {
+  coverStateSuffix,
+  genreKey,
+  SKINS,
+  SKIN_ORDER,
+  splitName,
+  type Book,
+  type TasteAnchors,
+} from '@reverie/core'
 import { rootRoute } from './RootRoute'
 import { useBooks } from '../data/books'
 import { useLists } from '../data/lists'
@@ -11,6 +19,7 @@ import { useSearchEverywhere, useAddFromSearch } from '../data/search'
 import { Chip } from '../components/Chip'
 import { Modal } from '../components/Modal'
 import { CoverImage } from '../components/CoverImage'
+import { BookStateMarks } from '../components/BookStateMarks'
 import { SearchResults } from '../components/SearchResults'
 import { libraryMatch, type SearchResult } from '../lib/search'
 import { DiscoverBookPreview } from '../components/DiscoverBookPreview'
@@ -40,9 +49,18 @@ const GENRES: { key: string; label: string }[] = SKIN_ORDER.map((id) => ({
   label: SKINS[id].genre,
 }))
 
+function personalBookForHit(hit: DiscoverHit, books: readonly Book[]): Book | undefined {
+  if (hit.corpusWorkId) {
+    const exact = books.filter((book) => book.corpusWorkId === hit.corpusWorkId)
+    if (exact.length) return exact.length === 1 ? exact[0] : undefined
+  }
+  return libraryMatch({ ...hit, source: 'google', year: hit.pub }, books) ?? undefined
+}
+
 function Card({
   hit,
   owned,
+  book,
   taste,
   anchors,
   onOpen,
@@ -50,6 +68,8 @@ function Card({
   hit: DiscoverHit
   onOpen: () => void
   owned: boolean
+  /** An unambiguous personal match. `owned` stays separate because a duplicate still belongs here. */
+  book?: Book
   taste?: number
   anchors?: TasteAnchors | null
 }) {
@@ -63,16 +83,17 @@ function Card({
       <button
         type="button"
         onClick={onOpen}
-        aria-label={`View details for ${hit.title}`}
+        aria-label={`View details for ${hit.title}${book ? coverStateSuffix(book) : ''}`}
         className="w-full text-left"
       >
         <div
-          className="aspect-[2/3] overflow-hidden rounded-[8px] border border-line"
+          className="relative aspect-[2/3] overflow-hidden rounded-[8px] border border-line"
           style={{ background: 'var(--card)' }}
         >
           {/* Same cover chain as the library grid: upgraded → original → skin placeholder, with the
             Google "no image" plate rejected on load (a Discover hit has no library id → no telemetry). */}
           <CoverImage book={{ title: hit.title, first, last, cover: hit.cover }} thumb />
+          {book && <BookStateMarks book={book} showRead />}
         </div>
         <div className="mt-2 min-w-0">
           <div className="break-words text-[13px] font-semibold leading-snug text-ink">
@@ -539,6 +560,7 @@ function DiscoverCatalog() {
                       hit={h}
                       onOpen={() => setPreview(h)}
                       owned={isOwned(h, owned)}
+                      book={personalBookForHit(h, books ?? [])}
                     />
                   ))}
                 </div>
@@ -659,6 +681,7 @@ function DiscoverCatalog() {
                           hit={h}
                           onOpen={() => setPreview(h)}
                           owned={isOwned(h, owned)}
+                          book={personalBookForHit(h, books ?? [])}
                           taste={taste}
                           anchors={anchors}
                         />
@@ -679,13 +702,7 @@ function DiscoverCatalog() {
       {preview && (
         <DiscoverBookPreview
           hit={preview}
-          book={
-            (books ?? []).find(
-              (book) => preview.corpusWorkId && book.corpusWorkId === preview.corpusWorkId,
-            ) ??
-            libraryMatch({ ...preview, source: 'google', year: preview.pub }, books ?? []) ??
-            undefined
-          }
+          book={personalBookForHit(preview, books ?? [])}
           onClose={() => setPreview(null)}
         />
       )}

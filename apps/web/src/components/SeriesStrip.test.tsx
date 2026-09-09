@@ -22,7 +22,7 @@ vi.mock('../data/series', () => ({
 
 const { SeriesStrip } = await import('./SeriesStrip')
 
-const book = (seriesCount: number | null): Book => ({
+const book = (seriesCount: number | null, over: Partial<Book> = {}): Book => ({
   id: 'book-1',
   title: 'Fourth Wing',
   first: 'Rebecca',
@@ -58,6 +58,7 @@ const book = (seriesCount: number | null): Book => ({
   plan: { y: null, m: null, d: null },
   progress: 0,
   addedTs: 0,
+  ...over,
 })
 
 const entry: SeriesEntry = {
@@ -90,5 +91,29 @@ describe('SeriesStrip total truth', () => {
     render(<SeriesStrip book={state.books[0]!} />)
 
     expect(screen.getByText('#3 of 7 · primary series →')).toBeInTheDocument()
+  })
+
+  it('marks DNF and borrowed neighbours without placing text over their tiny covers', () => {
+    state.books = [
+      book(null, { id: 'before', title: 'Before', readStatus: 'DNF' }),
+      book(null),
+      book(null, {
+        id: 'after',
+        title: 'After',
+        ownership: 'unowned',
+        borrowed: true,
+      }),
+    ]
+    state.entries = [
+      { ...entry, id: 'before-entry', bookId: 'before', title: 'Before', position: 2 },
+      entry,
+      { ...entry, id: 'after-entry', bookId: 'after', title: 'After', position: 4 },
+    ]
+
+    const { container } = render(<SeriesStrip book={state.books[1]!} />)
+
+    expect(container.querySelector('[data-state-marker="dnf"] svg')).toBeTruthy()
+    expect(container.querySelector('[data-state-marker="borrowed"] svg')).toBeTruthy()
+    expect(container.querySelector('[data-state-marker]')?.textContent).toBe('')
   })
 })

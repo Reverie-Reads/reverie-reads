@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CORE_GENRES,
   DISCOVERY_MOODS,
+  coverStateSuffix,
   dedupeDiscoveryBooks,
   discoveryBookFromReader,
   discoveryIntentLabel,
@@ -12,6 +13,7 @@ import {
   discoveryRelationship,
   parseDiscoverySession,
   splitName,
+  type Book,
   type DiscoveryBook,
   type DiscoveryIntent,
   type DiscoveryMood,
@@ -32,6 +34,7 @@ import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { discoverRoute, type DiscoverSearch } from '../../routes/DiscoverRoute'
 import { Button } from '../Button'
 import { CoverImage } from '../CoverImage'
+import { BookStateMarks } from '../BookStateMarks'
 import { DiscoverBookPreview } from '../DiscoverBookPreview'
 import './discovery.css'
 import { SeriesInvitation } from './SeriesInvitation'
@@ -78,7 +81,15 @@ function Glyph({ name }: { name: string }) {
     </svg>
   )
 }
-function Cover({ book, small = false }: { book: DiscoveryBook; small?: boolean }) {
+function Cover({
+  book,
+  personal,
+  small = false,
+}: {
+  book: DiscoveryBook
+  personal?: Book
+  small?: boolean
+}) {
   const { first, last } = splitName(book.authors[0] ?? '')
   return (
     <div className={`discovery-cover ${small ? 'small' : ''}`}>
@@ -86,6 +97,9 @@ function Cover({ book, small = false }: { book: DiscoveryBook; small?: boolean }
         book={{ title: book.title, first, last, cover: book.cover, coverThumb: book.coverThumb }}
         thumb={small}
       />
+      {personal && (
+        <BookStateMarks book={personal} density={small ? 'thumb' : 'cover'} showRead={!small} />
+      )}
     </div>
   )
 }
@@ -402,32 +416,38 @@ function Experience({ ownerId }: { ownerId: string }) {
             </p>
           )}
           <div className="discovery-search-results">
-            {hits.map((book) => (
-              <article key={discoveryKey(book)} className="discovery-search-result">
-                <button onClick={() => open(book)} aria-label={`View details for ${book.title}`}>
-                  <Cover book={book} small />
-                </button>
-                <div>
-                  <button className="discovery-title-button" onClick={() => open(book)}>
-                    {book.title}
+            {hits.map((book) => {
+              const personal = discoveryLibraryMatch(book, books)
+              return (
+                <article key={discoveryKey(book)} className="discovery-search-result">
+                  <button
+                    onClick={() => open(book)}
+                    aria-label={`View details for ${book.title}${personal ? coverStateSuffix(personal) : ''}`}
+                  >
+                    <Cover book={book} personal={personal} small />
                   </button>
-                  <p>{book.authors.join(', ')}</p>
-                  <p>{discoveryRelationship(discoveryLibraryMatch(book, books))}</p>
-                </div>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setAnchor(book)
-                    setDirection('anchor')
-                    setQuery('')
-                    setChooseAnchor(false)
-                    routeTo({})
-                  }}
-                >
-                  Start from this book
-                </Button>
-              </article>
-            ))}
+                  <div>
+                    <button className="discovery-title-button" onClick={() => open(book)}>
+                      {book.title}
+                    </button>
+                    <p>{book.authors.join(', ')}</p>
+                    <p>{discoveryRelationship(personal)}</p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setAnchor(book)
+                      setDirection('anchor')
+                      setQuery('')
+                      setChooseAnchor(false)
+                      routeTo({})
+                    }}
+                  >
+                    Start from this book
+                  </Button>
+                </article>
+              )
+            })}
           </div>
           {!hits.length && !external.isFetching && !corpus.isFetching && (
             <p className="discovery-empty">No books found yet. Try the full title or its ISBN.</p>
@@ -462,7 +482,12 @@ function Experience({ ownerId }: { ownerId: string }) {
               <article key={item.id}>
                 <div className="discovery-saved-covers">
                   {item.picks.slice(0, 3).map((pick) => (
-                    <Cover key={discoveryKey(pick.book)} book={pick.book} small />
+                    <Cover
+                      key={discoveryKey(pick.book)}
+                      book={pick.book}
+                      personal={discoveryLibraryMatch(pick.book, books)}
+                      small
+                    />
                   ))}
                 </div>
                 <div>
@@ -566,10 +591,12 @@ function Experience({ ownerId }: { ownerId: string }) {
                       </div>
                       <button
                         className="discovery-open-cover"
-                        aria-label={`View details for ${pick.book.title}`}
+                        aria-label={`View details for ${pick.book.title}${
+                          personal ? coverStateSuffix(personal) : ''
+                        }`}
                         onClick={() => open(pick.book)}
                       >
-                        <Cover book={pick.book} />
+                        <Cover book={pick.book} personal={personal} />
                       </button>
                       <p className="discovery-eyebrow">
                         {pick.book.genre || pick.book.genres?.[0] || 'A book to explore'}
@@ -656,30 +683,37 @@ function Experience({ ownerId }: { ownerId: string }) {
                   <div className="discovery-anchor-list">
                     {dedupeDiscoveryBooks([...(anchor ? [anchor] : []), ...favourites])
                       .slice(0, 3)
-                      .map((book) => (
-                        <button
-                          key={discoveryKey(book)}
-                          aria-pressed={
-                            !!selectedAnchor && discoveryKey(selectedAnchor) === discoveryKey(book)
-                          }
-                          onClick={() => {
-                            cancelPending()
-                            setAnchor(book)
-                          }}
-                          className="discovery-anchor-choice skin-card"
-                        >
-                          <Cover book={book} small />
-                          <span>
-                            <strong>{book.title}</strong>
-                            <span>{book.authors.join(', ')}</span>
-                          </span>
-                          <span aria-hidden="true">
-                            {selectedAnchor && discoveryKey(selectedAnchor) === discoveryKey(book)
-                              ? '✓'
-                              : '○'}
-                          </span>
-                        </button>
-                      ))}
+                      .map((book) => {
+                        const personal = discoveryLibraryMatch(book, books)
+                        return (
+                          <button
+                            key={discoveryKey(book)}
+                            aria-label={`Choose ${book.title}${
+                              personal ? coverStateSuffix(personal) : ''
+                            }`}
+                            aria-pressed={
+                              !!selectedAnchor &&
+                              discoveryKey(selectedAnchor) === discoveryKey(book)
+                            }
+                            onClick={() => {
+                              cancelPending()
+                              setAnchor(book)
+                            }}
+                            className="discovery-anchor-choice skin-card"
+                          >
+                            <Cover book={book} personal={personal} small />
+                            <span>
+                              <strong>{book.title}</strong>
+                              <span>{book.authors.join(', ')}</span>
+                            </span>
+                            <span aria-hidden="true">
+                              {selectedAnchor && discoveryKey(selectedAnchor) === discoveryKey(book)
+                                ? '✓'
+                                : '○'}
+                            </span>
+                          </button>
+                        )
+                      })}
                   </div>
                   <button
                     className="discovery-text-action"

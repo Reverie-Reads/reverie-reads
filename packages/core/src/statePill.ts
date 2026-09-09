@@ -107,3 +107,21 @@ export function stateSuffix(
   if (isBorrowedBook(b)) parts.push(STATE_PILL_SPOKEN.borrowed)
   return parts.length ? `, ${parts.join(', ')}` : ''
 }
+
+/**
+ * State phrasing for a cover-sized browse tile that visibly carries the Read pill too.
+ *
+ * `stateSuffix` deliberately omits Read because CoverCard exposes that sibling pill directly to
+ * assistive technology. Mood, trope, and Discover covers are each one labelled button, so their
+ * explicit `aria-label` replaces every descendant's text. This companion keeps the visible and
+ * spoken states aligned on those tiles without making every narrow spine announce ordinary Read.
+ */
+export function coverStateSuffix(
+  b: Pick<Book, 'readStatus' | 'reads' | 'ownership' | 'borrowed' | 'wishlist'>,
+): string {
+  const parts: string[] = []
+  if (isDnf(b)) parts.push(STATE_PILL_SPOKEN.dnf)
+  else if (b.readStatus === 'Read' || b.reads.length > 0) parts.push('read')
+  if (isBorrowedBook(b)) parts.push(STATE_PILL_SPOKEN.borrowed)
+  return parts.length ? `, ${parts.join(', ')}` : ''
+}

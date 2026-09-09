@@ -156,10 +156,10 @@ The remaining items are ordered within P2, but they do not block the P0/P1 seque
 4. **Library state and synchronization.** Decide URL precedence for filters; fix realtime lifecycle
    across sign-out and assess personal-book/list subscriptions. Treat a true offline write queue as
    its own subsystem, not a quick caching patch.
-5. **Reader safeguards and polish.** The restore preflight with real counts and the fresh-device
-   appearance handoff are complete. Resolve dense-grid state indicators and convert the remaining
-   risky literal glyphs to controlled SVGs. See `docs/tasks/restore-preflight.md` and
-   `docs/tasks/fresh-device-appearance.md`.
+5. **Reader safeguards and polish.** The restore preflight with real counts, the fresh-device
+   appearance handoff, and dense-grid state indicators are complete. Convert the remaining risky
+   literal glyphs to controlled SVGs. See `docs/tasks/restore-preflight.md`,
+   `docs/tasks/fresh-device-appearance.md`, and `docs/tasks/dense-grid-state-indicators.md`.
 6. **Reading progress.** Decide whether percent-only progress is sufficient; pages/chapters require
    schema, import/export, stats, and UI semantics together.
 7. **Cover pipeline efficiency.** Remove repeated image decodes only after measuring CPU/memory and

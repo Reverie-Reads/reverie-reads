@@ -11,6 +11,7 @@ import {
   type SeriesEntry,
 } from '@reverie/core'
 import { CoverImage } from './CoverImage'
+import { BookStateMarks } from './BookStateMarks'
 import { fetchBookSeriesMemberships, fetchSeriesEntries } from '../data/series'
 import { useBooks } from '../data/books'
 
@@ -73,14 +74,17 @@ export function SeriesStrip({ book }: { book: Book }) {
     const b = e.bookId ? byId.get(e.bookId) : undefined
     return (
       <span
-        className="h-[54px] w-9 flex-none overflow-hidden rounded-md border border-line"
+        className="relative h-[54px] w-9 flex-none overflow-hidden rounded-md border border-line"
         style={!b ? { borderStyle: 'dashed', background: 'var(--chip)' } : undefined}
         title={`${dir === 'prev' ? 'Before' : 'After'} this one: ${b?.title ?? e.title}${
           b ? stateSuffix(b) : ''
         }`}
       >
         {b ? (
-          <CoverImage book={b} thumb ghost={!isPossessed(b)} />
+          <>
+            <CoverImage book={b} thumb ghost={!isPossessed(b)} />
+            <BookStateMarks book={b} density="thumb" />
+          </>
         ) : (
           <span className="flex h-full items-center justify-center text-[13px] text-muted">⊹</span>
         )}

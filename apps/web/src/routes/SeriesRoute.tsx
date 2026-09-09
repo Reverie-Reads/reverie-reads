@@ -19,6 +19,7 @@ import {
 import { rootRoute } from './RootRoute'
 import { BackLink } from '../components/BackLink'
 import { CoverImage } from '../components/CoverImage'
+import { BookStateMarks } from '../components/BookStateMarks'
 import { LibraryPicker } from '../components/LibraryPicker'
 import { Modal } from '../components/Modal'
 import {
@@ -588,16 +589,15 @@ function SeriesScreen() {
                   <button
                     type="button"
                     onClick={() => openBook(book.id)}
-                    // The row's visible text names the book; the suffix adds the state a thumb
-                    // cannot show. Thumb-class carries state to the screen reader only.
                     aria-label={`Open ${book.title}${stateSuffix(book)}`}
                     className="flex min-w-0 flex-1 items-center gap-3 text-left"
                   >
                     <div
-                      className="h-[60px] w-10 flex-none overflow-hidden rounded-md border border-line"
+                      className="relative h-[60px] w-10 flex-none overflow-hidden rounded-md border border-line"
                       style={state === 'wishlist' ? { borderStyle: 'dashed' } : undefined}
                     >
                       <CoverImage book={book} thumb ghost={state === 'wishlist'} />
+                      <BookStateMarks book={book} density="thumb" />
                     </div>
                     <span className="min-w-0 flex-1">
                       <span
