@@ -250,6 +250,15 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   license. Deduplicate economic benefit by reviewed work group, penalize regressions and incorrect
   values, and label monthly projections as scenarios, not observed savings or a renewal decision.
   Preserve old commands' admission/routing and keep qualification and production adapters untouched.
+  The `metadata:study` wrapper locks a complete private frame and deterministic, work-preserving
+  cohorts of at most 20 editions. Live execution requires at least 100 distinct works, the committed
+  lock and matching runtime. Its Git-common-directory attempt markers span worktrees; failed or
+  interrupted cohorts are not retried, and repricing the same ISBN set cannot reopen it. Only a
+  complete, unique set of validated cohort aggregates permits an economic projection. Hashes do not
+  certify source truth or rights; historical/qualification overlap and source review remain gates.
+  Its public `--run` path is held pending the September 7 ISBNdb terms review; no flag bypasses that
+  hold. Do not use the older CLI or the injected test primitive to evade it. See the package's
+  `reports/isbndb-source-use-review-2026-09-08.md` before any new ISBNdb acquisition for this study.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
   title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
   edit shared metadata, after identity confirmation and a source/note; it never invokes the broad

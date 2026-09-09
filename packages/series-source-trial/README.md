@@ -81,6 +81,69 @@ The separate command has no Supabase, personal-data, model, index, cache, or pro
 It does not change or certify the existing production ISBNdb adapter. Public reports retain only
 aggregate metrics and a frame hash. Subscription access does not settle retention/display/LLM rights.
 
+### Multi-cohort subscription study
+
+`metadata:study` wraps the subscription scorer; it does not change the older commands or authorize
+live acquisition merely because a key works. Source-use rights, account quota, source review,
+historical/qualification overlap and a registered budget must be checked before running a study.
+**The public CLI currently refuses `--run` before reading input or credentials.** The September 7
+ISBNdb terms need source-use clearance for this evaluation/catalog purpose. See the
+[current source-use review](reports/isbndb-source-use-review-2026-09-08.md). There is no bypass flag;
+clearing this hold requires a reviewed code change and a new runtime fingerprint.
+
+```sh
+pnpm --filter @reverie/series-source-trial metadata:study --help
+pnpm --filter @reverie/series-source-trial metadata:study --dry --input data/metadata-value.example.json
+```
+
+Both commands run offline. The dry fixture remains fictional and cannot be made live by relabelling
+its reference origin. A study frame uses the same input shape as `metadata:value`, but allows up to
+200 editions. Cases are sorted by reviewed work group and canonical ISBN, then packed into cohorts
+of at most 20 without splitting a work. Duplicate equivalent ISBNs, a work group larger than 20,
+and an exact normalized title/full-author identity assigned to two groups are refused. Translations,
+retitlings and other non-exact work equivalences still require human grouping and overlap review.
+
+`--freeze` requires an ignored frame under this package's `private-inputs/metadata-value-studies/`
+and an explicit, new `--lock` file inside the repository. It writes an aggregate-only lock with
+frame/cohort hashes, counts, fields, economics and per-cohort request ceilings (one Google and one
+ISBNdb request per edition, at most 80 Open Library HTTP requests per cohort). All metadata modules,
+the runner/environment loader, dependency manifests and Node version are included in the system
+fingerprint. Source files must match committed contents, including any newly added metadata module.
+The optional Google referrer is fingerprinted without retaining its value. Use the same local
+environment file via `--env` for freeze/run/merge if a referrer is configured; key values are never
+hashed, written or printed. Missing keys are allowed during freeze, not during a live run.
+
+After source-use clearance, commit the non-secret lock and review plan before execution. The tested
+execution primitive requires an explicit 1-based
+`--cohort`, at least 100 reviewed works, both keys, a matching private frame, and a clean, matching
+committed runtime/lock. There is no refresh, retry, partial-case selector, alternate state directory
+or output-file override. Successful freeze only records a plan; it does not certify the selection
+frame, source permissions or the correctness of reference facts.
+
+Attempt markers and aggregate-only cohort results live under `metadata-value-studies/` in the
+repository's **common Git directory**, shared by its worktrees. One repository-wide active marker
+serializes study cohorts. A permanent marker and reserved result file precede acquisition, so
+interruption or invalid output cannot silently restore quota eligibility. The exact same canonical
+ISBN set is bound to its first attempted lock even if its price, reference facts, grouping or runtime
+subsequently changes. Overlapping but non-identical sets and separate clones still need the
+preregistered historical overlap audit; these guards are not tamper-proof experiment attestation.
+Never delete attempt markers or run a failed cohort again. A process crash can leave the active
+marker in place: stop and report it for owner investigation, rather than automatically clearing it.
+
+`--merge` reads only those fixed result paths. An incomplete study reports completed/missing/failed
+cohorts and no cost projection. A complete one validates every cohort binding, expected field/state
+shape, enum, count total, request ceiling, reference coverage and economic definition. Duplicate,
+foreign, malformed, dry-run or failed reports cannot enter the combined result. All editions of a
+work are already together, so work-level benefit/regression counters can be summed without double
+counting. Cost is recomputed from combined works and benefits, never averaged from cohort costs.
+Only finite aggregate metrics and lock hashes leave the command. Reports stay `not_qualified`;
+rights, representativeness, uncertainty and review time still require a separate decision.
+
+The freeze/commit/incomplete-merge/refused-live CLI path and a complete 100-work mocked persisted
+study are covered offline. The underlying injected execution primitive is tested with fake clients;
+its public live CLI path remains held. No real subscription-value frame is frozen or acquired by
+these examples.
+
 ## Selective ISBNdb edition supplement (trial only)
 
 This separate metadata experiment requests ISBNdb only when an exact Google/Open Library edition
