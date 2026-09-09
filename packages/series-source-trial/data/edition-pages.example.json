@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "purpose": "development-edition-pages",
+  "cases": [
+    {
+      "identity": { "isbn": "9780316565202", "title": "Synthetic metadata exercise", "authors": ["Ada Example"], "language": "en" },
+      "current": {},
+      "reference": { "pages": 300, "editionFormat": "paperback", "source": "https://publisher.example/synthetic-dry-run-only", "reviewedOn": "2026-09-09" }
+    }
+  ]
+}

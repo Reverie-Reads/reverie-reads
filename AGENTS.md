@@ -271,6 +271,15 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   Do not infer hosted configuration or existing data holdings from the study.
   Its frozen set is consumed; preserve its locks and attempt markers, never reacquire it from another
   clone. See `packages/series-source-trial/reports/isbndb-value-study-results-2026-09-09.md`.
+- **Edition-page evidence stays trial-only and field-specific.** `metadata:pages` requires one
+  unique exact-ISBN/full-title/full-author Google search candidate, then revalidates one detail
+  response and its safe ID/language. Only positive integer detail pages may join the existing exact
+  Open Library edition path; search pages, work medians and printed-page fallback cannot vote.
+  Agreement does not establish independent lineage or automatic eligibility. Conflicts and current
+  values stay protected; unavailable is unresolved. Memory-only packets produce aggregate-only
+  reports with no production/cache/model writer. Live input must exclude the hash-authenticated
+  consumed study and human-reviewed development/qualification overlap. Never modify the consumed
+  study runtime or attempt state to run this separate path. See `docs/tasks/google-edition-diagnostics.md`.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
   title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
   edit shared metadata, after identity confirmation and a source/note; it never invokes the broad

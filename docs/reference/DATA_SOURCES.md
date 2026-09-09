@@ -18,7 +18,11 @@ and retention cleanup remain separate gates.
 found search/detail page-count disagreement despite identical volume IDs and returned ISBNs.
 Detail agreed with five publisher counts, not all six. This is a development finding, not a
 production change or general accuracy estimate; work-level medians and search ranks must not be
-treated as exact-edition corroboration. The report defines the next bounded, no-write evidence test.
+treated as exact-edition corroboration. The separate trial-only `metadata:pages` command now tests
+strict search-to-detail identity revalidation plus exact-edition Open Library observations; all
+candidates remain review-only and output is aggregate-only. Cross-provider agreement does not
+establish independent lineage. Production enrichment and the consumed study runtime are unchanged;
+a broader fresh-reference comparison remains required before production integration.
 
 | Source                      | Reliability /5 | Cost                                                  | How to grab data                                                                                                                                                                                        |
 | --------------------------- | -------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -155,7 +155,22 @@ specific failure mode.
 
 ## Delivery status
 
-This change records the diagnosis and implementation boundary only. Production adapters, cache
-behavior and metadata writes are unchanged. A full browser suite is exempt for this docs-only
-branch; none was run or claimed. The seven local observation controls and the 12-request live
-diagnostic above do not replace the full gates required for a subsequent runtime change.
+The original diagnostic landed as docs-only PR #507. The follow-up implements the bounded
+`metadata:pages` trial command described in the
+[trial README](../../packages/series-source-trial/README.md#exact-edition-page-evidence-trial-only).
+It selects a unique exact Google search identity, revalidates one volume-detail response, and
+joins the existing exact-edition Open Library path into a memory-only, review-only page packet.
+Cross-provider agreement is deliberately not called independent corroboration. Existing values
+stay protected and neither search pages nor undocumented printed pages can rescue failed detail.
+
+The CLI requires a fresh reviewed frame and uses the hash-authenticated consumed frame only to
+refuse overlapping ISBNs/base titles before credential loading. No frozen source file or attempt
+marker is changed. References do not enter acquisition. The synthetic fixture is dry-only; mocked
+HTTP exercises failures, ambiguity, provenance, request bounds, privacy and the still-wrong
+302-versus-320 detail case. Removing the detail-ID guard makes its test fail; removing the duplicate
+candidate guard makes both selection and HTTP call-bound tests fail. Both guards were restored.
+
+Production adapters, cache behavior and metadata writes remain unchanged. This implementation
+does not add new live-provider quality observations to the six-edition diagnostic above. A broader
+fresh reference comparison is still required before choosing a production eligibility policy;
+passing transport tests alone cannot certify page accuracy or source rights.
