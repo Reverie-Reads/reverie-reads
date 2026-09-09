@@ -20,6 +20,8 @@ import type { SkinId } from '@reverie/core'
 // generated palette applied as inline custom properties on <html> (no stylesheet block exists).
 const SKIN_KEY = 'reverie.skin'
 const MODE_KEY = 'reverie.mode'
+const APPEARANCE_PENDING_ATTRIBUTE = 'data-appearance-pending'
+const GOLD_BRAND_CLASS = 'gold-brand'
 const ADAPTIVE_VAR_KEYS = [...ADAPTIVE_COLOR_KEYS, ...ADAPTIVE_CARRY_KEYS]
 
 function safeStorage(): Storage | null {
@@ -50,6 +52,24 @@ function readInitialSkin(): ActiveSkin {
 function readInitialMode(): Mode {
   const m = safeStorage()?.getItem(MODE_KEY)
   return isMode(m) ? m : 'system'
+}
+
+/** Whether this device can paint the reader's last room without waiting for their profile.
+ * Both axes matter: a saved room with an unknown mode can still produce the wrong first surface. */
+export function hasStoredAppearance(): boolean {
+  const storage = safeStorage()
+  if (!storage) return false
+  const skin = storage.getItem(SKIN_KEY)
+  // Adaptive's generated palette lives in the profile, not localStorage. Its id alone cannot
+  // reconstruct the room, so it follows the same profile-first entry path as a new device.
+  return isActiveSkin(skin) && skin !== 'adaptive' && isMode(storage.getItem(MODE_KEY))
+}
+
+/** Release index.html's neutral first-paint treatment after the saved room has been applied. */
+export function finishAppearanceBootstrap(): void {
+  if (typeof document === 'undefined') return
+  document.documentElement.removeAttribute(APPEARANCE_PENDING_ATTRIBUTE)
+  document.documentElement.classList.remove(GOLD_BRAND_CLASS)
 }
 
 /** Reflect the active skin + resolved mode onto <html>; for adaptive, paint the generated palette. */

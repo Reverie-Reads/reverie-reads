@@ -90,6 +90,12 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   tokens; the **e2e axe sweep** runs four (`tryst`, `grimoire`, `aphelion`, `marrow`) × both
   modes. A new component's contrast belongs in a registry-keyed core test — that is the layer
   that is exhaustive.
+- **First paint requires a complete appearance.** A valid local non-Adaptive room plus mode may
+  open immediately and reconcile later. A missing or invalid axis, or Adaptive without its
+  profile-only palette, stays in the neutral Reverie front-door material until profile hydration
+  applies room and mode together. Never reveal the signed-in shell while
+  `data-appearance-pending` remains on the document. A profile failure must offer an explicit retry
+  and default-room escape without implying that library data was lost.
 - **Port, don't rewrite** the prototype's already-tested logic: the merge engine, the
   Goodreads/StoryGraph CSV importer, and the spoiler-gating rule (`comment.unit <=
 myProgress`). Move them into `packages/core` with tests.

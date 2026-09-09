@@ -38,15 +38,23 @@
     />
     <meta name="twitter:image" content="https://reveriereads.app/reverie-next-read-share.png" />
     <link rel="stylesheet" href="/fonts/brand.css" />
+    <!-- The neutral front-door tokens must be available before the boot script can mark an
+         incomplete appearance. Vite fingerprints this stylesheet in production. -->
+    <link rel="stylesheet" href="/src/styles/brand.css?direct" />
     <!-- Only the ACTIVE skin's font pairing is loaded (below, pre-paint), not all nine families.
          Fonts are SELF-HOSTED under /fonts (scripts/fetch-fonts.mjs) — no third-party host.
          The Skin Gallery loads the rest on demand. Keep this map in sync with src/skin/fonts.ts. -->
     <script>
       // Set skin + light/dark mode before first paint to avoid a flash of the wrong identity.
       ;(function () {
+        function holdAppearance() {
+          document.documentElement.setAttribute('data-appearance-pending', '')
+          document.documentElement.classList.add('gold-brand')
+        }
         try {
           var valid = { tryst: 1, grimoire: 1, aphelion: 1, marrow: 1, umbra: 1, folio: 1, hearth: 1, almanac: 1, bloom: 1 }
-          var skin = localStorage.getItem('reverie.skin')
+          var storedSkin = localStorage.getItem('reverie.skin')
+          var skin = storedSkin
           if (!valid[skin]) skin = 'tryst'
           // Load ONLY the active skin's font pairing, pre-paint (each @font-face carries font-display: swap → no FOIT).
           var FONT = {
@@ -65,8 +73,12 @@
           fl.href = FONT[skin]
           fl.setAttribute('data-skin-font', '')
           document.head.appendChild(fl)
-          var mode = localStorage.getItem('reverie.mode')
+          var storedMode = localStorage.getItem('reverie.mode')
+          var mode = storedMode
           if (mode !== 'light' && mode !== 'dark' && mode !== 'system') mode = 'system'
+          if (!valid[storedSkin] || (storedMode !== 'light' && storedMode !== 'dark' && storedMode !== 'system')) {
+            holdAppearance()
+          }
           var resolved =
             mode === 'system'
               ? window.matchMedia('(prefers-color-scheme: light)').matches
@@ -76,6 +88,7 @@
           document.documentElement.dataset.skin = skin
           document.documentElement.dataset.mode = resolved
         } catch (e) {
+          holdAppearance()
           document.documentElement.dataset.skin = 'tryst'
           document.documentElement.dataset.mode = 'dark'
         }

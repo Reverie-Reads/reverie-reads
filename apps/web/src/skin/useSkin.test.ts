@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { resolveMode, useSkin } from './useSkin'
+import { finishAppearanceBootstrap, hasStoredAppearance, resolveMode, useSkin } from './useSkin'
 
 describe('useSkin store', () => {
   beforeEach(() => {
@@ -23,6 +23,25 @@ describe('useSkin store', () => {
     useSkin.getState().setMode('light')
     expect(localStorage.getItem('reverie.skin')).toBe('marrow')
     expect(localStorage.getItem('reverie.mode')).toBe('light')
+  })
+
+  it('trusts only a complete locally paintable appearance', () => {
+    expect(hasStoredAppearance()).toBe(true)
+
+    localStorage.removeItem('reverie.mode')
+    expect(hasStoredAppearance()).toBe(false)
+
+    localStorage.setItem('reverie.mode', 'dark')
+    localStorage.setItem('reverie.skin', 'adaptive')
+    expect(hasStoredAppearance()).toBe(false)
+  })
+
+  it('releases the neutral first-paint treatment after hydration', () => {
+    document.documentElement.setAttribute('data-appearance-pending', '')
+    document.documentElement.classList.add('gold-brand')
+    finishAppearanceBootstrap()
+    expect(document.documentElement).not.toHaveAttribute('data-appearance-pending')
+    expect(document.documentElement).not.toHaveClass('gold-brand')
   })
 
   it('resolveMode maps explicit modes through and resolves system to a concrete mode', () => {

@@ -583,17 +583,14 @@ Error(authFailure(context, DEV_EMAIL, error))`) and its writes through `ok`/`okD
   backup's other reader records. Cancel is read-only; only the explicit Restore action writes.
   Restore remains additive and merge-routed restore remains blocked. See
   `docs/tasks/restore-preflight.md`.
-- **Flash of the wrong mode on a fresh device.** A reader whose profile `mode` is
-  `dark`, on a device with no `reverie.mode` in localStorage — first-ever load, or
-  right after the sign-out cache clear (`fix/offline-session`) — gets a light
-  first paint (the boot script falls back to `system`, which resolves to
-  whatever `prefers-color-scheme` says) and a ~180ms transition to dark once the
-  profile loads and `useSkinSync` corrects it. Real, reader-facing — not the
-  CI-only race the a11y sweep hit, though it's the same underlying gap: nothing
-  pre-seeds localStorage before the app's own first paint. Made more reachable by
-  the sign-out cache clear, which deliberately wipes local state. App-source; its
-  own branch later.
-  <sub>**verified 2026-08-20** — still OPEN: `index.html:43` defaults to `'system'` when `reverie.mode` is absent, and `skin/controls.ts:86` hydrates only after the profile query resolves — so a fresh device can still paint the wrong mode first.</sub>
+- ~~**Flash of the wrong mode on a fresh device.**~~ — done. An incomplete local appearance now
+  receives a neutral Reverie first paint; the private shell waits until the profile's room and mode
+  are applied together before paint. Complete local choices still open immediately, while Adaptive
+  waits for its profile-only palette. A profile failure offers Retry and an explicit default-room
+  escape without implying that library data was lost. The old entry overstated the sign-out path:
+  current sign-out cleanup clears IndexedDB, not the room and mode in localStorage. The real cases
+  were first sign-in, manually cleared appearance storage, and Adaptive. See
+  `docs/tasks/fresh-device-appearance.md`.
 - ~~**`merge_books` can silently null out a reader's plan.**~~ — fixed by
   `20260803010000_merge_plan_precision.sql`, guarded by
   `supabase/tests/merge_plan_test.sql`, both mutation-checked. `take_plan` is

@@ -8,6 +8,7 @@ import { JustFinishedSheet } from '../components/JustFinishedSheet'
 import { useAuth } from '../auth/AuthProvider'
 import { UnauthShell } from '../auth/UnauthShell'
 import { VerifyEmail } from '../auth/VerifyEmail'
+import { ReadingRoomGate } from '../auth/ReadingRoomGate'
 import { authCallback } from '../lib/authCallback'
 import { useVoice } from '../skin/labels'
 
@@ -73,7 +74,7 @@ function RootLayout() {
   const onboarding = pathname === '/onboarding'
 
   return (
-    <>
+    <ReadingRoomGate>
       <Sky />
       {!verified ? (
         <VerifyEmail email={session.user.email} />
@@ -87,7 +88,7 @@ function RootLayout() {
       <UpdateToast />
       <WriteErrorToast />
       <JustFinishedSheet />
-    </>
+    </ReadingRoomGate>
   )
 }
 
