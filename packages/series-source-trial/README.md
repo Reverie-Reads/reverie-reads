@@ -5,6 +5,12 @@ It does not write to Supabase or modify Reverie's corpus.
 
 ## ISBNdb subscription-value evaluation (trial only)
 
+**Owner decision, September 9: drop ISBNdb from the planned source stack.** The completed
+[100-work comparison and decision](reports/isbndb-value-study-results-2026-09-09.md) remain an
+audit record, not authorization for another live run. The commands below document the retained
+harness; no further ISBNdb acquisition without new owner approval. Billing and production have
+not been changed, and the legacy production adapter has not been removed.
+
 `metadata:value` asks whether the recurring fee buys meaningful additional utility, rather than
 whether a narrowly gated lookup can fill a page or binding gap. It independently evaluates Google,
 Open Library, and ISBNdb against each reviewed ISBN/title/full-author identity. A failure or mismatch
@@ -33,7 +39,7 @@ the existing fixed-host, header-key, response-size, pacing, deadline, and stop r
 request per selected edition; Open Library defaults to 80 HTTP requests, bounded at 200, including
 redirect/author hops. Stop conditions can leave an incomplete cohort; do not retry or replenish it
 to improve results. Freeze the clean runtime, entire frame, budget and exclusive start marker before
-a single-use live run as in the completed page trial. No live value result has been collected yet.
+a single-use live run as in the completed page trial. The authorized live study is now complete.
 
 The scorer fetches each provider once, then models three policies in memory:
 
@@ -86,10 +92,11 @@ aggregate metrics and a frame hash. Subscription access does not settle retentio
 `metadata:study` wraps the subscription scorer; it does not change the older commands or authorize
 live acquisition merely because a key works. Source-use rights, account quota, source review,
 historical/qualification overlap and a registered budget must be checked before running a study.
-**The public CLI currently refuses `--run` before reading input or credentials.** The September 7
-ISBNdb terms need source-use clearance for this evaluation/catalog purpose. See the
-[current source-use review](reports/isbndb-source-use-review-2026-09-08.md). There is no bypass flag;
-clearing this hold requires a reviewed code change and a new runtime fingerprint.
+**The owner authorized one bounded evaluation before further ISBNdb contact on September 9.**
+The public CLI admits only the committed 100-ISBN/100-work evaluation set, before loading
+credentials. Every other live set is refused, with no bypass flag. This scoped code change and
+new runtime fingerprint do not clear production rights or retention; see the
+[source-use review](reports/isbndb-source-use-review-2026-09-08.md).
 
 ```sh
 pnpm --filter @reverie/series-source-trial metadata:study --help
@@ -113,7 +120,7 @@ The optional Google referrer is fingerprinted without retaining its value. Use t
 environment file via `--env` for freeze/run/merge if a referrer is configured; key values are never
 hashed, written or printed. Missing keys are allowed during freeze, not during a live run.
 
-After source-use clearance, commit the non-secret lock and review plan before execution. The tested
+For the owner-authorized evaluation, commit the non-secret lock and review plan before execution. The tested
 execution primitive requires an explicit 1-based
 `--cohort`, at least 100 reviewed works, both keys, a matching private frame, and a clean, matching
 committed runtime/lock. There is no refresh, retry, partial-case selector, alternate state directory
@@ -127,6 +134,8 @@ interruption or invalid output cannot silently restore quota eligibility. The ex
 ISBN set is bound to its first attempted lock even if its price, reference facts, grouping or runtime
 subsequently changes. Overlapping but non-identical sets and separate clones still need the
 preregistered historical overlap audit; these guards are not tamper-proof experiment attestation.
+Run cohorts in order. A failed/interrupted cohort or an authentication, quota, or infrastructure
+stop in a completed cohort prevents further acquisition; fresh clients cannot reset that stop.
 Never delete attempt markers or run a failed cohort again. A process crash can leave the active
 marker in place: stop and report it for owner investigation, rather than automatically clearing it.
 
@@ -141,8 +150,13 @@ rights, representativeness, uncertainty and review time still require a separate
 
 The freeze/commit/incomplete-merge/refused-live CLI path and a complete 100-work mocked persisted
 study are covered offline. The underlying injected execution primitive is tested with fake clients;
-its public live CLI path remains held. No real subscription-value frame is frozen or acquired by
+its public live CLI path is limited to the one approved ISBN set. No real frame is frozen or acquired by
 these examples.
+
+The authorized September 9 study is now complete: see the
+[results and final owner drop decision](reports/isbndb-value-study-results-2026-09-09.md).
+Its exact set is consumed, not a reusable example. Do not reacquire it from another clone or
+delete its attempt state. The recommendation does not promote a production policy or clear rights.
 
 ## Selective ISBNdb edition supplement (trial only)
 

@@ -25,6 +25,10 @@ import {
   readStudyJson,
 } from '../src/metadata/value-study.mjs'
 import { main } from '../src/study-metadata.mjs'
+import {
+  assertEvaluationFrame,
+  assertNextEvaluationCohort,
+} from '../src/metadata/study-authorization.mjs'
 
 const system = 'a'.repeat(64)
 const example = JSON.parse(
@@ -569,12 +573,12 @@ test('CLI entry through a filesystem alias actually executes rather than silentl
   assert.match(r.stdout, /metadata:study/)
 })
 
-test('public CLI rights hold precedes even input/env access and cannot be overridden', async () => {
+test('public CLI refuses other frames before env access and cannot be overridden', async () => {
   await assert.rejects(
     main([
       '--run',
       '--input',
-      '/missing/private-frame',
+      new URL('../data/metadata-value.example.json', import.meta.url).pathname,
       '--lock',
       '/missing/lock',
       '--env',
@@ -582,7 +586,7 @@ test('public CLI rights hold precedes even input/env access and cannot be overri
       '--cohort',
       '1',
     ]),
-    /live_study_rights_hold/,
+    /live_study_evaluation_scope/,
   )
   await assert.rejects(
     main([
@@ -597,4 +601,39 @@ test('public CLI rights hold precedes even input/env access and cannot be overri
     ]),
     /invalid_arguments/,
   )
+})
+
+test('evaluation admission binds exactly 100 works and ISBNs without an environment override', () => {
+  const input = frame(100)
+  const allowed = createValueStudyLock(input, system).identityFrameSha256
+  assert.doesNotThrow(() => assertEvaluationFrame(input, allowed))
+  assert.doesNotThrow(() =>
+    assertEvaluationFrame({ ...input, cases: [...input.cases].reverse() }, allowed),
+  )
+  assert.throws(() => assertEvaluationFrame(frame(99), allowed))
+  assert.throws(() => assertEvaluationFrame(frame(101), allowed))
+  assert.throws(() => assertEvaluationFrame(input), /live_study_evaluation_scope/)
+  const changed = structuredClone(input)
+  changed.cases[0].identity.isbn = isbn(400)
+  assert.throws(() => assertEvaluationFrame(changed, allowed), /live_study_evaluation_scope/)
+  changed.cases[0].identity.isbn = input.cases[0].identity.isbn
+  changed.cases[0].workGroup = changed.cases[1].workGroup
+  assert.throws(() => assertEvaluationFrame(changed, allowed), /live_study_evaluation_scope/)
+})
+
+test('a new cohort cannot reset authentication, quota, failure, or interruption stops', () => {
+  const progress = {
+    missing: [2, 3],
+    failed: [],
+    results: [{ summary: { transport: { isbndb: { stopped: null } } } }],
+  }
+  assert.doesNotThrow(() => assertNextEvaluationCohort(progress, 2))
+  assert.throws(() => assertNextEvaluationCohort(progress, 1))
+  assert.throws(() => assertNextEvaluationCohort(progress, 3))
+  assert.throws(() => assertNextEvaluationCohort({ ...progress, failed: [1] }, 2))
+  for (const stopped of ['authentication', 'rate_limited', 'infrastructure_failures']) {
+    const stoppedProgress = structuredClone(progress)
+    stoppedProgress.results[0].summary.transport.isbndb.stopped = stopped
+    assert.throws(() => assertNextEvaluationCohort(stoppedProgress, 2))
+  }
 })

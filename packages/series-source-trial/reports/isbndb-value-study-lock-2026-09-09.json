@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "experiment": "subscription_value_study",
+  "systemSha256": "60fc36164922544c661fc0ca53ede48152b2785fcfa1510d5b359b9a2dc72dca",
+  "identityFrameSha256": "a3a215d08c39d2e951d0c0e96fc8a4feeb84d48054c3492c5111479a6a07771e",
+  "frameSha256": "d87bf4b64a6e71003edae77d5f85be432962fdf7eeb3f4b5d68b9742f5e25d55",
+  "requiredFields": [
+    "pages",
+    "editionFormat",
+    "publisher",
+    "publicationDate",
+    "language"
+  ],
+  "economics": {
+    "maxUsdPerAdditionalWork": null,
+    "monthlyDistinctWorks": null,
+    "monthlySubscriptionUsd": 14.99
+  },
+  "cases": 100,
+  "distinctWorks": 100,
+  "cohorts": [
+    {
+      "index": 1,
+      "frameSha256": "0ccf4b53fc249d0024ce89be0f327cbf22ea3a3e4c41d97e1a179b1387a0f586",
+      "cases": 20,
+      "distinctWorks": 20,
+      "budgets": {
+        "google": 20,
+        "openlibrary": 80,
+        "isbndb": 20
+      }
+    },
+    {
+      "index": 2,
+      "frameSha256": "4749016aacbb9fb0b083ec932029c6dc06b34237c8b736849ab793fbd37b0aaa",
+      "cases": 20,
+      "distinctWorks": 20,
+      "budgets": {
+        "google": 20,
+        "openlibrary": 80,
+        "isbndb": 20
+      }
+    },
+    {
+      "index": 3,
+      "frameSha256": "fec076694e5df5a1b7d1dff2428bd743216d6600c3c1f2a05ce4296e5a73aa78",
+      "cases": 20,
+      "distinctWorks": 20,
+      "budgets": {
+        "google": 20,
+        "openlibrary": 80,
+        "isbndb": 20
+      }
+    },
+    {
+      "index": 4,
+      "frameSha256": "975c3d49c5f48fba4ea0fdfe4183efe0a5215773c2690371208578069cb32ec2",
+      "cases": 20,
+      "distinctWorks": 20,
+      "budgets": {
+        "google": 20,
+        "openlibrary": 80,
+        "isbndb": 20
+      }
+    },
+    {
+      "index": 5,
+      "frameSha256": "a6b95f95f5b7959885b4e478d25b82eabb00056bbdcffcdc4b1535f4d02b5eac",
+      "cases": 20,
+      "distinctWorks": 20,
+      "budgets": {
+        "google": 20,
+        "openlibrary": 80,
+        "isbndb": 20
+      }
+    }
+  ],
+  "sha256": "fc814d0f730e4f8d40fe931c2dfd3b6139d277e8bc5529c1da88db140de84bf8"
+}

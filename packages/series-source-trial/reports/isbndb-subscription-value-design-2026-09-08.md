@@ -11,9 +11,10 @@ This document defines the next experiment, not a registered live dataset or a ke
 No paid requests, completed-frame reruns, credential changes, upgrades, production writes, or series
 qualification runs are part of this implementation. PR #493's completed results remain untouched.
 
-**Current gate:** the public `metadata:study --run` path is held pending the
-[source-use review](isbndb-source-use-review-2026-09-08.md). The remaining sequence below is conditional,
-not permission to bypass the hold through an older command.
+**September 9 update:** the owner authorized one bounded evaluation before further ISBNdb contact.
+The scoped public `metadata:study --run` path admits only that committed 100-ISBN/100-work set.
+The [source-use review](isbndb-source-use-review-2026-09-08.md) still applies to production and
+retention. Older commands are not an alternative path around study safeguards.
 
 ## Owner-reported trial window and cost
 

@@ -6,6 +6,13 @@ including indie and Kindle Unlimited titles, _and_ being usable from a personal 
 
 ## Covers & backlist metadata
 
+**September 9 source decision:** ISBNdb is dropped from the planned source stack. Its entries
+below describe evaluated capabilities, not an active recommendation. The owner prefers improving
+the existing pipeline over subscription-dependent data retention. See the
+[completed comparison and final decision](../../packages/series-source-trial/reports/isbndb-value-study-results-2026-09-09.md).
+The legacy production adapter remains in code; hosted configuration and existing holdings have
+not been audited or changed by this decision.
+
 | Source                      | Reliability /5 | Cost                                                  | How to grab data                                                                                                                                                                                        |
 | --------------------------- | -------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Google Books**            | 4.5            | Free; ~1,000 requests/day default, more on request    | `GET …/books/v1/volumes?q=isbn:X` or `intitle:"…"+inauthor:"…"`; JSON → `volumeInfo.imageLinks.thumbnail`. Optional API key                                                                             |
@@ -48,6 +55,11 @@ cover-URL / upload field for ASIN-only stragglers. The app already does this cha
 
 ## Selective ISBNdb metadata trial
 
+The experiments below are historical. No further ISBNdb acquisition is authorized without new
+owner approval. The final 100-work study found 38 additional correctly improved works under the
+selective policy, but also 20 regressions; useful edition fields did not overcome the owner's
+retention and recurring-dependency concerns. The consumed frame must not be rerun.
+
 The separate edition comparison covered 12 editions. Among nine fully observed three-source
 cases, ISBNdb offered five additional field opportunities over Google plus Open Library: two page
 counts and three edition formats, with no additional strict identities. Three cases lacked a
@@ -82,8 +94,8 @@ The owner-requested `metadata:value` evaluation now measures subscription utilit
 free-provider success, with three truth-blind modeled policies (free, selective, ISBNdb-first).
 Publisher/date/language join pages/binding as ephemeral facts; cover, description and other-edition
 presence are availability only. Distinct-work benefit, regressions, wrong values, real request counts,
-and explicitly assumed monthly-cost scenarios are reported separately. This has synthetic coverage,
-not a live value result or an observed review-time saving. Old trial routing and production adapters
+and explicitly assumed monthly-cost scenarios are reported separately. The bounded live study is
+complete; review-time savings remain unmeasured. Old trial routing and production adapters
 are unchanged. See the [subscription-value protocol](../../packages/series-source-trial/reports/isbndb-subscription-value-design-2026-09-08.md).
 
 This local experiment needs no migration, production flag, or new Supabase secret. It neither

@@ -1,6 +1,6 @@
 # ISBNdb source-use review
 
-Status: **live subscription-value acquisition held**. This is a practical source-fit assessment,
+Historical September 8 status: **live subscription-value acquisition held**. This is a practical source-fit assessment,
 not legal clearance. Public pages were read in a browser on September 8; no account settings changed.
 
 The [terms](https://isbndb.com/terms-and-conditions), dated September 7, permit subscriber applications
@@ -24,3 +24,12 @@ historical reports, or infer that existing aggregates are covered/exempt without
 The new CLI refuses live execution before input/env access, with no override. No new provider calls,
 real frame freeze, subscription cancellation, legal contact, production write or data deletion was
 performed in this review. Synthetic tests cannot establish source permission or provider accuracy.
+
+## September 9 owner instruction
+
+The owner explicitly authorized running the bounded subscription-value comparison before further
+ISBNdb contact. The new runtime admits exactly one committed 100-ISBN/100-work set and preserves
+single-use, aggregate-only, no-model, no-production and no-billing boundaries. This supersedes the
+project's blanket evaluation hold only; it is neither provider confirmation nor legal clearance.
+The production integration, persistent corpus reuse and post-cancellation retention questions
+remain unresolved. No historical report or data is erased by this change.
