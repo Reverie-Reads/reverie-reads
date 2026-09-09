@@ -11,6 +11,10 @@ This document defines the next experiment, not a registered live dataset or a ke
 No paid requests, completed-frame reruns, credential changes, upgrades, production writes, or series
 qualification runs are part of this implementation. PR #493's completed results remain untouched.
 
+**Current gate:** the public `metadata:study --run` path is held pending the
+[source-use review](isbndb-source-use-review-2026-09-08.md). The remaining sequence below is conditional,
+not permission to bypass the hold through an older command.
+
 ## Owner-reported trial window and cost
 
 On September 8, the owner confirmed the lowest paid account tier, **$14.99/month**, and **five
@@ -21,8 +25,8 @@ Five days remaining is a planning window, not an exact cancellation deadline or 
 
 Target a decision with at least one day of margin before the reported expiry. The immediate order is:
 
-1. Complete and test the lock-bound multi-cohort combiner and single-use run guard. In parallel with
-   that preparation, verify account limits and the rights needed for the bounded factual trial.
+1. Verify the implemented `metadata:study` lock-bound combiner and single-use run guard in the
+   approved runtime. Verify account limits and the rights needed for the bounded factual trial.
 2. Review the fresh 100-work minimum frame, audit exclusions/overlap, and freeze the complete
    dataset, runtime and request budget before acquisition. Do not trade away source review to fit
    the deadline or append replacement cases after seeing results.
@@ -41,10 +45,10 @@ For orientation, the subscription alone requires the following incremental benef
 arithmetic scenarios, not selected acceptance thresholds or observed improvements:
 
 | Illustrative maximum subscription cost per additional correct work | Minimum additional correct works per month |
-| ---------------------------------------------------------------- | ------------------------------------------ |
-| $0.25                                                            | 60                                         |
-| $0.10                                                            | 150                                        |
-| $0.05                                                            | 300                                        |
+| ------------------------------------------------------------------ | ------------------------------------------ |
+| $0.25                                                              | 60                                         |
+| $0.10                                                              | 150                                        |
+| $0.05                                                              | 300                                        |
 
 The count is `ceil(14.99 / threshold)`, after work-level deduplication and the existing no-regression
 rules. It is not total lookups, returned fields, cached repeat requests, or all books processed.
@@ -94,8 +98,9 @@ can improve the keep/cancel score. No description-based embedding or graph inges
 The [official API specification](https://api2.isbndb.com/doc.json), inspected September 8, documents
 these fields and bulk ISBN lookup. Bulk requests reduce transport overhead but each requested ISBN
 consumes quota; the current implementation uses single ISBN lookups for auditable bounded requests.
-Public pricing/terms could not be verified through the available web reader. Do not infer a fee,
-account tier, renewal date, retention entitlement or commercial/LLM permission from an API key.
+Public pricing/terms initially failed in the web reader, but the browser review linked above now
+establishes the published plan and a material source-use question. Do not infer this account's
+remaining quota, renewal timestamp, retention entitlement or model-sharing permission from a key.
 
 ## Next live study: freeze before acquisition
 
@@ -116,10 +121,13 @@ account tier, renewal date, retention entitlement or commercial/LLM permission f
    current transport caps; keep every edition of one work in the same cohort. Commit the non-secret
    plan/hash/runtime lock before the first call. Use an exclusive marker for each cohort; failures
    are results, not permission to retry, add cases or refresh an inspected sample.
-5. Report cohort metrics and reconcile complete frame totals without treating editions as
-   independent works. Before running multiple cohorts, implement and test a lock-bound aggregate
-   combiner that rejects duplicate cohort/frame hashes and mismatched policy/economic definitions.
-   The current command is the single-cohort acquisition/scoring primitive, not that combiner.
+5. Use `metadata:study` to report cohort metrics and reconcile complete frame totals without treating
+   editions as independent works. Its deterministic work-preserving partition, committed runtime/lock
+   checks, permanent shared-worktree attempt state and strict aggregate validation are now implemented
+   with offline known-answer tests. The original `metadata:value` remains the single-cohort primitive;
+   do not invoke it directly to bypass the study wrapper. Incomplete or failed study cohorts prevent
+   a combined cost projection, and an already-attempted ISBN set cannot be repriced into a new run.
+   See the package README for the remaining manual rights/overlap gates and state-recovery limits.
 6. Add a blinded review-time exercise only after permitted ephemeral display is established.
    Compare time and error rate on baseline-only versus supplemented packets. Until then, report
    review time as unmeasured and do not price assumed human time as observed savings.
