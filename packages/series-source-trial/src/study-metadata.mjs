@@ -8,6 +8,10 @@ import { createBaselineClient } from './metadata/baseline-client.mjs'
 import { createIsbndbClient } from './metadata/isbndb-client.mjs'
 import { runSubscriptionValue } from './metadata/subscription-value.mjs'
 import {
+  assertEvaluationFrame,
+  assertNextEvaluationCohort,
+} from './metadata/study-authorization.mjs'
+import {
   createValueStudyLock,
   verifyValueStudyLock,
   studyHash,
@@ -71,7 +75,7 @@ export async function main(args = process.argv.slice(2), write = console.log) {
   if (args.includes('--help')) {
     if (args.filter((a) => a !== '--').length !== 1) throw new Error('invalid_arguments')
     write(
-      'metadata:study --dry|--freeze|--run|--merge --input <frame.json> [--lock <lock.json>] [--cohort <1-based-index>] [--env <file>]\nLive --run is currently held pending source-use review; no override is available. Dry plans need no credentials. Freeze requires a clean committed runtime and an ignored private-inputs/metadata-value-studies frame. The execution primitive requires a committed matching lock, at least 100 works, and both API keys. Merge reads only the fixed Git-common-directory state. No refresh, retry, state override or billing action exists.',
+      'metadata:study --dry|--freeze|--run|--merge --input <frame.json> [--lock <lock.json>] [--cohort <1-based-index>] [--env <file>]\nLive --run admits only the committed September 9 evaluation ISBN set: 100 editions, 100 works. No override is available. Dry plans need no credentials. Freeze requires a clean committed runtime and an ignored private-inputs/metadata-value-studies frame. Execution requires a committed matching lock and both API keys. Cohorts run in order; failed/interrupted or provider-stopped studies cannot advance. Merge reads only the fixed Git-common-directory state. No refresh, retry, state override, production clearance or billing action exists.',
     )
     return
   }
@@ -102,11 +106,10 @@ export async function main(args = process.argv.slice(2), write = console.log) {
     (options.mode === '--dry' && (options.lock || options.env))
   )
     throw new Error('invalid_arguments')
-  // Reviewed public terms create an unresolved fit for systematic evaluation/derived catalog use.
-  // Deliberately fail before input/env loading or any transport construction. A reviewed code change
-  // (and new runtime lock) is required after source-use clearance; no command-line bypass exists.
-  if (options.mode === '--run') throw new Error('live_study_rights_hold')
   const input = await readStudyJson(resolve(options.input))
+  // The owner authorized one evaluation before further provider contact, not general acquisition.
+  // Reject every other frame before loading credentials or constructing provider transports.
+  if (options.mode === '--run') assertEvaluationFrame(input)
   if (options.mode !== '--dry')
     await loadLocalEnvironment(resolve(options.env ?? join(packageRoot, '.env.local')))
   const system = await valueStudySystemHash(options.mode !== '--dry')
@@ -165,6 +168,7 @@ export async function main(args = process.argv.slice(2), write = console.log) {
   const googleKey = process.env.GOOGLE_BOOKS_API_KEY ?? process.env.GOOGLE_BOOKS_KEY
   const isbnKey = process.env.ISBNDB_API_KEY ?? process.env.ISBNDB_KEY
   if (!googleKey?.trim() || !isbnKey?.trim()) throw new Error('keys_required')
+  assertNextEvaluationCohort(await studyProgress(lock, stateRoot), Number(options.cohort))
   const result = await runValueStudyCohort({
     input,
     lock,
@@ -197,8 +201,8 @@ if (
 )
   main().catch((error) => {
     console.error(
-      error.message === 'live_study_rights_hold'
-        ? 'Live ISBNdb studies are on hold pending source-use review. No provider request was made. There is no override.'
+      error.message === 'live_study_evaluation_scope'
+        ? 'Only the approved 100-work evaluation frame may run. No provider request was made. There is no override.'
         : 'Metadata study stopped. Check the committed lock, private frame, runtime, credentials and attempt state. Details are redacted; do not delete attempt markers or rerun a started cohort.',
     )
     process.exitCode = 1

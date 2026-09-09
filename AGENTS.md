@@ -256,9 +256,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   interrupted cohorts are not retried, and repricing the same ISBN set cannot reopen it. Only a
   complete, unique set of validated cohort aggregates permits an economic projection. Hashes do not
   certify source truth or rights; historical/qualification overlap and source review remain gates.
-  Its public `--run` path is held pending the September 7 ISBNdb terms review; no flag bypasses that
-  hold. Do not use the older CLI or the injected test primitive to evade it. See the package's
-  `reports/isbndb-source-use-review-2026-09-08.md` before any new ISBNdb acquisition for this study.
+  The owner authorized one bounded evaluation before further ISBNdb contact on September 9.
+  Public `--run` admits only its committed 100-ISBN/100-work set, before credential loading;
+  no flag overrides this restriction. Cohorts advance in order and cannot reset provider
+  authentication/quota/infrastructure stops or failed attempts. Do not use older commands or
+  injected primitives to evade these boundaries. This is not production rights/retention clearance.
+  See `reports/isbndb-source-use-review-2026-09-08.md` and the September 9 study plan.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
   title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
   edit shared metadata, after identity confirmation and a source/note; it never invokes the broad
