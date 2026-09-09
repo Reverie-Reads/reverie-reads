@@ -7,7 +7,7 @@ import { rootRoute } from './RootRoute'
 import { useBooks, useUpdateBook } from '../data/books'
 import { useProfile, useUpdateProfile } from '../data/profile'
 import { usePerformMerge } from '../data/mergeBooks'
-import { buildBackup, buildLibraryCsv, restoreBackup } from '../data/importExport'
+import { buildBackup, buildLibraryCsv } from '../data/importExport'
 import { importDetectedExport, type ImportExportResult } from '../data/importLibrary'
 import { enrichImported } from '../data/importEnrich'
 import { ImportSummary } from '../components/ImportSummary'
@@ -50,6 +50,7 @@ import { useHouseholdLibraryAuthorization } from '../data/household'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import type { AddDestination } from '../components/addDestination'
 import { ArrangementEditor } from '../components/ArrangementEditor'
+import { RestoreBackupControl } from '../components/RestoreBackupControl'
 
 const YEAR = new Date().getFullYear()
 
@@ -72,6 +73,8 @@ const fieldStyle = { background: 'var(--field)' } as const
  */
 const IMPORT_LABEL = '📚 Import a library export (CSV or Excel)'
 const IMPORT_LOADING_LABEL = '📚 Loading your library…'
+const counted = (count: number, singular: string, plural = `${singular}s`) =>
+  `${count} ${count === 1 ? singular : plural}`
 
 function SettingsScreen() {
   const qc = useQueryClient()
@@ -116,7 +119,6 @@ function SettingsScreen() {
   const [showSweep, setShowSweep] = useState(false)
   const [sweeping, setSweeping] = useState(false)
   const [sweepProgress, setSweepProgress] = useState<{ done: number; total: number } | null>(null)
-  const restoreRef = useRef<HTMLInputElement>(null)
   const csvRef = useRef<HTMLInputElement>(null)
 
   const autoMerge = profile?.autoMergeDuplicates ?? true
@@ -862,14 +864,15 @@ function SettingsScreen() {
             >
               {csvBusy ? 'Exporting…' : '⬇ Export for spreadsheet (CSV)'}
             </button>
-            <button
-              type="button"
-              onClick={() => restoreRef.current?.click()}
-              className="skin-control border border-line px-4 py-2 text-[13px] font-semibold text-ink"
-              style={{ background: 'var(--field)' }}
-            >
-              ⬆ Restore backup
-            </button>
+            <RestoreBackupControl
+              currentBookCount={libraryLoaded ? all.length : null}
+              onRestored={(result) => {
+                void qc.invalidateQueries()
+                setStatus(
+                  `Restored ${counted(result.books, 'book')}, ${counted(result.lists, 'shelf')}, ${counted(result.reads, 'reading record')}, ${counted(result.tropes, 'trope')}, ${counted(result.moods, 'mood')}, ${counted(result.follows, 'author choice')}, ${counted(result.tombstones, 'removed series slot')}, and ${counted(result.dismissals, 'dismissed suggestion')}.`,
+                )
+              }}
+            />
             <button
               type="button"
               /*
@@ -892,20 +895,6 @@ function SettingsScreen() {
             >
               {libraryLoaded ? IMPORT_LABEL : IMPORT_LOADING_LABEL}
             </button>
-            <input
-              ref={restoreRef}
-              type="file"
-              accept=".json,application/json"
-              hidden
-              onChange={(e) =>
-                readFile(e.currentTarget, async (text) => {
-                  const r = await restoreBackup(text)
-                  setStatus(
-                    `Restored ${r.books} books, ${r.lists} lists, ${r.reads} reads, ${r.tropes} tropes, ${r.moods} moods, ${r.follows} followed authors, ${r.tombstones} removed series slots, ${r.dismissals} dismissed suggestions`,
-                  )
-                })
-              }
-            />
             <input
               ref={csvRef}
               type="file"

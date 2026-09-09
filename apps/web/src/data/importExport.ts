@@ -25,6 +25,7 @@ import { persistContributors } from './contributors'
 // Restore is already a staged, multi-request operation, so run these sequentially and fail at the
 // first rejected batch instead of creating a burst of ownership-trigger work.
 const RESTORE_OWNERSHIP_BATCH_SIZE = 100
+const CURRENT_BACKUP_VERSION = 9
 
 async function currentUserId(): Promise<string> {
   const { data } = await supabase.auth.getUser()
@@ -494,6 +495,37 @@ export interface BackupCounts {
   [section: string]: number
 }
 
+export interface BackupPreview {
+  version: number | null
+  isNewerVersion: boolean
+  exportedAt: string | null
+  /** Current backups carry a manifest whose declared counts match the payload. */
+  integrity: 'verified' | 'legacy'
+  unknownSections: string[]
+  restoresProfile: boolean
+  counts: {
+    books: number
+    activeBooks: number
+    removedBooks: number
+    reads: number
+    notes: number
+    lists: number
+    listItems: number
+    reviews: number
+    contributors: number
+    tropes: number
+    moods: number
+    authorFollows: number
+    series: number
+    seriesEntries: number
+    tombstones: number
+    dismissals: number
+    discoveries: number
+    plannedBooks: number
+    favoriteBooks: number
+  }
+}
+
 export async function buildBackup(): Promise<string> {
   const ownerId = await currentUserId()
   // `pageAll` is shared with reads that write nothing, so its message cannot promise this — but
@@ -638,7 +670,7 @@ export async function buildBackup(): Promise<string> {
   const trope_dismissals = dismissalsByBook(dismissals)
 
   return JSON.stringify({
-    v: 9,
+    v: CURRENT_BACKUP_VERSION,
     app: 'reverie',
     exportedAt: new Date().toISOString(),
     // The file's own completeness check — see BackupCounts. Written LAST in spirit: every number
@@ -737,11 +769,14 @@ export function countMismatches(data: BackupShape): string[] {
 }
 
 interface BackupShape {
+  v?: number
+  app?: string
+  exportedAt?: string
   discovery_sessions?: { id: string; document: unknown }[]
   /** v6+. Row counts as written — see BackupCounts and countMismatches. Absent in v5 and earlier,
    *  which restore unchecked rather than being refused. */
   counts?: BackupCounts
-  books?: BookRow[]
+  books: BookRow[]
   contributors?: Record<string, { name: string; role: string; position: number }[]>
   /** v5+; absent in a v4 file, which simply restores without them. */
   tropes?: Record<string, BackupTrope[]>
@@ -773,6 +808,148 @@ interface BackupShape {
   series_tombstones?: BackupTombstone[]
   trope_dismissals?: Record<string, string[]>
   profile?: Record<string, unknown> | null
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const arraySections = [
+  'discovery_sessions',
+  'books',
+  'reads',
+  'lists',
+  'list_items',
+  'reviews',
+  'merge_verdicts',
+  'author_follows',
+  'series_merge_decisions',
+  'series',
+  'series_entries',
+  'series_tombstones',
+] as const
+
+const nestedSections = ['contributors', 'tropes', 'moods', 'trope_dismissals'] as const
+
+/**
+ * Parse and validate the immutable file text used by both preview and restore. This is deliberately
+ * local and synchronous: choosing a file cannot touch the account. The restore calls it again on
+ * the exact same text before its first request, so a preview can never become an alternate, weaker
+ * validation path.
+ */
+function parseBackupFile(json: string): BackupShape {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(json)
+  } catch {
+    throw new Error('That file isn’t readable JSON. Choose a Reverie backup ending in .json.')
+  }
+  if (!isRecord(parsed) || !Array.isArray(parsed.books)) {
+    throw new Error('That file doesn’t look like a Reverie backup.')
+  }
+  const data = parsed as unknown as BackupShape
+
+  for (const section of arraySections) {
+    const value = data[section]
+    if (value !== undefined && !Array.isArray(value))
+      throw new Error(`That backup has an unreadable ${section} section. Nothing was restored.`)
+  }
+  for (const section of nestedSections) {
+    const value = data[section]
+    if (value === undefined) continue
+    if (!isRecord(value) || Object.values(value).some((rows) => !Array.isArray(rows)))
+      throw new Error(`That backup has an unreadable ${section} section. Nothing was restored.`)
+  }
+  if (data.counts !== undefined) {
+    if (
+      !isRecord(data.counts) ||
+      Object.values(data.counts).some(
+        (count) => typeof count !== 'number' || !Number.isSafeInteger(count) || count < 0,
+      )
+    ) {
+      throw new Error('That backup has an unreadable completeness record. Nothing was restored.')
+    }
+  }
+
+  const mismatches = countMismatches(data)
+  if (mismatches.length)
+    throw new Error(
+      `That backup is incomplete — nothing was restored. ${mismatches.join('; ')}. ` +
+        `Re-export from the account it came from.`,
+    )
+
+  // Saved Discover snapshots are validated in the same no-write pass. Opening the preview therefore
+  // cannot promise a restore that the first saved shortlist will later reject.
+  for (const row of data.discovery_sessions ?? []) {
+    const document = parseDiscoverySession(row.document)
+    if (!document || document.id !== row.id || !document.picks.length)
+      throw new Error('That backup contains an unreadable shortlist. Nothing was restored.')
+  }
+  return data
+}
+
+/** Inspect a restore locally. No auth lookup, query, mutation, or cache write occurs here. */
+export function inspectBackup(json: string): BackupPreview {
+  const data = parseBackupFile(json)
+  const actual = {
+    discovery_sessions: (data.discovery_sessions ?? []).length,
+    books: data.books.length,
+    contributors: nested(data.contributors ?? {}),
+    tropes: nested(data.tropes ?? {}),
+    moods: nested(data.moods ?? {}),
+    reads: (data.reads ?? []).length,
+    lists: (data.lists ?? []).length,
+    list_items: (data.list_items ?? []).length,
+    reviews: (data.reviews ?? []).length,
+    author_follows: (data.author_follows ?? []).length,
+    series: (data.series ?? []).length,
+    series_entries: (data.series_entries ?? []).length,
+    series_tombstones: (data.series_tombstones ?? []).length,
+    trope_dismissals: nested(data.trope_dismissals ?? {}),
+  }
+  const knownSections = new Set<string>([
+    ...arraySections,
+    ...nestedSections,
+    'merge_verdicts',
+    'series_merge_decisions',
+  ])
+  const unknownSections = Object.keys(data.counts ?? {})
+    .filter((section) => !knownSections.has(section))
+    .sort()
+  const books = data.books
+
+  return {
+    version: typeof data.v === 'number' && Number.isFinite(data.v) ? data.v : null,
+    isNewerVersion:
+      typeof data.v === 'number' && Number.isFinite(data.v) && data.v > CURRENT_BACKUP_VERSION,
+    exportedAt: typeof data.exportedAt === 'string' ? data.exportedAt : null,
+    integrity: data.counts ? 'verified' : 'legacy',
+    unknownSections,
+    restoresProfile: isRecord(data.profile),
+    counts: {
+      books: actual.books,
+      activeBooks: books.filter((book) => !book.removed_at).length,
+      removedBooks: books.filter((book) => Boolean(book.removed_at)).length,
+      reads: actual.reads,
+      notes: (data.reads ?? []).filter((read) => Boolean(read.notes?.trim())).length,
+      lists: actual.lists,
+      listItems: actual.list_items,
+      reviews: actual.reviews,
+      contributors: actual.contributors,
+      tropes: actual.tropes,
+      moods: actual.moods,
+      authorFollows: actual.author_follows,
+      series: actual.series,
+      seriesEntries: actual.series_entries,
+      tombstones: actual.series_tombstones,
+      dismissals: actual.trope_dismissals,
+      discoveries: actual.discovery_sessions,
+      plannedBooks: books.filter(
+        (book) =>
+          book.plan_position != null || book.plan_y != null || book.plan_m != null || book.plan_d != null,
+      ).length,
+      favoriteBooks: books.filter((book) => book.fave === true).length,
+    },
+  }
 }
 
 /** Restore v7's complete structured authority. Trusted book rows may already have materialized
@@ -1102,25 +1279,17 @@ async function restoreTaxonomy(
 export async function restoreBackup(
   json: string,
 ): Promise<{ books: number; lists: number; reads: number; tropes: number; moods: number; follows: number; tombstones: number; dismissals: number }> {
+  // Re-run the same local validation the preview used against the exact retained file text. This is
+  // intentionally before even the auth lookup and, more critically, before the first account write.
+  const data = parseBackupFile(json)
   const ownerId = await currentUserId()
-  const data = JSON.parse(json) as BackupShape
-  if (!data.books) throw new Error('That file doesn’t look like a Reverie backup.')
-
-  // BEFORE ANY WRITE. A backup that restores cleanly while missing rows is the failure this whole
-  // change exists to end, so the check has to happen while refusing still costs nothing — once the
-  // first list is inserted, a refusal leaves a half-restored account behind.
-  const mismatches = countMismatches(data)
-  if (mismatches.length)
-    throw new Error(
-      `That backup is incomplete — nothing was restored. ${mismatches.join('; ')}. ` +
-        `Re-export from the account it came from.`,
-    )
 
   // Validate all saved snapshots before any restore write. Never copy a source owner id.
-  const discoveries = (data.discovery_sessions ?? []).map(row => {
+  const discoveries = (data.discovery_sessions ?? []).map((row) => {
+    // parseBackupFile already proved this shape. Keep the local guard because this value is crossing
+    // into a write payload and a future parser change must still fail closed here.
     const document = parseDiscoverySession(row.document)
-    if (!document || document.id !== row.id || !document.picks.length)
-      throw new Error('That backup contains an unreadable shortlist. Nothing was restored.')
+    if (!document) throw new Error('That backup contains an unreadable shortlist. Nothing was restored.')
     return { owner_id: ownerId, id: document.id, document }
   })
   if (discoveries.length) {

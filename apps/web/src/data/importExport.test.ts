@@ -322,7 +322,7 @@ vi.mock('../lib/supabase', () => ({
 // Contributor persistence has its own RPC and its own tests; it is not what these assert.
 vi.mock('./contributors', () => ({ persistContributors: vi.fn(async () => {}) }))
 
-const { buildBackup, restoreBackup, seriesTombstones, dismissalsByBook, seriesRulingRows } = await import('./importExport')
+const { buildBackup, inspectBackup, restoreBackup, seriesTombstones, dismissalsByBook, seriesRulingRows } = await import('./importExport')
 const { BACKED_UP_TABLES, USER_OWNED_TABLES } = await import('./ownedTables')
 
 /** A library with two books, canonical + personal tropes, a mood, and two followed authors. */
@@ -1339,6 +1339,90 @@ describe('a backup cannot silently lose rows — paging, and the file’s own co
     const json = await buildBackup()
     wipeToFreshAccount()
     await expect(restoreBackup(json)).resolves.toMatchObject({ books: 2 })
+  })
+})
+
+describe('restore preflight', () => {
+  it('reports the actual records in a verified backup without touching the account', async () => {
+    Object.assign(db.books[0]!, {
+      fave: true,
+      plan_y: null,
+      plan_m: null,
+      plan_d: null,
+      plan_position: 1024,
+    })
+    const json = await buildBackup()
+    access = []
+
+    const preview = inspectBackup(json)
+
+    expect(preview).toMatchObject({
+      version: 9,
+      isNewerVersion: false,
+      integrity: 'verified',
+      restoresProfile: true,
+      unknownSections: [],
+      counts: {
+        books: 2,
+        activeBooks: 2,
+        removedBooks: 0,
+        reads: 1,
+        notes: 1,
+        lists: 1,
+        listItems: 1,
+        reviews: 1,
+        tropes: 3,
+        moods: 2,
+        authorFollows: 2,
+        series: 1,
+        seriesEntries: 2,
+        tombstones: 1,
+        dismissals: 1,
+        discoveries: 1,
+        plannedBooks: 1,
+        favoriteBooks: 1,
+      },
+    })
+    expect(access, 'inspection must not make even a read request').toEqual([])
+  })
+
+  it('labels a pre-manifest backup as unchecked instead of claiming it is complete', async () => {
+    const parsed = JSON.parse(await buildBackup()) as Record<string, unknown>
+
+    expect(inspectBackup(handMade(parsed)).integrity).toBe('legacy')
+  })
+
+  it('separates visible books from removed records when projecting the library', async () => {
+    const parsed = JSON.parse(await buildBackup()) as { books: Row[] }
+    parsed.books[1]!.removed_at = '2026-09-01T00:00:00.000Z'
+
+    expect(inspectBackup(JSON.stringify(parsed)).counts).toMatchObject({
+      books: 2,
+      activeBooks: 1,
+      removedBooks: 1,
+    })
+  })
+
+  it('refuses damaged JSON and manifest mismatches during inspection', async () => {
+    expect(() => inspectBackup('{')).toThrow(/isn’t readable JSON/)
+    const parsed = JSON.parse(await buildBackup()) as Record<string, unknown>
+    ;(parsed.books as Row[]).pop()
+    access = []
+
+    expect(() => inspectBackup(JSON.stringify(parsed))).toThrow(/incomplete/)
+    expect(access, 'a refused preview cannot write or query the account').toEqual([])
+  })
+
+  it('identifies sections from a newer backup so the UI can block a lossy restore', async () => {
+    const parsed = JSON.parse(await buildBackup()) as Record<string, unknown>
+    parsed.v = 10
+    ;(parsed.counts as Record<string, number>).reading_quotes = 1
+    parsed.reading_quotes = [{ text: 'A future section' }]
+
+    expect(inspectBackup(JSON.stringify(parsed))).toMatchObject({
+      isNewerVersion: true,
+      unknownSections: ['reading_quotes'],
+    })
   })
 })
 
