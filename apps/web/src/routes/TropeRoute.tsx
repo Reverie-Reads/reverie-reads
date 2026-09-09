@@ -2,15 +2,16 @@ import { useMemo, useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
 import {
   FACET_LABELS,
+  coverStateSuffix,
   isBookRead,
   isOwnedBook,
-  stateSuffix,
   tropeKin,
   type Book,
 } from '@reverie/core'
 import { rootRoute } from './RootRoute'
 import { BackLink } from '../components/BackLink'
 import { CoverImage } from '../components/CoverImage'
+import { BookStateMarks } from '../components/BookStateMarks'
 import { TropeChip } from '../components/TropeChip'
 import { useBooks } from '../data/books'
 import {
@@ -213,11 +214,10 @@ function TropeScreen() {
                 type="button"
                 onClick={() => toggle(b)}
                 aria-pressed={sweep ? carrying : undefined}
-                // Thumb-class: state to the screen reader only — see MoodRoute + docs/backlog/BACKLOG.md.
                 aria-label={
                   sweep
-                    ? `${carrying ? 'Untag' : 'Tag'} ${b.title}${stateSuffix(b)}`
-                    : `Open ${b.title}${stateSuffix(b)}`
+                    ? `${carrying ? 'Untag' : 'Tag'} ${b.title}${coverStateSuffix(b)}`
+                    : `Open ${b.title}${coverStateSuffix(b)}`
                 }
                 className="relative overflow-hidden skin-tile border text-left"
                 style={{
@@ -229,6 +229,7 @@ function TropeScreen() {
                 <div className="aspect-[2/3] w-full">
                   <CoverImage book={b} thumb />
                 </div>
+                <BookStateMarks book={b} showRead />
                 {sweep && carrying && (
                   <span
                     aria-hidden

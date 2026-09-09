@@ -104,3 +104,31 @@ describe('state pill — pills are never distinguished by colour alone', () => {
     expect(Object.keys(STATE_PILL_SPOKEN).sort()).toEqual(['borrowed', 'dnf'])
   })
 })
+
+describe('cover-sized state phrasing', () => {
+  it('announces the visible read state without changing the narrow-surface suffix', async () => {
+    const { coverStateSuffix, stateSuffix } = await import('./statePill')
+    const read = {
+      readStatus: 'Read' as const,
+      reads: [],
+      ownership: 'owned' as const,
+      borrowed: false,
+      wishlist: false,
+    }
+    expect(coverStateSuffix(read)).toBe(', read')
+    expect(stateSuffix(read)).toBe('')
+  })
+
+  it('keeps DNF ahead of borrowed and never calls an abandoned logged attempt read', async () => {
+    const { coverStateSuffix } = await import('./statePill')
+    expect(
+      coverStateSuffix({
+        readStatus: 'DNF',
+        reads: [{ date: '2026-01-01', format: '', rating: 0, notes: '' }],
+        ownership: 'unowned',
+        borrowed: true,
+        wishlist: false,
+      }),
+    ).toBe(', did not finish, borrowed')
+  })
+})

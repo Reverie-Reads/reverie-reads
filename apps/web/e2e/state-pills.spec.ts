@@ -189,6 +189,72 @@ test('both states reach the accessible name of the card control', async ({ page 
   await expect(page.getByRole('button', { name: `Open ${PLAIN_TITLE}` })).toBeVisible()
 })
 
+test('mood and trope cover grids show the same state pills as the Library', async ({ page }) => {
+  const c = await client()
+  await seedFixtures(c)
+  await ok(c.sb.from('book_moods').delete().eq('owner_id', c.uid), 'state-pills moods unlink')
+  await ok(c.sb.from('book_tropes').delete().eq('owner_id', c.uid), 'state-pills tropes unlink')
+  await ok(c.sb.from('moods').delete().eq('owner_id', c.uid), 'state-pills moods delete')
+  await ok(c.sb.from('tropes').delete().eq('owner_id', c.uid), 'state-pills tropes delete')
+
+  const rows = await okData(
+    c.sb.from('books').select('id, title').eq('owner_id', c.uid),
+    'state-pills facet books',
+  )
+  const bookIds = (rows as { id: string; title: string }[]).map((row) => row.id)
+  const mood = (await okData(
+    c.sb.from('moods').insert({ owner_id: c.uid, name: 'State Marks Mood' }).select('id').single(),
+    'state-pills mood insert',
+  )) as { id: string }
+  const trope = (await okData(
+    c.sb
+      .from('tropes')
+      .insert({ owner_id: c.uid, name: 'State Marks Trope', facet: 'vibe' })
+      .select('id')
+      .single(),
+    'state-pills trope insert',
+  )) as { id: string }
+  await ok(
+    c.sb
+      .from('book_moods')
+      .insert(bookIds.map((bookId) => ({ book_id: bookId, mood_id: mood.id, owner_id: c.uid }))),
+    'state-pills mood assignments',
+  )
+  await ok(
+    c.sb.from('book_tropes').insert(
+      bookIds.map((bookId) => ({
+        book_id: bookId,
+        trope_id: trope.id,
+        owner_id: c.uid,
+        emphasis: 'present',
+      })),
+    ),
+    'state-pills trope assignments',
+  )
+
+  await stub(page)
+  await signIn(page, c.session)
+
+  for (const route of [`/moods/${mood.id}`, `/tropes/${trope.id}`]) {
+    await page.goto(route)
+    const dnf = page.getByRole('button', { name: `Open ${DNF_TITLE}, did not finish` })
+    const borrowed = page.getByRole('button', {
+      name: `Open ${BORROWED_TITLE}, read, borrowed`,
+    })
+    const read = page.getByRole('button', { name: `Open ${PLAIN_TITLE}, read` })
+    await expect(dnf.getByText('DNF')).toBeVisible({ timeout: 20_000 })
+    await expect(borrowed.getByText('Borrowed')).toBeVisible()
+    await expect(borrowed.getByText('Read')).toBeVisible()
+    await expect(read.getByText('Read')).toBeVisible()
+
+    const width = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }))
+    expect(width.scroll).toBeLessThanOrEqual(width.client + 1)
+  }
+})
+
 test('a spine shelf carries state in the accessible name — the surface that never has', async ({
   page,
 }) => {

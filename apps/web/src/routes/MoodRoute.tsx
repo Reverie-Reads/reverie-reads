@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
-import { isBookRead, stateSuffix, type Book } from '@reverie/core'
+import { coverStateSuffix, isBookRead, type Book } from '@reverie/core'
 import { rootRoute } from './RootRoute'
 import { BackLink } from '../components/BackLink'
 import { CoverImage } from '../components/CoverImage'
+import { BookStateMarks } from '../components/BookStateMarks'
 import { useBooks } from '../data/books'
 import { useAllBookMoods, useAssignMood, useMoods, useUnassignMood } from '../data/moods'
 import { useConfirmedLookup } from '../hooks/useConfirmedLookup'
@@ -121,12 +122,10 @@ function MoodScreen() {
                 type="button"
                 onClick={() => toggle(b)}
                 aria-pressed={sweep ? carrying : undefined}
-                // Thumb-class: state reaches the screen reader but NOT the eye — a text pill at this
-                // size obliterates the cover (docs/backlog/BACKLOG.md records the follow-up).
                 aria-label={
                   sweep
-                    ? `${carrying ? 'Remove' : 'Add'} ${mood.name} — ${b.title}${stateSuffix(b)}`
-                    : `Open ${b.title}${stateSuffix(b)}`
+                    ? `${carrying ? 'Remove' : 'Add'} ${mood.name} — ${b.title}${coverStateSuffix(b)}`
+                    : `Open ${b.title}${coverStateSuffix(b)}`
                 }
                 className="relative overflow-hidden skin-tile border text-left"
                 style={{
@@ -138,6 +137,7 @@ function MoodScreen() {
                 <div className="aspect-[2/3] w-full">
                   <CoverImage book={b} thumb />
                 </div>
+                <BookStateMarks book={b} showRead />
                 {sweep && carrying && (
                   <span
                     aria-hidden

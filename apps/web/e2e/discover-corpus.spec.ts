@@ -134,6 +134,18 @@ async function openMystery(page: Page) {
   await signIn(page, c.session)
   await page.goto('/discover?genre=mystery')
   await expect(grid(page)).toBeVisible({ timeout: 20_000 })
+  // Scope exact-count assertions to this file's namespace. Other e2e files deliberately create
+  // corpus-backed mystery books, and their shared work can outlive the personal fixture row. A
+  // dirty local stack must not turn that legitimate catalog residue into a pagination failure.
+  const scopedRead = page.waitForResponse((response) => {
+    if (response.request().method() !== 'GET' || !response.url().includes('/rest/v1/works?')) {
+      return false
+    }
+    return new URL(response.url()).searchParams.get('or')?.includes('Corpus Probe') ?? false
+  })
+  await page.getByTestId('corpus-filter').fill('Corpus Probe')
+  await scopedRead
+  await expect(grid(page).getByText(T(1)).first()).toBeVisible()
 }
 
 test('the corpus browse leads with exactly DISCOVER_BATCH rows, coverless included', async ({

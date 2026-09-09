@@ -745,7 +745,8 @@ as one.
   is unchanged. The stated reason for not fixing it (a data-layer change that would silently move
   every read count) is unchanged too.</sub>
 
-- **Thumb-class surfaces carry borrowed/DNF to a screen reader but not to the eye.**
+- **CLOSED 2026-09-08 — Thumb-class surfaces carried borrowed/DNF to a screen reader but not to
+  the eye.**
   `feat/state-pills` added the state to the accessible name on SeriesStrip,
   SeriesRoute rows, MoodRoute and TropeRoute, and deliberately drew no pill: at
   36–48px a text pill does not read small, it covers a third to half the cover.
@@ -760,10 +761,13 @@ as one.
   - The genuinely small surfaces would need a non-text marker if they are ever to
     show state visually. The spine edge-marker idiom is the nearest precedent.
 
-  <sub>**verified 2026-08-20** — still OPEN, including the part the entry calls "the obvious next
-  step". `StatePill` appears in none of `MoodRoute.tsx`, `TropeRoute.tsx` or `DiscoverRoute.tsx`, so
-  the ~132px grid cells still have not taken it. The asymmetry the entry names — state reaching a
-  screen reader but not the eye — is intact on every surface it lists.</sub>
+  <sub>**closed 2026-09-08** — `BookStateMarks` now gives Mood, Trope, and both Discover experiences
+  the same solid Read/DNF/Borrowed pills as the Library at cover scale. SeriesStrip, SeriesRoute,
+  and Discover's 36–60px covers use compact, controlled SVG marks for DNF and Borrowed; their
+  enclosing controls retain the full spoken state. Current `FromYourAuthors` release candidates
+  exclude works already matched to the personal library, so that historical surface has no personal
+  state to display. Component, core contrast, and browser tests hold the visual and accessible
+  contract. See `docs/tasks/dense-grid-state-indicators.md`.</sub>
 
 ## Grep audit, 2026-08 (`docs/rules-and-grep-audit`) — recorded, not fixed
 
