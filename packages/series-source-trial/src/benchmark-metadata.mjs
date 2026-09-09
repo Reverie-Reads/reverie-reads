@@ -5,9 +5,13 @@ import { loadLocalEnvironment } from './env.mjs'
 import { createBaselineClient } from './metadata/baseline-client.mjs'
 import { createIsbndbClient } from './metadata/isbndb-client.mjs'
 import { validateBenchmark, runMetadataBenchmark } from './metadata/benchmark.mjs'
+import { validatePageReview, runMetadataPageReview } from './metadata/page-review.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-export async function main(args = process.argv.slice(2), write = console.log) {
+export async function main(args = process.argv.slice(2), write = console.log, mode = 'gap') {
+  if (!['gap', 'page-review'].includes(mode)) throw new Error('invalid_mode')
+  const validate = mode === 'gap' ? validateBenchmark : validatePageReview
+  const run = mode === 'gap' ? runMetadataBenchmark : runMetadataPageReview
   const options = {
     live: false,
     maxIsbndb: 10,
@@ -20,7 +24,7 @@ export async function main(args = process.argv.slice(2), write = console.log) {
     if (flag === '--') continue
     if (flag === '--help') {
       write(
-        'metadata:benchmark --input <reviewed-development-frame.json> [--live] [--max-isbndb-requests 1..20] [--max-openlibrary-requests 1..200] [--env <local-env-file>]\nDry-run default. Live acquires Google/Open Library baselines in memory. Only aggregate metrics are emitted.',
+        `metadata:${mode === 'gap' ? 'benchmark' : 'review'} --input <reviewed-development-frame.json> [--live] [--max-isbndb-requests 1..20] [--max-openlibrary-requests 1..200] [--env <local-env-file>]\nDry-run default. Live acquires Google/Open Library baselines in memory. Only aggregate metrics are emitted.`,
       )
       return
     }
@@ -69,7 +73,7 @@ export async function main(args = process.argv.slice(2), write = console.log) {
       size += bytesRead
     }
     if (size > 262144) throw new Error('input_too_large')
-    input = validateBenchmark(JSON.parse(buffer.subarray(0, size).toString('utf8')))
+    input = validate(JSON.parse(buffer.subarray(0, size).toString('utf8')))
   } finally {
     await handle.close()
   }
@@ -89,11 +93,7 @@ export async function main(args = process.argv.slice(2), write = console.log) {
       })
     : undefined
   write(
-    JSON.stringify(
-      await runMetadataBenchmark(input, { live: options.live, baselineClient, isbndbClient }),
-      null,
-      2,
-    ),
+    JSON.stringify(await run(input, { live: options.live, baselineClient, isbndbClient }), null, 2),
   )
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

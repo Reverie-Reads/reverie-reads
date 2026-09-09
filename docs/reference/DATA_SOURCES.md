@@ -68,6 +68,14 @@ Publisher-referenced pages/formats score ephemeral candidates in memory; missing
 reference facts remain unscored. Reports retain aggregates only. This is still a development
 benchmark, not a new LLM input, user-matching path, or persistence license.
 
+A separate opt-in `metadata:review` command compares strictly admitted page observations even
+when no gap exists. Its distinct development frame and paid routing do not alter the gap-only
+benchmark. An in-memory per-field packet preserves eligible format fills beside page conflicts;
+current values remain protected, and no field is automatically corrected. References score only
+after routing and admission. The output contains aggregate paired comparisons, not provider
+values or a selected winner. This capability has synthetic tests but no live accuracy result yet;
+fresh-frame evaluation and rights/privacy review still precede any LLM or production integration.
+
 This local experiment needs no migration, production flag, or new Supabase secret. It neither
 enables nor certifies the existing production ISBNdb enrichment adapter. A subscription is not
 blanket permission to persist or redistribute a catalog: account terms and retention/deletion
