@@ -30,7 +30,7 @@ lives in `ROADMAP.md`.
    reference. [Implementation notes](../docs/tasks/discover-implementation.md) record the source
    evidence, account/backup boundaries, and release checks. Future matching improvements should
    be measured against useful selections, not a larger feed or unverified explanations.
-3. **STATS + PLANNER FUNDAMENTAL OVERHAUL — IMPLEMENTED FOR REVIEW.** The owner prioritized this
+3. **STATS + PLANNER FUNDAMENTAL OVERHAUL — IMPLEMENTED.** The owner prioritized this
    paired redesign after catalog quality. [Reading life study](studies/reading-life/READING_LIFE.md)
    proposes Reflect, a private book-led reading record, and Plan, a flexible queue with direct
    editing and a calendar view. Shared period semantics, completed sessions versus distinct books,
@@ -42,16 +42,20 @@ lives in `ROADMAP.md`.
    edit/remove/undo, future-self notes, a precision-safe calendar, and a source-aware release
    horizon. Reflect now composes the same selected-period record into a private retrospective with
    real covers and saved notes, without creating a score, share card, or analytics export.
-   Import/restore preview followed in PR #489. The next product gate is the five-session reader
-   validation protocol; accepted brand collateral remains after that evidence.
+   Import/restore preview followed in PR #489; PR #501 then rebuilt Calendar and Releases around
+   the same reading-life model. The five-session reader validation protocol remains ready for
+   participants.
 4. **PERSONAL COVER STUDIO — IMPLEMENTED FOR REVIEW.** `/covers` now provides a permanent,
    reader-owned care workspace around the existing photo/upload crop, edition chooser, linked
    images, and room placeholders. It separates unresolved art from intentional placeholders, shows
    actual loaded-image quality and provenance, and makes a confirmed cover a protected reader
    choice. The administrator catalog queue remains a separate shared-data surface.
-5. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
-   icons, onboarding material, and one accurate demonstration. Preserve each room's own interface
-   language. Do not reopen the chosen palette as a new concept exercise.
+5. **ACCEPTED BRAND ASSETS — IMPLEMENTED FOR REVIEW.** The open-book mark and Midnight & Lamplight
+   palette now carry through the favicon, install icons, maskable icon, and social card. A
+   reproducible generator keeps the raster assets aligned with the accepted mark and typography.
+   The landing page adds an optional four-stop path through the working guest library, so the
+   demonstration uses real product views and does not simulate personalization or save changes
+   without the visitor's action.
 
 ## Reopened by owner — 2026-08-25
 
