@@ -265,8 +265,9 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   That study is complete: selective use improved 38/100 works but regressed 20 under the broad
   join. The owner's final decision drops ISBNdb from the planned source stack because its benefit
   does not justify retention/subscription dependence, superseding the report's initial targeted-keep
-  recommendation. No further paid acquisition without new owner approval. Billing and the legacy
-  production adapter are unchanged; do not infer hosted configuration or existing data holdings.
+  recommendation. No further paid acquisition without new owner approval. The study changed no
+  billing or runtime; the subsequent retirement section below governs the adapter/cache cutover.
+  Do not infer hosted configuration or existing data holdings from the study.
   Its frozen set is consumed; preserve its locks and attempt markers, never reacquire it from another
   clone. See `packages/series-source-trial/reports/isbndb-value-study-results-2026-09-09.md`.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized

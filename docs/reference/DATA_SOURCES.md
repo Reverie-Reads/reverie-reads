@@ -10,8 +10,9 @@ including indie and Kindle Unlimited titles, _and_ being usable from a personal 
 below describe evaluated capabilities, not an active recommendation. The owner prefers improving
 the existing pipeline over subscription-dependent data retention. See the
 [completed comparison and final decision](../../packages/series-source-trial/reports/isbndb-value-study-results-2026-09-09.md).
-The legacy production adapter remains in code; hosted configuration and existing holdings have
-not been audited or changed by this decision.
+The study itself changed neither runtime nor stored data. The subsequent retirement patch and
+read-only inventory are described in [the exit handoff](../tasks/isbndb-retirement.md); deployment
+and retention cleanup remain separate gates.
 
 | Source                      | Reliability /5 | Cost                                                  | How to grab data                                                                                                                                                                                        |
 | --------------------------- | -------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

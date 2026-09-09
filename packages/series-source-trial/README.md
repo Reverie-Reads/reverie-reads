@@ -8,8 +8,9 @@ It does not write to Supabase or modify Reverie's corpus.
 **Owner decision, September 9: drop ISBNdb from the planned source stack.** The completed
 [100-work comparison and decision](reports/isbndb-value-study-results-2026-09-09.md) remain an
 audit record, not authorization for another live run. The commands below document the retained
-harness; no further ISBNdb acquisition without new owner approval. Billing and production have
-not been changed, and the legacy production adapter has not been removed.
+harness; no further ISBNdb acquisition without new owner approval. The study changed neither
+billing nor production. The separate [retirement patch and audit](../../docs/tasks/isbndb-retirement.md)
+remove the live adapter in code; deployment and any retention cleanup remain owner-controlled.
 
 `metadata:value` asks whether the recurring fee buys meaningful additional utility, rather than
 whether a narrowly gated lookup can fill a page or binding gap. It independently evaluates Google,
