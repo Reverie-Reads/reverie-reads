@@ -1,6 +1,7 @@
 /* Reverie's genre-neutral front door: midnight ink, parchment, aged brass.
    The legacy class name stays compatible with auth; product previews own separate token scopes. */
-.gold-brand {
+.gold-brand,
+html.gold-brand[data-appearance-pending] {
   --bg0: #10121c;
   --bg1: #202336;
   --ink: #f4ecdd;
@@ -59,6 +60,17 @@
     radial-gradient(1px 1px at 41% 15%, var(--brand-dust), transparent),
     radial-gradient(1px 1px at 92% 78%, var(--brand-dust), transparent);
   background-attachment: fixed;
+}
+
+/* The document receives this class before first paint only when its local appearance is
+   incomplete. Keep the body opaque while the signed-in profile resolves; the normal app tokens
+   take over after both the marker and class are removed together. */
+html.gold-brand[data-appearance-pending] body {
+  background-color: var(--bg0) !important;
+  background-image:
+    radial-gradient(ellipse at 82% 42%, var(--brand-glow-warm), transparent 48%),
+    radial-gradient(ellipse at 14% 3%, var(--brand-glow-cool), transparent 62%) !important;
+  color: var(--ink);
 }
 .gold-brand input::placeholder {
   color: var(--faint);

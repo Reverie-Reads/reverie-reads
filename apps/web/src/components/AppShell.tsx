@@ -4,7 +4,6 @@ import { APP_NAME, SKINS } from '@reverie/core'
 import { useAuth } from '../auth/AuthProvider'
 import { useSkin } from '../skin/useSkin'
 import { useEffectiveSkin } from '../skin/labels'
-import { useSkinSync } from '../skin/controls'
 import { SkinDivider } from './SkinDivider'
 import { SkinEvolveReveal } from './SkinEvolveReveal'
 import { ThemeToggle } from './ThemeToggle'
@@ -442,7 +441,6 @@ function MobileTabBar({
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  useSkinSync() // reconcile skin/mode from the signed-in profile (cross-device)
   const arrangement = useProfile().data?.arrangement ?? DEFAULT_ARRANGEMENT_PRESET.config
   const mainRef = useRef<HTMLElement>(null)
   const location = useRouterState({ select: (s) => s.location })

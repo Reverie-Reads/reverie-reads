@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import type { ActiveSkin, AdaptivePending, Mode } from '@reverie/core'
 import { useProfile, useUpdateProfile } from '../data/profile'
 import { useBooks } from '../data/books'
-import { useSkin } from './useSkin'
+import { finishAppearanceBootstrap, hasStoredAppearance, useSkin } from './useSkin'
 import { generateAdaptiveBundle, materializeAdaptive } from './adaptive'
 
 /**
@@ -84,17 +84,39 @@ export function useAdaptiveControls() {
  * whenever the profile's skin/mode/adaptive bundle change — on sign-in, and if another device
  * updates them. No loop: the controls update store + profile together, so an echo is a no-op. */
 export function useSkinSync() {
-  const { data: profile } = useProfile()
+  const profileQuery = useProfile()
+  const profile = profileQuery.data
   const hydrate = useSkin((s) => s.hydrate)
   const sig = useRef('')
+  const locallyReady = useRef(hasStoredAppearance()).current
   const skin = profile?.skin
   const mode = profile?.mode
   const bundle = profile?.adaptiveSkin ?? null
-  useEffect(() => {
+  // The signed-out landing can create a complete local choice after index.html marked the original
+  // load as pending. If sign-in happens in that same document, release the marker before revealing
+  // the shell; the store has already applied the reader's local choice.
+  useLayoutEffect(() => {
+    if (locallyReady) finishAppearanceBootstrap()
+  }, [locallyReady])
+  // Layout timing is deliberate. On a first sign-in there is no trusted local appearance, so the
+  // entry screen stays visible while this query runs. Once data arrives, apply both appearance axes
+  // and remove the pre-paint cover before the browser can reveal the signed-in shell.
+  useLayoutEffect(() => {
     if (!skin || !mode) return
     const next = `${skin}|${mode}|${bundle ? 'b' : '0'}`
-    if (next === sig.current) return
-    sig.current = next
-    hydrate(skin, mode, bundle)
+    if (next !== sig.current) {
+      sig.current = next
+      hydrate(skin, mode, bundle)
+    }
+    finishAppearanceBootstrap()
   }, [skin, mode, bundle, hydrate])
+
+  return {
+    ready: locallyReady || Boolean(skin && mode),
+    unavailable:
+      !locallyReady &&
+      !profileQuery.isFetching &&
+      (profileQuery.isError || (profileQuery.isSuccess && (!skin || !mode))),
+    retry: () => void profileQuery.refetch(),
+  }
 }
