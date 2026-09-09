@@ -11,6 +11,46 @@ This document defines the next experiment, not a registered live dataset or a ke
 No paid requests, completed-frame reruns, credential changes, upgrades, production writes, or series
 qualification runs are part of this implementation. PR #493's completed results remain untouched.
 
+## Owner-reported trial window and cost
+
+On September 8, the owner confirmed the lowest paid account tier, **$14.99/month**, and **five
+days remaining** in the original seven-day trial. Use `monthlySubscriptionUsd: 14.99` in the
+prospective study, not a guessed public list price. This is owner-reported account information;
+the exact billing timestamp, taxes, included quota and account-specific rights remain unverified.
+Five days remaining is a planning window, not an exact cancellation deadline or permission to renew.
+
+Target a decision with at least one day of margin before the reported expiry. The immediate order is:
+
+1. Complete and test the lock-bound multi-cohort combiner and single-use run guard. In parallel with
+   that preparation, verify account limits and the rights needed for the bounded factual trial.
+2. Review the fresh 100-work minimum frame, audit exclusions/overlap, and freeze the complete
+   dataset, runtime and request budget before acquisition. Do not trade away source review to fit
+   the deadline or append replacement cases after seeing results.
+3. Acquire the frozen cohorts once, reconcile their totals, and compare free-only, selective ISBNdb
+   and ISBNdb-first. Report unavailable sources, unknown references and regressions beside gains.
+4. Deliver the keep/cancel recommendation or an explicit inconclusive result before the final-day
+   margin. If the study or rights review cannot finish in time, report what is missing; a looming
+   renewal is not evidence for retaining the subscription. Billing action remains with the owner.
+
+This sequence is a plan, not a scheduled job or a claim that the dataset has been frozen. No live
+subscription-value requests have been made as part of this account-information update. Monthly
+distinct-work volume and the owner's acceptable cost threshold remain unknown; keep those inputs
+null until supplied. Show sensitivity scenarios rather than inventing adoption or repeat-use value.
+
+For orientation, the subscription alone requires the following incremental benefit. These are
+arithmetic scenarios, not selected acceptance thresholds or observed improvements:
+
+| Illustrative maximum subscription cost per additional correct work | Minimum additional correct works per month |
+| ---------------------------------------------------------------- | ------------------------------------------ |
+| $0.25                                                            | 60                                         |
+| $0.10                                                            | 150                                        |
+| $0.05                                                            | 300                                        |
+
+The count is `ceil(14.99 / threshold)`, after work-level deduplication and the existing no-regression
+rules. It is not total lookups, returned fields, cached repeat requests, or all books processed.
+Integration, maintenance, taxes and any usage charges are excluded from this illustrative floor.
+The trial being temporarily free does not make the recurring cost zero.
+
 ## Implemented instrument
 
 The new `metadata:value` command independently admits each provider against one reviewed exact
@@ -59,9 +99,11 @@ account tier, renewal date, retention entitlement or commercial/LLM permission f
 
 ## Next live study: freeze before acquisition
 
-1. Confirm the actual subscription fee and included quota from the owner's account. No automatic
-   purchase, upgrade or cancellation. Record storage, display, caching, derived-data, third-party
-   model sharing and termination/deletion conditions separately; API availability is not a license.
+1. Use the owner-reported $14.99 monthly fee above and confirm included quota before live acquisition.
+   The exact expiry remains an account check for the owner's billing decision, not a reason to delay
+   safe study preparation. No automatic purchase, upgrade or cancellation. Record storage, display,
+   caching, derived-data, third-party model sharing and termination/deletion conditions separately;
+   API availability is not a license.
 2. Build one prospective frame of at least 100 distinct works, with their exact edition references,
    before querying tested providers. Include at least five publishing groups and broad fiction,
    nonfiction, indie/small press, backlist, recent releases, translated editions, formats and known
