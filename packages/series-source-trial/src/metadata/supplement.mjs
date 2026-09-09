@@ -172,33 +172,43 @@ export const language = (v) =>
       }[v.toLowerCase()] ?? v.toLowerCase())
     : null
 
-/** Values are ephemeral subscriber-only review candidates, never automatic updates. */
-export function assessSupplement(c, plan, body) {
+/** Shared strict admission; returned values are memory-only observations, not approved fills. */
+export function cleanSupplementRecord(identity, knownFormat, body) {
   const b = body?.book
-  const review = (reason) => ({ status: 'review', reason, proposals: [], conflicts: [] })
+  const review = (reason) => ({ status: 'review', reason })
   if (!object(b) || !text(b.title) || !names(b.authors)) return review('malformed_identity')
   const isbns = [b.isbn13, b.isbn10, b.isbn].filter((v) => v != null && v !== '')
-  if (!exactIdentity({ isbns, title: b.title, authors: b.authors }, c.identity))
+  if (!exactIdentity({ isbns, title: b.title, authors: b.authors }, identity))
     return review('identity_mismatch')
   // Do not hide adaptation, abridgement, or other qualifiers in the provider's longer title.
   if (
     b.title_long != null &&
     b.title_long !== '' &&
-    (!text(b.title_long) || fold(b.title_long) !== fold(c.identity.title))
+    (!text(b.title_long) || fold(b.title_long) !== fold(identity.title))
   )
     return review('qualified_title_review')
   const format = binding(b.binding)
   if (
     (b.binding != null && b.binding !== '' && !format) ||
-    (plan.knownFormat && format && plan.knownFormat !== format)
+    (knownFormat && format && knownFormat !== format)
   )
     return review('edition_format_review')
-  if (c.identity.language && b.language && language(b.language) !== c.identity.language)
+  if (identity.language && b.language && language(b.language) !== identity.language)
     return review('edition_language_review')
-  const values = {
-    pages: pages(b.pages) && format !== 'audiobook' ? b.pages : null,
-    editionFormat: format,
+  return {
+    status: 'matched',
+    values: {
+      pages: pages(b.pages) && format !== 'audiobook' ? b.pages : null,
+      editionFormat: format,
+    },
   }
+}
+
+/** Values are ephemeral subscriber-only review candidates, never automatic updates. */
+export function assessSupplement(c, plan, body) {
+  const admitted = cleanSupplementRecord(c.identity, plan.knownFormat, body)
+  if (admitted.status !== 'matched') return { ...admitted, proposals: [], conflicts: [] }
+  const values = admitted.values
   const proposals = [],
     conflicts = []
   for (const field of FIELDS) {

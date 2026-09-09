@@ -140,6 +140,40 @@ deleted. These observations do not change the existing ISBNdb lookup gates, scor
 feed the LLM, or write shared/personal data. No new live benchmark is required to test this reporting
 layer; synthetic offline tests cover the states and demonstrate reference-truth separation.
 
+### Separate page-count review evaluation
+
+`metadata:review` is an opt-in comparison, not a change to the gap-only benchmark. Its input uses
+the same reviewed identity/current/reference schema with purpose `development-page-review`.
+Freeze a **fresh** development frame and implementation before live use; do not convert and rerun
+a completed benchmark frame. No live accuracy result has yet been established for this command.
+
+```sh
+pnpm --filter @reverie/series-source-trial metadata:review \
+  --input data/metadata-page-review.example.json
+```
+
+This example is fictional and dry-run only. The default is dry-run, with no credential loading
+or requests. Use a fresh, reviewed private frame for live work. The same explicit `--live`,
+`--env`, and request-budget flags as the benchmark apply. A paid lookup requires both baseline
+attempts to complete, at least one strictly admitted identity with a page observation, and no
+identity/edition ambiguity or known audiobook format. Unlike the gap benchmark, this path may
+compare an already populated page field; reference truth cannot trigger a lookup.
+
+The in-memory review packet separates page and format observations, protected current values,
+and eligible gap-fill proposals. A page conflict does not discard an otherwise admitted format
+proposal. Neither observation agreement nor a publisher-reference score authorizes a replacement.
+Rejected ISBNdb identity/binding/language admission contributes neither field; the packet retains
+the baseline states and explicitly records the rejected supplement status/reason. Late audiobook
+binding suppresses page scoring. Agreement is descriptive, not proof of independent sourcing.
+
+The packet contains no reference truth, raw provider prose, or arbitrary response fields, has no
+model or corpus writer, and throws on direct JSON serialization to catch accidental export.
+It is **not** a persistent queue or an LLM-ready integration: copying it or sending provider values
+to a model still requires separate rights/privacy approval. Only aggregate field states,
+observation/proposal agreement, and paired page comparisons leave the runner. Paired outcomes
+distinguish both agree, baseline only agrees, ISBNdb only agrees, neither agrees, and unscored;
+they never select a winning value. Existing completed reports remain unchanged.
+
 ## What is measured
 
 - exact work matching;

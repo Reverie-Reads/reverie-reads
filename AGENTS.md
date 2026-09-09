@@ -237,6 +237,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   identity/edition ambiguity blocks it. Resolve all Open Library edition authors, never a partial
   list. Google preview/ebook availability is not edition binding. Reference facts score candidates
   but never enter acquisition or manufacture a gap. See `packages/series-source-trial/README.md`.
+  The separate opt-in `metadata:review` development evaluation may compare an existing baseline
+  page observation after the same admission/completion gates, using a fresh frozen frame with
+  purpose `development-page-review`. It does not change gap-only routing. Its per-field packet is
+  memory-only and has no LLM or writer: retain eligible format fills independently from page
+  conflicts, protect current values, and emit only aggregate comparisons, never a chosen correction.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
   title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
   edit shared metadata, after identity confirmation and a source/note; it never invokes the broad
