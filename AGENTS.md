@@ -352,6 +352,17 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   de-dupe flow that resolves all detected duplicate groups at once (run on import).
   Reuse the ported merge engine.
 
+## ISBNdb retirement
+
+**ISBNdb retirement (owner, September 9).** Production enrichment no longer has an ISBNdb HTTP
+adapter; old keys/flags/CSV cannot reactivate it. Enrichment and the owner-run corpus backfill share
+the `no-isbndb-v1:` cache namespace, with no fallback to historical mixed-source rows. Historical
+source types remain readable, not proof of a live provider. Do not delete old cache or catalog rows
+as part of this cutover: incomplete union/personal provenance prevents safe blanket cleanup.
+No further paid trial acquisition without new owner approval; consumed study locks stay intact.
+Billing, production deployment and any exact-target retention cleanup are separate owner actions.
+See `docs/tasks/isbndb-retirement.md` for the read-only inventory and remaining gates.
+
 ## Commands
 
 ```

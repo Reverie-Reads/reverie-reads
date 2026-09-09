@@ -5,7 +5,7 @@
 //
 // NORMALIZERS ARE IMPORTED, NEVER REIMPLEMENTED. `workKeyOf` — Unicode NFKD, lowercase, remove
 // marks, then preserve every script's letters/numbers — is the same function the enrich fn mirrors for
-// enrichment_cache's `ta:` keys, so `'ta:' + workKeyOf(...)` IS a cache key, and the backfill is a
+// enrichment_cache's identity body; enrichmentCacheKey('ta:' + workKeyOf(...)) is the cache key. The backfill is a
 // join rather than a re-match. It moved INTO core so the app's add-search triage can share it:
 // apps/web cannot import from scripts/, and a corpus identity computed twice is one that drifts.
 // `matchBook` is the app's own import classifier; `normalizeImportGenres` is the app's own
@@ -170,7 +170,7 @@ const truthyFlag = (v: string): boolean => {
 export const authorOf = (rec: Pick<CsvRecord, 'first' | 'last'>): string =>
   [rec.first, rec.last].filter(Boolean).join(' ').trim()
 
-/** THE identity. `'ta:' + workKeyOf(rec)` is an enrichment_cache key, by construction.
+/** THE identity. `'ta:' + workKeyOf(rec)` is the versioned enrichment cache key's body.
  *  Re-exported from core rather than defined here — the app's add-search triage needs the SAME
  *  answer and cannot import from `scripts/`, so the one definition lives in core (this file's
  *  header rule, applied to itself). Core's `authorOf` composes the full name identically, while

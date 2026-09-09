@@ -25,6 +25,9 @@ export default tseslint.config(
       'design/**',
       'docs/**',
       'supabase/**',
+      // Private, frozen trial artifacts are not application source and must remain untouched.
+      'packages/series-source-trial/private-inputs/**',
+      'packages/series-source-trial/private-results/**',
     ],
   },
   js.configs.recommended,

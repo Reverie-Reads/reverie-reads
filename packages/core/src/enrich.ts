@@ -358,28 +358,6 @@ export function normalizeHardcoverSearch(doc: any): SourceRecord {
   }
 }
 
-export function normalizeIsbndb(book: any): SourceRecord {
-  const b = book?.book ?? book
-  if (!b) return {}
-  const isbn13 = b.isbn13 ?? ''
-  const isbn10 = b.isbn10 ?? b.isbn ?? ''
-  const subjects: string[] = b.subjects ?? []
-  return {
-    title: b.title ?? b.title_long ?? '',
-    authors: b.authors ?? [],
-    publisher: b.publisher ?? '',
-    ...parsePubDate(b.date_published ?? ''),
-    pageCount: b.pages ?? null,
-    binding: b.binding ?? '',
-    language: b.language ?? '',
-    isbn13,
-    isbn10,
-    isbns: [isbn13, isbn10].filter(Boolean),
-    categories: subjects.filter((s) => s && s.length < 40),
-    description: stripHtml(b.synopsis ?? b.overview ?? ''),
-    cover: b.image ?? '',
-  }
-}
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 const EMPTY: EnrichedRecord = {

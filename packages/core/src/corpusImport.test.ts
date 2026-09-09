@@ -136,6 +136,26 @@ describe('cross-work ISBN collisions', () => {
 })
 
 describe('runBackfill', () => {
+  it('ignores legacy cache rows even if the store returns them', async () => {
+    let writes = 0
+    const store: CorpusBackfillStore = {
+      async fetchWorks() {
+        return [{ work_key: 'legacy', work_id: null, cover_url: null, isbns: [] }]
+      },
+      async fetchEnrichments(keys) {
+        expect(keys).toEqual(['no-isbndb-v1:ta:legacy'])
+        return [
+          { key: 'ta:legacy', work_id: 'old:1', record: { cover: 'https://old.invalid/a.jpg' } },
+        ]
+      },
+      async updateWork() {
+        writes++
+      },
+    }
+    await expect(runBackfill(store)).resolves.toEqual({ examined: 1, cacheHits: 0, updated: 0 })
+    expect(writes).toBe(0)
+  })
+
   it('inspects an already-complete work and accumulates a later enrichment ISBN', async () => {
     const updates: { workKey: string; patch: BackfillPatch }[] = []
     const store: CorpusBackfillStore = {
@@ -149,10 +169,11 @@ describe('runBackfill', () => {
           },
         ]
       },
-      async fetchEnrichments() {
+      async fetchEnrichments(keys) {
+        expect(keys).toEqual(['no-isbndb-v1:ta:complete-work'])
         return [
           {
-            key: 'ta:complete-work',
+            key: 'no-isbndb-v1:ta:complete-work',
             work_id: 'hc:work:1',
             record: { isbns: ['9780306406157', '9781649374042'] },
           },
@@ -183,8 +204,8 @@ describe('runBackfill', () => {
       },
       async fetchEnrichments() {
         return [
-          { key: 'ta:one', work_id: null, record: { isbn13: '9780306406157' } },
-          { key: 'ta:two', work_id: null, record: { isbn10: '0306406152' } },
+          { key: 'no-isbndb-v1:ta:one', work_id: null, record: { isbn13: '9780306406157' } },
+          { key: 'no-isbndb-v1:ta:two', work_id: null, record: { isbn10: '0306406152' } },
         ]
       },
       async updateWork() {

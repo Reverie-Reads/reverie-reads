@@ -363,3 +363,12 @@ The shared 24-hour `releases_cache` amortizes provider calls across readers. The
 its provider, source URL, checked time, format, publisher, territory, and whether Hardcover can
 identify it as a new work or later edition. Personal `books.pub_*` remains the reader's flexible
 date; cached provider provenance is not copied into private book data.
+
+## ISBNdb retirement implementation
+
+ISBNdb is no longer a planned source. Its live enrichment adapter and raw-response normalizers
+are removed by the retirement patch. Legacy configuration cannot re-enable it. Enrichment and the
+owner-run corpus backfill share a new cache namespace so historical mixed-source records are not
+reused; historical provenance types and stored records are preserved. This is a code change, not a
+claim of deployment, cancelled billing, or completed retention cleanup. See the
+[exit audit and owner handoff](../tasks/isbndb-retirement.md).
