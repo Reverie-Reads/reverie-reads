@@ -66,6 +66,14 @@ describe('every symbol glyph shipping in the app is declared somewhere', () => {
     expect(found.has('⏻'), 'the fixed glyph must not have come back').toBe(false)
   })
 
+  it('ships no text glyph from the power-symbol risk blocks', () => {
+    const risky = [...scanForWatchedGlyphs()].filter(([ch]) => {
+      const cp = ch.codePointAt(0)!
+      return (cp >= 0x2300 && cp <= 0x23ff) || (cp >= 0x2800 && cp <= 0x28ff)
+    })
+    expect(risky).toEqual([])
+  })
+
   // THE POSITIVE CONTROL. A scanner that returned nothing would pass every assertion above
   // vacuously — an "undeclared glyph" test with zero candidates to check is not a passing test,
   // it's a test that never ran. This is what would have caught `isWatchedGlyph` short-circuiting

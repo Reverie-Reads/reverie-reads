@@ -31,6 +31,7 @@ import { useProfile, useUpdateProfile } from '../data/profile'
 import { Surface } from '../components/Surface'
 import { PageHeader } from '../components/PageHeader'
 import { LibraryNavigation } from '../components/LibraryNavigation'
+import { UtilityGlyph } from '../components/UtilityGlyph'
 
 type Tab = 'tbr' | 'collection'
 
@@ -566,9 +567,9 @@ function ShelvesScreen() {
                       }}
                       aria-label={`Drag to reorder ${l.name}`}
                       title={`Drag to reorder ${l.name}`}
-                      className="cursor-grab px-1 text-[13px] leading-none text-muted"
+                      className="grid h-8 w-7 cursor-grab place-items-center text-muted"
                     >
-                      ⠿
+                      <UtilityGlyph name="grip" className="h-[18px] w-[18px]" />
                     </button>
                     <span className="flex flex-col">
                       <button

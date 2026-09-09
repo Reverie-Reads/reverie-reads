@@ -105,7 +105,7 @@ stamp against current `origin/main` and create or refresh a brief in `docs/tasks
 
   <sub>**verified 2026-08-20** — still OPEN: no `series_confidence`/`seriesConfidence` exists anywhere in `packages/core/src` or `apps/web/src`, against 34 occurrences of `cover_confidence`; no migration defines such a column.</sub>
 
-- **The six `sameRiskAsPowerSymbol` glyphs are the same defect, unfired.**
+- ~~**The six `sameRiskAsPowerSymbol` glyphs are the same defect, unfired.**~~ **CLOSED — 2026-09-09.**
   `apps/web/src/lib/glyphAllowlist.ts` tiers `⏹` `⏱` `⌕` `⌂` `⌘` (Misc Technical,
   U+2300–U+23FF — the exact block `⏻` came from) and `⠿` (Braille Patterns,
   U+2800–U+28FF) as flagged, not fixed. No skin's custom font covers either
@@ -117,7 +117,9 @@ stamp against current `origin/main` and create or refresh a brief in `docs/tasks
   six to inline SVG in a follow-up branch, matching `PowerGlyph`'s pattern,
   rather than waiting to spot each on a real device one at a time.**
 
-  <sub>**verified 2026-08-20** — still OPEN: all six glyphs remain tiered under `SAME_RISK_AS_POWER_SYMBOL` in `apps/web/src/lib/glyphAllowlist.ts:80-86`; none has been converted to SVG.</sub>
+  <sub>The Home and Command text marks had already left shipping source. Stop, timer, search, and
+  grip now render through `UtilityGlyph`; the same-risk tier is empty, and the source scanner fails
+  if any text character from Misc Technical or Braille Patterns returns.</sub>
 
 - **`a11y.spec.ts:309` timed out once on `fix/signout-glyph-tofu`'s standing e2e
   run — `page.waitForLoadState` exceeded 600000ms, not an axe violation.**

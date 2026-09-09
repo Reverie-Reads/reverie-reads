@@ -26,6 +26,7 @@ import {
 } from '@reverie/core'
 import { CoverImage } from '../components/CoverImage'
 import { Surface } from '../components/Surface'
+import { UtilityGlyph } from '../components/UtilityGlyph'
 import { useMoveEntry, useSeriesDetail } from '../data/series'
 
 /**
@@ -118,7 +119,7 @@ function Row({
         className="grid h-8 w-6 flex-none cursor-grab place-items-center rounded-md text-[13px] disabled:cursor-default disabled:opacity-40"
         style={{ color: TOK.meta }}
       >
-        ⠿
+        <UtilityGlyph name="grip" className="h-[18px] w-[18px]" />
       </button>
       <span
         className="w-16 flex-none text-[11.5px] font-semibold tabular-nums"

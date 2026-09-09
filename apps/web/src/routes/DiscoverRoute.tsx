@@ -40,6 +40,7 @@ import { TasteTier } from '../components/TasteTier'
 import { useTasteCalibration } from '../data/taste'
 import { Surface } from '../components/Surface'
 import { DiscoverExperience } from '../components/discovery/DiscoverExperience'
+import { UtilityGlyph } from '../components/UtilityGlyph'
 
 // Browse every catalog genre by default. A genre is a deliberate content filter, independent
 // of the current room; changing appearance never changes this selection.
@@ -411,9 +412,9 @@ function DiscoverCatalog() {
           />
           <span
             aria-hidden
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[15px] text-muted"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
           >
-            ⌕
+            <UtilityGlyph name="search" className="h-[17px] w-[17px]" />
           </span>
           {query && (
             <button
