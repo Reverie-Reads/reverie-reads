@@ -147,6 +147,11 @@ study are covered offline. The underlying injected execution primitive is tested
 its public live CLI path is limited to the one approved ISBN set. No real frame is frozen or acquired by
 these examples.
 
+The authorized September 9 study is now complete: see the
+[keep-for-targeted-metadata recommendation](reports/isbndb-value-study-results-2026-09-09.md).
+Its exact set is consumed, not a reusable example. Do not reacquire it from another clone or
+delete its attempt state. The recommendation does not promote a production policy or clear rights.
+
 ## Selective ISBNdb edition supplement (trial only)
 
 This separate metadata experiment requests ISBNdb only when an exact Google/Open Library edition

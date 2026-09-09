@@ -262,6 +262,9 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   authentication/quota/infrastructure stops or failed attempts. Do not use older commands or
   injected primitives to evade these boundaries. This is not production rights/retention clearance.
   See `reports/isbndb-source-use-review-2026-09-08.md` and the September 9 study plan.
+  That study is complete: selective use improved 38/100 works but regressed 20 under the broad
+  join. The report recommends keeping ISBNdb for targeted pages/format support, not production
+  promotion or ISBNdb-first. Its frozen set is consumed; never reacquire it from another clone.
 - **Metadata assessments do not merge identities.** `/catalog/metadata` compares exact normalized
   title/full-author and valid equivalent ISBN candidates. Only the explicit description action may
   edit shared metadata, after identity confirmation and a source/note; it never invokes the broad
