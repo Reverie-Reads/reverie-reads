@@ -1,0 +1,503 @@
+{
+  "version": 1,
+  "experiment": "subscription_value_study",
+  "lockSha256": "fc814d0f730e4f8d40fe931c2dfd3b6139d277e8bc5529c1da88db140de84bf8",
+  "frameSha256": "d87bf4b64a6e71003edae77d5f85be432962fdf7eeb3f4b5d68b9742f5e25d55",
+  "systemSha256": "60fc36164922544c661fc0ca53ede48152b2785fcfa1510d5b359b9a2dc72dca",
+  "mode": "complete",
+  "cohorts": 5,
+  "cases": 100,
+  "distinctWorks": 100,
+  "requiredFields": ["pages", "editionFormat", "publisher", "publicationDate", "language"],
+  "referenceCoverage": {
+    "pages": {
+      "reviewed": 98,
+      "unknown": 2
+    },
+    "editionFormat": {
+      "reviewed": 100,
+      "unknown": 0
+    },
+    "publisher": {
+      "reviewed": 100,
+      "unknown": 0
+    },
+    "publicationDate": {
+      "reviewed": 100,
+      "unknown": 0
+    },
+    "language": {
+      "reviewed": 98,
+      "unknown": 2
+    }
+  },
+  "providers": {
+    "google": {
+      "outcomes": {
+        "matched": 90,
+        "identity_review": 6,
+        "not_found": 3,
+        "no_exact_isbn": 1
+      },
+      "fields": {
+        "pages": {
+          "agrees": 0,
+          "differs": 69,
+          "unscored": 0,
+          "missing": 31,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "editionFormat": {
+          "agrees": 0,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 100,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publisher": {
+          "agrees": 35,
+          "differs": 55,
+          "unscored": 0,
+          "missing": 10,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publicationDate": {
+          "agrees": 83,
+          "differs": 5,
+          "unscored": 0,
+          "missing": 10,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 2,
+          "morePreciseUnverified": 0
+        },
+        "language": {
+          "agrees": 90,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 10,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        }
+      },
+      "availabilityOnly": {
+        "cover": 90,
+        "description": 90,
+        "relatedEditions": 0
+      }
+    },
+    "openlibrary": {
+      "outcomes": {
+        "not_found": 30,
+        "identity_review": 40,
+        "matched": 30
+      },
+      "fields": {
+        "pages": {
+          "agrees": 14,
+          "differs": 6,
+          "unscored": 0,
+          "missing": 80,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "editionFormat": {
+          "agrees": 13,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 87,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publisher": {
+          "agrees": 16,
+          "differs": 12,
+          "unscored": 0,
+          "missing": 72,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publicationDate": {
+          "agrees": 0,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 70,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 14,
+          "lessPrecise": 16,
+          "morePreciseUnverified": 0
+        },
+        "language": {
+          "agrees": 22,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 78,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        }
+      },
+      "availabilityOnly": {
+        "cover": 21,
+        "description": 6,
+        "relatedEditions": 0
+      }
+    },
+    "isbndb": {
+      "outcomes": {
+        "matched": 85,
+        "review": 13,
+        "not_found": 2
+      },
+      "fields": {
+        "pages": {
+          "agrees": 79,
+          "differs": 6,
+          "unscored": 0,
+          "missing": 15,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "editionFormat": {
+          "agrees": 85,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 15,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publisher": {
+          "agrees": 26,
+          "differs": 59,
+          "unscored": 0,
+          "missing": 15,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publicationDate": {
+          "agrees": 81,
+          "differs": 3,
+          "unscored": 0,
+          "missing": 15,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 1,
+          "morePreciseUnverified": 0
+        },
+        "language": {
+          "agrees": 85,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 15,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        }
+      },
+      "availabilityOnly": {
+        "cover": 85,
+        "description": 84,
+        "relatedEditions": 72
+      }
+    }
+  },
+  "policies": {
+    "free": {
+      "matchedEditions": 91,
+      "fields": {
+        "pages": {
+          "agrees": 1,
+          "differs": 54,
+          "unscored": 0,
+          "missing": 28,
+          "conflict": 17,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "editionFormat": {
+          "agrees": 13,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 87,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publisher": {
+          "agrees": 32,
+          "differs": 42,
+          "unscored": 0,
+          "missing": 9,
+          "conflict": 17,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publicationDate": {
+          "agrees": 83,
+          "differs": 5,
+          "unscored": 0,
+          "missing": 9,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 3,
+          "morePreciseUnverified": 0
+        },
+        "language": {
+          "agrees": 91,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 9,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        }
+      },
+      "modeledProviderLookups": {
+        "google": 100,
+        "openlibrary": 100,
+        "isbndb": 0
+      },
+      "additionalCorrectWorks": 0,
+      "regressedWorks": 0,
+      "wrongValueWorks": 66
+    },
+    "selective": {
+      "matchedEditions": 92,
+      "fields": {
+        "pages": {
+          "agrees": 18,
+          "differs": 5,
+          "unscored": 0,
+          "missing": 10,
+          "conflict": 67,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "editionFormat": {
+          "agrees": 86,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 14,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publisher": {
+          "agrees": 13,
+          "differs": 27,
+          "unscored": 0,
+          "missing": 8,
+          "conflict": 52,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publicationDate": {
+          "agrees": 85,
+          "differs": 3,
+          "unscored": 0,
+          "missing": 8,
+          "conflict": 3,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 1,
+          "morePreciseUnverified": 0
+        },
+        "language": {
+          "agrees": 92,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 8,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        }
+      },
+      "modeledProviderLookups": {
+        "google": 100,
+        "openlibrary": 100,
+        "isbndb": 100
+      },
+      "additionalCorrectWorks": 38,
+      "regressedWorks": 20,
+      "wrongValueWorks": 29
+    },
+    "isbndb_first": {
+      "matchedEditions": 92,
+      "fields": {
+        "pages": {
+          "agrees": 79,
+          "differs": 10,
+          "unscored": 0,
+          "missing": 10,
+          "conflict": 1,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "editionFormat": {
+          "agrees": 86,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 14,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publisher": {
+          "agrees": 27,
+          "differs": 64,
+          "unscored": 0,
+          "missing": 8,
+          "conflict": 1,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        },
+        "publicationDate": {
+          "agrees": 87,
+          "differs": 4,
+          "unscored": 0,
+          "missing": 8,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 1,
+          "morePreciseUnverified": 0
+        },
+        "language": {
+          "agrees": 92,
+          "differs": 0,
+          "unscored": 0,
+          "missing": 8,
+          "conflict": 0,
+          "notApplicable": 0,
+          "unparsed": 0,
+          "lessPrecise": 0,
+          "morePreciseUnverified": 0
+        }
+      },
+      "modeledProviderLookups": {
+        "google": 15,
+        "openlibrary": 15,
+        "isbndb": 100
+      },
+      "additionalCorrectWorks": 25,
+      "regressedWorks": 20,
+      "wrongValueWorks": 66
+    }
+  },
+  "identityLanguageContextCases": 0,
+  "independentIsbndbMatchesWithoutFreeMatch": 1,
+  "independentIsbndbMatchesDuringFreeOutage": 0,
+  "independentIsbndbMatchesAfterCompletedFreeMiss": 1,
+  "observedAcquisitionMs": {
+    "baseline": 371972,
+    "isbndb": 17505
+  },
+  "transport": {
+    "google": {
+      "requests": 100,
+      "stoppedCohorts": {}
+    },
+    "openlibrary": {
+      "requests": 247,
+      "stoppedCohorts": {}
+    },
+    "isbndb": {
+      "requests": 100,
+      "stoppedCohorts": {}
+    }
+  },
+  "economicScenarios": {
+    "selective": {
+      "observedAdditionalWorkRate": 0.38,
+      "assumedMonthlyDistinctWorks": null,
+      "monthlySubscriptionUsd": 14.99,
+      "projectedAdditionalWorks": null,
+      "projectedUsdPerAdditionalWork": null,
+      "configuredMaxUsdPerAdditionalWork": null,
+      "meetsConfiguredCostOnly": null,
+      "extrapolationOnly": true
+    },
+    "isbndb_first": {
+      "observedAdditionalWorkRate": 0.25,
+      "assumedMonthlyDistinctWorks": null,
+      "monthlySubscriptionUsd": 14.99,
+      "projectedAdditionalWorks": null,
+      "projectedUsdPerAdditionalWork": null,
+      "configuredMaxUsdPerAdditionalWork": null,
+      "meetsConfiguredCostOnly": null,
+      "extrapolationOnly": true
+    }
+  },
+  "decision": "not_qualified",
+  "reasons": [
+    "development_sample_not_production_qualification",
+    "source_use_rights_unverified",
+    "review_time_not_measured"
+  ],
+  "productionWrites": 0,
+  "modelCalls": 0,
+  "retention": "aggregate_only"
+}
