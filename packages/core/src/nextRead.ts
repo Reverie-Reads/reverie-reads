@@ -25,13 +25,25 @@ export function nextReadCandidates(
   })
 }
 
-/** Start an active read without logging a completion or changing the reader's copies/history. */
+/** An Unread book with a retained place was explicitly set aside and can be resumed. */
+export function hasPausedReadingProgress(book: Pick<Book, 'readStatus' | 'progress'>): boolean {
+  return book.readStatus === 'Unread' && book.progress > 0
+}
+
+/** Start or resume an active read without changing the reader's copies or completed history. */
 export function beginReadingPatch(book: Book): Partial<Book> {
+  // "Set it aside" changes an active read to Unread while deliberately retaining its place.
+  // A previous completed read must not turn that resume into a new reread and erase the retained
+  // position. A completed 100% book still starts a deliberate reread at zero.
+  const hasPausedPlace = hasPausedReadingProgress(book)
   return {
     readStatus: 'Reading',
     readingNowHidden: false,
     progress:
-      book.readStatus !== 'Reading' && book.readStatus !== 'DNF' && isBookRead(book)
+      book.readStatus !== 'Reading' &&
+      book.readStatus !== 'DNF' &&
+      isBookRead(book) &&
+      !hasPausedPlace
         ? 0
         : book.progress,
   }

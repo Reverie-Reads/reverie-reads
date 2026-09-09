@@ -7,7 +7,7 @@ const mutate = vi.fn((_variables: unknown, options?: { onSuccess?: () => void })
   options?.onSuccess?.(),
 )
 vi.mock('../data/books', () => ({
-  useUpdateBook: () => ({ mutate, isPending: false, isError: false }),
+  useUpdateBook: () => ({ mutate, isPending: false, isError: false, reset: vi.fn() }),
 }))
 vi.mock('../components/CoverImage', () => ({ CoverImage: () => <span /> }))
 
@@ -40,6 +40,32 @@ describe('ReadingPlan', () => {
       { id: 'b', patch: { planPosition: 0 } },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     )
+  })
+
+  it('keeps Home-hidden current reads in Planner and updates progress explicitly', () => {
+    const current = makeBook({
+      id: 'current',
+      title: 'Current Book',
+      readStatus: 'Reading',
+      readingNowHidden: true,
+      progress: 31,
+    })
+    render(<ReadingPlan books={[current]} view="queue" openBook={vi.fn()} />)
+
+    expect(screen.getByRole('heading', { name: 'Current Book' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Update progress' }))
+    const dialog = screen.getByRole('dialog', { name: 'Update progress' })
+    fireEvent.change(within(dialog).getByRole('spinbutton', { name: 'Progress (%)' }), {
+      target: { value: '44' },
+    })
+    expect(mutate).not.toHaveBeenCalled()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save progress' }))
+
+    expect(mutate).toHaveBeenCalledWith(
+      { id: 'current', patch: { progress: 44 } },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    )
+    expect(screen.getByRole('status')).toHaveTextContent('Progress saved at 44% for Current Book.')
   })
 
   it('edits precision and keeps the future-self note separate from reading history', () => {

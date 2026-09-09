@@ -354,6 +354,15 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   and missing finish dates stay outside a selected year. Formats come from read logs, genre
   buckets deduplicate within each read, and return counts preserve earlier-period context.
   See `docs/tasks/reading-life-implementation.md` for the precision and legacy-data boundaries.
+- **Personal reading progress is one deliberate whole percent.** `books.progress` remains the
+  format-neutral current-place summary. Home, book details, Planner, and the landing guest library
+  use the shared explicit progress editor: changing the slider, step controls, or exact field edits
+  a draft; only Save writes. Failed writes keep the draft for retry, and 100% alone never logs a
+  completion. `reading_now_hidden` hides an active read from Home only, not Planner. A paused reread
+  with progress between 1 and 99 resumes at that place; a completed reread starts from zero. Do not
+  infer page or chapter positions from the rounded percent. Exact pages require an edition-bound
+  position and denominator; club chapter/page progress remains a separate spoiler coordinate. See
+  `docs/tasks/reading-progress-editor.md`.
 - **Personal Realtime carries signals, never library rows.** The signed-in app joins one private
   `library:<reader id>` Broadcast topic authorized against `realtime.messages`. Triggers on books,
   reads, lists, and list items emit only table and operation; the client debounces bursts and then

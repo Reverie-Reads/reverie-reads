@@ -137,11 +137,12 @@ describe('book detail reading journey', () => {
     state.readsError = true
     render(<BookDetailScreen />)
     fireEvent.click(screen.getByRole('button', { name: 'Update progress' }))
-    expect(screen.getByRole('slider', { name: 'Reading progress' })).toHaveFocus()
+    expect(screen.getByRole('dialog', { name: 'Update progress' })).toBeInTheDocument()
+    expect(screen.getByRole('spinbutton', { name: 'Progress (%)' })).toHaveValue(40)
     expect(state.mutate).not.toHaveBeenCalled()
   })
 
-  it('groups the preserved controls and takes Update progress to the working slider', () => {
+  it('groups the preserved controls and saves progress only after confirmation', () => {
     render(<BookDetailScreen />)
     for (const name of ['Your copy', 'Your reading', 'Series and plans', 'More about this book']) {
       expect(screen.getByRole('region', { name })).toBeInTheDocument()
@@ -157,19 +158,23 @@ describe('book detail reading journey', () => {
       }),
     ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Update progress' }))
-    const slider = screen.getByRole('slider', { name: 'Reading progress' })
-    expect(slider).toHaveFocus()
-    expect(state.scroll).toHaveBeenCalledOnce()
-    fireEvent.change(slider, { target: { value: '55' } })
-    fireEvent.pointerUp(slider)
-    expect(state.mutate).toHaveBeenCalledExactlyOnceWith({ id: 'active', patch: { progress: 55 } })
+    const dialog = screen.getByRole('dialog', { name: 'Update progress' })
+    fireEvent.change(within(dialog).getByRole('spinbutton', { name: 'Progress (%)' }), {
+      target: { value: '55' },
+    })
+    expect(state.mutate).not.toHaveBeenCalled()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save progress' }))
+    expect(state.mutate).toHaveBeenCalledExactlyOnceWith(
+      { id: 'active', patch: { progress: 55 } },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    )
   })
 
   it('keeps completing the current read reachable with an optional rating and a dated log', async () => {
     render(<BookDetailScreen />)
     fireEvent.click(screen.getByRole('button', { name: 'Finish this read' }))
-    const dialog = screen.getByRole('dialog', { name: 'Log a read' })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Save to read log' }))
+    const dialog = screen.getByRole('dialog', { name: 'Finish this read' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save finished read' }))
     expect(state.addRead).toHaveBeenCalledOnce()
     expect(state.addRead.mock.calls[0]?.[0]).toMatchObject({ rating: 0, notes: '' })
     await waitFor(() =>

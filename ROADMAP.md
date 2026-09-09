@@ -199,8 +199,13 @@ The remaining items are ordered within P2, but they do not block the P0/P1 seque
    the same Android-risk blocks as the former power symbol are now controlled SVGs. See
    `docs/tasks/restore-preflight.md`,
    `docs/tasks/fresh-device-appearance.md`, and `docs/tasks/dense-grid-state-indicators.md`.
-6. **Reading progress.** Decide whether percent-only progress is sufficient; pages/chapters require
-   schema, import/export, stats, and UI semantics together.
+6. **Reading progress — implemented for review.** Percent remains the format-neutral current-place
+   summary. Home, book details, Planner, and the landing guest library now share a deliberate whole-
+   percent editor with an exact entry, slider, explicit Save, retained failed drafts, and no write
+   on blur. Planner includes Home-hidden active reads, and a set-aside reread resumes from its saved
+   place. Exact pages remain a separate feature because they require an edition-bound position and
+   denominator across schema, import/export, merge, and UI; chapters remain separate from club
+   spoiler progress. See `docs/tasks/reading-progress-editor.md`.
 7. **Cover pipeline efficiency.** Remove repeated image decodes only after measuring CPU/memory and
    preserving current cover-quality guards.
 

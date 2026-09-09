@@ -5,6 +5,8 @@ import { Nameplate } from '../../../components/Nameplate'
 import { Stars } from '../../../components/Stars'
 import { useGuestLibrary } from './context'
 import { field, primary, quiet, writingField } from './styles'
+import { ProgressFields } from '../../../components/ReadingProgress'
+import { parseProgress } from '../../../components/readingProgressValue'
 
 function today() {
   const date = new Date()
@@ -15,7 +17,8 @@ function today() {
 export function GuestBookDetail({ book }: { book: Book }) {
   const { state, dispatch } = useGuestLibrary()
   const [rating, setRating] = useState(book.rating)
-  const [progress, setProgress] = useState(book.progress)
+  const [progress, setProgress] = useState(String(book.progress))
+  const [progressError, setProgressError] = useState<string | null>(null)
   const [format, setFormat] = useState(book.format)
   const [ownership, setOwnership] = useState(book.ownership)
   const [borrowed, setBorrowed] = useState(book.borrowed)
@@ -32,7 +35,8 @@ export function GuestBookDetail({ book }: { book: Book }) {
       : (state.pendingNotes[book.id] ?? '')
   useEffect(() => {
     setRating(book.rating)
-    setProgress(book.progress)
+    setProgress(String(book.progress))
+    setProgressError(null)
     setFormat(book.format)
     setOwnership(book.ownership)
     setBorrowed(book.borrowed)
@@ -40,13 +44,20 @@ export function GuestBookDetail({ book }: { book: Book }) {
     setOwned(book.owned)
     setNotes(savedNote)
   }, [book, savedNote])
-  function save() {
+  function save(): boolean {
+    const parsedProgress = book.readStatus === 'Reading' ? parseProgress(progress) : book.progress
+    if (parsedProgress == null) {
+      setProgressError('Enter a whole number from 0 to 100.')
+      return false
+    }
     dispatch({
       type: 'save',
       id: book.id,
-      patch: { rating, progress, format, ownership, borrowed, wishlist, owned },
+      patch: { rating, progress: parsedProgress, format, ownership, borrowed, wishlist, owned },
       notes,
     })
+    setProgressError(null)
+    return true
   }
   return (
     <div className="space-y-5">
@@ -63,6 +74,7 @@ export function GuestBookDetail({ book }: { book: Book }) {
         </div>
       </div>
       <form
+        noValidate
         className="space-y-5"
         onSubmit={(e) => {
           e.preventDefault()
@@ -170,23 +182,17 @@ export function GuestBookDetail({ book }: { book: Book }) {
               )}
             </select>
           </label>
-          {book.readStatus === 'Reading' && (
-            <label className="text-sm font-semibold">
-              Progress (%)
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value={progress}
-                className={field}
-                onChange={(e) =>
-                  setProgress(Math.max(0, Math.min(100, Number(e.target.value) || 0)))
-                }
-              />
-            </label>
-          )}
         </div>
+        {book.readStatus === 'Reading' && (
+          <ProgressFields
+            value={progress}
+            error={progressError}
+            onChange={(value) => {
+              setProgress(value)
+              setProgressError(null)
+            }}
+          />
+        )}
         <div>
           <p className="mb-2 text-sm font-semibold">Your rating</p>
           <Stars value={rating} step={0.5} onChange={setRating} />
@@ -215,7 +221,7 @@ export function GuestBookDetail({ book }: { book: Book }) {
               type="button"
               className={primary}
               onClick={() => {
-                save()
+                if (!save()) return
                 dispatch({ type: 'finish', id: book.id, date: today() })
               }}
             >
@@ -226,7 +232,7 @@ export function GuestBookDetail({ book }: { book: Book }) {
               type="button"
               className={primary}
               onClick={() => {
-                save()
+                if (!save()) return
                 dispatch({ type: 'start', id: book.id })
               }}
             >
