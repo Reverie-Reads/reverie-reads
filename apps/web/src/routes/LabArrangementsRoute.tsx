@@ -8,6 +8,7 @@ import { Frame, ProgressMeter, SectionHeader, SignatureRing } from '../component
 import { NavigationGlyph } from '../components/NavigationGlyph'
 import { ReverieMark } from '../components/ReverieMark'
 import { CoverImage } from '../components/CoverImage'
+import { UtilityGlyph } from '../components/UtilityGlyph'
 import { GUEST_CATALOG } from '../auth/landing/guest/catalog'
 import { loadAllSkinFonts } from '../skin/fonts'
 import {
@@ -278,9 +279,9 @@ function LibraryPreview({
               <button
                 type="button"
                 aria-label="Search your library"
-                className="skin-control skin-btn-icon grid h-11 w-11 flex-none place-items-center text-[17px]"
+                className="skin-control skin-btn-icon grid h-11 w-11 flex-none place-items-center"
               >
-                ⌕
+                <UtilityGlyph name="search" className="h-[18px] w-[18px]" />
               </button>
             )}
           </div>

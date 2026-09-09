@@ -8,7 +8,7 @@
  * `bulkComplete` emitted its first progress only at the BOTTOM of the loop body — after the first
  * book's whole round trip (a select of every enriched_at, an enrich call, maybe a Storage ingest, an
  * update). The real total was known before the loop and simply withheld until then. So for that
- * whole window the button read "⏹ Stop (0/0)": a Stop label, which implies the run started, next to
+ * whole window the button read "Stop (0/0)": a Stop label, which implies the run started, next to
  * a count that says it found nothing — at the exact moment a reader has committed to a run that now
  * takes 20+ minutes under server-side pacing. It corrected itself, which made it a lie rather than a
  * bug you could see.

@@ -11,13 +11,15 @@ Priorities mean:
 - **P2 — planned:** valuable work with no current blocking dependency.
 - **P3 — deferred/monitor:** revisit on evidence, schedule, or an explicit owner decision.
 
-## Active product program: Brand identity and guided demonstration
+## Recently completed: Brand identity, guided demonstration, and continuity
 
 The owner approved moving to the next dependency-ready feature after Cover Studio and Calendar and
-Releases on 2026-09-09. Both predecessors are merged in public PRs #500 and #501. The current
-feature carries the open-book identity into install and share assets and adds an optional four-stop
-path through the working guest library. It does not simulate personalization, persist guest changes
-without consent, or embed private or provider imagery in marketing assets.
+Releases on 2026-09-09. Public PR #504 carried the open-book identity into install and share assets
+and added an optional four-stop path through the working guest library. Earlier PR #433 completed
+the explicit guest-to-account handoff, #441 persisted modular navigation and Home arrangements,
+and #444 shipped the guided Discover experience. Public PR #506 and private PR #42 then completed
+content-free, owner-scoped personal-library refresh across tabs and devices; production migration
+`20260930010000` is verified applied. These are completion records, not active queue items.
 
 ## Recently completed: Collection care, Calendar and Releases
 
@@ -129,15 +131,11 @@ The September 5 order below superseded the older P2/P3 ordering; the active Refl
 program above now takes precedence. Discover’s guided experience subsequently merged in #444.
 Safety regressions still take precedence. Keep one product implementation and one small reader experiment active at a time.
 
-| Order | Priority  | Next outcome                                                        | Completion gate                                                                                                                                                                                                                                                                                                                                                               |
-| ----: | :-------: | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|     1 |    P1     | Finish the approved release and verify app/landing aesthetics       | Matching private production build; all nine rooms use the same scenes, typography, and shared book controls; phone/desktop signed-in views are checked. The series-removal migration follows its owner-operated production gate.                                                                                                                                              |
-|     2 |    P1     | Keep a guest's chosen books, notes, and room through signup         | Explicit opt-in handoff, accurate preview/counts, duplicate and retry handling, cancellation and expiry, and a useful first reading action after authentication. Do not silently persist private guest notes or lose them behind a signup promise.                                                                                                                            |
-|     3 | P1 design | Design modular library arrangements                                 | Reviewed mobile/desktop presets, dock/rail ordering, Home module choices, hide/restore/defaults, accessible controls, and account persistence rules. Account-level implementation stays a later reviewed change. See `docs/backlog/task-modular-library-arrangements.md`.                                                                                                     |
-|     4 |    P1     | Make Discover worth spending time in                                | First improve a bounded set of covers/descriptions and edition identity; preserve browse/filter/scroll context through addressable details; then add a few transparent author, feeling, or change-of-pace paths. Never infer genre from appearance or invent recommendation reasons.                                                                                          |
-|     5 |    P1     | Validate the complete first-use and return loop with readers        | Run the five-session [reader validation protocol](docs/tasks/reader-validation.md), then expand only if its process gate passes. Separate assisted actions from independent outcomes and return from prompted check-ins. Import/reimport, possession, retained history, and Back navigation issues outrank cosmetic expansion. No invitations are sent without authorization. |
-|     6 | P2 active | Finish accepted brand assets and publish one accurate demonstration | App/share icons and onboarding material follow Midnight & Lamplight; the optional tour uses the working guest library and changes only the visible product view. Publish only approved content, then judge useful outcomes rather than visits alone.                                                                                                                          |
-|     7 |    P2     | Build only evidence-backed reader improvements and paid depth       | Use the reader findings; retain Free's core library, nine rooms, accessibility, export, and correction. Verify paid purchase/entitlement/cancellation before selling a new promise. Expand only within the profitable-side-business operating envelope.                                                                                                                       |
+| Order | Priority | Next outcome                                                  | Completion gate                                                                                                                                                                                                                                                                                                                                                               |
+| ----: | :------: | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|     1 |    P1    | Validate the complete first-use and return loop with readers  | Run the five-session [reader validation protocol](docs/tasks/reader-validation.md), then expand only if its process gate passes. Separate assisted actions from independent outcomes and return from prompted check-ins. Import/reimport, possession, retained history, and Back navigation issues outrank cosmetic expansion. No invitations are sent without authorization. |
+|     2 |    P2    | Finish bounded reliability and interface residue              | Replace platform-risk text glyphs with controlled SVG, preserve the fixed-window spine interaction, and finish narrow release-safety items without reopening completed product redesigns.                                                                                                                                                                                     |
+|     3 |    P2    | Build only evidence-backed reader improvements and paid depth | Use reader findings; retain Free's core library, nine rooms, accessibility, export, and correction. Verify paid purchase, entitlement, and cancellation before selling a new promise. Expand only within the profitable-side-business operating envelope.                                                                                                                     |
 
 The separate series-source trial continues within its evidence and rights gates. Its results may
 support catalog quality but are not automatic permission to write production classifications.
@@ -181,8 +179,12 @@ The remaining items are ordered within P2, but they do not block the P0/P1 seque
    reopen it as a second redesign without new evidence. The deploy guard's downstream confirmation
    ambiguity is closed: after its human `y/N`, it explicitly acknowledges the CLI prompt instead of
    depending on EOF-as-consent.
-2. **Spine reveal band.** Implement the already-decided shared, fixed-height reveal band only after
-   revalidating `docs/tasks/task-spine-reveal-band.md` against the current UI.
+2. **Spine reveal band — closed after revalidation.** The shared band shipped in #144 and was
+   superseded by the fixed reveal window in #149. Current mobile guards prove every book reaches the
+   window, terminal covers remain contained with zero neighbor overlap, tiny shelves retain real
+   tap paths, and scroll dimensions stay stable. Reintroducing the permanently sticky 196px band
+   would solve an obsolete overlay defect. The historical decision remains in
+   `docs/tasks/task-spine-reveal-band.md`.
 3. **Calendar/Releases cluster.** The sparse calendar pass shipped. Revalidate the remaining
    Calendar/Releases route, density, mobile, and heatmap decisions in
    `docs/tasks/task-calendar-cluster-scope.md` before another implementation branch.
@@ -193,8 +195,9 @@ The remaining items are ordered within P2, but they do not block the P0/P1 seque
    stale-cache guard. URL precedence for Library filters remains undecided. Treat a true offline
    write queue as its own subsystem, not a quick caching patch.
 5. **Reader safeguards and polish.** The restore preflight with real counts, the fresh-device
-   appearance handoff, and dense-grid state indicators are complete. Convert the remaining risky
-   literal glyphs to controlled SVGs. See `docs/tasks/restore-preflight.md`,
+   appearance handoff, and dense-grid state indicators are complete. The remaining text glyphs in
+   the same Android-risk blocks as the former power symbol are now controlled SVGs. See
+   `docs/tasks/restore-preflight.md`,
    `docs/tasks/fresh-device-appearance.md`, and `docs/tasks/dense-grid-state-indicators.md`.
 6. **Reading progress.** Decide whether percent-only progress is sufficient; pages/chapters require
    schema, import/export, stats, and UI semantics together.

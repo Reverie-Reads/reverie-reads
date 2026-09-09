@@ -51,6 +51,7 @@ import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import type { AddDestination } from '../components/addDestination'
 import { ArrangementEditor } from '../components/ArrangementEditor'
 import { RestoreBackupControl } from '../components/RestoreBackupControl'
+import { UtilityGlyph } from '../components/UtilityGlyph'
 
 const YEAR = new Date().getFullYear()
 
@@ -637,17 +638,20 @@ function SettingsScreen() {
               <button
                 type="button"
                 onClick={() => (stopRef.current = true)}
-                className="skin-control border border-line px-4 py-2 text-[13px] font-semibold text-ink"
+                className="skin-control inline-flex items-center gap-2 border border-line px-4 py-2 text-[13px] font-semibold text-ink"
                 style={{ background: 'var(--field)' }}
               >
-                ⏹ Stop ({sweepCountText(progress)}){tracing ? ' · tracing' : ''}
+                <UtilityGlyph name="stop" />
+                <span>
+                  Stop ({sweepCountText(progress)}){tracing ? ' · tracing' : ''}
+                </span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => void runComplete()}
                 disabled={!eligibleCount}
-                className="skin-control border border-line px-4 py-2 text-[13px] font-semibold text-ink disabled:cursor-not-allowed disabled:border-dashed"
+                className="skin-control inline-flex items-center gap-2 border border-line px-4 py-2 text-[13px] font-semibold text-ink disabled:cursor-not-allowed disabled:border-dashed"
                 style={{ background: 'var(--field)' }}
               >
                 ✨ Complete missing covers &amp; info
@@ -690,20 +694,22 @@ function SettingsScreen() {
                 }
                 disabled={!eligibleCount}
                 title="Runs the sweep over 10 never-checked books, bypassing the shared enrichment cache so the sources are actually queried, and records per-stage timings to sweep_traces. Deliberately a worst case, not an average."
-                className="skin-control border border-line px-4 py-2 text-[13px] font-semibold text-ink disabled:cursor-not-allowed disabled:border-dashed"
+                className="skin-control inline-flex items-center gap-2 border border-line px-4 py-2 text-[13px] font-semibold text-ink disabled:cursor-not-allowed disabled:border-dashed"
                 style={{ background: 'var(--field)' }}
               >
-                ⏱ Trace 10 books
+                <UtilityGlyph name="timer" />
+                <span>Trace 10 books</span>
               </button>
             )}
             {sharpening ? (
               <button
                 type="button"
                 onClick={() => (sharpStopRef.current = true)}
-                className="skin-control border border-line px-4 py-2 text-[13px] font-semibold text-ink"
+                className="skin-control inline-flex items-center gap-2 border border-line px-4 py-2 text-[13px] font-semibold text-ink"
                 style={{ background: 'var(--field)' }}
               >
-                ⏹ Stop ({sweepCountText(sharpProgress)})
+                <UtilityGlyph name="stop" />
+                <span>Stop ({sweepCountText(sharpProgress)})</span>
               </button>
             ) : (
               <button

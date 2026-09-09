@@ -1,7 +1,26 @@
-# Planned task: shared spine reveal band
+# Superseded task: shared spine reveal band
 
-Status: **planned, not active**. Revalidate the measurements and component coordinates against
-current `main` before implementation.
+Status: **closed after revalidation on 2026-09-09**. Do not implement this historical specification
+against current `main`.
+
+## Revalidation result
+
+The premise below no longer describes the shipped shelf. The shared band did ship in #144, then
+the in-row interaction was redesigned through #145–#149. Current `SpineShelf` has no absolute
+120px cover overlay over a 29–46px hit target: the spine button itself transforms, neighboring
+buttons move aside, leading and responsive trailing slack keep the transformed boxes inside the
+track, and every book passes through one fixed reveal window. The selected cover therefore remains
+attached to its spine without the sibling burial this task was written to remove.
+
+The current mobile reachability suite passed all 12 guards during revalidation, including every
+terminal pick, coordinate-level tap access on tiny shelves, zero neighbor overlap at rest, stable
+scroll dimensions, horizontal and vertical containment, cover aspect, and reduced motion. The
+shared band would restore a 196px permanently sticky surface that the later interaction deliberately
+removed while solving a defect that no longer reproduces. Keep the fixed reveal window and its
+guards.
+
+The remaining text is the historical design record that produced #144 and explains the discarded
+tradeoff.
 
 Branch: `fix/spine-reveal-band` off `main`.
 Audits: `docs/audits/spine-overlay-clamp.md` (951ec48) and

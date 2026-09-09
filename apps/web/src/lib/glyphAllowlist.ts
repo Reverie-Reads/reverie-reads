@@ -27,8 +27,9 @@
  *               2212/2215) — plus real emoji, which Android renders via the system-wide
  *               Noto Color Emoji font regardless of the page's own fonts.
  *   sameRiskAsPowerSymbol   Misc Technical (U+2300–U+23FF) and Braille Patterns (U+2800–U+28FF) —
- *               the EXACT block families the power symbol (U+23FB) came from. Anything here is flagged, not proven; each
- *               entry names its component so the next audit doesn't have to re-find them.
+ *               the exact block families the power symbol came from. The remaining UI characters
+ *               in these ranges were replaced with inline SVG; this tier stays empty so a future
+ *               reintroduction cannot hide inside an old exception.
  *   unverified  Everything else already shipping: Box Drawing, Dingbats, Geometric Shapes, Misc
  *               Symbols, Supplemental Arrows-A. Plausibly fine — General Punctuation and basic
  *               filled shapes are near-universal — but not checked against a real Android device
@@ -75,15 +76,8 @@ const PROVEN: Record<string, string> = {
   '−': 'Math Operators — minus sign (not hyphen)',
 }
 
-/** Same block families as the power symbol — flagged for the audit, not proven. */
-const SAME_RISK_AS_POWER_SYMBOL: Record<string, string> = {
-  '⏹': 'Misc Technical U+23F9 STOP — SettingsRoute sweep Stop buttons',
-  '⏱': 'Misc Technical U+23F1 STOPWATCH — SettingsRoute trace button',
-  '⌕': 'Misc Technical U+2315 TELEPHONE RECORDER — DiscoverRoute search affordance',
-  '⌂': 'Misc Technical U+2302 HOUSE — AppShell nav (an older, more broadly-shipped corner of the same block; still not proven, so tiered honestly rather than by confidence)',
-  '⌘': 'Misc Technical U+2318 PLACE OF INTEREST SIGN — landing Mockup (the iconic "command" glyph; same reasoning as HOUSE above)',
-  '⠿': 'Braille Patterns U+283F — SeriesArranger drag handle',
-}
+/** Same block families as the removed power symbol. Shipping source must keep this tier empty. */
+const SAME_RISK_AS_POWER_SYMBOL: Record<string, string> = {}
 
 /** Shipping today; not yet checked against a real Android device. */
 const UNVERIFIED: Record<string, string> = {

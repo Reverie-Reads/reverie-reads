@@ -1,4 +1,5 @@
 import type { CorpusBulkProgress } from '../data/enrichCorpus'
+import { UtilityGlyph } from './UtilityGlyph'
 
 export function CorpusCompleteControl({
   completing,
@@ -42,10 +43,13 @@ export function CorpusCompleteControl({
         <button
           type="button"
           onClick={onStop}
-          className="skin-control border border-line px-4 py-2 text-[13px] font-semibold text-ink"
+          className="skin-control inline-flex items-center gap-2 border border-line px-4 py-2 text-[13px] font-semibold text-ink"
           style={{ background: 'var(--field)' }}
         >
-          ⏹ Stop shared corpus ({progress ? `${progress.scanned}/${progress.total}` : 'starting…'})
+          <UtilityGlyph name="stop" />
+          <span>
+            Stop shared corpus ({progress ? `${progress.scanned}/${progress.total}` : 'starting…'})
+          </span>
         </button>
         <p className="w-full text-[12px] text-muted" role="status" aria-live="polite">
           {activeStatus}
