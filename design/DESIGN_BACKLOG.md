@@ -41,8 +41,9 @@ lives in `ROADMAP.md`.
    the actual data limits. Plan now has explicit Soon membership, preference order, direct
    edit/remove/undo, future-self notes, a precision-safe calendar, and a source-aware release
    horizon. Reflect now composes the same selected-period record into a private retrospective with
-   real covers and saved notes, without creating a score, share card, or analytics export. This
-   precedes import/restore preview and brand collateral.
+   real covers and saved notes, without creating a score, share card, or analytics export.
+   Import/restore preview followed in PR #489. The next product gate is the five-session reader
+   validation protocol; accepted brand collateral remains after that evidence.
 4. **ACCEPTED BRAND ASSETS — P2.** Carry the approved open-book mark and typography into app/share
    icons, onboarding material, and one accurate demonstration. Preserve each room's own interface
    language. Do not reopen the chosen palette as a new concept exercise.
