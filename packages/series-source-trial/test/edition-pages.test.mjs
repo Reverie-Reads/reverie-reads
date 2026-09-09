@@ -15,6 +15,10 @@ import {
 import { createEditionPageClient } from '../src/metadata/edition-page-client.mjs'
 import { assertFreshEditionFrame, main } from '../src/edition-pages.mjs'
 import { createValueStudyLock } from '../src/metadata/value-study.mjs'
+import {
+  createEditionDiagnostics,
+  countEditionDiagnostics,
+} from '../src/metadata/edition-page-diagnostics.mjs'
 
 const identity = {
   isbn: '9780316565202',
@@ -343,6 +347,7 @@ test('missing Google credentials make no keyless requests and no automatic OL-on
   const { client, calls } = make({ googleKey: '' })
   const r = await client.acquire(identity)
   assert.equal(r.google.status, 'missing_key')
+  assert.equal(r.google.stage, 'preflight')
   assert.equal(
     calls.every((c) => c.url.hostname === 'openlibrary.org'),
     true,
@@ -533,4 +538,147 @@ test('CLI dry run and help execute without keys or network; synthetic live input
   )
   assert.notEqual(run(['--input', 'data/edition-pages.example.json', '--refresh']).status, 0)
   assert.throws(() => validateEditionPages({ ...frame(), purpose: 'qualification' }))
+})
+
+test('Google diagnostics distinguish exact identity failures without changing admission', () => {
+  for (const [patch, reason] of [
+    [{ title: 'Other title' }, 'title_mismatch'],
+    [{ subtitle: 'An extra subtitle' }, 'title_mismatch'],
+    [{ authors: ['A. Example'] }, 'contributors_mismatch'],
+    [{ industryIdentifiers: [{ type: 'ISBN_13', identifier: otherIsbn }] }, 'isbn_mismatch'],
+  ])
+    assert.deepEqual(admitGoogleVolume(volume(patch), identity), {
+      status: 'identity_review',
+      reason,
+    })
+})
+
+test('aggregate diagnostics trace search versus detail failure through HTTP orchestration', async () => {
+  for (const stage of ['search', 'detail']) {
+    const { client, calls } = make({
+      fetcher: async (url) => {
+        if (url.hostname === 'openlibrary.org') return new Response(null, { status: 404 })
+        if (url.pathname.endsWith('/volumes'))
+          return json(search(volume(stage === 'search' ? { subtitle: 'Extra' } : {})))
+        return json(volume({ authors: ['Someone Else'] }))
+      },
+    })
+    const report = await runEditionPages(frame(), { client })
+    assert.equal(report.version, 2)
+    assert.deepEqual(report.diagnostics.googleTerminalStage, { [stage]: 1 })
+    assert.deepEqual(report.diagnostics.providerReasons.google, {
+      [stage === 'search' ? 'title_mismatch' : 'contributors_mismatch']: 1,
+    })
+    assert.deepEqual(report.diagnostics.packetFormat, { unavailable: 1 })
+    assert.deepEqual(report.diagnostics.candidateSource, {})
+    assert.equal(report.candidates.available, 0)
+    assert.equal(
+      calls.filter((c) => c.url.hostname === 'www.googleapis.com').length,
+      stage === 'search' ? 1 : 2,
+    )
+  }
+})
+
+test('Open Library contributor and binding reasons survive only as aggregate codes', async () => {
+  for (const [patch, reason] of [
+    [{ isbn_10: ['1250890314'] }, 'isbn_mismatch'],
+    [{ authors: [] }, 'missing_contributors'],
+    [{ physical_format: 'Synthetic unsupported binding' }, 'unknown_binding'],
+  ]) {
+    const { client } = make({
+      fetcher: async (url) => {
+        if (url.hostname === 'www.googleapis.com')
+          return json(url.pathname.endsWith('/volumes') ? search(volume()) : volume())
+        if (url.pathname.includes('/authors/')) return json({ name: 'Ada Example' })
+        return json(olBook(patch))
+      },
+    })
+    const report = await runEditionPages(frame(), { client })
+    assert.deepEqual(report.diagnostics.providerReasons.openlibrary, { [reason]: 1 })
+    assert.equal(report.candidates.available, 0)
+    assert.deepEqual(report.observations.google, {
+      available: 0,
+      agrees: 0,
+      differs: 0,
+      unscored: 0,
+    })
+  }
+})
+
+test('candidate source and format counters follow packets, never reference truth or protected values', async () => {
+  for (const [sources, current, source, format] of [
+    [acquired(), {}, 'both', 'paperback'],
+    [acquired(result('google'), { status: 'not_found' }), {}, 'google', 'paperback'],
+    [acquired({ status: 'not_found' }, result('openlibrary')), {}, 'openlibrary', 'paperback'],
+    [
+      acquired(
+        result('google', 300, { record: { ...result('google').record, editionFormat: null } }),
+        { status: 'not_found' },
+      ),
+      {},
+      'google',
+      'unknown',
+    ],
+    [acquired(), { pages: 300 }, null, 'paperback'],
+    [acquired(), { editionFormat: 'audiobook' }, null, 'conflicting'],
+    [acquired(result('google', 301)), {}, null, 'paperback'],
+    [acquired({ status: 'timeout' }), {}, null, 'unavailable'],
+  ]) {
+    const input = frame()
+    input.cases[0].current = current
+    const first = await runEditionPages(input, {
+      client: { acquire: async () => sources, stats: {} },
+    })
+    input.cases[0].reference = {
+      ...input.cases[0].reference,
+      pages: null,
+      editionFormat: 'audiobook',
+    }
+    const second = await runEditionPages(input, {
+      client: { acquire: async () => sources, stats: {} },
+    })
+    assert.deepEqual(first.diagnostics, second.diagnostics)
+    assert.deepEqual(first.diagnostics.packetFormat, { [format]: 1 })
+    assert.deepEqual(first.diagnostics.candidateSource, source ? { [source]: 1 } : {})
+    assert.deepEqual(first.diagnostics.candidateFormat, source ? { [format]: 1 } : {})
+    assert.equal(first.automaticFills, 0)
+  }
+})
+
+test('diagnostics reject arbitrary labels and contain no provider text or prototype keys', () => {
+  for (const text of [
+    'https://secret.example/book?key=secret',
+    identity.isbn,
+    identity.title,
+    '__proto__',
+    'constructor',
+  ]) {
+    const d = createEditionDiagnostics()
+    countEditionDiagnostics(
+      d,
+      { google: { reason: text, stage: text }, openlibrary: { reason: text } },
+      { candidateValue: 300, formatEvidence: text, observations: [{ source: text }] },
+    )
+    assert.deepEqual(d.providerReasons, { google: { other: 1 }, openlibrary: { other: 1 } })
+    assert.deepEqual(d.googleTerminalStage, { unknown: 1 })
+    assert.deepEqual(d.packetFormat, { unavailable: 1 })
+    assert.deepEqual(d.candidateSource, { unknown: 1 })
+    assert.equal(JSON.stringify(d).includes(text), false)
+  }
+})
+
+test('diagnostic counters reconcile across a mixed batch and never mutate acquisition or packets', () => {
+  const d = createEditionDiagnostics()
+  const sources = [acquired(), acquired({ status: 'not_found' }), acquired({ status: 'timeout' })]
+  for (const a of sources) {
+    const p = packet(a)
+    const before = structuredClone({ a, p })
+    countEditionDiagnostics(d, a, p)
+    assert.deepEqual(structuredClone({ a, p }), before)
+  }
+  assert.deepEqual(d.providerReasons, { google: { none: 3 }, openlibrary: { none: 3 } })
+  assert.deepEqual(d.googleTerminalStage, { unknown: 3 })
+  assert.deepEqual(d.packetFormat, { paperback: 2, unavailable: 1 })
+  assert.deepEqual(d.candidateSource, { both: 1, openlibrary: 1 })
+  assert.deepEqual(d.candidateFormat, { paperback: 2 })
 })

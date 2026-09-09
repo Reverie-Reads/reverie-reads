@@ -49,8 +49,20 @@ Only aggregate counts, request/status/time metrics and the input hash reach stdo
 wall time includes pacing; transport time measures requests alone. Provider
 payloads, values, identities, URLs and credentials are not persisted; packet JSON serialization
 is refused. There is no cache, corpus/personal patch, Supabase writer, ISBNdb request or model call.
-Mocked transport tests establish behavior, not live quality. A fresh broader publisher-referenced
-comparison and reviewed production qualification remain next; see the
+Report version 2 adds fixed-vocabulary diagnostic histograms: provider reason (first failure only),
+Google terminal stage, packet format evidence, candidate source and candidate format evidence.
+These are marginal counts, not per-book traces or independent provider coverage. Missing reasons
+count as `none`; unknown codes count as `other`. A Google terminal stage names the branch that
+returned, not proof a request occurred (a stopped provider can return `not_attempted`). Unknown
+binding is not a certified format, and blocked packets report format as unavailable even if one
+provider supplied it. Current format may contribute to packet format; reference format never does.
+Candidate counters include only emitted candidates, not protected current values. No gate is relaxed.
+
+The completed [16-edition comparison](../../docs/tasks/edition-page-comparison-report-2026-09-09.md)
+had one reference difference among three candidates and did not clear automatic filling. Its
+version-1 report and frozen runtime hashes remain unchanged; do not rerun it with diagnostics or
+backfill invented reasons. Mocked transport tests establish diagnostic behavior, not live quality.
+A new independently reviewed and registered sample is required for further live evaluation; see the
 [Google diagnostic and implementation boundary](../../docs/tasks/google-edition-diagnostics.md).
 
 ## ISBNdb subscription-value evaluation (trial only)
