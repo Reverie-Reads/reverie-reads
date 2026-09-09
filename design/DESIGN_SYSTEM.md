@@ -32,6 +32,12 @@ state in memory and label any planned configuration explicitly. Catalog facts ar
 history is fictional until the visitor supplies it. Do not use production account screenshots or
 private reader seed data. Guest book covers must not emit visitor titles to error telemetry.
 
+Install icons, favicons, and share images use the same open-book mark and Midnight & Lamplight
+palette as the public front door. Raster assets are generated reproducibly by
+`apps/web/scripts/generate-brand-assets.mjs`; the dedicated maskable icon keeps the complete mark
+inside the platform safe area. Social cards use curated public fixtures and typographic cover art,
+never provider cover files or private reader data.
+
 The brand promise is “A personal library that feels like home.” Explain that through concrete
 actions: keep your books together, remember your reading, and find something you want to read.
 Warmth comes from familiarity and permission, without romance-only language or reading pressure.

@@ -18,6 +18,7 @@ import { useGuestLibrary } from './context'
 import { GuestAddBooks } from './GuestAddBooks'
 import { GuestBookDetail } from './GuestBookDetail'
 import { GuestConfigure } from './GuestConfigure'
+import { GuestTour } from './GuestTour'
 import { GUEST_VIEWS, type GuestView } from './state'
 import { createGuestHandoff, saveGuestHandoff, summarizeGuestHandoff } from './handoff'
 import { field, primary, quiet } from './styles'
@@ -147,6 +148,18 @@ export function GuestLibrary({
         Open a book. Make it yours. It stays on this page until you refresh; choose “Keep this
         library” when you want to carry it into an account.
       </p>
+      {compact && (
+        <GuestTour
+          onShow={(step) => {
+            // Keep the tour controls in place on a phone. Ordinary guest-library actions move
+            // focus to the destination heading; a guided step needs the next control to remain
+            // reachable while the existing view changes below it.
+            focusAfterChange.current = false
+            if (step.bookId) dispatch({ type: 'select', id: step.bookId })
+            else if (step.page) dispatch({ type: 'navigate', page: step.page })
+          }}
+        />
+      )}
       <nav
         aria-label="Guest library dock"
         className="skin-panel mb-5 flex flex-wrap gap-1 border border-line bg-[color:var(--card-solid)] p-1.5"
@@ -424,8 +437,8 @@ export function GuestLibrary({
               </p>
             )}
             <p className="text-xs leading-relaxed text-muted">
-              Your room carries over. The dock remains a preview while modular app layouts are being
-              designed.
+              Your room and dock arrangement carry over. You can change the dock and the order of
+              Home again from Settings.
             </p>
             {handoffError && (
               <p role="alert" className="text-sm text-ink">

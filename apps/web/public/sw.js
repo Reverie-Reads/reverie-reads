@@ -10,8 +10,15 @@
  *
  * Bump CACHE when the precache list or strategies change; activate sweeps old versions.
  */
-const CACHE = 'reverie-shell-v1'
-const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icon-192.png', '/icon-512.png']
+const CACHE = 'reverie-shell-v2'
+const SHELL = [
+  '/',
+  '/manifest.webmanifest',
+  '/favicon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+  '/icon-maskable-512.png',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

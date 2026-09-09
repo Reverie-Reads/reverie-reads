@@ -12,6 +12,7 @@
     "test:workflow": "vitest run --config vitest.workflow.config.ts",
     "test:watch": "vitest",
     "gen:template": "UPDATE_TEMPLATE=1 vitest run src/data/importTemplate.test.ts",
+    "gen:brand-assets": "node scripts/generate-brand-assets.mjs",
     "e2e": "bash ../../scripts/stack-lock.sh playwright test",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json"

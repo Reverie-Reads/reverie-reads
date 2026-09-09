@@ -1,8 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- The Reverie mark: the Wordmark's gold crescent on the brand night (gold #f0b14e over #0b0612),
-       drawn oversized-safe for maskable use. -->
-  <rect width="64" height="64" rx="14" fill="#0b0612"/>
-  <circle cx="32" cy="32" r="17" fill="#f0b14e"/>
-  <circle cx="41" cy="28" r="14.5" fill="#0b0612"/>
-  <circle cx="32" cy="32" r="17" fill="none" stroke="#f0b14e" stroke-opacity="0.25" stroke-width="1"/>
+  <title>Reverie open-book mark</title>
+  <defs>
+    <radialGradient id="lamplight" cx="68%" cy="24%" r="76%">
+      <stop offset="0" stop-color="#2a293d" />
+      <stop offset="0.64" stop-color="#151724" />
+      <stop offset="1" stop-color="#10121c" />
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#lamplight)" />
+  <g
+    transform="translate(8.9 10.2) scale(1.65)"
+    fill="none"
+    stroke="#d7bc88"
+    stroke-width="1.85"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M14 22V6C11 3 6 3 2 4v16c4-1 9-1 12 2Zm0 0V6c3-3 8-3 12-2v16c-4-1-9-1-12 2Z" />
+    <path
+      d="M6 8c2-.1 3 .2 4 1M6 12c2-.1 3 .2 4 1M18 9c1-.8 2-1.1 4-1M18 13c1-.8 2-1.1 4-1"
+      opacity=".58"
+      stroke-width="1.35"
+    />
+  </g>
 </svg>
