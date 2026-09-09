@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 
 test.describe('signed-out landing', () => {
   test('the guest library works without an account or persistent writes', async ({ page }) => {
@@ -75,6 +75,86 @@ test.describe('signed-out landing', () => {
       return { width: image.naturalWidth, height: image.naturalHeight }
     })
     expect(shareSize).toEqual({ width: 1200, height: 630 })
+
+    const identityAssets = await page.evaluate(async () => {
+      const manifest = (await fetch('/manifest.webmanifest').then((response) =>
+        response.json(),
+      )) as {
+        background_color: string
+        theme_color: string
+        icons: Array<{ src: string; sizes: string; purpose: string }>
+      }
+      const favicon = await fetch('/favicon.svg').then((response) => response.text())
+      return { manifest, favicon }
+    })
+    expect(identityAssets.manifest).toMatchObject({
+      background_color: '#10121c',
+      theme_color: '#10121c',
+    })
+    expect(identityAssets.manifest.icons).toContainEqual({
+      src: '/icon-maskable-512.png',
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'maskable',
+    })
+    expect(identityAssets.favicon).toContain('Reverie open-book mark')
+    expect(identityAssets.favicon).not.toContain('<circle')
+  })
+
+  test('the short tour moves through real guest-library views without changing reader data', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    const writes: string[] = []
+    page.on('request', (request) => {
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method()))
+        writes.push(`${request.method()} ${new URL(request.url()).pathname}`)
+    })
+    await page.goto('/')
+
+    const demo = page.getByTestId('guest-library-compact')
+    const tour = demo.getByRole('complementary', { name: 'A short tour of Reverie' })
+    const clickVisible = async (target: Locator) => {
+      const bounds = await target.boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds!.y).toBeGreaterThanOrEqual(0)
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(844)
+      await page.mouse.click(bounds!.x + bounds!.width / 2, bounds!.y + bounds!.height / 2)
+    }
+    await tour.getByRole('button', { name: 'Show me around' }).scrollIntoViewIfNeeded()
+    await tour.getByRole('button', { name: 'Show me around' }).click()
+    await expect(tour).toContainText('1 of 4')
+    await expect(tour.getByRole('button', { name: 'Next stop' })).toBeFocused()
+    await expect(demo.getByRole('heading', { name: 'Library', exact: true })).toBeVisible()
+
+    await tour.getByRole('button', { name: 'Next stop' }).scrollIntoViewIfNeeded()
+    const tourScroll = await page.evaluate(() => window.scrollY)
+    await clickVisible(tour.getByRole('button', { name: 'Next stop' }))
+    await expect(tour).toContainText('2 of 4')
+    await expect(demo.getByRole('heading', { name: 'Next read', exact: true })).toBeVisible()
+    expect(Math.abs((await page.evaluate(() => window.scrollY)) - tourScroll)).toBeLessThanOrEqual(
+      1,
+    )
+
+    await clickVisible(tour.getByRole('button', { name: 'Next stop' }))
+    await expect(tour).toContainText('3 of 4')
+    await expect(demo.getByRole('heading', { name: 'Book details' })).toBeVisible()
+    await expect(demo.getByLabel('Progress (%)')).toHaveValue('24')
+    expect(Math.abs((await page.evaluate(() => window.scrollY)) - tourScroll)).toBeLessThanOrEqual(
+      1,
+    )
+
+    await clickVisible(tour.getByRole('button', { name: 'Next stop' }))
+    await expect(tour).toContainText('4 of 4')
+    await expect(demo.getByRole('heading', { name: 'Arrange your dock' })).toBeVisible()
+    await expect(demo).toContainText('2 books')
+    expect(Math.abs((await page.evaluate(() => window.scrollY)) - tourScroll)).toBeLessThanOrEqual(
+      1,
+    )
+    expect(writes).toEqual([])
+
+    await clickVisible(tour.getByRole('button', { name: 'Explore on my own' }))
+    await expect(tour.getByRole('button', { name: 'Show me around' })).toBeFocused()
   })
 
   test('mobile navigation is touch-sized and the complete story stays within the viewport', async ({

@@ -11,7 +11,15 @@ Priorities mean:
 - **P2 — planned:** valuable work with no current blocking dependency.
 - **P3 — deferred/monitor:** revisit on evidence, schedule, or an explicit owner decision.
 
-## Active product program: Collection care, then Calendar and Releases
+## Active product program: Brand identity and guided demonstration
+
+The owner approved moving to the next dependency-ready feature after Cover Studio and Calendar and
+Releases on 2026-09-09. Both predecessors are merged in public PRs #500 and #501. The current
+feature carries the open-book identity into install and share assets and adds an optional four-stop
+path through the working guest library. It does not simulate personalization, persist guest changes
+without consent, or embed private or provider imagery in marketing assets.
+
+## Recently completed: Collection care, Calendar and Releases
 
 The owner approved this sequence on 2026-09-09 while reader recruitment is unavailable:
 
@@ -21,7 +29,7 @@ The owner approved this sequence on 2026-09-09 while reader recruitment is unava
    reader-chosen covers; show the source and the dimensions of the image that actually loaded; and
    protect an explicit cover or placeholder choice from enrichment. This adds no provider, shared
    catalog mutation, or database migration.
-2. **Calendar and Releases redesign — implemented for public review.** Calendar now treats exact
+2. **Calendar and Releases redesign — merged in public PR #501.** Calendar now treats exact
    dates as an almanac grid and groups month, year, and Soon plans by their real precision. Releases
    is a bounded arrivals horizon with readable covers, provider state, source evidence, and a
    precision-aware manual flow. The redesign removes the full backlist/unknown-date dump, preserves
@@ -128,7 +136,7 @@ Safety regressions still take precedence. Keep one product implementation and on
 |     3 | P1 design | Design modular library arrangements                                 | Reviewed mobile/desktop presets, dock/rail ordering, Home module choices, hide/restore/defaults, accessible controls, and account persistence rules. Account-level implementation stays a later reviewed change. See `docs/backlog/task-modular-library-arrangements.md`.                                                                                                     |
 |     4 |    P1     | Make Discover worth spending time in                                | First improve a bounded set of covers/descriptions and edition identity; preserve browse/filter/scroll context through addressable details; then add a few transparent author, feeling, or change-of-pace paths. Never infer genre from appearance or invent recommendation reasons.                                                                                          |
 |     5 |    P1     | Validate the complete first-use and return loop with readers        | Run the five-session [reader validation protocol](docs/tasks/reader-validation.md), then expand only if its process gate passes. Separate assisted actions from independent outcomes and return from prompted check-ins. Import/reimport, possession, retained history, and Back navigation issues outrank cosmetic expansion. No invitations are sent without authorization. |
-|     6 |    P2     | Finish accepted brand assets and publish one accurate demonstration | App/share icons and onboarding material follow Midnight & Lamplight; the clip uses the deployed guest experience and leads to a working destination. Publish only approved content, then judge useful outcomes rather than visits alone.                                                                                                                                      |
+|     6 | P2 active | Finish accepted brand assets and publish one accurate demonstration | App/share icons and onboarding material follow Midnight & Lamplight; the optional tour uses the working guest library and changes only the visible product view. Publish only approved content, then judge useful outcomes rather than visits alone.                                                                                                                          |
 |     7 |    P2     | Build only evidence-backed reader improvements and paid depth       | Use the reader findings; retain Free's core library, nine rooms, accessibility, export, and correction. Verify paid purchase/entitlement/cancellation before selling a new promise. Expand only within the profitable-side-business operating envelope.                                                                                                                       |
 
 The separate series-source trial continues within its evidence and rights gates. Its results may

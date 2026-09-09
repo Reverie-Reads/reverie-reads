@@ -1,0 +1,16 @@
+{
+  "generatedBy": "apps/web/scripts/generate-brand-assets.mjs",
+  "palette": {
+    "midnight": "#10121c",
+    "brass": "#d7bc88",
+    "parchment": "#f1eadc"
+  },
+  "sourceMark": "favicon.svg",
+  "files": [
+    "icon-192.png",
+    "icon-512.png",
+    "icon-maskable-512.png",
+    "apple-touch-icon.png",
+    "reverie-next-read-share.png"
+  ]
+}
