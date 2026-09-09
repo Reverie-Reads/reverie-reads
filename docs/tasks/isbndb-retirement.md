@@ -44,6 +44,12 @@ Target project was matched against both saved Reverie checkout links. The hosted
 function was ACTIVE at version 18. That is the existing deployment, not this branch. Hosted
 environment values and historical request logs were not retrieved.
 
+Its source was downloaded read-only into a temporary directory. The deployed entrypoint matched
+the pre-retirement `origin/main` entrypoint byte-for-byte (SHA-256
+`1aab7bdecc1c7f95c452e46292b498a07529099c5539d0992c215d36b4f8c950`). It still contains
+the ISBNdb adapter, CSV activation path and legacy unversioned cache keys. No live enrichment
+request was made because that endpoint can write caches/rate-limit state.
+
 The [inventory](../queries/isbndb-exit-inventory.sql) returns counts only: no identities, record
 values, keys or personal annotations. Its [known-answer controls](../queries/isbndb-exit-inventory-controls.sql)
 passed 8/8 on both local and production databases. Both queries are single read-only SELECTs;
@@ -98,6 +104,11 @@ The actual enrichment handler is executed with a stubbed Deno host and intercept
 CSV/flag/key combinations, free-provider success, fast/full modes, refresh, ISBN/title cache
 cutover, unchanged legacy rows, and new-cache reuse. This is not a hosted Deno deployment test.
 Backfill tests assert no legacy promotion and preserve pre-write collision checks.
+
+Deliberate negative controls validate the handler tests: replacing the new cache key with the old
+identity key fails both ISBN/title cases by returning the retired fixture payload; reintroducing
+a synthetic paid adapter fails the outbound-host assertion. Both mutations were reverted to the
+committed implementation and all nine handler tests passed again. HTTP stayed intercepted.
 
 Full repository/browser gate results are recorded in the PR. The initial local `pnpm lint` found
 an unused variable in an ignored private study-preparation script. Private trial input/result
