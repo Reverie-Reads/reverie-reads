@@ -86,8 +86,7 @@ export function releaseDateLabel(value: string): string {
   return formatPartialDate(parseReleasePub(value))
 }
 
-function dateBounds(value: string): { first: number; last: number } | null {
-  const pub = parseReleasePub(value)
+function partialDateBounds(pub: PartialDate | null): { first: number; last: number } | null {
   if (!pub?.y) return null
   const month = pub.m ?? 1
   const day = pub.d ?? 1
@@ -99,6 +98,44 @@ function dateBounds(value: string): { first: number; last: number } | null {
         ? Date.UTC(pub.y, month, 0, 23, 59, 59, 999)
         : Date.UTC(pub.y, 11, 31, 23, 59, 59, 999)
   return { first, last }
+}
+
+function dateBounds(value: string): { first: number; last: number } | null {
+  return partialDateBounds(parseReleasePub(value))
+}
+
+/** Keep the reader's own release horizon useful and finite. Old backlist and unknown dates belong
+ * on the book screen; this view is for arrivals. A partial date spanning today remains uncertain
+ * instead of being forced into upcoming or released. */
+export function personalReleaseWindow(
+  books: readonly Book[],
+  now: number,
+): { upcoming: Book[]; recent: Book[]; uncertain: Book[] } {
+  const sixMonthsAgo = now - 183 * 864e5
+  const upcoming: { book: Book; time: number }[] = []
+  const recent: { book: Book; time: number }[] = []
+  const uncertain: { book: Book; time: number }[] = []
+
+  for (const book of books) {
+    const bounds = partialDateBounds(book.pub)
+    if (!bounds || bounds.last < sixMonthsAgo) continue
+    const entry = { book, time: bounds.first }
+    if (bounds.first > now) upcoming.push(entry)
+    else if (bounds.last >= now && (book.pub.m == null || book.pub.d == null)) {
+      uncertain.push(entry)
+    } else {
+      recent.push({ book, time: bounds.last })
+    }
+  }
+
+  upcoming.sort((a, b) => a.time - b.time || a.book.title.localeCompare(b.book.title))
+  recent.sort((a, b) => b.time - a.time || a.book.title.localeCompare(b.book.title))
+  uncertain.sort((a, b) => a.time - b.time || a.book.title.localeCompare(b.book.title))
+  return {
+    upcoming: upcoming.map(({ book }) => book),
+    recent: recent.map(({ book }) => book),
+    uncertain: uncertain.map(({ book }) => book),
+  }
 }
 
 /** Window an author-shelf map into the Planner's external sections. A month or year that spans
@@ -197,9 +234,15 @@ export function useSetFollow() {
 
 /** Per-author shelves via the releases fn — accumulates until nothing is pending (cached names
  *  return instantly; each call spends a small upstream budget). Progressive: partial shelves
- *  render as they land. Unavailability leaves the map empty — the rail simply doesn't render. */
+ *  render as they land, while status keeps loading and provider unavailability explicit. */
+export type AuthorReleaseStatus = 'idle' | 'loading' | 'ready' | 'unavailable'
+
 export function useAuthorReleases(names: readonly string[]) {
-  const [shelves, setShelves] = useState<Record<string, ReleaseHit[]>>({})
+  const [result, setResult] = useState<{
+    key: string
+    shelves: Record<string, ReleaseHit[]>
+    status: AuthorReleaseStatus
+  }>({ key: '', shelves: {}, status: 'idle' })
   const namesKey = names.join('|')
   const running = useRef<string | null>(null)
 
@@ -208,8 +251,13 @@ export function useAuthorReleases(names: readonly string[]) {
   // blocks a restart — the shelves silently never fill. The key carries the same information.
   useEffect(() => {
     const keyNames = namesKey ? namesKey.split('|') : []
-    if (!keyNames.length || running.current === namesKey) return
+    if (!keyNames.length) {
+      setResult({ key: '', shelves: {}, status: 'idle' })
+      return
+    }
+    if (running.current === namesKey) return
     running.current = namesKey
+    setResult({ key: namesKey, shelves: {}, status: 'loading' })
     let cancelled = false
     void (async () => {
       let remaining = keyNames
@@ -219,15 +267,34 @@ export function useAuthorReleases(names: readonly string[]) {
           const { data, error } = await supabase.functions.invoke('releases', { body: { mode: 'authors', names: remaining } })
           // one flaky call must not discard the run — skip it and let the next call retry
           if (error || !(data as { authors?: unknown })?.authors) {
-            if (++misses >= 3) return
+            if (++misses >= 3) {
+              setResult((old) =>
+                old.key === namesKey ? { ...old, status: 'unavailable' } : old,
+              )
+              return
+            }
             continue
           }
           const d = data as { authors: Record<string, ReleaseHit[]>; pending?: string[] }
-          if (!cancelled) setShelves((old) => ({ ...old, ...d.authors }))
+          if (!cancelled) {
+            setResult((old) =>
+              old.key === namesKey
+                ? { ...old, shelves: { ...old.shelves, ...d.authors } }
+                : old,
+            )
+          }
           remaining = d.pending ?? []
         } catch {
-          if (++misses >= 3) return // enhancement only
+          if (++misses >= 3) {
+            setResult((old) =>
+              old.key === namesKey ? { ...old, status: 'unavailable' } : old,
+            )
+            return // enhancement only
+          }
         }
+      }
+      if (!cancelled) {
+        setResult((old) => (old.key === namesKey ? { ...old, status: 'ready' } : old))
       }
     })()
     return () => {
@@ -238,5 +305,11 @@ export function useAuthorReleases(names: readonly string[]) {
     }
   }, [namesKey])
 
-  return useMemo(() => shelves, [shelves])
+  return useMemo(
+    () =>
+      result.key === namesKey
+        ? { shelves: result.shelves, status: result.status }
+        : { shelves: {}, status: namesKey ? ('loading' as const) : ('idle' as const) },
+    [namesKey, result],
+  )
 }

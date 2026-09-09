@@ -131,4 +131,27 @@ describe('ReadingPlan', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: /Finished Book/ }))
     expect(openBook).toHaveBeenCalledWith('finished')
   })
+
+  it('marks today and keeps each flexible plan in its honest precision group', () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() + 1
+    const books = [
+      planned('month', 'Month Book', 1000, { y: year, m: month, d: null }),
+      planned('year', 'Year Book', 2000, { y: year, m: null, d: null }),
+      planned('soon', 'Soon Book', 3000),
+    ]
+    render(<ReadingPlan books={books} view="calendar" openBook={vi.fn()} />)
+
+    const today = document.querySelector('button[aria-current="date"]')
+    expect(today?.getAttribute('aria-label')).toContain(
+      `${now.getDate()}, ${year}: 0 planned, 0 finished`,
+    )
+    expect(screen.getByRole('heading', { name: 'This month', level: 4 })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'This year', level: 4 })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Soon', level: 4 })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Month Book/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Year Book/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Soon Book/ })).toBeTruthy()
+  })
 })

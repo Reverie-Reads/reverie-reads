@@ -349,6 +349,7 @@ function PlanCalendar({
   edit: (book: Book, initialDate?: PlanDate) => void
   add: (date: PlanDate) => void
 }) {
+  const [today] = useState(localToday)
   const [month, setMonth] = useState(() => {
     const today = new Date()
     return { y: today.getFullYear(), m: today.getMonth() }
@@ -356,21 +357,23 @@ function PlanCalendar({
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const first = new Date(month.y, month.m, 1).getDay()
   const days = new Date(month.y, month.m + 1, 0).getDate()
-  const { exactByDay, finishedByDay, flexible } = useMemo(() => {
+  const { exactByDay, finishedByDay, loose } = useMemo(() => {
     const byDay = new Map<number, Book[]>()
     const readsByDay = new Map<number, ReadingHistory['records']>()
-    const withoutDay: Book[] = []
+    const soon: Book[] = []
+    const thisYear: Book[] = []
+    const thisMonth: Book[] = []
     for (const book of plans) {
       if (book.plan.y === month.y && book.plan.m === month.m + 1 && book.plan.d != null) {
         const entries = byDay.get(book.plan.d) ?? []
         entries.push(book)
         byDay.set(book.plan.d, entries)
-      } else if (
-        book.plan.y == null ||
-        (book.plan.y === month.y &&
-          (book.plan.m == null || (book.plan.m === month.m + 1 && book.plan.d == null)))
-      ) {
-        withoutDay.push(book)
+      } else if (book.plan.y == null) {
+        soon.push(book)
+      } else if (book.plan.y === month.y && book.plan.m == null) {
+        thisYear.push(book)
+      } else if (book.plan.y === month.y && book.plan.m === month.m + 1 && book.plan.d == null) {
+        thisMonth.push(book)
       }
     }
     for (const read of history?.records ?? []) {
@@ -380,7 +383,11 @@ function PlanCalendar({
       entries.push(read)
       readsByDay.set(read.finished.d, entries)
     }
-    return { exactByDay: byDay, finishedByDay: readsByDay, flexible: withoutDay }
+    return {
+      exactByDay: byDay,
+      finishedByDay: readsByDay,
+      loose: { soon, thisYear, thisMonth },
+    }
   }, [history, month.m, month.y, plans])
   const previous = () =>
     setMonth((value) =>
@@ -390,88 +397,133 @@ function PlanCalendar({
     setMonth((value) =>
       value.m === 11 ? { y: value.y + 1, m: 0 } : { y: value.y, m: value.m + 1 },
     )
+  const returnToToday = () => {
+    setSelectedDay(null)
+    setMonth({ y: today.y ?? new Date().getFullYear(), m: (today.m ?? 1) - 1 })
+  }
+  const plannedCount = [...exactByDay.values()].reduce((sum, entries) => sum + entries.length, 0)
+  const finishedCount = [...finishedByDay.values()].reduce(
+    (sum, entries) => sum + entries.length,
+    0,
+  )
+  const viewingCurrentMonth = month.y === today.y && month.m === (today.m ?? 1) - 1
+  const hasLoosePlans = loose.soon.length + loose.thisYear.length + loose.thisMonth.length > 0
 
   return (
     <section aria-labelledby="plan-calendar-heading" className="plan-calendar">
-      <div className="plan-calendar-heading">
-        <button type="button" onClick={previous} aria-label="Previous month">
-          ←
-        </button>
-        <div>
-          <p className="plan-eyebrow">A calendar for possibilities</p>
-          <h2 id="plan-calendar-heading">
-            {MONTHS[month.m]} {month.y}
-          </h2>
-        </div>
-        <button type="button" onClick={next} aria-label="Next month">
-          →
-        </button>
-      </div>
-      <p className="mb-5 text-center text-[13.5px] text-muted">
-        Choose a marked day to see plans and finished reads. Empty days begin a plan for that date.
-      </p>
-      <div className="plan-calendar-key" aria-label="Calendar key">
-        <span>
-          <i className="is-plan" aria-hidden="true" /> Planned
-        </span>
-        <span>
-          <i className="is-finished" aria-hidden="true" /> Finished
-        </span>
-      </div>
-      <div className="plan-calendar-grid">
-        {DOW.map((day) => (
-          <span key={day} className="plan-weekday">
-            {day}
-          </span>
-        ))}
-        {Array.from({ length: first }).map((_, index) => (
-          <span key={`empty-${index}`} />
-        ))}
-        {Array.from({ length: days }).map((_, index) => {
-          const day = index + 1
-          const entries = exactByDay.get(day) ?? []
-          const finished = finishedByDay.get(day) ?? []
-          const total = entries.length + finished.length
-          return (
+      <Surface tone="card" radius="panel" pad={3} raised className="plan-calendar-sheet">
+        <div className="plan-calendar-heading">
+          <button type="button" onClick={previous} aria-label="Previous month">
+            ←
+          </button>
+          <div>
+            <p className="plan-eyebrow">A calendar for possibilities</p>
+            <h2 id="plan-calendar-heading">
+              {MONTHS[month.m]} {month.y}
+            </h2>
             <button
-              key={day}
               type="button"
-              className={total ? 'has-entry' : ''}
-              aria-label={`${MONTHS[month.m]} ${day}, ${month.y}: ${entries.length} planned, ${finished.length} finished${total ? ` — ${[...entries.map((book) => book.title), ...finished.map((read) => read.book.title)].join(', ')}` : ''}`}
-              onClick={() =>
-                total ? setSelectedDay(day) : add({ y: month.y, m: month.m + 1, d: day })
-              }
+              className="plan-calendar-today"
+              onClick={returnToToday}
+              disabled={viewingCurrentMonth}
             >
-              <span>{day}</span>
-              {total > 0 && (
-                <small aria-hidden="true">
-                  {entries.length > 0 && <i className="is-plan">{entries.length}</i>}
-                  {finished.length > 0 && <i className="is-finished">{finished.length}</i>}
-                </small>
-              )}
+              {viewingCurrentMonth ? 'This month' : 'Return to today'}
             </button>
-          )
-        })}
-      </div>
-
-      <div className="mt-7 border-t border-line pt-5">
-        <h3 className="text-[17px] font-semibold text-ink">Without a fixed day</h3>
-        {flexible.length ? (
-          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            {flexible.map((book) => (
+          </div>
+          <button type="button" onClick={next} aria-label="Next month">
+            →
+          </button>
+        </div>
+        <p className="plan-calendar-instruction">
+          Choose a marked day to open it. An empty day leaves room for a book.
+        </p>
+        <div className="plan-month-summary" aria-label="Month summary">
+          <span>
+            <strong>{plannedCount}</strong> planned
+          </span>
+          <span>
+            <strong>{finishedCount}</strong> finished
+          </span>
+        </div>
+        <div className="plan-calendar-key" aria-label="Calendar key">
+          <span>
+            <i className="is-plan" aria-hidden="true" /> Planned
+          </span>
+          <span>
+            <i className="is-finished" aria-hidden="true" /> Finished
+          </span>
+        </div>
+        <div className="plan-calendar-grid">
+          {DOW.map((day) => (
+            <span key={day} className="plan-weekday">
+              {day}
+            </span>
+          ))}
+          {Array.from({ length: first }).map((_, index) => (
+            <span key={`empty-${index}`} />
+          ))}
+          {Array.from({ length: days }).map((_, index) => {
+            const day = index + 1
+            const entries = exactByDay.get(day) ?? []
+            const finished = finishedByDay.get(day) ?? []
+            const total = entries.length + finished.length
+            const isToday = viewingCurrentMonth && day === today.d
+            return (
               <button
-                key={book.id}
+                key={day}
                 type="button"
-                className="plan-flexible"
-                onClick={() => edit(book)}
+                className={`${total ? 'has-entry' : ''} ${isToday ? 'is-today' : ''}`.trim()}
+                aria-current={isToday ? 'date' : undefined}
+                aria-label={`${MONTHS[month.m]} ${day}, ${month.y}: ${entries.length} planned, ${finished.length} finished${total ? ` — ${[...entries.map((book) => book.title), ...finished.map((read) => read.book.title)].join(', ')}` : ''}`}
+                onClick={() =>
+                  total ? setSelectedDay(day) : add({ y: month.y, m: month.m + 1, d: day })
+                }
               >
-                <span>{book.title}</span>
-                <small>{readingPlanDateLabel(book)} ↗</small>
+                <span>{day}</span>
+                {total > 0 && (
+                  <small aria-hidden="true">
+                    {entries.length > 0 && <i className="is-plan">{entries.length}</i>}
+                    {finished.length > 0 && <i className="is-finished">{finished.length}</i>}
+                  </small>
+                )}
               </button>
-            ))}
+            )
+          })}
+        </div>
+      </Surface>
+
+      <div className="plan-loose">
+        <div className="plan-loose-heading">
+          <p className="plan-eyebrow">Plans with room to move</p>
+          <h3>Held gently, outside a particular day.</h3>
+          <p>These stay true to the precision you chose.</p>
+        </div>
+        {hasLoosePlans ? (
+          <div className="plan-loose-groups">
+            <FlexiblePlanGroup
+              title="This month"
+              note={`${MONTHS[month.m]} ${month.y}`}
+              books={loose.thisMonth}
+              edit={edit}
+            />
+            <FlexiblePlanGroup
+              title="This year"
+              note={String(month.y)}
+              books={loose.thisYear}
+              edit={edit}
+            />
+            <FlexiblePlanGroup
+              title="Soon"
+              note="No date attached"
+              books={loose.soon}
+              edit={edit}
+            />
           </div>
         ) : (
-          <p className="mt-2 text-[13px] text-muted">No flexible plans in this month.</p>
+          <Surface tone="field" radius="card" pad={3} className="plan-loose-empty">
+            No flexible plans touch this month. Choose an empty day above, or add a “Soon” book from
+            Plan.
+          </Surface>
         )}
       </div>
 
@@ -524,6 +576,36 @@ function PlanCalendar({
           </div>
         </Modal>
       )}
+    </section>
+  )
+}
+
+function FlexiblePlanGroup({
+  title,
+  note,
+  books,
+  edit,
+}: {
+  title: string
+  note: string
+  books: Book[]
+  edit: (book: Book) => void
+}) {
+  if (!books.length) return null
+  return (
+    <section className="plan-loose-group">
+      <header>
+        <h4>{title}</h4>
+        <span>{note}</span>
+      </header>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {books.map((book) => (
+          <button key={book.id} type="button" className="plan-flexible" onClick={() => edit(book)}>
+            <span>{book.title}</span>
+            <small>{readingPlanDateLabel(book)} ↗</small>
+          </button>
+        ))}
+      </div>
     </section>
   )
 }

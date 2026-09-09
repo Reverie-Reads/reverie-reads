@@ -340,6 +340,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   plan clears only those five fields and never reading history. Merge decides against the stored
   primary and keeps or adopts the whole object, including Soon. Raw book-row backup/restore and the
   existing IndexedDB mirror own persistence; do not add a second plan store.
+- **Calendar and releases preserve uncertainty.** Put exact-date plans in the month grid and keep
+  month, year, and Soon plans in separate flexible bands; never invent a day to make an item fit.
+  The releases view is a bounded arrivals horizon, not a backlist dump. Keep provider status and
+  source labels visible, and route every discovered release through Add for review rather than
+  creating or planning a personal book automatically.
 - **No aggregate rating.** Never compute or display an averaged star rating anywhere.
   Keep the reader's own rating (`rating` on the book + per-read). Others' opinions appear only
   as an opt-in list of **individual** reviews on the book screen — never a single number.
