@@ -27,12 +27,46 @@ const input = (over: Record<string, unknown> = {}) => ({
 })
 
 describe('series classification keeps identity and membership evidence separate', () => {
+  it('does not count translations and sets at one ordinal as independent series context', () => {
+    const result = classifySeriesMembership(
+      input({
+        title: 'First Book',
+        snapshots: [
+          hardcover({
+            memberCount: 99,
+            entries: ['First Book', 'Translated First', 'First Book Box Set'].map((title) => ({
+              title,
+              author: 'Ada Reader',
+              position: 1,
+            })),
+          }),
+        ],
+      }),
+    )
+    expect(result.outcome).toBe('review')
+    expect(result.count).toBeNull()
+    expect(result.evidence.at(-1)?.memberCount).toBeNull()
+  })
+
+  it.each([
+    ['Second Book: First and Second Book Box Set', 'Ada Reader'],
+    ['Second Book', 'A. Reader'],
+  ])(
+    'requires exact Hardcover title/full author, not loose bundle/subtitle or initial matching',
+    (title, author) => {
+      const result = classifySeriesMembership(
+        input({ snapshots: [hardcover({ entries: [{ title, author, position: 2 }] })] }),
+      )
+      expect(result.outcome).toBe('unresolved')
+    },
+  )
+
   it('accepts a matched relational membership and takes its position, not the search label position', () => {
     const result = classifySeriesMembership(input())
     expect(result.outcome).toBe('found')
     expect(result.membershipConfidence).toBe('high')
     expect(result.position).toBe(2)
-    expect(result.count).toBe(3)
+    expect(result.count).toBeNull()
     expect(result.sourceRef).toBe('hc-series-7')
     expect(result.evidence.some((e) => e.kind === 'relational_membership')).toBe(true)
   })

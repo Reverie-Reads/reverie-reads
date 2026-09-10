@@ -11,6 +11,7 @@ interface SeriesFunctionPayload {
   sourceRef?: string | null
   memberCount?: number | null
   entries?: { position?: number | null; title?: string; author?: string }[]
+  membershipEntries?: { position?: number | null; title?: string; author?: string }[]
   unavailable?: boolean
 }
 
@@ -39,8 +40,8 @@ export async function fetchCatalogSeriesSnapshot(
     source: 'hardcover',
     series: payload.name?.trim() || name,
     sourceRef: payload.sourceRef ?? null,
-    memberCount: payload.memberCount ?? null,
-    entries: (payload.entries ?? []).flatMap((entry) => {
+    memberCount: null,
+    entries: (payload.membershipEntries ?? payload.entries ?? []).flatMap((entry) => {
       const title = entry.title?.trim() ?? ''
       if (!title) return []
       const position = Number(entry.position)

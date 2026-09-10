@@ -32,6 +32,7 @@ const patched: Patch[] = []
 const rpcCalls: { fn: string; args: Record<string, unknown> }[] = []
 let libraryBooks: Record<string, unknown>[] = []
 let entryRows: Record<string, unknown>[] = []
+let sourcePayload: Record<string, unknown> | null = null
 
 const SERIES_ROW = {
   id: 'ser-1',
@@ -81,11 +82,11 @@ vi.mock('../lib/supabase', () => ({
       rpcCalls.push({ fn, args })
       return { data: { moved: 0, skipped_user_edited: 0, books_synced: 0, length_set: false, length_books_synced: 0 }, error: null }
     },
-    functions: { invoke: async () => ({ data: null, error: null }) },
+    functions: { invoke: async () => ({ data: sourcePayload, error: null }) },
   },
 }))
 
-const { useSeriesDetail, useMoveEntry, useAddGhostEntry, useAddSeriesEntries, useUpdateEntry } =
+const { useSeriesDetail, useMoveEntry, useAddGhostEntry, useAddSeriesEntries, useUpdateEntry, useApplySeriesSource } =
   await import('./series')
 
 function wrapper() {
@@ -106,6 +107,7 @@ beforeEach(() => {
   patched.length = 0
   rpcCalls.length = 0
   entryRows = []
+  sourcePayload = null
   libraryBooks = [
     {
       id: 'book-1',
@@ -119,6 +121,28 @@ beforeEach(() => {
 })
 
 describe('opening a series cannot seed membership', () => {
+  it('source refresh never materializes raw membership observations as translated or boxed-set ghosts', async () => {
+    sourcePayload = {
+      sourceRef: 'hc-7', memberCount: null, entries: [],
+      membershipEntries: [
+        { title: 'Fourth Wing', author: 'Rebecca Yarros', position: 1 },
+        { title: 'Translated Fourth Wing', author: 'Rebecca Yarros', position: 1 },
+        { title: 'The Empyrean Box Set', author: 'Rebecca Yarros', position: 1 },
+      ],
+    }
+    const { result } = renderHook(() => useApplySeriesSource('The Empyrean'), { wrapper: wrapper() })
+    await act(async () => {
+      await result.current.mutateAsync({ author: 'Rebecca Yarros', detail: {
+        series: { id: 'ser-1', name: 'The Empyrean', status: null, source: 'manual', sourceRef: null, refreshedAt: null },
+        entries: [], unreviewed: [], removed: [],
+      } })
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.added).toBe(0)
+    expect(inserted).toEqual([])
+    expect(rpcCalls).toEqual([])
+  })
+
   it('performs no series-entry insert for a legacy library string', async () => {
     const { result } = renderHook(() => useSeriesDetail('The Empyrean'), { wrapper: wrapper() })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))

@@ -70,12 +70,12 @@ afterEach(() => {
 async function boot() {
   await import('../../../supabase/functions/series/index.ts')
 }
-async function request() {
+async function request(body = { name: 'The Sequence', author: 'Ada Reader' }) {
   const response = await handler(
     new Request('https://function.invalid/series', {
       method: 'POST',
       headers: { Authorization: 'Bearer synthetic-reader' },
-      body: JSON.stringify({ name: 'The Sequence', author: 'Ada Reader' }),
+      body: JSON.stringify(body),
     }),
   )
   expect(response.status).toBe(200)
@@ -83,6 +83,93 @@ async function request() {
 }
 
 describe('series relationship handler diagnostics and retry cache', () => {
+  it('uses exact queries and keeps case-sensitive misses separate from successful lookups', async () => {
+    cache.set('series:the sequence|ada reader', {
+      fetched_at: new Date().toISOString(),
+      payload: { entries: [], memberCount: 99 },
+    })
+    await boot()
+    expect(await request({ name: 'the sequence', author: 'Ada Reader' })).toMatchObject({
+      unavailable: true,
+    })
+    expect((await request()).entries[0].title).toBe('First Book')
+    expect(requests).toHaveLength(2)
+    expect(JSON.parse(requests[1].body).query).toContain('name: { _eq: $name }')
+    expect(JSON.parse(requests[1].body).query).not.toMatch(/_ilike|_like|_regex/)
+    expect(JSON.parse(requests[1].body).variables).toEqual({ name: 'The Sequence' })
+  })
+
+  it('matches a later contributor and withholds translation/set collisions without inventing length', async () => {
+    // Synthetic shape of the owner-provided response; not a qualification/gold fixture.
+    const rows = [
+      [1, 'Translated First'],
+      [1, 'First Book'],
+      [1, 'The Sequence 2-Book Set'],
+      [1, 'First Book, Second Book'],
+      [2, 'Translated Second'],
+      [2, 'Second Book'],
+      [0, 'Unnumbered Translation'],
+      [3, 'Third Book'],
+      [4, 'The Sequence Omnibus'],
+    ].map(([position, title]) => ({
+      position,
+      book: {
+        title,
+        contributions: [
+          { author: { name: 'Other Contributor' } },
+          { author: { name: 'Ada Reader' } },
+        ],
+      },
+    }))
+    upstream = async () =>
+      Response.json({
+        data: { series: [{ id: 7, name: 'The Sequence', books_count: 3, book_series: rows }] },
+      })
+    await boot()
+    const result = await request()
+    expect(result.memberCount).toBeNull()
+    expect(result.membershipEntries).toHaveLength(9)
+    expect(result.membershipEntries).toContainEqual({
+      title: 'First Book',
+      author: 'Ada Reader',
+      position: 1,
+    })
+    expect(result.entries).toEqual([{ title: 'Third Book', author: 'Ada Reader', position: 3 }])
+  })
+
+  it('clears conflicting ordinals for one identity rather than choosing the first', async () => {
+    const data = structuredClone(success)
+    data.data.series[0].book_series.push({ ...data.data.series[0].book_series[0], position: 2 })
+    upstream = async () => Response.json(data)
+    await boot()
+    const result = await request()
+    expect(result.entries).toEqual([])
+    expect(result.membershipEntries).toEqual([
+      { title: 'First Book', author: 'Ada Reader', position: 0 },
+    ])
+  })
+
+  it('refuses two homonymous relationships instead of preferring the largest', async () => {
+    const data = structuredClone(success)
+    data.data.series.push({ ...data.data.series[0], id: 8, books_count: 500 })
+    upstream = async () => Response.json(data)
+    await boot()
+    expect(await request()).toMatchObject({
+      unavailable: true,
+      failureCode: 'ambiguous_relationship',
+      entries: [],
+    })
+  })
+
+  it('also uses exact matching for the sibling book-tags request', async () => {
+    upstream = async () => Response.json({ data: { books: [] } })
+    await boot()
+    expect(await request({ mode: 'book-tags', title: 'First Book', author: 'Ada Reader' })).toEqual(
+      { tags: [] },
+    )
+    expect(JSON.parse(requests[0].body).query).toContain('title: { _eq: $title }')
+  })
+
   it.each(['synthetic-token', ' Bearer synthetic-token ', 'bearer synthetic-token'])(
     'accepts bare and dashboard-prefixed credentials (%s)',
     async (token) => {
@@ -108,7 +195,11 @@ describe('series relationship handler diagnostics and retry cache', () => {
     ['invalid_response', () => new Response('not json'), 200],
     ['invalid_response', () => Response.json({ data: {} }), 200],
     ['not_found', () => Response.json({ data: { series: [] } }), 200],
-    ['empty_relationship', () => Response.json({ data: { series: [{ book_series: [] }] } }), 200],
+    [
+      'ambiguous_relationship',
+      () => Response.json({ data: { series: [{ book_series: [] }] } }),
+      200,
+    ],
     [
       'network_error',
       () => {
@@ -154,8 +245,9 @@ describe('series relationship handler diagnostics and retry cache', () => {
   it.each([true, false])(
     'retries an unavailable cache after five minutes (new diagnostic=%s)',
     async (diagnostic) => {
-      cache.set('series:the sequence|ada reader', {
-        cache_key: 'series:the sequence|ada reader',
+      const key = 'series-exact-v1:["The Sequence","Ada Reader"]'
+      cache.set(key, {
+        cache_key: key,
         fetched_at: new Date(Date.now() - 6 * 60_000).toISOString(),
         payload: {
           name: 'The Sequence',

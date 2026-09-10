@@ -1,7 +1,7 @@
 // Canonical series data (docs/archive/task-series-experience.md §2) — the releases fn's sibling.
 // One mode: { name, author? } → the canonical entry list for that series, seeded from Hardcover
 // (GraphQL, free Bearer token, 60 req/min) and cached per series daily in the shared
-// releases_cache (key `series:<norm-name>|<norm-author>`; failures expire after five minutes),
+// releases_cache (versioned, exact name/author key; failures expire after five minutes),
 // so one upstream lookup serves every
 // reader without letting two authors' identically named series share the wrong cached graph.
 //
@@ -82,9 +82,11 @@ interface SourceEntry {
 interface SeriesPayload {
   name: string
   sourceRef: string | null
-  /** Provider cardinality. This can exceed entries.length when unavailable/retired books are
-   * filtered from the public graph, so consumers keep both values. */
+  /** Unknown: Hardcover's books_count and relationship rows mix works, editions and sets. */
   memberCount: number | null
+  /** Exact-work observations, NOT canonical slots or a declared series length. */
+  membershipEntries?: SourceEntry[]
+  /** Only unambiguous numbered slots may seed a personal shelf. */
   entries: SourceEntry[]
   unavailable?: boolean
   failureCode?:
@@ -94,6 +96,7 @@ interface SeriesPayload {
     | 'invalid_response'
     | 'not_found'
     | 'empty_relationship'
+    | 'ambiguous_relationship'
     | 'timeout'
     | 'network_error'
     | 'internal_error'
@@ -149,7 +152,7 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
   if (!HARDCOVER_TOKEN) return failed('not_configured')
   const query = `
     query ($name: String!) {
-      series(where: { name: { _ilike: $name } }, limit: 5) {
+      series(where: { name: { _eq: $name } }, limit: 5) {
         id
         name
         books_count
@@ -180,39 +183,73 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
     if (!Array.isArray(body?.data?.series)) return failed('invalid_response', res.status)
     const all: any[] = body.data.series
     if (!all.length) return failed('not_found', res.status)
-    // Prefer the candidate whose books mention the author we know; else the fullest match.
-    const scored = all
+    // Never choose the largest homonymous relationship. Match the supplied contributor anywhere
+    // in the list (translations often put another contributor first), then require one candidate.
+    const candidates = all
+      .filter((s: any) => s.name === name)
       .map((s: any) => {
         const entries: SourceEntry[] = (s.book_series ?? [])
-          .map((bs: any) => ({
-            position: Number(bs.position) || 0,
-            title: String(bs.book?.title ?? '').trim(),
-            author: String(bs.book?.contributions?.[0]?.author?.name ?? '').trim(),
-          }))
+          .map((bs: any) => {
+            const names: string[] = (bs.book?.contributions ?? [])
+              .map((c: any) => String(c?.author?.name ?? '').trim())
+              .filter(Boolean)
+            const matchedAuthor = author && names.find((n) => norm(n) === norm(author))
+            const position = Number(bs.position)
+            return {
+              position: Number.isFinite(position) && position > 0 ? position : 0,
+              title: String(bs.book?.title ?? '').trim(),
+              // Without a known match, multiple contributors have no safe implied primary.
+              author: matchedAuthor || (names.length === 1 ? names[0] : ''),
+            }
+          })
           .filter((e: SourceEntry) => e.title)
         const authorHit = author && entries.some((e) => norm(e.author) === norm(author))
-        return { s, entries, score: (authorHit ? 100 : 0) + entries.length }
+        return { s, entries, authorHit }
       })
-      .sort((a, b) => b.score - a.score)
-    const best = scored[0]
+      .filter((candidate) => !author || candidate.authorHit)
+    if (candidates.length !== 1) return failed('ambiguous_relationship', res.status)
+    const best = candidates[0]
     if (!best || !best.entries.length) return failed('empty_relationship', res.status)
-    // Dedupe by title keeping the first (lowest-position) slot; drop position-0 noise when the
-    // series has real positions.
-    const seen = new Set<string>()
-    const entries = best.entries.filter((e) => {
-      const k = norm(e.title)
-      if (seen.has(k)) return false
-      seen.add(k)
-      return true
+    // Keep identity observations separately. Duplicate editions cannot multiply a work, and
+    // conflicting ordinals for the same identity must not pick the first/lowest position.
+    const byIdentity = new Map<string, SourceEntry>()
+    for (const entry of best.entries) {
+      const key = JSON.stringify([norm(entry.title), norm(entry.author)])
+      const previous = byIdentity.get(key)
+      byIdentity.set(
+        key,
+        previous
+          ? { ...previous, position: previous.position === entry.position ? entry.position : 0 }
+          : entry,
+      )
+    }
+    const membershipEntries = [...byIdentity.values()]
+    // Different titles occupying one ordinal can be translations or boxed sets. Without a work
+    // mapping none is the canonical winner. Withhold the entire slot rather than choose English
+    // heuristically or turn duplicate/unknown ordinals into additional numbered volumes.
+    const slots = new Map<number, SourceEntry[]>()
+    for (const entry of membershipEntries) {
+      if (!Number.isInteger(entry.position) || entry.position <= 0) continue
+      slots.set(entry.position, [...(slots.get(entry.position) ?? []), entry])
+    }
+    const entries = [...slots.values()].flatMap((slot) => {
+      if (slot.length !== 1 || !slot[0].author) return []
+      const entry = slot[0]
+      // Obvious collection labels are not individual volumes, even on an otherwise unique slot.
+      if (
+        /\b(box(?:ed)?\s*(?:set|duologia)|\d+[- ]book\s+set|omnibus|collection|boxset)\b/i.test(
+          entry.title,
+        )
+      )
+        return []
+      return [entry]
     })
-    const positioned = entries.some((e) => e.position > 0)
-      ? entries.filter((e) => e.position > 0)
-      : entries
     return {
       name: String(best.s.name ?? name),
       sourceRef: String(best.s.id ?? ''),
-      memberCount: Number(best.s.books_count) || positioned.length || null,
-      entries: positioned,
+      memberCount: null,
+      membershipEntries,
+      entries,
     }
   } catch {
     return failed(
@@ -231,7 +268,7 @@ async function fetchHardcoverBookTags(title: string, author: string): Promise<st
   if (!HARDCOVER_TOKEN) return []
   const query = `
     query ($title: String!) {
-      books(where: { title: { _ilike: $title } }, order_by: { users_count: desc }, limit: 5) {
+      books(where: { title: { _eq: $title } }, order_by: { users_count: desc }, limit: 5) {
         title
         cached_tags
         contributions { author { name } }
@@ -250,14 +287,16 @@ async function fetchHardcoverBookTags(title: string, author: string): Promise<st
     const bodyJson = (await res.json()) as any
     const books: any[] = bodyJson?.data?.books ?? []
     if (!books.length) return []
-    const match =
-      books.find(
-        (b: any) =>
-          author &&
-          (b.contributions ?? []).some(
-            (c: any) => norm(String(c?.author?.name ?? '')) === norm(author),
-          ),
-      ) ?? books[0]
+    const match = author
+      ? books.find(
+          (b: any) =>
+            author &&
+            (b.contributions ?? []).some(
+              (c: any) => norm(String(c?.author?.name ?? '')) === norm(author),
+            ),
+        )
+      : books[0]
+    if (!match || match.title !== title) return []
     const out = new Set<string>()
     const walk = (v: any): void => {
       if (out.size >= 40) return
@@ -321,7 +360,7 @@ Deno.serve(async (req: Request) => {
     const title = (body.title ?? '').trim()
     if (!title) return json({ error: 'missing title' }, 400)
     try {
-      const key = `booktags:${norm(title)}|${norm(body.author ?? '')}`
+      const key = `booktags-exact-v1:${JSON.stringify([title, (body.author ?? '').trim()])}`
       const cached = (await cacheGet(key)) as unknown as { tags: string[] } | null
       if (cached) return json(cached)
       const payload = { tags: await fetchHardcoverBookTags(title, (body.author ?? '').trim()) }
@@ -337,7 +376,9 @@ Deno.serve(async (req: Request) => {
   if (!name) return json({ error: 'missing name' }, 400)
 
   try {
-    const key = `series:${norm(name)}|${norm(body.author ?? '')}`
+    // New semantics cannot reuse old first-contributor/count payloads. Exact queries also need
+    // exact cache keys: a case-mismatched miss must not poison a later correctly cased request.
+    const key = `series-exact-v1:${JSON.stringify([name, (body.author ?? '').trim()])}`
     const cached = await cacheGet(key)
     if (cached) return json(cached)
     const payload = await fetchHardcoverSeries(name, (body.author ?? '').trim())

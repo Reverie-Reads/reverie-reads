@@ -27,7 +27,7 @@ export interface SeriesCatalogSnapshot {
   series: string
   sourceRef: string | null
   entries: SeriesCatalogEntry[]
-  /** The provider's own cardinality when available; entries.length is the fallback. */
+  /** Provider cardinality, never trusted as a Hardcover work count or declared length. */
   memberCount?: number | null
   /** Never silently conflate publication order with an author's recommended reading order. */
   orderType?: SeriesOrderType
@@ -177,6 +177,11 @@ export function classifySeriesMembership(input: SeriesClassificationInput): Seri
     if (snapshot.unavailable) return []
     const entry = snapshot.entries.find((item) => {
       const exactTitle = matchKey(item.title) === targetTitle
+      if (snapshot.source === 'hardcover') {
+        return (
+          exactTitle && !!input.author.trim() && matchKey(input.author) === matchKey(item.author)
+        )
+      }
       const compatibleBase = titleKey(item.title) === targetBaseTitle
       if (!exactTitle && !compatibleBase) return false
       // An authorless target cannot disambiguate a common title. Keep it reviewable below.
@@ -186,7 +191,7 @@ export function classifySeriesMembership(input: SeriesClassificationInput): Seri
     // Fantastic Fiction's permitted field set stops at membership, series name, and order. Do not
     // derive or retain its total series size even when the page exposes enough rows to count it.
     const memberCount =
-      snapshot.source === 'fantasticfiction'
+      snapshot.source === 'fantasticfiction' || snapshot.source === 'hardcover'
         ? null
         : Math.max(snapshot.memberCount ?? 0, snapshot.entries.length) || null
     return [
@@ -250,11 +255,25 @@ export function classifySeriesMembership(input: SeriesClassificationInput): Seri
       .map((relationship) => relationship.snapshot.source)
       .filter((source) => source !== 'fantasticfiction'),
   )
-  const hasSeriesContext = agreeing.some(
-    ({ snapshot, entry, memberCount }) =>
-      snapshot.source !== 'fantasticfiction' &&
-      ((memberCount ?? 0) > 1 || (entry.position ?? 0) > 1),
-  )
+  const hasSeriesContext = agreeing.some(({ snapshot, entry, memberCount }) => {
+    if (snapshot.source === 'fantasticfiction') return false
+    if (snapshot.source === 'hardcover') {
+      // Multiple editions/sets at one ordinal are not multiple volumes. This establishes
+      // relationship context only, never completeness or declared length.
+      const positions = new Set(
+        snapshot.entries
+          .filter(
+            (item) =>
+              matchKey(item.author) === matchKey(input.author) &&
+              Number.isInteger(item.position) &&
+              (item.position ?? 0) > 0,
+          )
+          .map((item) => item.position),
+      )
+      return positions.size > 1 || (entry.position ?? 0) > 1
+    }
+    return (memberCount ?? 0) > 1 || (entry.position ?? 0) > 1
+  })
   const authorConfirmed = !!input.author.trim()
   const primarySource = primary.snapshot.source
   const hasFantasticFiction = agreeing.some(
