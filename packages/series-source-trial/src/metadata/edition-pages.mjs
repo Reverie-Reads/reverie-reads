@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto'
 import { validateBenchmark } from './benchmark.mjs'
 import { canonicalIsbn, exactIdentity, identityReviewReason, validateInput } from './supplement.mjs'
-import { createEditionDiagnostics, countEditionDiagnostics } from './edition-page-diagnostics.mjs'
+import {
+  createEditionDiagnostics,
+  countEditionDiagnostics,
+  hasRepeatedGoogleSubtitle,
+} from './edition-page-diagnostics.mjs'
 
 export const validPages = (v) => Number.isInteger(v) && v > 0 && v <= 20000
 export const validVolumeId = (v) => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v)
@@ -32,7 +36,15 @@ export function admitGoogleVolume(volume, identity) {
       cases: [{ identity, current: {}, baseline: [record] }],
     })
     const reason = identityReviewReason(record, identity)
-    if (reason) return review(reason)
+    if (reason) {
+      const result = review(reason)
+      if (
+        reason === 'title_mismatch' &&
+        hasRepeatedGoogleSubtitle(b.title, b.subtitle, identity.title)
+      )
+        result.titleDiagnostic = 'repeated_subtitle'
+      return result
+    }
     if (b.language != null && (typeof b.language !== 'string' || !/^[a-z]{2}$/.test(b.language)))
       return review('malformed_language')
     if (identity.language && b.language && identity.language !== b.language)
@@ -217,7 +229,7 @@ const bump = (t, key) => {
 export async function runEditionPages(input, { client } = {}) {
   validateEditionPages(input)
   const report = {
-    version: 2,
+    version: 3,
     experiment: 'edition_pages',
     mode: client ? 'live' : 'dry_run',
     cases: input.cases.length,
