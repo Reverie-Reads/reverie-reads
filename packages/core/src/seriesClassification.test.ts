@@ -27,6 +27,24 @@ const input = (over: Record<string, unknown> = {}) => ({
 })
 
 describe('series classification keeps identity and membership evidence separate', () => {
+  it('does not let a collection on a different ordinal upgrade a singleton', () => {
+    const result = classifySeriesMembership(
+      input({
+        title: 'First Book',
+        snapshots: [
+          hardcover({
+            entries: [
+              { title: 'First Book', author: 'Ada Reader', position: 1 },
+              { title: 'The Sequence Omnibus', author: 'Ada Reader', position: 2 },
+            ],
+          }),
+        ],
+      }),
+    )
+    expect(result.outcome).toBe('review')
+    expect(result.count).toBeNull()
+  })
+
   it('does not count translations and sets at one ordinal as independent series context', () => {
     const result = classifySeriesMembership(
       input({

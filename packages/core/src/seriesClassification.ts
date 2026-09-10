@@ -265,12 +265,19 @@ export function classifySeriesMembership(input: SeriesClassificationInput): Seri
           .filter(
             (item) =>
               matchKey(item.author) === matchKey(input.author) &&
+              !/\b(box(?:ed)?\s*(?:set|duologia)|\d+[- ]book\s+set|omnibus|collection|boxset)\b/i.test(
+                item.title,
+              ) &&
               Number.isInteger(item.position) &&
               (item.position ?? 0) > 0,
           )
           .map((item) => item.position),
       )
-      return positions.size > 1 || (entry.position ?? 0) > 1
+      const targetIsCollection =
+        /\b(box(?:ed)?\s*(?:set|duologia)|\d+[- ]book\s+set|omnibus|collection|boxset)\b/i.test(
+          entry.title,
+        )
+      return !targetIsCollection && (positions.size > 1 || (entry.position ?? 0) > 1)
     }
     return (memberCount ?? 0) > 1 || (entry.position ?? 0) > 1
   })
