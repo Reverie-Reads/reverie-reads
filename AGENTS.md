@@ -21,7 +21,9 @@ Genre-specific language belongs in a skin, not in the core.
 
 - **Book data serves the reader app first (owner, September 9).** A public book-data provider/API
   is a possible later product after the app gains users, not a launch dependency. Keep provider
-  comparison #521 draft and defer its live connection and optional edition editor. Reuse the
+  comparison #521 draft; plan edition comparison as a Pro reader feature, not an admin-only
+  product. Defer its live connection and optional edition editor. Pro access never grants shared
+  catalog edit authority or removes basic data quality and existing corrections from Free. Reuse the
   existing catalog, review controls and semantic matching; do not add a shared vector/graph store
   or additional providers without a demonstrated app need. The next step is the smallest useful
   human-review handoff from existing evidence, not autonomous catalog writes. Existing trial-only,

@@ -9,10 +9,50 @@ Help readers find the right book and receive accurate shared details, cheaply. I
 existing approach before adding infrastructure. A book-data provider/API may become a separate
 product after the reader app gains users; it is not a prerequisite for attracting those users.
 
-Keep provider-comparison PR #521 draft. Defer its live endpoint, optional edition/page editor,
+Keep provider-comparison PR #521 draft and plan its reader-facing successor as a Pro feature.
+Defer its live endpoint, optional edition/page editor,
 new shared vector/graph database and additional provider procurement. None is a dependency of
 the next series-data step. ISBNdb stays retired. Existing vector similarity can support finding
 related books; it cannot establish identity, series membership or factual correctness.
+
+## Planned Pro feature: compare edition details
+
+Owner decision: edition/provider comparison belongs in Pro. This changes the planned audience
+from administrator-only to Pro readers; it does not enable the draft component or authorize a
+live provider connection. The old administrator design remains historical technical reference,
+not the reader entitlement or access contract.
+
+- **Reader benefit:** inspect conflicting or missing details for the edition they own or are
+  considering, without having to reconcile provider records manually across separate sites.
+- **Entry point:** a planned “Compare edition details” action on book details. The reader selects
+  an exact ISBN and deliberately starts the comparison; no new top-level dashboard is needed.
+- **First scope:** side-by-side admitted Google Books and Open Library page counts and
+  binding/format, source links, identity-match status, missing fields and conflicts. No model,
+  preferred winner, automatic correction, export, batch acquisition or series decision.
+- **Free stays useful:** basic search, enrichment, catalog quality and existing reader correction
+  controls stay available. Improved shared facts benefit all readers; the premium benefit is the
+  optional inspection tool. Do not retroactively paywall existing controls.
+- **Permissions stay separate:** an active Pro subscription permits the comparison, not shared
+  catalog editing. Administrators may retain operational access without a subscription. Both
+  still need access to the target record; a UUID is not permission. Never expose administrator
+  notes/history or another reader's private library through this feature.
+- **Entitlement and cost:** reuse the existing Pro entitlement seam and private subscription
+  integration, with server-side enforcement before acquisition. Unavailable entitlement means
+  retry/check access, not a false “upgrade required” message. Start with explicit per-reader and
+  global request limits, no automatic refresh and no unlimited-use promise; set numeric limits
+  from the reviewed provider quotas and measured operating cost before release.
+- **Cancellation:** losing Pro removes new comparisons, not personal books, existing reader edits
+  or access to ordinary shared metadata. Comparison responses remain transient under their
+  approved policy rather than becoming a saved premium dataset.
+
+Implementation remains deferred behind the app-first review work. Reuse #521's tested display
+logic where it fits, but replace its administrator-specific context and lifecycle assumptions;
+do not just remove the admin check. Before release, verify entitled/non-entitled/unavailable
+access, target authorization, cost limits, account changes, privacy and the actual book-detail
+flow. The existing source-use/retention gates still apply to this broader reader audience.
+
+This Pro feature is part of the reader app. A separate public book-data API remains a different,
+later product and is not needed to deliver it. No pricing or billing implementation is decided here.
 
 ## What already exists
 
