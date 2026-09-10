@@ -1,0 +1,281 @@
+{
+  "revision": "c1310274e7e5b9266cd9519cc6a44e1f1a12e9c1",
+  "syntheticOnly": true,
+  "externalRequests": 0,
+  "environmentFilesRead": 0,
+  "scenarios": 27,
+  "admitted": 7,
+  "withheld": 20,
+  "rows": [
+    {
+      "case": "full_title",
+      "google": "matched",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "cross_provider_agreement",
+      "candidate": 300,
+      "format": "unknown",
+      "mockedRequests": 4
+    },
+    {
+      "case": "split_subtitle",
+      "google": "matched",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "cross_provider_agreement",
+      "candidate": 300,
+      "format": "unknown",
+      "mockedRequests": 4
+    },
+    {
+      "case": "punctuation_case",
+      "google": "matched",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "cross_provider_agreement",
+      "candidate": 300,
+      "format": "unknown",
+      "mockedRequests": 4
+    },
+    {
+      "case": "whitespace",
+      "google": "matched",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "cross_provider_agreement",
+      "candidate": 300,
+      "format": "unknown",
+      "mockedRequests": 4
+    },
+    {
+      "case": "diacritics",
+      "google": "matched",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "cross_provider_agreement",
+      "candidate": 300,
+      "format": "unknown",
+      "mockedRequests": 4
+    },
+    {
+      "case": "blank_subtitle",
+      "google": "matched",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "cross_provider_agreement",
+      "candidate": 300,
+      "format": "unknown",
+      "mockedRequests": 4
+    },
+    {
+      "case": "duplicate_subtitle",
+      "google": "title_mismatch",
+      "openlibrary": "title_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "missing_subtitle",
+      "google": "title_mismatch",
+      "openlibrary": "title_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "changed_subtitle",
+      "google": "title_mismatch",
+      "openlibrary": "title_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "abridgement",
+      "google": "title_mismatch",
+      "openlibrary": "title_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "adaptation",
+      "google": "title_mismatch",
+      "openlibrary": "title_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "volume_qualifier",
+      "google": "title_mismatch",
+      "openlibrary": "title_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "similar_other_title",
+      "google": "title_mismatch",
+      "openlibrary": "title_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "numeric_subtitle",
+      "google": "malformed_subtitle",
+      "openlibrary": "malformed_subtitle",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "object_subtitle",
+      "google": "malformed_subtitle",
+      "openlibrary": "malformed_subtitle",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "duplicate_plus_qualifier",
+      "google": "title_mismatch",
+      "openlibrary": "title_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "reversed_author",
+      "google": "matched",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "cross_provider_agreement",
+      "candidate": 300,
+      "format": "unknown",
+      "mockedRequests": 4
+    },
+    {
+      "case": "initial_only",
+      "google": "contributors_mismatch",
+      "openlibrary": "contributors_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "wrong_author",
+      "google": "contributors_mismatch",
+      "openlibrary": "contributors_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 3
+    },
+    {
+      "case": "extra_translator",
+      "google": "contributors_mismatch",
+      "openlibrary": "contributors_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 4
+    },
+    {
+      "case": "no_authors",
+      "google": "malformed_record",
+      "openlibrary": "missing_contributors",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 2
+    },
+    {
+      "case": "detail_loses_subtitle",
+      "google": "title_mismatch",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 4
+    },
+    {
+      "case": "detail_duplicates_subtitle",
+      "google": "title_mismatch",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 4
+    },
+    {
+      "case": "detail_language_conflict",
+      "google": "language_mismatch",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 4
+    },
+    {
+      "case": "detail_wrong_author",
+      "google": "contributors_mismatch",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 4
+    },
+    {
+      "case": "mixed_isbns",
+      "google": "isbn_mismatch",
+      "openlibrary": "isbn_mismatch",
+      "googleStage": "search",
+      "packet": "identity_review",
+      "candidate": null,
+      "format": "unavailable",
+      "mockedRequests": 2
+    },
+    {
+      "case": "conflicting_pages",
+      "google": "matched",
+      "openlibrary": "matched",
+      "googleStage": "detail",
+      "packet": "conflict",
+      "candidate": null,
+      "format": "unknown",
+      "mockedRequests": 4
+    }
+  ]
+}
