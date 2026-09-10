@@ -53,10 +53,11 @@ Supabase test stack through its shared lock; local resets do not imply productio
 
 ## Verification
 
-- Core synthetic contract tests cover valid controls, individual rejected checks, spoofed source
+- 50 core synthetic contract tests and 18 registry-keyed contrast checks pass. The contract cases cover
+  valid controls, individual rejected checks, spoofed source
   fields, invalid/expired envelopes, page conflicts, incomplete authors, audio/mixed binding,
   serialization exclusion, and input immutability.
-- Component tests exercise explicit requests, duplicate clicks, timeout/late response, context and
+- 23 component tests pass. They exercise explicit requests, duplicate clicks, timeout/late response, context and
   account changes, expiry, focus/offline/sign-out revocation, retained description drafts, and absent
   calls to actual Supabase RPC/table boundaries. Error sentinels do not reach rendering, error
   reporting, console, or localStorage. The real offline-dehydration filter excludes a sentinel DTO
@@ -66,10 +67,17 @@ Supabase test stack through its shared lock; local resets do not imply productio
   overflow across nine skins in both modes at 390px; zero scoped WCAG A/AA axe violations in those
   18 states. Keyboard Tab reaches the source link with a visible 2px solid outline. Fixture fonts
   use the existing CSS font stacks without loading the app's remote font stylesheet.
-- Full unit/Workflow, typecheck, lint, and build gate passed before the final shared-page invalidation
-  guard; focused component/typecheck/lint verification is being repeated for that guard.
-- One fresh-local-database, default-one-worker, zero-retry full E2E run is in progress. Record its
-  result before handing off; do not rerun a failed suite to erase the first outcome.
+- Full local unit/Workflow, typecheck, lint, and build gate passed before the final shared-page
+  invalidation guard; focused component/typecheck/lint verification passed after it. GitHub's full
+  code gate also passed on the final implementation commit
+  `02ae40205da45f3cc2fc88b72024d11f1e6da63c` (run `34435153785`, job `102738559836`).
+- One fresh-local-database, default-one-worker, zero-retry full E2E run completed: **267 passed,
+  10 skipped, zero failures**, in 26.0 minutes. No failed-suite rerun was used. This is the existing
+  application regression suite; the isolated comparison is covered separately by the synthetic
+  tests and browser fixture above, not misrepresented as a shipped route journey.
+- GitHub mobile and accessibility jobs passed on that implementation commit; its broader browser
+  job was still pending when this note was finalized. This follow-up changes only this report.
+  Check the PR for later CI status; no merge or live-service readiness is claimed.
 
 The other active chat was notified before edits and before shared-stack use. At the pre-publication
 check its public PR #520 changed only `apps/web/e2e/a11y.spec.ts`, outside this draft's paths. Its
