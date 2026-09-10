@@ -146,6 +146,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   null; a null name with candidate/outage evidence is not a successful no-label observation.
   Historical outage repair is owner-run and fingerprint-scoped, separate from migration; see
   `docs/tasks/series-unavailable-recovery.md`.
+  Hardcover series and book-tag queries use exact `_eq`, never prohibited `_ilike` filters.
+  Case-sensitive query keys must not share a normalized cache entry. Relationship observations
+  are separate from unambiguous numbered shelf slots; translations/sets at one ordinal cannot
+  inflate series context or declared length. Hardcover counts remain unknown, and exact-work
+  matching checks the expected contributor anywhere in the provider list.
   Trusted corpus series seeds household display directly and only replaces personal
   unknown/enrichment/corpus defaults—never a reader or CSV-import choice. Fantastic Fiction may be
   retained only as membership/name/order corroboration and never auto-promotes by itself; do not

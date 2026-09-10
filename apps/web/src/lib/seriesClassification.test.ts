@@ -12,13 +12,14 @@ const { classifyEnrichedSeries, fetchCatalogSeriesSnapshot } =
 beforeEach(() => mocks.invoke.mockReset())
 
 describe('series provider relationship boundary', () => {
-  it('normalizes Hardcover relationship rows and provider cardinality', async () => {
+  it('normalizes membership observations without trusting provider cardinality or shelf slots', async () => {
     mocks.invoke.mockResolvedValue({
       data: {
         name: 'The Sequence',
         sourceRef: 'hc-series-1',
         memberCount: 3,
-        entries: [
+        entries: [],
+        membershipEntries: [
           { title: 'First Book', author: 'Ada Reader', position: 1 },
           { title: '', author: 'Ada Reader', position: 2 },
         ],
@@ -30,7 +31,7 @@ describe('series provider relationship boundary', () => {
       source: 'hardcover',
       series: 'The Sequence',
       sourceRef: 'hc-series-1',
-      memberCount: 3,
+      memberCount: null,
       entries: [{ title: 'First Book', author: 'Ada Reader', position: 1 }],
       unavailable: false,
     })
