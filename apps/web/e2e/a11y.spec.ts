@@ -617,9 +617,11 @@ test.describe('axe sweep', () => {
   })
 })
 
-// The unauthenticated front door (gold master brand) — no sign-in seed needed, so it's a simpler,
-// faster pass. The gold CTA's dark text and the brand's muted/faint copy must clear AA here too.
-test('unauthenticated landing + auth pass axe', async ({ page }) => {
+// The unauthenticated front door (gold master brand) — no sign-in seed needed. Keep one test per
+// route so each page owns Playwright's timeout budget. The former six-route loop exhausted its one
+// 30s budget on different later routes across consecutive CI attempts even though every completed
+// axe scan passed. The gold CTA's dark text and the brand's muted/faint copy must clear AA here too.
+test.describe('unauthenticated front door axe', () => {
   const routes: [string, string][] = [
     ['Landing', '/'],
     ['Skin character · all 18 states', '/lab/skins'],
@@ -633,32 +635,35 @@ test('unauthenticated landing + auth pass axe', async ({ page }) => {
     ],
     ['Welcome · set new password', '/welcome#type=recovery'],
   ]
-  const failures: string[] = []
+
   for (const [name, path] of routes) {
-    await page.goto(path)
-    await page.locator('main').first().waitFor({ state: 'visible' })
-    await page.waitForLoadState('networkidle') // let the landing's lazy below-fold chunk render before scanning
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa'])
-      .exclude(OVER_ART)
-      .analyze()
-    for (const v of results.violations.filter(
-      (x) => x.impact === 'serious' || x.impact === 'critical',
-    )) {
-      const detail = v.nodes
-        .slice(0, 2)
-        .map((n) => {
-          const d = n.any?.[0]?.data as
-            | { fgColor?: string; bgColor?: string; contrastRatio?: number }
-            | undefined
-          return d?.contrastRatio != null
-            ? `${String(n.target)} fg=${d.fgColor} bg=${d.bgColor} ratio=${d.contrastRatio}`
-            : String(n.target)
-        })
-        .join(' || ')
-      failures.push(`[${name}] (${path}): ${v.id} (${v.nodes.length}) — ${detail}`)
-    }
+    test(name, async ({ page }) => {
+      const failures: string[] = []
+      await page.goto(path)
+      await page.locator('main').first().waitFor({ state: 'visible' })
+      await page.waitForLoadState('networkidle') // let the landing's lazy below-fold chunk render before scanning
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa'])
+        .exclude(OVER_ART)
+        .analyze()
+      for (const v of results.violations.filter(
+        (x) => x.impact === 'serious' || x.impact === 'critical',
+      )) {
+        const detail = v.nodes
+          .slice(0, 2)
+          .map((n) => {
+            const d = n.any?.[0]?.data as
+              | { fgColor?: string; bgColor?: string; contrastRatio?: number }
+              | undefined
+            return d?.contrastRatio != null
+              ? `${String(n.target)} fg=${d.fgColor} bg=${d.bgColor} ratio=${d.contrastRatio}`
+              : String(n.target)
+          })
+          .join(' || ')
+        failures.push(`[${name}] (${path}): ${v.id} (${v.nodes.length}) — ${detail}`)
+      }
+      if (failures.length) console.log('axe (unauth) violations:\n' + failures.join('\n'))
+      expect(failures, failures.join('\n')).toHaveLength(0)
+    })
   }
-  if (failures.length) console.log('axe (unauth) violations:\n' + failures.join('\n'))
-  expect(failures, failures.join('\n')).toHaveLength(0)
 })
