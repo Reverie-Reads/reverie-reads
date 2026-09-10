@@ -59,7 +59,21 @@ the enum and remained rejected. This checks behavioral parity, not provider freq
 The complete non-browser gate passes: 403 trial tests, 2,708 core tests, 909 web tests and the
 compiler-backed Workflow integration test, plus typecheck, lint, build, formatting and diff checks.
 The build retains its expected local-URL/bundle-size warnings and is not deployment verification.
-The required fresh default-worker, retries-zero full browser run is in progress; its result will be
-recorded before completion. No fresh provider sample is included. Before measuring this diagnostic on live data,
+The required local full browser run used a freshly reset local database, the machine-global stack
+lock, default one worker and zero retries: **266 passed, 10 configured skips, one failed (25.9m)**.
+The unchanged `a11y.spec.ts:622` unauthenticated six-route test exceeded its 30-second whole-test
+budget while navigating to the expired-link `/welcome` route. Its artifact records navigation
+abortion at timeout, not a completed axe violation assertion. No app or browser-test code changed
+on this branch, no timeout was increased, and the local test was not retried. The trace and error
+context remain in the worktree's ignored `apps/web/test-results/` directory; the stack was released.
+
+All six hosted checks passed on implementation commit `fe6b4cd1399def421d63702c2a5b3f479a224a9b`
+([CI run](https://github.com/Reverie-Reads/reverie-reads/actions/runs/34425302936)). In that run the
+same unauthenticated test passed on its first attempt in 20.0 seconds; the a11y lane had 12 passes.
+This does not erase the local failure or establish its complete cause. PR #516 remains unmerged
+and draft with the local test discrepancy disclosed. The final verification-note update changes
+documentation only, not the tested runtime.
+
+No fresh provider sample is included. Before measuring this diagnostic on live data,
 freeze a new independently reviewed sample and system lock; neither prior edition pilot may be
 replayed. Diagnostic frequency alone would still not justify automatic repair or qualification.
