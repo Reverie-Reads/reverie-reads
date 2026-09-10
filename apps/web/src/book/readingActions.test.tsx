@@ -66,6 +66,22 @@ describe('book reading actions', () => {
     })
   })
 
+  it('names and preserves the retained place when resuming a set-aside reread', () => {
+    const book = makeBook({
+      id: 'paused',
+      title: 'A paused reread',
+      readStatus: 'Unread',
+      progress: 37,
+      reads: [{ date: '2024-04-01', format: 'Paperback', rating: 4, notes: '' }],
+    })
+    render(<BookReadingActions book={book} {...callbacks()} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume reading' }))
+    expect(mutate).toHaveBeenCalledWith({
+      id: book.id,
+      patch: { readStatus: 'Reading', readingNowHidden: false, progress: 37 },
+    })
+  })
+
   it('takes an active reread to progress without restarting or writing a completion', () => {
     const handlers = callbacks()
     const book = makeBook({

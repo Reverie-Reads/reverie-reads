@@ -92,7 +92,7 @@ export function LogReadForm({
   // Local, not UTC — see localDate.ts. West of UTC in the evening, toISOString() already reports
   // tomorrow, and this default is what a reread finished tonight silently landed on.
   const [date, setDate] = useState(() => todayLocalDate())
-  const [format, setFormat] = useState(book.format || 'Paperback')
+  const [format, setFormat] = useState(book.format)
   const [rating, setRating] = useState(0)
   const [notes, setNotes] = useState('')
   const [savedRead, setSavedRead] = useState(false)
@@ -129,7 +129,7 @@ export function LogReadForm({
 
   return (
     <Modal
-      title={mode === 'past' ? 'Log a past read' : 'Log a read'}
+      title={mode === 'past' ? 'Log a past read' : 'Finish this read'}
       onClose={() => {
         if (!saving) onClose()
       }}
@@ -137,7 +137,7 @@ export function LogReadForm({
       <p className="-mt-2 mb-4 text-[13px] text-muted">
         {mode === 'past'
           ? `Record an earlier read of ${book.title}. Your current reading status and progress stay as they are.`
-          : `${book.title} — add a reread anytime.`}
+          : `${book.title} — save this finish to your reading journal.`}
       </p>
       <div className="flex flex-col gap-3">
         <fieldset disabled={saving || savedRead} className="flex min-w-0 flex-col gap-3">
@@ -158,6 +158,7 @@ export function LogReadForm({
                 className={fieldClass}
                 style={fieldStyle}
               >
+                <option value="">Not recorded</option>
                 {FORMATS.map((f) => (
                   <option key={f}>{f}</option>
                 ))}
@@ -191,7 +192,13 @@ export function LogReadForm({
           onClick={() => void save()}
           className="mt-1 h-11 skin-control skin-btn-primary text-[14px] font-semibold"
         >
-          {saving ? 'Saving…' : savedRead ? 'Retry status update' : 'Save to read log'}
+          {saving
+            ? 'Saving…'
+            : savedRead
+              ? 'Retry status update'
+              : mode === 'finish'
+                ? 'Save finished read'
+                : 'Save to read log'}
         </button>
       </div>
     </Modal>

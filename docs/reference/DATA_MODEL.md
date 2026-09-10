@@ -112,7 +112,7 @@ comments. Reproduced here with the parts that most often get guessed wrong calle
   planIntention?: string,      // optional private note to the reader's future self
   progress: number,            // 0..100 while Reading
   readingPosition?: number | null,   // manual Reading Now order (spaced numeric)
-  readingNowHidden?: boolean,        // hidden from Reading Now without changing status/progress
+  readingNowHidden?: boolean,        // hidden from Home's Reading Now; Planner still shows it
   addedTs
 }
 ```

@@ -1,4 +1,4 @@
-import { useState, type ReactNode, useRef, useMemo } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link, createRoute, useNavigate } from '@tanstack/react-router'
 import {
   authorOf,
@@ -18,6 +18,7 @@ import {
   type PossessionState,
   type Owned,
   formatPartialDate,
+  hasPausedReadingProgress,
   latestRatingByFormat,
 } from '@reverie/core'
 import { useFilters } from '../library/filterStore'
@@ -60,6 +61,8 @@ import { BookmarkGlyph } from '../components/BookmarkGlyph'
 import { Surface } from '../components/Surface'
 import { sharedCorpusDetailsDiffer } from './sharedCorpusDetails'
 import { CorpusCoverReviewToggle } from '../components/CorpusCoverReviewToggle'
+import { ReadingProgressDialog } from '../components/ReadingProgress'
+import { ProgressMeter } from '../components/Structure'
 import {
   useAdminReviewPersonalCoverForCorpus,
   useCorpusAdminStatus,
@@ -190,45 +193,6 @@ export function corpusCoverReviewIsUnavailable({
   return isError || fetchStatus === 'paused' || (data === undefined && !isFetching)
 }
 
-export function ProgressSlider({ book }: { book: Pick<Book, 'id' | 'progress'> }) {
-  const updateBook = useUpdateBook(book.id)
-  const [value, setValue] = useState(book.progress)
-  // The last value actually written. Both handlers below stay, and this is what stops them writing
-  // twice for one gesture.
-  //
-  // NOT "drop one handler", which is what the shape invites: the two cover different input methods.
-  // `onPointerUp` is the only one a drag fires, and `onBlur` is the only one a KEYBOARD user fires —
-  // arrow keys move the thumb with no pointer event at all. Dropping onBlur silently stops saving
-  // for keyboard users; dropping onPointerUp defers every save to whenever focus happens to leave,
-  // and loses it entirely if the component unmounts first. Deduping on the value keeps both entry
-  // points and still writes once.
-  const committed = useRef(book.progress)
-  const commit = () => {
-    if (value === committed.current) return
-    committed.current = value
-    updateBook.mutate({ id: book.id, patch: { progress: value } })
-  }
-  return (
-    <div>
-      <Label>
-        Progress — <span className="normal-case text-ink">{value}%</span>
-      </Label>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={value}
-        aria-label="Reading progress"
-        onChange={(e) => setValue(Number(e.target.value))}
-        onPointerUp={commit}
-        onBlur={commit}
-        className="w-full"
-        style={{ accentColor: 'var(--primary)' }}
-      />
-    </div>
-  )
-}
-
 /** Starting changes current reading state only; completed reads are logged separately. */
 export function BookReadingActions({
   book,
@@ -245,7 +209,13 @@ export function BookReadingActions({
 }) {
   const updateBook = useUpdateBook(book.id)
   const reading = book.readStatus === 'Reading'
-  const action = reading ? 'Update progress' : isBookRead(book) ? 'Read again' : 'Start reading'
+  const action = reading
+    ? 'Update progress'
+    : hasPausedReadingProgress(book)
+      ? 'Resume reading'
+      : isBookRead(book)
+        ? 'Read again'
+        : 'Start reading'
   return (
     <div className="mt-5 flex flex-wrap gap-2">
       <button
@@ -284,7 +254,7 @@ export function BookReadingActions({
   )
 }
 
-type Dialog = 'trope' | 'mood' | 'log' | 'finish' | 'edit' | 'merge' | 'cover' | null
+type Dialog = 'trope' | 'mood' | 'log' | 'finish' | 'progress' | 'edit' | 'merge' | 'cover' | null
 
 export function BookDetailScreen() {
   const { bookId } = bookRoute.useParams()
@@ -315,7 +285,9 @@ export function BookDetailScreen() {
   const setAuthor = useFilters((s) => s.setAuthor)
   const [dialog, setDialog] = useState<Dialog>(null)
   const [tropesExpanded, setTropesExpanded] = useState(false)
-  const progressTarget = useRef<HTMLDivElement>(null)
+  const [progressNotice, setProgressNotice] = useState<{ bookId: string; text: string } | null>(
+    null,
+  )
 
   const filterByAuthor = (name: string) => {
     setAuthor(name)
@@ -538,13 +510,23 @@ export function BookDetailScreen() {
             />
           )}
 
+          {book.readStatus === 'Reading' && (
+            <div className="mt-5 max-w-md">
+              <ProgressMeter value={book.progress} max={100} />
+              <p className="mt-2 text-[13px] font-semibold text-ink" role="status">
+                {progressNotice?.bookId === book.id
+                  ? progressNotice.text
+                  : `${book.progress}% · your current place`}
+              </p>
+            </div>
+          )}
           <BookReadingActions
             book={{ ...book, reads: reads ?? book.reads }}
             startUnavailable={startUnavailable}
             onRetryHistory={() => void retryReads()}
             onUpdateProgress={() => {
-              progressTarget.current?.scrollIntoView({ block: 'center' })
-              progressTarget.current?.querySelector('input')?.focus({ preventScroll: true })
+              setProgressNotice(null)
+              setDialog('progress')
             }}
             onLogPastRead={() => setDialog('log')}
           />
@@ -690,16 +672,13 @@ export function BookDetailScreen() {
         </div>
 
         {book.readStatus === 'Reading' && (
-          <div ref={progressTarget}>
-            <ProgressSlider key={book.id} book={book} />
-            <button
-              type="button"
-              onClick={() => setDialog('finish')}
-              className="skin-control skin-btn-secondary mt-3 min-h-11 px-4 text-[14px] font-semibold"
-            >
-              Finish this read
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setDialog('finish')}
+            className="skin-control skin-btn-secondary mt-5 min-h-11 px-4 text-[14px] font-semibold"
+          >
+            Finish this read
+          </button>
         )}
 
         {/* rating */}
@@ -1069,6 +1048,15 @@ export function BookDetailScreen() {
         />
       )}
       {dialog === 'cover' && <CoverSheet book={book} onClose={() => setDialog(null)} />}
+      {dialog === 'progress' && (
+        <ReadingProgressDialog
+          book={book}
+          onClose={() => setDialog(null)}
+          onSaved={(progress) =>
+            setProgressNotice({ bookId: book.id, text: `Progress saved at ${progress}%.` })
+          }
+        />
+      )}
       {dialog === 'merge' && (
         <MergeDialog book={book} allBooks={books ?? []} onClose={() => setDialog(null)} />
       )}

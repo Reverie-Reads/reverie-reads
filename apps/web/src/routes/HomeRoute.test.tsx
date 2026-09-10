@@ -39,7 +39,9 @@ vi.mock('../data/readerBooks', async () => {
     }),
   }
 })
-vi.mock('../data/books', () => ({ useUpdateBook: () => ({ mutate: state.update }) }))
+vi.mock('../data/books', () => ({
+  useUpdateBook: () => ({ mutate: state.update, isPending: false, isError: false, reset: vi.fn() }),
+}))
 vi.mock('../data/reads', () => ({ useAllReads: () => ({ data: [] }) }))
 vi.mock('../data/lists', () => ({ useLists: () => ({ data: [] }) }))
 vi.mock('../data/listItems', () => ({
@@ -111,10 +113,13 @@ beforeEach(() => {
   state.homeModules = ['next-read', 'reading', 'priority']
   state.isPending = false
   state.isError = false
-  state.update.mockImplementation(({ id, patch }: { id: string; patch: Partial<Book> }) => {
-    state.books = state.books?.map((book) => (book.id === id ? { ...book, ...patch } : book))
-    state.listeners.forEach((listener) => listener())
-  })
+  state.update.mockImplementation(
+    ({ id, patch }: { id: string; patch: Partial<Book> }, options?: { onSuccess?: () => void }) => {
+      state.books = state.books?.map((book) => (book.id === id ? { ...book, ...patch } : book))
+      state.listeners.forEach((listener) => listener())
+      options?.onSuccess?.()
+    },
+  )
 })
 
 describe('Home reading flow', () => {
@@ -155,8 +160,14 @@ describe('Home reading flow', () => {
     ]
     render(<Home />)
     fireEvent.click(screen.getByRole('button', { name: 'Update progress for Current Book' }))
-    expect(await screen.findByText('25%')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Finish ✓' }))
+    const progressDialog = screen.getByRole('dialog', { name: 'Update progress' })
+    fireEvent.change(progressDialog.querySelector('input[type="number"]')!, {
+      target: { value: '25' },
+    })
+    expect(state.update).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Save progress' }))
+    expect(await screen.findByText('Progress saved at 25%.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Finish this read' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save completed read' }))
     await waitFor(() => expect(screen.getByText(/Nothing is underway/)).toBeInTheDocument())
     expect(screen.getByRole('heading', { name: 'Choose a next read' })).toBeInTheDocument()

@@ -17,6 +17,8 @@ import { Modal } from '../components/Modal'
 import { Surface } from '../components/Surface'
 import { useUpdateBook } from '../data/books'
 import { MONTHS } from '../library/constants'
+import { ReadingProgressDialog } from '../components/ReadingProgress'
+import { LogReadForm } from '../book/dialogs'
 import './reading-plan.css'
 
 export type PlanView = 'queue' | 'calendar'
@@ -71,7 +73,7 @@ export function ReadingPlan({
   const reading = useMemo(
     () =>
       books
-        .filter((book) => book.readStatus === 'Reading' && !book.readingNowHidden)
+        .filter((book) => book.readStatus === 'Reading')
         .sort(
           (a, b) =>
             (a.readingPosition ?? Number.MAX_SAFE_INTEGER) -
@@ -83,6 +85,9 @@ export function ReadingPlan({
   const [pickerDate, setPickerDate] = useState<PlanDate | null>(null)
   const [removed, setRemoved] = useState<RemovedPlan | null>(null)
   const [announcement, setAnnouncement] = useState('')
+  const [progressing, setProgressing] = useState<Book | null>(null)
+  const [finishing, setFinishing] = useState<Book | null>(null)
+  const [progressMessage, setProgressMessage] = useState('')
 
   const edit = (book: Book, initialDate?: PlanDate) => setEditor({ book, initialDate })
   const remove = (book: Book) => {
@@ -100,7 +105,16 @@ export function ReadingPlan({
     <>
       {view === 'queue' ? (
         <div className="plan-layout">
-          <CurrentReading books={reading} openBook={openBook} />
+          <CurrentReading
+            books={reading}
+            openBook={openBook}
+            updateProgress={(book) => {
+              setProgressMessage('')
+              setProgressing(book)
+            }}
+            finish={setFinishing}
+            progressMessage={progressMessage}
+          />
           <section aria-labelledby="plan-queue-heading" className="min-w-0">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3 border-b border-line pb-4">
               <div>
@@ -193,11 +207,35 @@ export function ReadingPlan({
           }}
         />
       )}
+      {progressing && (
+        <ReadingProgressDialog
+          book={books.find((book) => book.id === progressing.id) ?? progressing}
+          onClose={() => setProgressing(null)}
+          onSaved={(progress) => {
+            const message = `Progress saved at ${progress}% for ${progressing.title}.`
+            setProgressMessage(message)
+            setAnnouncement(message)
+          }}
+        />
+      )}
+      {finishing && <LogReadForm book={finishing} onClose={() => setFinishing(null)} />}
     </>
   )
 }
 
-function CurrentReading({ books, openBook }: { books: Book[]; openBook: (id: string) => void }) {
+function CurrentReading({
+  books,
+  openBook,
+  updateProgress,
+  finish,
+  progressMessage,
+}: {
+  books: Book[]
+  openBook: (id: string) => void
+  updateProgress: (book: Book) => void
+  finish: (book: Book) => void
+  progressMessage: string
+}) {
   const book = books[0]
   return (
     <aside className="plan-current" aria-labelledby="plan-current-heading">
@@ -222,10 +260,35 @@ function CurrentReading({ books, openBook }: { books: Book[]; openBook: (id: str
               />
             </div>
             <p className="mt-2 text-[12px] text-muted">{book.progress}% · your current place</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={() => updateProgress(book)}>
+                Update progress
+              </Button>
+              <Button variant="ghost" onClick={() => finish(book)}>
+                Finish this read
+              </Button>
+            </div>
+            {progressMessage && (
+              <p className="mt-3 text-[12.5px] font-semibold text-ink">{progressMessage}</p>
+            )}
             {books.length > 1 && (
-              <p className="mt-5 border-t border-line pt-4 text-[12.5px] text-muted">
-                {books.length - 1} more {books.length === 2 ? 'book' : 'books'} in Reading now
-              </p>
+              <details className="mt-5 border-t border-line pt-4 text-[12.5px] text-muted">
+                <summary className="min-h-11 cursor-pointer py-3 font-semibold text-ink">
+                  View all reading now ({books.length})
+                </summary>
+                <div className="flex flex-col items-start gap-1 pb-1">
+                  {books.slice(1).map((candidate) => (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      onClick={() => openBook(candidate.id)}
+                      className="min-h-11 text-left underline underline-offset-4 hover:text-ink"
+                    >
+                      {candidate.title} · {candidate.progress}%
+                    </button>
+                  ))}
+                </div>
+              </details>
             )}
           </div>
         </div>

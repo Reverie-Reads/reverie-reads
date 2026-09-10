@@ -98,4 +98,24 @@ describe('begin reading', () => {
       ).toBe(37)
     }
   })
+  it('resumes a set-aside reread from its retained place', () => {
+    const paused = book('paused-reread', {
+      readStatus: 'Unread',
+      reads: [completed],
+      progress: 37,
+    })
+    expect(beginReadingPatch(paused)).toEqual({
+      readStatus: 'Reading',
+      readingNowHidden: false,
+      progress: 37,
+    })
+  })
+  it('does not mistake a completed record for a paused read', () => {
+    const completedBook = book('complete', {
+      readStatus: 'Read',
+      reads: [completed],
+      progress: 37,
+    })
+    expect(beginReadingPatch(completedBook).progress).toBe(0)
+  })
 })

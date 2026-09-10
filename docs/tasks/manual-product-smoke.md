@@ -53,7 +53,10 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 - [ ] **Next read:** compare Available, Wishlist, whole-library, reread, and stopped-book scopes;
       save one choice, start it, and confirm possession and completed history remain intact.
 - [ ] **Reading loop:** start, update progress, save a private note, finish, and start a reread;
-      confirm each completed read keeps its own date, format, rating, and note.
+      confirm Home, book details, Planner, and the guest demo agree after an explicit Save; Cancel
+      writes nothing; an interrupted save keeps the entered value for retry; 100% does not create a
+      completion; a set-aside reread resumes from its retained place; and each completed read keeps
+      its own date, format, rating, and note.
 - [ ] **Series:** open series details, inspect gaps/order, remove an incorrect category permanently,
       and confirm the books remain in the library with unrelated memberships unchanged.
 - [ ] **Discover:** use book, mood, and genre paths; open addressable details; return without losing

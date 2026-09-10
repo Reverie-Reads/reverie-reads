@@ -35,6 +35,7 @@ import { BookmarkGlyph } from '../components/BookmarkGlyph'
 import { Surface } from '../components/Surface'
 import { PageHeader } from '../components/PageHeader'
 import { DEFAULT_ARRANGEMENT_PRESET, type HomeModuleId } from '../design/arrangements'
+import { ReadingProgressDialog } from '../components/ReadingProgress'
 
 const YEAR = new Date().getFullYear()
 
@@ -51,6 +52,8 @@ function HomeScreen() {
   const voice = useVoice()
   const addItem = useAddListItem()
   const [finishing, setFinishing] = useState<Book | null>(null)
+  const [progressing, setProgressing] = useState<Book | null>(null)
+  const [progressMessage, setProgressMessage] = useState('')
   const [readingPickerOpen, setReadingPickerOpen] = useState(false)
   const [removing, setRemoving] = useState<Book | null>(null)
   const [railPickerFor, setRailPickerFor] = useState<UiList | null>(null)
@@ -107,12 +110,6 @@ function HomeScreen() {
     if (input == null) return
     updateProfile.mutate({ goalYear: YEAR, goalTarget: Math.max(0, parseInt(input) || 0) })
   }
-
-  const nudge = (b: Book, delta: number) =>
-    updateBook.mutate({
-      id: b.id,
-      patch: { progress: Math.max(0, Math.min(100, b.progress + delta)) },
-    })
 
   const moveReading = (i: number, dir: -1 | 1) => {
     const j = i + dir
@@ -272,37 +269,35 @@ function HomeScreen() {
                             <span className="text-[13px] font-semibold text-ink">
                               {b.progress}%
                             </span>
-                            <div className="ml-auto flex gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => nudge(b, -5)}
-                                aria-label={`Less progress for ${b.title}`}
-                                className="skin-control skin-btn-icon grid h-11 w-11 place-items-center text-ink"
-                              >
-                                −
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => nudge(b, 5)}
-                                aria-label={`Update progress for ${b.title}`}
-                                className="skin-control skin-btn-secondary min-h-11 px-3 text-[14px] text-ink"
-                              >
-                                ＋ 5%
-                              </button>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProgressMessage('')
+                                setProgressing(b)
+                              }}
+                              aria-label={`Update progress for ${b.title}`}
+                              className="skin-control skin-btn-secondary ml-auto min-h-11 px-3 text-[14px] text-ink"
+                            >
+                              Update progress
+                            </button>
                             <button
                               type="button"
                               onClick={() => setFinishing(b)}
                               className="skin-control min-h-11 px-3 py-1 text-[13px] font-semibold"
                               style={{ background: 'var(--chip)', color: 'var(--ink)' }}
                             >
-                              Finish ✓
+                              Finish this read
                             </button>
                           </div>
                         </div>
                       </Surface>
                     ))}
                   </div>
+                  {progressMessage && (
+                    <p role="status" className="mt-3 text-[13px] font-semibold text-ink">
+                      {progressMessage}
+                    </p>
+                  )}
                 </div>
               ) : books ? (
                 <div className="mt-8">
@@ -550,6 +545,14 @@ function HomeScreen() {
       ))}
 
       {finishing && <LogReadForm book={finishing} onClose={() => setFinishing(null)} />}
+
+      {progressing && (
+        <ReadingProgressDialog
+          book={all.find((book) => book.id === progressing.id) ?? progressing}
+          onClose={() => setProgressing(null)}
+          onSaved={(progress) => setProgressMessage(`Progress saved at ${progress}%.`)}
+        />
+      )}
 
       {readingPickerOpen && (
         <LibraryPicker
