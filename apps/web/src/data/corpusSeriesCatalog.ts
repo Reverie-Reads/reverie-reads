@@ -106,6 +106,51 @@ interface EntryRow {
 export const corpusSeriesCatalogKey = ['corpus-series-catalog'] as const
 export const archivedCorpusSeriesKey = ['archived-corpus-series'] as const
 
+/** Link hygiene, not a claim of authority. Matches the order-review RPC; never fetched here. */
+export const isOrderSourceUrl = (value: string): boolean =>
+  value.length <= 2000 &&
+  [...value].every((char) => char.charCodeAt(0) > 31 && char.charCodeAt(0) !== 127) &&
+  /^https:\/\/([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}(\/[^\s?#\\]*)?$/.test(value)
+
+export function useSeriesOrderReview(seriesId: string, entryId?: string) {
+  return useQuery({
+    // Administrator rationale must never enter the offline library cache.
+    queryKey: ['catalog-metadata-review', 'series-order', seriesId, entryId],
+    enabled: !!entryId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('corpus_series_edits')
+        .select('next_value')
+        .eq('series_id', seriesId)
+        .eq('action', 'entry_update')
+        .eq('next_value->>id', entryId!)
+        .not('next_value->orderReview', 'is', null)
+        .order('created_at', { ascending: false })
+        .order('id')
+        .limit(1)
+      if (error) throw error
+      const review = data?.[0]?.next_value?.orderReview as Record<string, unknown> | undefined
+      if (
+        !review ||
+        typeof review.sourceUrl !== 'string' ||
+        !isOrderSourceUrl(review.sourceUrl) ||
+        typeof review.note !== 'string' ||
+        review.note.length > 1000 ||
+        (review.position !== null &&
+          (typeof review.position !== 'number' || !Number.isFinite(review.position)))
+      )
+        return null
+      return {
+        sourceUrl: review.sourceUrl,
+        note: review.note,
+        position: review.position as number | null,
+      }
+    },
+    retry: false,
+    gcTime: 0,
+  })
+}
+
 const relatedWork = (value: EntryRow['works']): CorpusSeriesWork | null => {
   const row = Array.isArray(value) ? value[0] : value
   return row
@@ -255,6 +300,7 @@ function useCatalogMutation<TInput>(
         queryClient.invalidateQueries({ queryKey: ['works'] }),
         queryClient.invalidateQueries({ queryKey: ['household'] }),
         queryClient.invalidateQueries({ queryKey: ['seriesList'] }),
+        queryClient.invalidateQueries({ queryKey: ['catalog-metadata-review', 'series-order'] }),
       ])
     },
   })
@@ -326,7 +372,24 @@ export function useSaveCorpusSeriesEntry() {
       author: string
       position: number | null
       label: string
+      sourceUrl?: string
+      reviewNote?: string
     }) => {
+      if (input.entryId) {
+        const { data, error } = await supabase.rpc('review_corpus_series_entry_order', {
+          p_series: input.seriesId,
+          p_expected_revision: input.revision,
+          p_entry: input.entryId,
+          p_position: input.position,
+          p_label: input.label,
+          p_source_url: input.sourceUrl?.trim() || null,
+          p_note: input.reviewNote?.trim() || null,
+          p_title: input.title,
+          p_author: input.author,
+        })
+        if (error) throw error
+        return data
+      }
       const { data, error } = await supabase.rpc('save_corpus_series_entry', {
         p_series: input.seriesId,
         p_expected_revision: input.revision,

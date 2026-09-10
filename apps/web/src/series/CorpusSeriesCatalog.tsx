@@ -10,6 +10,8 @@ import {
   useRemoveCorpusSeriesEntry,
   useRestoreCorpusSeries,
   useSaveCorpusSeriesEntry,
+  useSeriesOrderReview,
+  isOrderSourceUrl,
   useUpdateCorpusSeries,
   type CorpusSeriesCatalogRow,
   type CorpusSeriesEntry,
@@ -59,7 +61,19 @@ function CatalogSlotEditor({
   const [author, setAuthor] = useState(entry?.author ?? '')
   const [position, setPosition] = useState(entry?.position?.toString() ?? '')
   const [label, setLabel] = useState(entry?.label ?? '')
+  const [sourceUrl, setSourceUrl] = useState('')
+  const [reviewNote, setReviewNote] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
+  const history = useSeriesOrderReview(row.id, entry?.id)
   const numericPosition = position.trim() ? Number(position) : null
+  const orderChanged = !!entry && numericPosition !== entry.position
+  const needsReview = !!entry && (orderChanged || !!sourceUrl.trim() || !!reviewNote.trim())
+  const reviewValid =
+    !needsReview ||
+    (confirmed &&
+      isOrderSourceUrl(sourceUrl.trim()) &&
+      !!reviewNote.trim() &&
+      reviewNote.trim().length <= 1000)
   const positionValid =
     numericPosition == null || (Number.isFinite(numericPosition) && numericPosition > 0)
   const linked = !!entry?.workId
@@ -69,7 +83,7 @@ function CatalogSlotEditor({
       className="border border-line p-3"
       onSubmit={(event) => {
         event.preventDefault()
-        if (!positionValid || (!entry && !title.trim())) return
+        if (!positionValid || !reviewValid || (!entry && !title.trim())) return
         save.mutate(
           {
             seriesId: row.id,
@@ -79,6 +93,7 @@ function CatalogSlotEditor({
             author: author.trim(),
             position: numericPosition,
             label: label.trim(),
+            ...(needsReview ? { sourceUrl: sourceUrl.trim(), reviewNote: reviewNote.trim() } : {}),
           },
           {
             onSuccess: () => {
@@ -108,7 +123,10 @@ function CatalogSlotEditor({
               Slot title
               <input
                 value={title}
-                onChange={(event) => setTitle(event.target.value)}
+                onChange={(event) => {
+                  setTitle(event.target.value)
+                  setConfirmed(false)
+                }}
                 className="skin-input mt-1 min-h-11 w-full px-3 py-2 text-[12px]"
                 required
               />
@@ -117,7 +135,10 @@ function CatalogSlotEditor({
               Author
               <input
                 value={author}
-                onChange={(event) => setAuthor(event.target.value)}
+                onChange={(event) => {
+                  setAuthor(event.target.value)
+                  setConfirmed(false)
+                }}
                 className="skin-input mt-1 min-h-11 w-full px-3 py-2 text-[12px]"
               />
             </label>
@@ -131,7 +152,10 @@ function CatalogSlotEditor({
             step="any"
             inputMode="decimal"
             value={position}
-            onChange={(event) => setPosition(event.target.value)}
+            onChange={(event) => {
+              setPosition(event.target.value)
+              setConfirmed(false)
+            }}
             className="skin-input mt-1 min-h-11 w-full px-3 py-2 text-[12px]"
             aria-invalid={!positionValid}
           />
@@ -146,13 +170,86 @@ function CatalogSlotEditor({
           placeholder="Prequel, novella, read after #2…"
         />
       </label>
+      {entry && (
+        <fieldset className="mt-3 space-y-2 border-t border-line pt-3 text-[11px] text-ink">
+          <legend className="font-semibold">Order evidence</legend>
+          <p className="text-muted">
+            A changed or cleared position needs a source and explanation. This does not change the
+            evidence for series membership.
+          </p>
+          {history.isError ? <p role="status">Previous order review is unavailable.</p> : null}
+          {history.data ? (
+            <details>
+              <summary className="min-h-11 cursor-pointer py-2">Last cited order review</summary>
+              <p>
+                Reviewed position: {history.data.position ?? 'unknown'}. Current position:{' '}
+                {entry.position ?? 'unknown'}.
+              </p>
+              <a
+                className="underline"
+                href={history.data.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View order source
+              </a>
+              <p className="whitespace-pre-wrap break-words">{history.data.note}</p>
+            </details>
+          ) : null}
+          <label className="block">
+            Order source URL
+            <input
+              type="url"
+              value={sourceUrl}
+              maxLength={2000}
+              onChange={(event) => {
+                setSourceUrl(event.target.value)
+                setConfirmed(false)
+              }}
+              className="skin-input mt-1 min-h-11 w-full px-3 py-2"
+            />
+          </label>
+          <p className="text-muted">
+            Use an HTTPS page link without query parameters or a fragment. We do not fetch this
+            page.
+          </p>
+          <label className="block">
+            Order review explanation
+            <textarea
+              value={reviewNote}
+              maxLength={1000}
+              onChange={(event) => {
+                setReviewNote(event.target.value)
+                setConfirmed(false)
+              }}
+              className="skin-input mt-1 min-h-20 w-full px-3 py-2"
+            />
+          </label>
+          <label className="flex min-h-11 items-center gap-2">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(event) => setConfirmed(event.target.checked)}
+            />
+            I checked this exact book and the proposed order against the source.
+          </label>
+          <p className="text-muted">
+            The explanation is visible only to catalog administrators. A saved link is not automatic
+            verification.
+          </p>
+        </fieldset>
+      )}
       {!positionValid ? (
         <p className="mt-1 text-[11px]" style={{ color: 'var(--danger)' }}>
           Position must be greater than zero.
         </p>
       ) : null}
       <div className="mt-2 flex flex-wrap gap-2">
-        <Button type="submit" variant="secondary" disabled={save.isPending || !positionValid}>
+        <Button
+          type="submit"
+          variant="secondary"
+          disabled={save.isPending || !positionValid || !reviewValid}
+        >
           {save.isPending ? 'Saving…' : entry ? 'Save slot' : 'Add known slot'}
         </Button>
         {entry ? (

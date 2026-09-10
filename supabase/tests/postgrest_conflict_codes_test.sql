@@ -21,8 +21,8 @@ select is(
     join pg_namespace namespace on namespace.oid = function.pronamespace
     where namespace.nspname = 'public' and function.prosrc like '%PT409%'
   ),
-  23,
-  'all twenty-three conflict-bearing functions return a bounded HTTP conflict'
+  24,
+  'all twenty-four conflict-bearing functions return a bounded HTTP conflict'
 );
 
 select is(
@@ -32,8 +32,9 @@ select is(
     join pg_namespace namespace on namespace.oid = function.pronamespace
     where namespace.nspname = 'public'
   ),
-  29,
-  'all twenty-nine remaining stale-context paths use the non-retryable conflict code'
+  -- Order review adds a stale series revision and a changed entry-binding refusal.
+  31,
+  'all thirty-one remaining stale-context paths use the non-retryable conflict code'
 );
 
 select * from finish();
