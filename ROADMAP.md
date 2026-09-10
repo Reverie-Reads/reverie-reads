@@ -1,6 +1,6 @@
 # Reverie Reads roadmap
 
-Current product priorities updated 2026-09-09. This file is the ordered project status. Historical briefs remain in
+Current product priorities updated 2026-09-10. This file is the ordered project status. Historical briefs remain in
 `docs/archive/`; detailed proposals that are not yet active remain in `docs/backlog/`; only work
 actually in flight belongs in `docs/tasks/`.
 
@@ -38,6 +38,30 @@ The owner approved this sequence on 2026-09-09 while reader recruitment is unava
    the Add review boundary, and adds no migration or provider change. The current implementation
    and verification contract live in
    [task-calendar-cluster-scope.md](docs/tasks/task-calendar-cluster-scope.md).
+
+## Current program: Free Pro beta before billing
+
+The owner chose an evidence-first Pro beta on 2026-09-10. A bounded cohort receives Pro access
+without payment, a card, a trial subscription, or automatic conversion. Reverie will complete and
+test candidate Pro experiences, observe which ones readers understand, use, and return to, then
+reduce the offer before any billing implementation.
+
+Beta access is a service-managed entitlement distinct from both a paid subscription and the
+corpus-administrator override. It must be enforced by the same server-authoritative premium
+boundary, remain owner-scoped, and be revocable without deleting premium-authored data. Invitations
+must explain the access period and what happens afterward before a reader joins.
+
+The candidate beta portfolio is deliberately representative rather than exhaustive:
+
+- the already shipped Connected Universes and Edition Lens test collection depth;
+- a bounded room-authorship workshop tests whether atmosphere is paid value;
+- deeper taste, Discover, and mood-aware planning test decision value;
+- a private, reader-controlled annual keepsake tests reflective value.
+
+Expensive recurring infrastructure—continuous corpus freshness, unattended sync, store packaging,
+and broader club automation—does not belong in the first beta merely to make the feature list
+longer. The protocol, privacy boundary, reduction rule, and implementation gates are recorded in
+[pro-beta-program.md](docs/tasks/pro-beta-program.md).
 
 ## Completed product program: Reflect and Plan
 
@@ -127,15 +151,18 @@ the shared nine-room renderer, Discover details, and permanent personal-series r
 production release is in progress. Those implementations replace the earlier mockup-stage plans;
 do not schedule them again because a historical brief still says proposed.
 
-The September 5 order below superseded the older P2/P3 ordering; the active Reflect/Plan
-program above now takes precedence. Discover’s guided experience subsequently merged in #444.
-Safety regressions still take precedence. Keep one product implementation and one small reader experiment active at a time.
+The free Pro beta program now supersedes the September 5 ordering. Discover’s guided experience
+subsequently merged in #444. Safety regressions still take precedence. Keep one product
+implementation and one small reader experiment active at a time.
 
-| Order | Priority | Next outcome                                                  | Completion gate                                                                                                                                                                                                                                                                                                                                                               |
-| ----: | :------: | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|     1 |    P1    | Validate the complete first-use and return loop with readers  | Run the five-session [reader validation protocol](docs/tasks/reader-validation.md), then expand only if its process gate passes. Separate assisted actions from independent outcomes and return from prompted check-ins. Import/reimport, possession, retained history, and Back navigation issues outrank cosmetic expansion. No invitations are sent without authorization. |
-|     2 |    P2    | Finish bounded reliability and interface residue              | Replace platform-risk text glyphs with controlled SVG, preserve the fixed-window spine interaction, and finish narrow release-safety items without reopening completed product redesigns.                                                                                                                                                                                     |
-|     3 |    P2    | Build only evidence-backed reader improvements and paid depth | Use reader findings; retain Free's core library, nine rooms, accessibility, export, and correction. Verify paid purchase, entitlement, and cancellation before selling a new promise. Expand only within the profitable-side-business operating envelope.                                                                                                                     |
+| Order | Priority | Next outcome                                      | Completion gate                                                                                                                                                                                                                                                                                                         |
+| ----: | :------: | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|     1 |    P1    | Complete the Calendar 2.0 experience              | Revalidate and resolve the route, density, mobile, year-rhythm, and heatmap decisions in [task-calendar-cluster-scope.md](docs/tasks/task-calendar-cluster-scope.md). Preserve the shared history and flexible-date model.                                                                                              |
+|     2 |    P1    | Establish safe, free beta access                  | Add a service-managed beta entitlement in the private overlay. Do not create fake subscription rows, collect payment details, or auto-convert the cohort. Pro writes remain server-authorized and fail closed.                                                                                                          |
+|     3 |    P1    | Complete the bounded Pro beta portfolio           | Test one coherent slice of collection, atmosphere, decision, and reflection value. Free retains its core library, nine rooms, Match, basic Discover, accessibility, correction, import, and full-fidelity exit.                                                                                                         |
+|     4 |    P1    | Run the cohort and the five-session reader study  | Combine the content-free [reader validation protocol](docs/tasks/reader-validation.md) with feature-level completion, return, abandonment, and interview evidence. Separate assisted outcomes from independent use.                                                                                                     |
+|     5 |    P1    | Reduce Reverie around demonstrated reader value   | Keep, simplify, combine, hide, or remove candidate Pro surfaces from observed use and comprehension. Removing a surface never silently deletes reader-authored data; retain export and an honest read-only path where needed.                                                                                           |
+|     6 |    P2    | Design and implement billing after beta decisions | Select the provider, price, renewal terms, cancellation, refund, entitlement-event model, and support path only after the retained Pro offer is explicit. Verify purchase, renewal, cancellation, lapse, and recovery before inviting paid readers. Expand only within the profitable-side-business operating envelope. |
 
 The separate series-source trial continues within its evidence and rights gates. Its results may
 support catalog quality but are not automatic permission to write production classifications.
