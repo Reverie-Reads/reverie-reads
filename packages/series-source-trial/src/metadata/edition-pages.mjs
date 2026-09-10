@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { validateBenchmark } from './benchmark.mjs'
-import { canonicalIsbn, exactIdentity, validateInput } from './supplement.mjs'
+import { canonicalIsbn, exactIdentity, identityReviewReason, validateInput } from './supplement.mjs'
+import { createEditionDiagnostics, countEditionDiagnostics } from './edition-page-diagnostics.mjs'
 
 export const validPages = (v) => Number.isInteger(v) && v > 0 && v <= 20000
 export const validVolumeId = (v) => typeof v === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(v)
@@ -30,7 +31,8 @@ export function admitGoogleVolume(volume, identity) {
       purpose: 'development',
       cases: [{ identity, current: {}, baseline: [record] }],
     })
-    if (!exactIdentity(record, identity)) return review('identity_mismatch')
+    const reason = identityReviewReason(record, identity)
+    if (reason) return review(reason)
     if (b.language != null && (typeof b.language !== 'string' || !/^[a-z]{2}$/.test(b.language)))
       return review('malformed_language')
     if (identity.language && b.language && identity.language !== b.language)
@@ -170,6 +172,12 @@ export function buildEditionPagePacket({ identity, current }, acquired) {
     observations: ['edition_conflict', 'not_applicable'].includes(state) ? [] : observations,
     current: { value: current.pages ?? null, protected: current.pages != null },
     candidateValue: eligible && current.pages == null ? values[0] : null,
+    // Provider/current format evidence only; never take format from benchmark reference truth.
+    formatEvidence: blocked
+      ? 'unavailable'
+      : formats.length > 1
+        ? 'conflicting'
+        : (formats[0] ?? 'unknown'),
     independentLineageEstablished: false,
   }
   Object.defineProperty(packet, 'toJSON', {
@@ -209,13 +217,14 @@ const bump = (t, key) => {
 export async function runEditionPages(input, { client } = {}) {
   validateEditionPages(input)
   const report = {
-    version: 1,
+    version: 2,
     experiment: 'edition_pages',
     mode: client ? 'live' : 'dry_run',
     cases: input.cases.length,
     frameSha256: createHash('sha256').update(JSON.stringify(input)).digest('hex'),
     outcomes: { google: {}, openlibrary: {} },
     states: {},
+    diagnostics: createEditionDiagnostics(),
     protectedCurrent: 0,
     observations: { google: tally(), openlibrary: tally() },
     candidates: tally(),
@@ -232,6 +241,7 @@ export async function runEditionPages(input, { client } = {}) {
     // Reference facts and current values never enter provider selection or requests.
     const acquired = await client.acquire(structuredClone(c.identity))
     const packet = buildEditionPagePacket({ identity: c.identity, current: c.current }, acquired)
+    countEditionDiagnostics(report.diagnostics, acquired, packet)
     for (const p of providers)
       bump(
         report.outcomes[p],

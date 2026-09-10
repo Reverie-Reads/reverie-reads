@@ -103,27 +103,29 @@ export function createEditionPageClient({
   }
 
   async function google(identity) {
+    const finish = (stage, result) => ({ ...result, stage })
     if (typeof googleKey !== 'string' || !googleKey.trim()) {
       googleStats.stopped = 'missing_key'
-      return { status: 'missing_key' }
+      return finish('preflight', { status: 'missing_key' })
     }
     const search = await request('', {
       q: `isbn:${canonicalIsbn(identity.isbn)}`,
       maxResults: '10',
       projection: 'full',
     })
-    if (search.status !== 'ok') return search
+    if (search.status !== 'ok') return finish('search', search)
     const selected = selectGoogleEdition(search.body, identity)
-    if (selected.status !== 'matched') return selected
+    if (selected.status !== 'matched') return finish('search', selected)
     const detail = await request(`/${selected.volumeId}`, { projection: 'full' })
-    if (detail.status !== 'ok') return detail
+    if (detail.status !== 'ok') return finish('detail', detail)
     const admitted = admitGoogleVolume(detail.body, identity)
-    if (admitted.status !== 'matched') return admitted
+    if (admitted.status !== 'matched') return finish('detail', admitted)
     if (admitted.volumeId !== selected.volumeId || admitted.language !== selected.language)
-      return { status: 'identity_review', reason: 'detail_identity_changed' }
+      return finish('detail', { status: 'identity_review', reason: 'detail_identity_changed' })
     // Only detail pages are emitted. Search pages/printedPageCount cannot be a fallback or second vote.
     return {
       status: 'matched',
+      stage: 'detail',
       record: admitted.record,
       endpoint: 'volume_detail',
       sourceId: admitted.volumeId,
