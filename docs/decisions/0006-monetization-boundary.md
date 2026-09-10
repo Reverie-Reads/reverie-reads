@@ -1,6 +1,6 @@
 # Decision: Monetization Boundary, Premium Tiers, and the Bookstore Product
 
-Status: decided in session, 2026-08-03. Licensing context: app going AGPL-3.0,
+Status: decided in session, 2026-08-03; beta sequence amended 2026-09-10. Licensing context: app going AGPL-3.0,
 corpus CC0, paid features in a private module. This document records what is
 free, what is paid, where the repo boundary sits, and what the bookstore
 product may and may not be built from.
@@ -59,17 +59,48 @@ Ranked by effort-to-revenue as currently understood.
    fully usable in the free app. The implementation contract is recorded in
    `docs/decisions/0007-series-universes.md`.
 
+## Free Pro beta before payment
+
+Reverie will validate the reader-tier portfolio with a bounded, no-payment cohort before it builds
+billing. Beta readers receive service-managed Pro access without entering payment details. Beta is
+not a free trial of a subscription: there is no checkout, recurring agreement, automatic charge, or
+automatic conversion.
+
+The beta exists to reduce the product. It should test representative forms of paid depth—collection,
+atmosphere authorship, reading decisions, and private reflection—then keep or simplify only the
+experiences readers understand, complete, and return to. Expensive recurring infrastructure does not
+ship merely to make every item in the premium list testable.
+
+Beta entitlement is a third positive proof at the private server boundary:
+
+`has_reader_pro = active_reader_subscription OR active_beta_grant OR is_corpus_admin()`
+
+Do not represent a beta reader by inserting a synthetic paid subscription. The grant is
+service-managed, owner-scoped, auditable, revocable, and separate from corpus administration. A
+grant ending never deletes a reader's books or premium-authored data. Before enrollment, the cohort
+must receive a plain statement of how long access lasts and whether any retained beta benefit
+continues after billing launches.
+
+Beta measurement stays content-free. It may record that a feature was opened, completed, abandoned,
+or revisited, plus performance and error state. It must not record book identity, title, author,
+notes, ratings, moods, taste contents, reading history, universe membership, or generated keepsake
+contents. Interviews and optional feedback carry the meaning that event counts cannot.
+
+Billing starts only after the retained offer, pricing hypothesis, provider rights, support path,
+cancellation behavior, and premium-data lapse behavior are reviewed together. The Free boundary in
+this decision remains unchanged throughout the beta.
+
 ## Corpus-administrator entitlement
 
 Every service-managed corpus administrator receives the reader-tier premium
 entitlement while the administrator grant is active. This is a product-testing
 and corpus-maintenance override, not a subscription row and not a billing
 mutation. Revoking corpus administration revokes the override unless the reader
-also has an active paid entitlement.
+also has an active paid entitlement or beta grant.
 
 The effective server-side rule is therefore:
 
-`has_reader_pro = active_reader_subscription OR is_corpus_admin()`
+`has_reader_pro = active_reader_subscription OR active_beta_grant OR is_corpus_admin()`
 
 Premium writes must enforce that rule at the server boundary and fail closed if
 entitlement state cannot be established. Hiding a control in the client is not
@@ -77,12 +108,12 @@ authorization. The client may use the same effective value to decide which
 private-module surfaces to load, but it must not maintain an independent second
 definition of who is Pro.
 
-The rule is evaluated as two positive proofs, not as “subscription lookup must
-finish before administrator access works.” A confirmed administrator grant is
-enough even if the billing provider is unavailable; a confirmed active
-subscription is enough without an administrator grant. If neither is confirmed
-true and either source is unavailable, the answer is unavailable and premium
-writes fail closed. Two confirmed false results mean not entitled.
+The rule is evaluated as independent positive proofs. A confirmed administrator
+grant or beta grant is enough even if the billing provider is unavailable; a
+confirmed active subscription is enough without either service-managed grant.
+If no source confirms access and any required source is unavailable, the answer
+is unavailable and premium writes fail closed. Confirmed false results across
+all three sources mean not entitled.
 
 ## Repo boundary
 
