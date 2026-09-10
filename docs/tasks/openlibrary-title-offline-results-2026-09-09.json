@@ -1,0 +1,297 @@
+{
+  "version": 1,
+  "experiment": "synthetic_openlibrary_title_policy",
+  "runtimeCommit": "1e3a7adb93c7bce4051b144dfef755c7ef040539",
+  "probeSha256": "194ef0fcfff527cb0d437e39e71aee3660312cd12f23a2372196bb1cbd7e7b70",
+  "scenarioCount": 34,
+  "assertedExecutions": 102,
+  "externalRequests": 0,
+  "modelCalls": 0,
+  "productionWrites": 0,
+  "automaticFills": 0,
+  "totals": {
+    "current": {
+      "scenarios": 34,
+      "candidates": 4,
+      "states": {
+        "cross_provider_agreement": 4,
+        "identity_review": 28,
+        "unavailable": 2
+      },
+      "reasons": {
+        "none": 4,
+        "title_mismatch": 19,
+        "malformed_subtitle": 2,
+        "missing_contributors": 1,
+        "isbn_mismatch": 1,
+        "invalid_isbn": 1,
+        "malformed_language": 1,
+        "unknown_binding": 1,
+        "author_lookup_unavailable": 2,
+        "author_record_mismatch": 1,
+        "malformed_record": 1
+      },
+      "mockedRequests": 135
+    },
+    "exact_repeat": {
+      "scenarios": 34,
+      "candidates": 8,
+      "states": {
+        "cross_provider_agreement": 9,
+        "identity_review": 20,
+        "unavailable": 2,
+        "not_applicable": 1,
+        "conflict": 2
+      },
+      "reasons": {
+        "none": 12,
+        "title_mismatch": 8,
+        "malformed_subtitle": 2,
+        "contributors_mismatch": 2,
+        "missing_contributors": 1,
+        "isbn_mismatch": 1,
+        "invalid_isbn": 1,
+        "malformed_language": 1,
+        "language_mismatch": 1,
+        "unknown_binding": 1,
+        "author_lookup_unavailable": 2,
+        "author_record_mismatch": 1,
+        "malformed_record": 1
+      },
+      "mockedRequests": 135
+    },
+    "strip_qualifiers": {
+      "scenarios": 34,
+      "candidates": 15,
+      "states": {
+        "cross_provider_agreement": 16,
+        "identity_review": 13,
+        "unavailable": 2,
+        "not_applicable": 1,
+        "conflict": 2
+      },
+      "reasons": {
+        "none": 19,
+        "title_mismatch": 1,
+        "malformed_subtitle": 2,
+        "contributors_mismatch": 2,
+        "missing_contributors": 1,
+        "isbn_mismatch": 1,
+        "invalid_isbn": 1,
+        "malformed_language": 1,
+        "language_mismatch": 1,
+        "unknown_binding": 1,
+        "author_lookup_unavailable": 2,
+        "author_record_mismatch": 1,
+        "malformed_record": 1
+      },
+      "mockedRequests": 135
+    }
+  },
+  "matrix": [
+    {
+      "scenario": "split_title",
+      "current": "matched / none / cross_provider_agreement / candidate",
+      "exact_repeat": "matched / none / cross_provider_agreement / candidate",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "full_title",
+      "current": "matched / none / cross_provider_agreement / candidate",
+      "exact_repeat": "matched / none / cross_provider_agreement / candidate",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "accent_case_punctuation",
+      "current": "matched / none / cross_provider_agreement / candidate",
+      "exact_repeat": "matched / none / cross_provider_agreement / candidate",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "blank_subtitle",
+      "current": "matched / none / cross_provider_agreement / candidate",
+      "exact_repeat": "matched / none / cross_provider_agreement / candidate",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "exact_repeat",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "matched / none / cross_provider_agreement / candidate",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "normalized_repeat",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "matched / none / cross_provider_agreement / candidate",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "missing_subtitle",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / title_mismatch / identity_review / withheld",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "changed_subtitle",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / title_mismatch / identity_review / withheld",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "abridged_qualifier",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / title_mismatch / identity_review / withheld",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "adaptation_qualifier",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / title_mismatch / identity_review / withheld",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "volume_qualifier",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / title_mismatch / identity_review / withheld",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "partial_repetition",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / title_mismatch / identity_review / withheld",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "different_base_title",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / title_mismatch / identity_review / withheld",
+      "strip_qualifiers": "identity_review / title_mismatch / identity_review / withheld"
+    },
+    {
+      "scenario": "numeric_subtitle",
+      "current": "identity_review / malformed_subtitle / identity_review / withheld",
+      "exact_repeat": "identity_review / malformed_subtitle / identity_review / withheld",
+      "strip_qualifiers": "identity_review / malformed_subtitle / identity_review / withheld"
+    },
+    {
+      "scenario": "object_subtitle",
+      "current": "identity_review / malformed_subtitle / identity_review / withheld",
+      "exact_repeat": "identity_review / malformed_subtitle / identity_review / withheld",
+      "strip_qualifiers": "identity_review / malformed_subtitle / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_wrong_author",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / contributors_mismatch / identity_review / withheld",
+      "strip_qualifiers": "identity_review / contributors_mismatch / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_extra_author",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / contributors_mismatch / identity_review / withheld",
+      "strip_qualifiers": "identity_review / contributors_mismatch / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_missing_authors",
+      "current": "identity_review / missing_contributors / identity_review / withheld",
+      "exact_repeat": "identity_review / missing_contributors / identity_review / withheld",
+      "strip_qualifiers": "identity_review / missing_contributors / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_mixed_isbn",
+      "current": "identity_review / isbn_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / isbn_mismatch / identity_review / withheld",
+      "strip_qualifiers": "identity_review / isbn_mismatch / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_invalid_isbn",
+      "current": "identity_review / invalid_isbn / identity_review / withheld",
+      "exact_repeat": "identity_review / invalid_isbn / identity_review / withheld",
+      "strip_qualifiers": "identity_review / invalid_isbn / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_malformed_language",
+      "current": "identity_review / malformed_language / identity_review / withheld",
+      "exact_repeat": "identity_review / malformed_language / identity_review / withheld",
+      "strip_qualifiers": "identity_review / malformed_language / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_french_language",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / language_mismatch / identity_review / withheld",
+      "strip_qualifiers": "identity_review / language_mismatch / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_unknown_binding",
+      "current": "edition_review / unknown_binding / identity_review / withheld",
+      "exact_repeat": "edition_review / unknown_binding / identity_review / withheld",
+      "strip_qualifiers": "edition_review / unknown_binding / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_author_503",
+      "current": "incomplete_authors / author_lookup_unavailable / unavailable / withheld",
+      "exact_repeat": "incomplete_authors / author_lookup_unavailable / unavailable / withheld",
+      "strip_qualifiers": "incomplete_authors / author_lookup_unavailable / unavailable / withheld"
+    },
+    {
+      "scenario": "repeat_author_404",
+      "current": "incomplete_authors / author_lookup_unavailable / unavailable / withheld",
+      "exact_repeat": "incomplete_authors / author_lookup_unavailable / unavailable / withheld",
+      "strip_qualifiers": "incomplete_authors / author_lookup_unavailable / unavailable / withheld"
+    },
+    {
+      "scenario": "repeat_wrong_author_key",
+      "current": "identity_review / author_record_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / author_record_mismatch / identity_review / withheld",
+      "strip_qualifiers": "identity_review / author_record_mismatch / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_audio",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "matched / none / not_applicable / withheld",
+      "strip_qualifiers": "matched / none / not_applicable / withheld"
+    },
+    {
+      "scenario": "repeat_page_conflict",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "matched / none / conflict / withheld",
+      "strip_qualifiers": "matched / none / conflict / withheld"
+    },
+    {
+      "scenario": "repeat_protected_current",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "matched / none / cross_provider_agreement / withheld",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / withheld"
+    },
+    {
+      "scenario": "repeat_current_conflict",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "matched / none / conflict / withheld",
+      "strip_qualifiers": "matched / none / conflict / withheld"
+    },
+    {
+      "scenario": "repeat_missing_language",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "matched / none / cross_provider_agreement / candidate",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "repeat_same_origin_redirect",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "matched / none / cross_provider_agreement / candidate",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    },
+    {
+      "scenario": "repeat_oversize_assembled_title",
+      "current": "identity_review / malformed_record / identity_review / withheld",
+      "exact_repeat": "identity_review / malformed_record / identity_review / withheld",
+      "strip_qualifiers": "identity_review / malformed_record / identity_review / withheld"
+    },
+    {
+      "scenario": "repeat_duplicate_whole_title",
+      "current": "identity_review / title_mismatch / identity_review / withheld",
+      "exact_repeat": "identity_review / title_mismatch / identity_review / withheld",
+      "strip_qualifiers": "matched / none / cross_provider_agreement / candidate"
+    }
+  ]
+}
