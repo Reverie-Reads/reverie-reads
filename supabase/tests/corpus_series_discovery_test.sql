@@ -1,5 +1,5 @@
 begin;
-select plan(41);
+select plan(50);
 
 insert into auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -301,6 +301,56 @@ select throws_ok(
   )$$,
   'P0001', null, 'a reviewed suggestion cannot be replayed');
 reset role;
+
+-- The real classifier's outage shape: a positive identity but NO confirmed series name.
+-- Keep this packet aligned with seriesClassification.test.ts, not a manufactured proposed label.
+set local role authenticated;
+select is(
+  public.record_corpus_series_discovery(
+    'b2000000-0000-4000-8000-000000000006',
+    '{"outcome":"unresolved","matched":true,"series":null,"position":null,"count":null,"identityConfidence":"high","membershipConfidence":"low","source":"hardcover","sourceRef":"hc-book-2","reason":"The relational series source was unavailable; the search label was not accepted by itself.","evidence":[{"source":"hardcover","kind":"candidate_label","sourceRef":"hc-book-2","series":"The Sequence","position":99,"memberCount":null,"orderType":"unspecified"},{"source":"hardcover","kind":"provider_unavailable","sourceRef":"hc-series-7","series":"The Sequence","position":null,"memberCount":null,"orderType":"unspecified"}]}'::jsonb,
+    '2026-09-11T02:00:00Z'
+  ) ->> 'outcome',
+  'unresolved', 'a matched identity with an unavailable relationship is not a no-series observation');
+reset role;
+select ok(
+  (select series_check_state = 'unresolved' and series_checked_at = '2026-09-11T02:00:00Z'
+     and series = 'Same Saga' and position = 4
+     and series_check_evidence @> '[{"kind":"provider_unavailable","source":"hardcover"}]'
+     and series_check_reason like '%source was unavailable%'
+   from public.works where id = 'b2000000-0000-4000-8000-000000000006'),
+  'outage records retryable state, time and evidence without replacing the existing tuple');
+select is(
+  (select count(*)::int from public.work_series_suggestions
+   where work_id = 'b2000000-0000-4000-8000-000000000006' and status = 'pending'),
+  1, 'an outage cannot supersede a pending administrator review');
+set local role authenticated;
+select is(
+  public.record_corpus_series_discovery('b2000000-0000-4000-8000-000000000001',
+    '{"matched":true,"identityConfidence":"medium","membershipConfidence":"low","series":null,"evidence":[{"source":"hardcover","kind":"candidate_label","series":"The Sequence"}]}'::jsonb
+  ) ->> 'outcome', 'unresolved', 'legacy missing-membership packets remain unresolved without outcome');
+select is(
+  public.record_corpus_series_discovery('b2000000-0000-4000-8000-000000000001',
+    '{"outcome":"no_series","matched":true,"identityConfidence":"high","series":null,"evidence":[{"source":"hardcover","kind":"provider_unavailable"}]}'::jsonb
+  ) ->> 'outcome', 'unresolved', 'an explicit no-series label cannot override outage evidence');
+select is(
+  public.record_corpus_series_discovery('b2000000-0000-4000-8000-000000000001',
+    '{"outcome":"unresolved","matched":true,"identityConfidence":"high","series":null,"evidence":[]}'::jsonb
+  ) ->> 'outcome', 'unresolved', 'explicit unresolved remains unresolved even without evidence');
+select is(
+  public.record_corpus_series_discovery('b2000000-0000-4000-8000-000000000002',
+    '{"outcome":"no_series","matched":true,"identityConfidence":"high","membershipConfidence":"none","series":null,"evidence":[]}'::jsonb
+  ) ->> 'outcome', 'no_series', 'the actual successful no-label classifier packet still works');
+reset role;
+select ok(
+  (select series is null and status is null and series_check_state = 'no_series'
+   from public.works where id = 'b2000000-0000-4000-8000-000000000002'),
+  'no-label observation still does not assert standalone');
+select ok(
+  (select series = 'My Reading Order' and position = 7 and series_user_chosen
+     and series_claim ->> 'origin' = 'reader'
+   from public.books where id = 'b3000000-0000-4000-8000-000000000002'),
+  'classification keeps reader-chosen membership and order intact');
 
 select * from finish();
 rollback;
