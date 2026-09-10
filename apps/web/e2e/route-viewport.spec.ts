@@ -320,6 +320,7 @@ test('every route lays out at the viewport — no page-level horizontal overflow
     ['/shelves', 'shelves overview'],
     [`/shelf/${fx.listId}`, 'shelf detail (36-book fixture — the proven-harmful route)'],
     ['/planner', 'planner'],
+    ['/planner?tab=calendar', 'planner calendar'],
     ['/stats', 'stats'],
     ['/match', 'match'],
     ['/discover', 'discover'],

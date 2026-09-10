@@ -162,7 +162,7 @@ function Releases({ books, openBook }: { books: Book[]; openBook: (id: string) =
 
 const tabDetails: Record<Tab, { label: string; note: string }> = {
   queue: { label: 'Plan', note: 'Choose what is near' },
-  calendar: { label: 'Calendar', note: 'See the month' },
+  calendar: { label: 'Calendar', note: 'See the year and month' },
   releases: { label: 'Releases', note: 'Watch what is coming' },
 }
 
@@ -184,7 +184,7 @@ function PlannerScreen() {
       <PageHeader
         eyebrow="Your reading life, ahead"
         title="Keep your reading life close."
-        description="Make a loose plan, see the month as it happened, or watch for books coming into view."
+        description="Make a loose plan, see the year and month as they happened, or watch for books coming into view."
         showDescriptionOnMobile
       />
 

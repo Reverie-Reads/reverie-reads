@@ -376,6 +376,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   not hydrate logs. Current DNF is not a dated attempt, a Read flag is not a synthetic session,
   and missing finish dates stay outside a selected year. Formats come from read logs, genre
   buckets deduplicate within each read, and return counts preserve earlier-period context.
+  Calendar's private year rhythm uses the same summary buckets: monthly finish density and
+  month-specific plans remain separate. A year-only finish belongs in the annual total but never an
+  invented month. Keep the 365-cell streak heatmap deferred; exact-day detail belongs in the month
+  grid.
   See `docs/tasks/reading-life-implementation.md` for the precision and legacy-data boundaries.
 - **Personal reading progress is one deliberate whole percent.** `books.progress` remains the
   format-neutral current-place summary. Home, book details, Planner, and the landing guest library

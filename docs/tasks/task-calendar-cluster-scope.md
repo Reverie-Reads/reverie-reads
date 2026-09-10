@@ -1,7 +1,8 @@
 # Calendar and Releases redesign
 
-Status: **implemented for public review** on `codex/calendar-releases-redesign`, revalidated against
-`main` after Cover Studio merged in PR #500 on September 9, 2026.
+Status: the Calendar/Releases foundation merged in public PR #501. The Calendar 2.0 annual-rhythm
+follow-up is **implemented for public review** on `codex/calendar-year-rhythm`, based on `main` after
+the free Pro beta program merged in PR #525 on September 10, 2026.
 
 ## Diagnosis
 
@@ -43,6 +44,25 @@ return to today; the visible month summarizes planned and finished records witho
 into the other. Day geometry is capped independently from room radius, so a rounded room cannot turn
 the month into oversized circles. All color and material remain token-driven.
 
+### Calendar 2.0 as a year and a month
+
+Calendar now opens at two useful scales without turning reading into a streak:
+
+- a private twelve-month rhythm shows recorded finishes with a relative density line and shows
+  month-specific plans as a separate mark;
+- each month is a real control that opens that month in the exact-day almanac beside it on desktop
+  and below it on smaller screens;
+- previous/next year controls retain the selected month, while the month sheet still offers a
+  direct return to today;
+- a finish known only to a year contributes to the honest annual total but is never placed into an
+  invented month.
+
+The deferred 365-cell heatmap is deliberately not reinstated. At phone width it would either become
+an unreadable field of marks or require horizontal browsing, and a day-level intensity grid would
+make an intimate reading history resemble a performance streak. The twelve-month rhythm answers the
+year question with accessible controls, preserves uncertain dates, and keeps exact-day detail in the
+existing month grid.
+
 ### Releases as an arrivals horizon
 
 Releases now focuses on what is coming or newly arrived:
@@ -62,6 +82,8 @@ in Add first. Release results never create a reading plan.
 ## Data boundaries
 
 - `buildReadingHistory` / `useReadingHistory` remain the sole source for finished calendar records.
+- `summarizeReadingHistory` supplies the same year/month buckets used by Reflect; Calendar does not
+  create a second counting model.
 - The five reading-plan fields continue to move together. Removing or moving a plan does not touch
   history.
 - Publication and plan dates preserve their stored precision. A current year/month interval is
