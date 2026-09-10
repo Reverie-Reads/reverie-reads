@@ -46,7 +46,9 @@ counters onto the completed run.
 - 397 trial tests passed, including six new diagnostic tests and the existing request/retention guards.
 - Synthetic parity against merged base `5942e4d`: 2,116 packet combinations and 60 Google admission cases; no decision differences. Only diagnostic reason labels/format annotations differ.
 - Workspace unit tests passed: 2,704 core, 905 web and one compiler-backed Workflow integration test.
-- Full browser verification and remaining gate results will be recorded before handoff.
+- Typecheck, lint, build and formatting passed. The build's local-URL warning is expected from committed development configuration; this build was not deployed.
+- One full fresh-database browser run: 267 passed, 10 configured skips, zero failures, 27.7 minutes; default one worker, retries zero. Reset and seed completed under the same lock. The runtime was unchanged throughout the run.
+- All six GitHub checks passed at `d0ce8e1e7f53f79f6733f10a9741406a452b86c3` before this documentation-only result update. Check [PR #511](https://github.com/Reverie-Reads/reverie-reads/pull/511) for the latest head's CI state.
 
 The other active chat confirmed non-overlapping app/core work and released the shared local
 database before this branch's required fresh-database browser run. The test span uses the existing
