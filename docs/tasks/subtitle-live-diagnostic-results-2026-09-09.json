@@ -1,0 +1,104 @@
+{
+  "registrationCommit": "c1bc00308408b2ca7950d359f8b6b69ba7366329",
+  "runtimeCommit": "abfe1b4ef8bef3291a69c8f3f586b621f3f49b1b",
+  "startedAt": "2026-09-10T02:23:35.175Z",
+  "finishedAt": "2026-09-10T02:23:55.626Z",
+  "singleUse": true,
+  "report": {
+    "version": 3,
+    "experiment": "edition_pages",
+    "mode": "live",
+    "cases": 6,
+    "frameSha256": "e0ab1c66d1cf10dcf0485cfd9a2877ec5b4e5d29cc0a8fe4f85933179d2b5bea",
+    "outcomes": {
+      "google": {
+        "matched": 6
+      },
+      "openlibrary": {
+        "not_found": 2,
+        "identity_review": 2,
+        "matched": 2
+      }
+    },
+    "states": {
+      "candidate": 3,
+      "identity_review": 2,
+      "cross_provider_agreement": 1
+    },
+    "diagnostics": {
+      "version": 2,
+      "providerReasons": {
+        "google": {
+          "none": 6
+        },
+        "openlibrary": {
+          "none": 4,
+          "title_mismatch": 2
+        }
+      },
+      "googleTerminalStage": {
+        "detail": 6
+      },
+      "googleTitleMismatch": {},
+      "packetFormat": {
+        "unknown": 3,
+        "unavailable": 2,
+        "paperback": 1
+      },
+      "candidateSource": {
+        "google": 3,
+        "both": 1
+      },
+      "candidateFormat": {
+        "unknown": 3,
+        "paperback": 1
+      }
+    },
+    "protectedCurrent": 0,
+    "observations": {
+      "google": {
+        "available": 4,
+        "agrees": 4,
+        "differs": 0,
+        "unscored": 0
+      },
+      "openlibrary": {
+        "available": 1,
+        "agrees": 1,
+        "differs": 0,
+        "unscored": 0
+      }
+    },
+    "candidates": {
+      "available": 4,
+      "agrees": 4,
+      "differs": 0,
+      "unscored": 0
+    },
+    "automaticFills": 0,
+    "productionWrites": 0,
+    "modelCalls": 0,
+    "retention": "aggregate_only",
+    "acquisitionWallMs": 20444,
+    "transport": {
+      "google": {
+        "requests": 12,
+        "stopped": null,
+        "elapsedMs": 3382,
+        "statuses": {
+          "ok": 12
+        }
+      },
+      "openlibrary": {
+        "requests": 14,
+        "stopped": null,
+        "elapsedMs": 6238,
+        "statuses": {
+          "not_found": 2,
+          "edition_redirect": 4,
+          "ok": 8
+        }
+      }
+    }
+  }
+}
