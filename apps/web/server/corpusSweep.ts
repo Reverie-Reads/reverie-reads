@@ -18,6 +18,7 @@ import {
   type CorpusMetadataPatch,
 } from '../src/lib/corpusSweepPolicy'
 import type { EnrichResult } from '../src/lib/enrich'
+import { hardcoverSeriesLookupTarget } from '../src/lib/seriesLookup'
 
 const PAGE_SIZE = 1_000
 const PROVIDER_TIMEOUT_MS = 20_000
@@ -231,12 +232,15 @@ async function seriesSnapshot(
   workId: string,
   name: string,
   author: string,
+  title: string,
+  providerWorkId?: string,
 ): Promise<SeriesCatalogSnapshot> {
   const payload = await invokeFunction<SeriesFunctionPayload>('series', {
     sweepRunId: runId,
     workId,
     name,
     author,
+    ...hardcoverSeriesLookupTarget(title, author, providerWorkId),
   })
   return {
     source: 'hardcover',
@@ -323,7 +327,16 @@ export async function processCorpusSweepWork(runId: string, workId: string): Pro
   const candidateSeries = result.series?.trim() ?? ''
   const source = result.provenance?.series?.source ?? result.source ?? 'catalog'
   const snapshots = candidateSeries
-    ? [await seriesSnapshot(runId, workId, candidateSeries, work.authorText)]
+    ? [
+        await seriesSnapshot(
+          runId,
+          workId,
+          candidateSeries,
+          work.authorText,
+          work.title,
+          result.workId,
+        ),
+      ]
     : []
   const seriesResult = classifySeriesMembership({
     title: work.title,

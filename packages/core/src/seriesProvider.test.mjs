@@ -83,6 +83,314 @@ async function request(body = { name: 'The Sequence', author: 'Ada Reader' }) {
 }
 
 describe('series relationship handler diagnostics and retry cache', () => {
+  const target = {
+    name: 'The Sequence (Reader)',
+    author: 'Ada Reader',
+    title: 'Fourth Book',
+    hardcoverBookId: 42,
+  }
+  function fallback() {
+    const book = {
+      id: 42,
+      title: 'Fourth Book',
+      contributions: [{ author: { name: 'Ada Reader' } }],
+      book_series: [{ series: { id: 7, name: 'The Sequence' } }],
+    }
+    const graph = structuredClone(success.data.series[0])
+    graph.book_series.push({
+      position: 4,
+      book: { id: 42, title: 'Fourth Book', contributions: book.contributions },
+    })
+    upstream = async (_url, init) => {
+      const { query, variables } = JSON.parse(init.body)
+      expect(query).not.toMatch(/_ilike|_like|_regex/)
+      if ('name' in variables) return Response.json({ data: { series: [] } })
+      if (query.includes('books(where:')) {
+        expect(variables).toEqual({ id: 42 })
+        expect(query).toContain('book_series(limit: 21)')
+        return Response.json({ data: { books: [book] } })
+      }
+      expect(variables).toEqual({ id: 7 })
+      expect(query).toContain('limit: 201')
+      return Response.json({ data: { series: [graph] } })
+    }
+    return { book, graph }
+  }
+
+  it('recovers a stale label through an exact book and series ID without declaring a length', async () => {
+    fallback()
+    await boot()
+    const result = await request(target)
+    expect(result).toMatchObject({ name: 'The Sequence', sourceRef: '7', memberCount: null })
+    expect(result.unavailable).toBeUndefined()
+    expect(result.membershipEntries).toContainEqual({
+      title: 'Fourth Book',
+      author: 'Ada Reader',
+      position: 4,
+    })
+    expect(requests).toHaveLength(3)
+    expect(await request(target)).toEqual(result)
+    expect(requests).toHaveLength(3)
+    expect([...cache.keys()]).toEqual([
+      'series-exact-v1:["The Sequence (Reader)","Ada Reader"]',
+      'series-book-v1:["The Sequence (Reader)","Ada Reader",42,"Fourth Book"]',
+    ])
+  })
+
+  it('does not share fallback results with another title, author, book ID or name-only lookup', async () => {
+    fallback()
+    await boot()
+    await request(target)
+    expect(await request({ ...target, title: 'Different Book' })).toMatchObject({
+      failureCode: 'identity_mismatch',
+    })
+    expect(await request({ ...target, author: 'Different Author' })).toMatchObject({
+      failureCode: 'identity_mismatch',
+    })
+    upstream = async () => Response.json({ data: { series: [] } })
+    await request({ ...target, hardcoverBookId: 43 })
+    expect(await request({ name: target.name, author: target.author })).toMatchObject({
+      failureCode: 'not_found',
+    })
+    expect(cache.size).toBe(6)
+  })
+
+  it.each([
+    [
+      'wrong title',
+      ({ book }) => {
+        book.title = 'Fourth Book: A Different Story'
+      },
+      'identity_mismatch',
+      2,
+    ],
+    [
+      'wrong author',
+      ({ book }) => {
+        book.contributions = [{ author: { name: 'A. Reader' } }]
+      },
+      'identity_mismatch',
+      2,
+    ],
+    [
+      'wrong book ID',
+      ({ book }) => {
+        book.id = 99
+      },
+      'identity_mismatch',
+      2,
+    ],
+    [
+      'no relationship',
+      ({ book }) => {
+        book.book_series = []
+      },
+      'empty_relationship',
+      2,
+    ],
+    [
+      'multiple relationships',
+      ({ book }) => {
+        book.book_series.push({ series: { id: 8, name: target.name } })
+      },
+      'ambiguous_relationship',
+      2,
+    ],
+    [
+      'duplicate relationship',
+      ({ book }) => {
+        book.book_series.push(book.book_series[0])
+      },
+      'ambiguous_relationship',
+      2,
+    ],
+    [
+      'relationship cap',
+      ({ book }) => {
+        book.book_series = Array(21).fill(book.book_series[0])
+      },
+      'relationship_limit',
+      2,
+    ],
+    [
+      'contributor cap',
+      ({ book }) => {
+        book.contributions = Array(51).fill(book.contributions[0])
+      },
+      'relationship_limit',
+      2,
+    ],
+    [
+      'invalid series ID',
+      ({ book }) => {
+        book.book_series[0].series.id = '7'
+      },
+      'invalid_response',
+      2,
+    ],
+    [
+      'changed graph ID',
+      ({ graph }) => {
+        graph.id = 8
+      },
+      'ambiguous_relationship',
+      3,
+    ],
+    [
+      'changed graph name',
+      ({ graph }) => {
+        graph.name = 'Other Sequence'
+      },
+      'ambiguous_relationship',
+      3,
+    ],
+    [
+      'graph missing target',
+      ({ graph }) => {
+        graph.book_series.pop()
+      },
+      'identity_mismatch',
+      3,
+    ],
+    [
+      'graph wrong target title',
+      ({ graph }) => {
+        graph.book_series[1].book.title = 'Other Book'
+      },
+      'identity_mismatch',
+      3,
+    ],
+    [
+      'graph missing author',
+      ({ graph }) => {
+        graph.book_series[1].book.contributions = []
+      },
+      'identity_mismatch',
+      3,
+    ],
+    [
+      'graph duplicate target',
+      ({ graph }) => {
+        graph.book_series.push(graph.book_series[1])
+      },
+      'identity_mismatch',
+      3,
+    ],
+    [
+      'graph cap',
+      ({ graph }) => {
+        graph.book_series = Array(201).fill(graph.book_series[1])
+      },
+      'relationship_limit',
+      3,
+    ],
+  ])('refuses fallback %s', async (_label, mutate, failureCode, calls) => {
+    mutate(fallback())
+    await boot()
+    expect(await request(target)).toMatchObject({
+      unavailable: true,
+      failureCode,
+      entries: [],
+      sourceRef: null,
+    })
+    expect(requests).toHaveLength(calls)
+  })
+
+  it('validates the expected author anywhere among contributors', async () => {
+    const { book } = fallback()
+    book.contributions.unshift({ author: { name: 'Other Contributor' } })
+    await boot()
+    expect((await request(target)).membershipEntries).toContainEqual({
+      title: 'Fourth Book',
+      author: 'Ada Reader',
+      position: 4,
+    })
+  })
+
+  it.each([401, 429, 503])('does not fallback after a name HTTP %s', async (status) => {
+    upstream = async () => new Response('private response', { status })
+    await boot()
+    expect(await request(target)).toMatchObject({
+      unavailable: true,
+      failureCode: 'http_error',
+      httpStatus: status,
+    })
+    expect(requests).toHaveLength(1)
+  })
+
+  it('does not fallback after a successful name match or ambiguous name graph', async () => {
+    await boot()
+    await request({ ...target, name: 'The Sequence' })
+    expect(requests).toHaveLength(1)
+    const data = structuredClone(success)
+    data.data.series.push({ ...data.data.series[0], id: 8 })
+    cache.clear()
+    upstream = async () => Response.json(data)
+    expect(await request({ ...target, name: 'The Sequence', hardcoverBookId: 43 })).toMatchObject({
+      failureCode: 'ambiguous_relationship',
+    })
+    expect(requests).toHaveLength(2)
+  })
+
+  it('reuses shared successful name lookups across book locators without extra provider calls', async () => {
+    await boot()
+    const ordinary = await request()
+    expect(await request({ ...target, name: 'The Sequence' })).toEqual(ordinary)
+    expect(
+      await request({ ...target, name: 'The Sequence', hardcoverBookId: 43, title: 'Other Book' }),
+    ).toEqual(ordinary)
+    expect(requests).toHaveLength(1)
+    expect(cache.size).toBe(1)
+  })
+
+  it.each([2, 3])('stops and redacts a failure at fallback request %s', async (call) => {
+    fallback()
+    const ok = upstream
+    upstream = (url, init) =>
+      requests.length === call ? new Response('private response', { status: 403 }) : ok(url, init)
+    await boot()
+    expect(await request(target)).toMatchObject({
+      unavailable: true,
+      failureCode: 'http_error',
+      httpStatus: 403,
+    })
+    expect(requests).toHaveLength(call)
+    expect(JSON.stringify([...cache.values()])).not.toContain('private response')
+  })
+
+  it.each([2, 3])('bounds fallback request %s by its deadline without retrying', async (call) => {
+    vi.useFakeTimers()
+    fallback()
+    const ok = upstream
+    upstream = (url, init) =>
+      requests.length === call
+        ? new Promise((_resolve, reject) =>
+            init.signal.addEventListener('abort', () => reject(new Error('private timeout'))),
+          )
+        : ok(url, init)
+    await boot()
+    const pending = request(target)
+    await vi.advanceTimersByTimeAsync(5001)
+    expect(await pending).toMatchObject({ unavailable: true, failureCode: 'timeout' })
+    expect(requests).toHaveLength(call)
+  })
+
+  it.each(['42', -1, 0, 1.5, 2147483648, null])(
+    'rejects invalid book ID %s before provider calls',
+    async (hardcoverBookId) => {
+      await boot()
+      const result = await handler(
+        new Request('https://function.invalid/series', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer synthetic-reader' },
+          body: JSON.stringify({ ...target, hardcoverBookId }),
+        }),
+      )
+      expect(result.status).toBe(400)
+      expect(requests).toHaveLength(0)
+    },
+  )
+
   it('uses exact queries and keeps case-sensitive misses separate from successful lookups', async () => {
     cache.set('series:the sequence|ada reader', {
       fetched_at: new Date().toISOString(),

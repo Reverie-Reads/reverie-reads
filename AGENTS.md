@@ -151,6 +151,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   are separate from unambiguous numbered shelf slots; translations/sets at one ordinal cannot
   inflate series context or declared length. Hardcover counts remain unknown, and exact-work
   matching checks the expected contributor anywhere in the provider list.
+  A name miss may fall back only through an explicit Hardcover book locator, after exact title/full
+  author revalidation and a single unambiguous book-to-series link. Book and series IDs are distinct;
+  book-scoped cache keys include the target identity. Outages, duplicate/competing links and reached
+  response caps never trigger further search. A recovered canonical name does not waive the existing
+  database conflict-review gate or reader-choice protections. See `docs/tasks/series-book-id-fallback.md`.
   Trusted corpus series seeds household display directly and only replaces personal
   unknown/enrichment/corpus defaults—never a reader or CSV-import choice. Fantastic Fiction may be
   retained only as membership/name/order corroboration and never auto-promotes by itself; do not

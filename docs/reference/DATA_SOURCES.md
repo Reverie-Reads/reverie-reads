@@ -123,6 +123,16 @@ the correct title, author, and ISBN while still attaching a search-only label th
 series. Reverie therefore stores identity confidence and membership confidence independently and
 accepts an automatic corpus default only when a relationship source actually contains that work.
 
+The shipped name-based Hardcover relationship lookup also accepts an explicit book locator from
+the enrichment result. Only a successful empty exact-name lookup admits a bounded direct-book
+fallback: revalidate title/full author, require one relationship, then fetch and revalidate that
+series by its distinct provider series ID. Both classifier callers preserve the original candidate
+label and the recovered canonical relationship as separate evidence. Existing stored-name/order
+conflicts still require administrator review; a cache hit or direct ID never waives those guards.
+Hardcover relationship row counts remain unknown lengths. This production adapter change does not
+promote the separate trial resolver or alter qualification gates. See
+[the fallback contract and rollout](../tasks/series-book-id-fallback.md).
+
 Use this hierarchy by question:
 
 | Question                              | Preferred evidence                                                                                                                                                                                                                                              |

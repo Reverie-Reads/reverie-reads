@@ -35,8 +35,7 @@ const svc = {
 
 const TTL_MS = 24 * 60 * 60 * 1000
 const UNAVAILABLE_TTL_MS = 5 * 60 * 1000
-/** one upstream lookup per request, wall-clock capped — an edge isolate must never hang on a
- *  slow catalog (the embed fn's lesson). */
+/** Each lookup is capped; the opt-in name-miss fallback makes at most three lookups (15s total). */
 const FETCH_WALL_MS = 5000
 
 const json = (body: unknown, status = 200) =>
@@ -79,6 +78,10 @@ interface SourceEntry {
   title: string
   author: string
 }
+interface BookTarget {
+  hardcoverBookId: number
+  title: string
+}
 interface SeriesPayload {
   name: string
   sourceRef: string | null
@@ -97,6 +100,8 @@ interface SeriesPayload {
     | 'not_found'
     | 'empty_relationship'
     | 'ambiguous_relationship'
+    | 'identity_mismatch'
+    | 'relationship_limit'
     | 'timeout'
     | 'network_error'
     | 'internal_error'
@@ -128,7 +133,11 @@ async function cacheSet(key: string, payload: SeriesPayload): Promise<void> {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /** Hardcover GraphQL: find the series by name, pull its books in position order. Parsed
  *  defensively — the schema drifts, and a miss must degrade to "no data", never a 500. */
-async function fetchHardcoverSeries(name: string, author: string): Promise<SeriesPayload> {
+async function fetchHardcoverSeries(
+  name: string,
+  author: string,
+  selected?: { seriesId: number; target: BookTarget },
+): Promise<SeriesPayload> {
   const empty: SeriesPayload = {
     name,
     sourceRef: null,
@@ -151,16 +160,17 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
   }
   if (!HARDCOVER_TOKEN) return failed('not_configured')
   const query = `
-    query ($name: String!) {
-      series(where: { name: { _eq: $name } }, limit: 5) {
+    query (${selected ? '$id: Int!' : '$name: String!'}) {
+      series(where: { ${selected ? 'id: { _eq: $id }' : 'name: { _eq: $name }'} }, limit: 5) {
         id
         name
         books_count
-        book_series(order_by: { position: asc }, where: { book: { book_status_id: { _eq: 1 } } }) {
+        book_series(${selected ? 'limit: 201,' : ''} order_by: { position: asc }, where: { book: { book_status_id: { _eq: 1 } } }) {
           position
           book {
+            id
             title
-            contributions { author { name } }
+            contributions${selected ? '(limit: 51)' : ''} { author { name } }
           }
         }
       }
@@ -173,7 +183,7 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
       method: 'POST',
       signal: ctrl.signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${HARDCOVER_TOKEN}` },
-      body: JSON.stringify({ query, variables: { name } }),
+      body: JSON.stringify({ query, variables: selected ? { id: selected.seriesId } : { name } }),
     })
     receivedResponse = true
     if (!res.ok) return failed('http_error', res.status)
@@ -183,6 +193,23 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
     if (!Array.isArray(body?.data?.series)) return failed('invalid_response', res.status)
     const all: any[] = body.data.series
     if (!all.length) return failed('not_found', res.status)
+    if (selected) {
+      if (all.length !== 1 || all[0]?.id !== selected.seriesId || all[0]?.name !== name)
+        return failed('ambiguous_relationship', res.status)
+      const rows = all[0].book_series
+      if (!Array.isArray(rows)) return failed('invalid_response', res.status)
+      if (rows.length >= 201 || rows.some((row: any) => row.book?.contributions?.length >= 51))
+        return failed('relationship_limit', res.status)
+      const targetRows = rows.filter((row: any) => row.book?.id === selected.target.hardcoverBookId)
+      if (
+        targetRows.length !== 1 ||
+        norm(targetRows[0].book?.title ?? '') !== norm(selected.target.title) ||
+        !targetRows[0].book?.contributions?.some(
+          (c: any) => norm(c.author?.name ?? '') === norm(author),
+        )
+      )
+        return failed('identity_mismatch', res.status)
+    }
     // Never choose the largest homonymous relationship. Match the supplied contributor anywhere
     // in the list (translations often put another contributor first), then require one candidate.
     const candidates = all
@@ -261,6 +288,100 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+/** A stored book ID is a locator, not identity evidence. Revalidate before following ONE relation.
+ * No aliases, fuzzy search, pagination, retries, or first/largest-series selection. */
+async function fetchHardcoverBookSeries(
+  target: BookTarget,
+  author: string,
+  name: string,
+): Promise<SeriesPayload> {
+  const failure = (
+    failureCode: NonNullable<SeriesPayload['failureCode']>,
+    httpStatus?: number,
+  ): SeriesPayload => {
+    logEvent('warn', 'series', 'relationship_unavailable', {
+      provider: 'hardcover',
+      failureCode,
+      httpStatus,
+    })
+    return {
+      name,
+      sourceRef: null,
+      memberCount: null,
+      entries: [],
+      unavailable: true,
+      failureCode,
+      ...(httpStatus ? { httpStatus } : {}),
+    }
+  }
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), FETCH_WALL_MS)
+  let receivedResponse = false
+  let selected: { id: number; name: string } | undefined
+  try {
+    const res = await fetch('https://api.hardcover.app/v1/graphql', {
+      method: 'POST',
+      signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${HARDCOVER_TOKEN}` },
+      body: JSON.stringify({
+        query: `query ($id: Int!) { books(where: { id: { _eq: $id } }, limit: 1) {
+          id title contributions(limit: 51) { author { name } }
+          book_series(limit: 21) { series { id name } }
+        } }`,
+        variables: { id: target.hardcoverBookId },
+      }),
+    })
+    receivedResponse = true
+    if (!res.ok) return failure('http_error', res.status)
+    const body = await res.json().catch(() => null)
+    if (ctrl.signal.aborted) return failure('timeout', res.status)
+    if (body?.errors?.length) return failure('graphql_error', res.status)
+    if (!Array.isArray(body?.data?.books)) return failure('invalid_response', res.status)
+    const books = body.data.books as {
+      id: number
+      title: string
+      contributions: { author: { name: string } }[]
+      book_series: { series: { id: number; name: string } }[]
+    }[]
+    if (!books.length) return failure('not_found', res.status)
+    const book = books[0]
+    if (
+      books.length !== 1 ||
+      book.id !== target.hardcoverBookId ||
+      typeof book.title !== 'string' ||
+      norm(book.title) !== norm(target.title) ||
+      !Array.isArray(book.contributions) ||
+      !book.contributions.some(
+        (c) => typeof c.author?.name === 'string' && norm(c.author.name) === norm(author),
+      )
+    )
+      return failure('identity_mismatch', res.status)
+    if (!Array.isArray(book.book_series)) return failure('invalid_response', res.status)
+    if (book.contributions.length >= 51 || book.book_series.length >= 21)
+      return failure('relationship_limit', res.status)
+    if (!book.book_series.length) return failure('empty_relationship', res.status)
+    // Duplicate or competing links are not silently collapsed, even if one matches the old label.
+    if (book.book_series.length !== 1) return failure('ambiguous_relationship', res.status)
+    selected = book.book_series[0]?.series
+    if (
+      !selected ||
+      !Number.isInteger(selected.id) ||
+      selected.id <= 0 ||
+      selected.id > 2147483647 ||
+      typeof selected.name !== 'string' ||
+      !selected.name.trim()
+    )
+      return failure('invalid_response', res.status)
+  } catch {
+    return failure(
+      ctrl.signal.aborted ? 'timeout' : receivedResponse ? 'invalid_response' : 'network_error',
+    )
+  } finally {
+    clearTimeout(timer)
+  }
+  return fetchHardcoverSeries(selected.name, author, { seriesId: selected.id, target })
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /** One book's community descriptor names from Hardcover (cached_tags), parsed defensively —
  *  whatever shape the field takes, only STRINGS come out, deduped, capped. */
@@ -332,6 +453,7 @@ Deno.serve(async (req: Request) => {
     title?: string
     sweepRunId?: string
     workId?: string
+    hardcoverBookId?: number
   }
   try {
     body = await req.json()
@@ -374,15 +496,46 @@ Deno.serve(async (req: Request) => {
 
   const name = (body.name ?? '').trim()
   if (!name) return json({ error: 'missing name' }, 400)
+  const author = (body.author ?? '').trim()
+  let target: BookTarget | undefined
+  if (body.hardcoverBookId !== undefined) {
+    if (
+      !Number.isInteger(body.hardcoverBookId) ||
+      body.hardcoverBookId <= 0 ||
+      body.hardcoverBookId > 2147483647 ||
+      typeof body.title !== 'string' ||
+      !body.title.trim() ||
+      body.title.length > 500 ||
+      !author ||
+      author.length > 300
+    )
+      return json({ error: 'invalid book lookup identity' }, 400)
+    target = { hardcoverBookId: body.hardcoverBookId, title: body.title.trim() }
+  }
 
   try {
     // New semantics cannot reuse old first-contributor/count payloads. Exact queries also need
     // exact cache keys: a case-mismatched miss must not poison a later correctly cased request.
-    const key = `series-exact-v1:${JSON.stringify([name, (body.author ?? '').trim()])}`
+    // Book-specific results must never poison a name-only or another work's cache entry.
+    const nameKey = `series-exact-v1:${JSON.stringify([name, author])}`
+    const key = target
+      ? `series-book-v1:${JSON.stringify([name, author, target.hardcoverBookId, target.title])}`
+      : nameKey
     const cached = await cacheGet(key)
     if (cached) return json(cached)
-    const payload = await fetchHardcoverSeries(name, (body.author ?? '').trim())
-    await cacheSet(key, payload)
+    // Reuse ordinary shared name results: adding a book locator must not turn a cached series
+    // into one upstream request per book. Only the fallback itself is book-specific.
+    let payload = target ? await cacheGet(nameKey) : null
+    if (!payload) {
+      payload = await fetchHardcoverSeries(name, author)
+      await cacheSet(nameKey, payload)
+    }
+    // Only a successful empty name lookup admits the fallback. Never spend more requests on an
+    // outage, forbidden query, ambiguous relation, or missing credential.
+    if (target && payload.failureCode === 'not_found' && payload.httpStatus === 200) {
+      payload = await fetchHardcoverBookSeries(target, author, name)
+      await cacheSet(key, payload)
+    }
     return json(payload)
   } catch {
     // Cache/infrastructure errors also stay unresolved, with no raw exception in diagnostics.
