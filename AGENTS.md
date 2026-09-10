@@ -297,6 +297,13 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   callback object: WDK serializes a step call's `this` receiver, and a receiver containing another
   function fails before the first checkpoint. Keep the compiler-backed Workflow integration test in
   the ordinary web test command; unit calls treat `use step` as a no-op and cannot catch this class.
+- **Cover normalization has one decoded-image owner.** The `covers` Edge Function decodes source
+  bytes once, records the encoded source dimensions, applies orientation, then produces the 1,600px
+  full image, 720px card image, and 64px color sample by resizing the same image downward. Do not
+  reintroduce repeat source decodes or full-resolution clones: the former exhausted local worker CPU
+  on a measured 2,400x3,600 upload and the latter slowed the actual 800x1,200 upload boundary. Keep
+  the existing no-upscale behavior, 82/78 WebP quality, metadata stripping, fail-soft color, and
+  separate trace stages. See `docs/tasks/cover-pipeline-efficiency.md`.
 - **Catalog cover review is explicit and shared-only.** `/catalog/covers` reads bounded pages of
   shared works; only corpus administrators can save decisions. An approval is bound to the exact
   identity/cover fingerprint and review revision. Changed records require a fresh review. Browser

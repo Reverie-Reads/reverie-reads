@@ -1382,6 +1382,12 @@ aspect` at 9.1s. `e2e` failed exactly once in the surrounding 60 runs.
 
   <sub>**verified 2026-08-20** — still OPEN: `supabase/functions/covers/index.ts:163` still carries its own comment naming 'FOUR FULL DECODES OF THE SAME BYTES', with the four `encode`/`ImageMagick.read` passes at 167-206. Instrumented, not optimised.</sub>
 
+  <sub>**implemented for review 2026-09-09** — `normalizeImage` now performs one source decode and
+  no full-resolution clone, then writes the 1,600px and 720px outputs and extracts color while
+  resizing the same image downward. Representative outputs at or below 1,600px were byte-identical;
+  warm normalization fell from 307.5ms to 123.8ms, and a 2,400x3,600 upload that previously hit the
+  local worker limit completed. See `docs/tasks/cover-pipeline-efficiency.md`.</sub>
+
 ## Product queue
 
 > **PERISHABLE — audited entry by entry 2026-08-22 (batch 4 of the file).** Every live entry below
