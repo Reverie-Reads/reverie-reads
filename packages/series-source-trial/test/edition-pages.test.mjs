@@ -564,7 +564,7 @@ test('aggregate diagnostics trace search versus detail failure through HTTP orch
       },
     })
     const report = await runEditionPages(frame(), { client })
-    assert.equal(report.version, 2)
+    assert.equal(report.version, 3)
     assert.deepEqual(report.diagnostics.googleTerminalStage, { [stage]: 1 })
     assert.deepEqual(report.diagnostics.providerReasons.google, {
       [stage === 'search' ? 'title_mismatch' : 'contributors_mismatch']: 1,
@@ -681,4 +681,184 @@ test('diagnostic counters reconcile across a mixed batch and never mutate acquis
   assert.deepEqual(d.packetFormat, { paperback: 2, unavailable: 1 })
   assert.deepEqual(d.candidateSource, { both: 1, openlibrary: 1 })
   assert.deepEqual(d.candidateFormat, { paperback: 2 })
+})
+
+test('exact repeated Google subtitle is diagnostic only under existing title normalization', () => {
+  const target = { ...identity, title: 'The Lantern Archive: A Novel' }
+  for (const [title, subtitle] of [
+    [target.title, 'A Novel'],
+    ['THE LANTERN ARCHIVE — A NOVEL', 'a novel'],
+    ['  The  Lantern Archive: A   Novel  ', ' A Novel '],
+    ['Thé Lantérn Archive: A Novel', 'A Novél'],
+  ]) {
+    const input = volume({ title, subtitle })
+    const before = structuredClone(input)
+    assert.deepEqual(admitGoogleVolume(input, target), {
+      status: 'identity_review',
+      reason: 'title_mismatch',
+      titleDiagnostic: 'repeated_subtitle',
+    })
+    assert.deepEqual(input, before)
+  }
+})
+
+test('subtitle diagnostic excludes partial, changed, empty, malformed and qualified shapes', () => {
+  const target = { ...identity, title: 'The Lantern Archive: A Novel' }
+  for (const patch of [
+    { title: target.title, subtitle: 'Novel: Abridged' },
+    { title: target.title, subtitle: 'A Novel: Graphic Adaptation' },
+    { title: target.title, subtitle: 'Volume Two' },
+    { title: target.title, subtitle: 'ovel' },
+    { title: target.title, subtitle: 'The Lantern Archive' },
+    { title: target.title, subtitle: target.title },
+    { title: 'Another Archive: A Novel', subtitle: 'A Novel' },
+    { title: 'The Lantern Archive' },
+    { title: 'The Lantern Archive', subtitle: 'A Memoir' },
+    { title: target.title, subtitle: 42 },
+    { title: target.title, subtitle: { text: 'A Novel' } },
+    { title: target.title, subtitle: 'x'.repeat(501) },
+    { title: target.title, subtitle: null },
+    { title: target.title, subtitle: '' },
+    { title: target.title, subtitle: '   ' },
+    { title: target.title, subtitle: '!!!' },
+    { title: 'The Lantern Archive', subtitle: 'A Novel' },
+  ])
+    assert.equal(admitGoogleVolume(volume(patch), target).titleDiagnostic, undefined)
+})
+
+test('earlier ISBN and shape failures are not replaced by a subtitle diagnostic', () => {
+  const target = { ...identity, title: identity.title + ': A Novel' }
+  for (const [patch, reason] of [
+    [
+      {
+        industryIdentifiers: [
+          { type: 'ISBN_13', identifier: identity.isbn },
+          { type: 'ISBN_13', identifier: otherIsbn },
+        ],
+      },
+      'isbn_mismatch',
+    ],
+    [{ industryIdentifiers: [{ type: 'ISBN_13', identifier: '9780316565203' }] }, 'invalid_isbn'],
+    [{ authors: [] }, 'malformed_record'],
+  ])
+    assert.deepEqual(
+      admitGoogleVolume(volume({ title: target.title, subtitle: 'A Novel', ...patch }), target),
+      {
+        status: 'identity_review',
+        reason,
+      },
+    )
+})
+
+test('subtitle representation is not a claim that other identity fields are correct', () => {
+  const target = { ...identity, title: identity.title + ': A Novel' }
+  const r = admitGoogleVolume(
+    volume({ title: target.title, subtitle: 'A Novel', authors: ['Other Author'], language: 'fr' }),
+    target,
+  )
+  assert.equal(r.reason, 'title_mismatch')
+  assert.equal(r.titleDiagnostic, 'repeated_subtitle')
+  const sources = acquired({ ...r, stage: 'search' })
+  const withDiagnostic = buildEditionPagePacket(
+    { identity: target, current: { pages: 450 } },
+    sources,
+  )
+  delete sources.google.titleDiagnostic
+  const withoutDiagnostic = buildEditionPagePacket(
+    { identity: target, current: { pages: 450 } },
+    sources,
+  )
+  assert.deepEqual(structuredClone(withDiagnostic), structuredClone(withoutDiagnostic))
+  assert.equal(withDiagnostic.candidateValue, null)
+  assert.equal(withDiagnostic.current.value, 450)
+  assert.equal(withDiagnostic.current.protected, true)
+})
+
+test('repeated subtitle reaches aggregate search/detail bins without changing requests or evidence', async () => {
+  for (const stage of ['search', 'detail']) {
+    const input = frame()
+    input.cases[0].identity.title += ': A Novel'
+    const target = input.cases[0].identity
+    const { client, calls } = make({
+      fetcher: async (url) => {
+        if (url.hostname === 'openlibrary.org')
+          return url.pathname.includes('/authors/')
+            ? json({ key: '/authors/OL1A', name: 'Ada Example' })
+            : json(olBook({ title: target.title }))
+        const searchStage = url.pathname.endsWith('/volumes')
+        const v = volume({
+          title: target.title,
+          ...(stage === 'search' || !searchStage ? { subtitle: 'A Novel' } : {}),
+        })
+        return json(searchStage ? search(v) : v)
+      },
+    })
+    const report = await runEditionPages(input, { client })
+    assert.equal(report.version, 3)
+    assert.equal(report.diagnostics.version, 2)
+    assert.deepEqual(report.diagnostics.googleTitleMismatch, { [stage]: { repeated_subtitle: 1 } })
+    assert.deepEqual(report.diagnostics.providerReasons.google, { title_mismatch: 1 })
+    assert.deepEqual(report.outcomes.openlibrary, { matched: 1 })
+    assert.deepEqual(report.states, { identity_review: 1 })
+    assert.equal(report.candidates.available, 0)
+    assert.equal(
+      report.observations.google.available + report.observations.openlibrary.available,
+      0,
+    )
+    assert.equal(report.automaticFills + report.productionWrites + report.modelCalls, 0)
+    assert.equal(
+      calls.filter((c) => c.url.hostname === 'www.googleapis.com').length,
+      stage === 'search' ? 1 : 2,
+    )
+    for (const secret of [
+      target.title,
+      target.isbn,
+      'A Novel',
+      'Ada Example',
+      'safe-ID_123',
+      'synthetic-secret',
+    ])
+      assert.equal(JSON.stringify(report).includes(secret), false)
+  }
+})
+
+test('title bins are Google-only, finite, nonmutating and subordinate to the rejection', () => {
+  const d = createEditionDiagnostics()
+  for (const [stage, diagnostic] of [
+    ['search', 'repeated_subtitle'],
+    ['detail', undefined],
+    ['__proto__', 'https://secret.example/value'],
+    ['detail', 'constructor'],
+  ]) {
+    const a = acquired({
+      status: 'identity_review',
+      reason: 'title_mismatch',
+      stage,
+      titleDiagnostic: diagnostic,
+    })
+    const p = packet(a),
+      before = structuredClone({ a, p })
+    countEditionDiagnostics(d, a, p)
+    assert.deepEqual(structuredClone({ a, p }), before)
+  }
+  for (const a of [
+    acquired({ status: 'matched', reason: 'title_mismatch', titleDiagnostic: 'repeated_subtitle' }),
+    acquired({
+      status: 'identity_review',
+      reason: 'isbn_mismatch',
+      titleDiagnostic: 'repeated_subtitle',
+    }),
+    acquired(
+      { status: 'not_found' },
+      { status: 'identity_review', reason: 'title_mismatch', titleDiagnostic: 'repeated_subtitle' },
+    ),
+  ])
+    countEditionDiagnostics(d, a, packet(a))
+  assert.deepEqual(d.googleTitleMismatch, {
+    search: { repeated_subtitle: 1 },
+    detail: { other: 2 },
+    unknown: { other: 1 },
+  })
+  for (const unsafe of ['__proto__', 'constructor', 'https://secret.example/value'])
+    assert.equal(JSON.stringify(d).includes(unsafe), false)
 })

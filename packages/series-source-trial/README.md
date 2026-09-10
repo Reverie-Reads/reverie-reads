@@ -58,10 +58,24 @@ binding is not a certified format, and blocked packets report format as unavaila
 provider supplied it. Current format may contribute to packet format; reference format never does.
 Candidate counters include only emitted candidates, not protected current values. No gate is relaxed.
 
+Report version 3 (diagnostics version 2) adds `googleTitleMismatch`, a bounded stage-to-category
+histogram for Google's `identity_review` / `title_mismatch` returns. Its only categories are
+`repeated_subtitle` and `other`; stage keys use the existing vocabulary including `unknown`.
+The repeated-subtitle observation requires a valid nonempty subtitle, the raw title matching the
+complete expected title under existing normalization, and that subtitle repeated as an exact
+token-boundary suffix of the raw title. It does not strip or repair text. The original rejection
+reason, candidate eligibility and search/detail request sequence remain unchanged. Later identity
+checks may also have failed: the label describes text packaging, not the sole cause or a safe match.
+Only enum counts persist; raw title/subtitle remain transient. Open Library and frozen baseline
+modules are not instrumented by this addition. See the
+[implementation and verification](../../docs/tasks/google-repeated-subtitle-diagnostic.md).
+
 The completed [16-edition comparison](../../docs/tasks/edition-page-comparison-report-2026-09-09.md)
 had one reference difference among three candidates and did not clear automatic filling. Its
 version-1 report and frozen runtime hashes remain unchanged; do not rerun it with diagnostics or
 backfill invented reasons. Mocked transport tests establish diagnostic behavior, not live quality.
+The completed [ten-edition diagnostic sample](../../docs/tasks/edition-diagnostic-sample-report-2026-09-09.md)
+also remains consumed; its report-v2 artifacts and locks must not be upgraded or replayed.
 A new independently reviewed and registered sample is required for further live evaluation; see the
 [Google diagnostic and implementation boundary](../../docs/tasks/google-edition-diagnostics.md).
 

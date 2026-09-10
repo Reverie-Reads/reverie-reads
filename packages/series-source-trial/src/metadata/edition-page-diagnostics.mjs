@@ -33,10 +33,29 @@ const bump = (t, key) => {
   t[key] = (t[key] ?? 0) + 1
 }
 
+// Mirror the frozen identity normalizer without changing the consumed study module.
+// This observes representation only; it must never participate in admission.
+const foldTitle = (value) =>
+  value
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+
+export function hasRepeatedGoogleSubtitle(title, subtitle, expectedTitle) {
+  if ([title, subtitle, expectedTitle].some((v) => typeof v !== 'string' || v.length > 500))
+    return false
+  const full = foldTitle(title)
+  const suffix = foldTitle(subtitle)
+  return Boolean(suffix && full === foldTitle(expectedTitle) && full.endsWith(` ${suffix}`))
+}
+
 export const createEditionDiagnostics = () => ({
-  version: 1,
+  version: 2,
   providerReasons: { google: {}, openlibrary: {} },
   googleTerminalStage: {},
+  googleTitleMismatch: {},
   packetFormat: {},
   candidateSource: {},
   candidateFormat: {},
@@ -52,7 +71,18 @@ export function countEditionDiagnostics(target, acquired, packet) {
     )
   }
   const stage = acquired?.google?.stage
-  bump(target.googleTerminalStage, stages.has(stage) ? stage : 'unknown')
+  const stageKey = stages.has(stage) ? stage : 'unknown'
+  bump(target.googleTerminalStage, stageKey)
+  if (
+    acquired?.google?.status === 'identity_review' &&
+    acquired.google.reason === 'title_mismatch'
+  ) {
+    const bucket = (target.googleTitleMismatch[stageKey] ??= {})
+    bump(
+      bucket,
+      acquired.google.titleDiagnostic === 'repeated_subtitle' ? 'repeated_subtitle' : 'other',
+    )
+  }
   const format = formats.has(packet.formatEvidence) ? packet.formatEvidence : 'unavailable'
   bump(target.packetFormat, format)
   if (packet.candidateValue != null) {
