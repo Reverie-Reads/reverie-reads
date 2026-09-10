@@ -3,6 +3,12 @@
 Status: proposed implementation contract, not a shipped feature or source-use approval.
 Source inspection: public main `155df22853d7d552bf283ae9178c3f7781e145b6` (merged #518).
 
+Owner update, September 9: the planned reader-facing comparison is a **Pro feature**, not an
+administrator-only product. PR #521 stays draft. See [the current scope](app-first-book-data.md#planned-pro-feature-compare-edition-details).
+The administrator route, permission and target-access assumptions below are historical design
+inputs and must not be copied as the Pro implementation contract. Source admission, no automatic
+field application and source-use/retention safeguards remain relevant.
+
 ## Decision
 
 Add a read-only **Compare provider evidence** section to the existing administrator metadata
