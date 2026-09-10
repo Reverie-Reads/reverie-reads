@@ -1,7 +1,8 @@
 // Canonical series data (docs/archive/task-series-experience.md §2) — the releases fn's sibling.
 // One mode: { name, author? } → the canonical entry list for that series, seeded from Hardcover
 // (GraphQL, free Bearer token, 60 req/min) and cached per series daily in the shared
-// releases_cache (key `series:<norm-name>|<norm-author>`), so one upstream lookup serves every
+// releases_cache (key `series:<norm-name>|<norm-author>`; failures expire after five minutes),
+// so one upstream lookup serves every
 // reader without letting two authors' identically named series share the wrong cached graph.
 //
 // The CLIENT owns the merge: source entries only fill gaps in series_entries and never touch a
@@ -9,7 +10,7 @@
 // (HARDCOVER_TOKEN unset) or nothing found → { entries: [], unavailable: true }: indie/KU series
 // often have no source data at all, and manual creation is first-class.
 
-import { captureEdgeError } from '../_shared/observe.ts'
+import { captureEdgeError, logEvent } from '../_shared/observe.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,11 @@ const cors = {
 const DB_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const ANON = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-const HARDCOVER_TOKEN = Deno.env.get('HARDCOVER_TOKEN') ?? ''
+// Match enrich: both a bare token and the dashboard's Bearer-prefixed form are accepted.
+const HARDCOVER_TOKEN = (Deno.env.get('HARDCOVER_TOKEN') ?? '')
+  .trim()
+  .replace(/^Bearer\s+/i, '')
+  .trim()
 
 const svc = {
   apikey: SERVICE,
@@ -29,6 +34,7 @@ const svc = {
 }
 
 const TTL_MS = 24 * 60 * 60 * 1000
+const UNAVAILABLE_TTL_MS = 5 * 60 * 1000
 /** one upstream lookup per request, wall-clock capped — an edge isolate must never hang on a
  *  slow catalog (the embed fn's lesson). */
 const FETCH_WALL_MS = 5000
@@ -81,6 +87,17 @@ interface SeriesPayload {
   memberCount: number | null
   entries: SourceEntry[]
   unavailable?: boolean
+  failureCode?:
+    | 'not_configured'
+    | 'http_error'
+    | 'graphql_error'
+    | 'invalid_response'
+    | 'not_found'
+    | 'empty_relationship'
+    | 'timeout'
+    | 'network_error'
+    | 'internal_error'
+  httpStatus?: number
 }
 
 async function cacheGet(key: string): Promise<SeriesPayload | null> {
@@ -92,7 +109,8 @@ async function cacheGet(key: string): Promise<SeriesPayload | null> {
   const rows = (await res.json()) as { payload: SeriesPayload; fetched_at: string }[]
   const row = rows[0]
   if (!row) return null
-  if (Date.now() - Date.parse(row.fetched_at) > TTL_MS) return null
+  const ttl = row.payload.unavailable ? UNAVAILABLE_TTL_MS : TTL_MS
+  if (Date.now() - Date.parse(row.fetched_at) > ttl) return null
   return row.payload
 }
 
@@ -115,7 +133,20 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
     entries: [],
     unavailable: true,
   }
-  if (!HARDCOVER_TOKEN) return empty
+  // Only fixed codes and numeric HTTP status may reach diagnostics. Never log queries, names,
+  // credentials, response bodies or GraphQL error messages (which can echo sensitive input).
+  const failed = (
+    failureCode: NonNullable<SeriesPayload['failureCode']>,
+    httpStatus?: number,
+  ): SeriesPayload => {
+    logEvent('warn', 'series', 'relationship_unavailable', {
+      provider: 'hardcover',
+      failureCode,
+      httpStatus,
+    })
+    return { ...empty, failureCode, ...(httpStatus ? { httpStatus } : {}) }
+  }
+  if (!HARDCOVER_TOKEN) return failed('not_configured')
   const query = `
     query ($name: String!) {
       series(where: { name: { _ilike: $name } }, limit: 5) {
@@ -133,6 +164,7 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
     }`
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), FETCH_WALL_MS)
+  let receivedResponse = false
   try {
     const res = await fetch('https://api.hardcover.app/v1/graphql', {
       method: 'POST',
@@ -140,10 +172,14 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${HARDCOVER_TOKEN}` },
       body: JSON.stringify({ query, variables: { name } }),
     })
-    if (!res.ok) return empty
-    const body = (await res.json()) as any
-    const all: any[] = body?.data?.series ?? []
-    if (!all.length) return empty
+    receivedResponse = true
+    if (!res.ok) return failed('http_error', res.status)
+    const body = (await res.json().catch(() => null)) as any
+    if (ctrl.signal.aborted) return failed('timeout', res.status)
+    if (body?.errors?.length) return failed('graphql_error', res.status)
+    if (!Array.isArray(body?.data?.series)) return failed('invalid_response', res.status)
+    const all: any[] = body.data.series
+    if (!all.length) return failed('not_found', res.status)
     // Prefer the candidate whose books mention the author we know; else the fullest match.
     const scored = all
       .map((s: any) => {
@@ -159,7 +195,7 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
       })
       .sort((a, b) => b.score - a.score)
     const best = scored[0]
-    if (!best || !best.entries.length) return empty
+    if (!best || !best.entries.length) return failed('empty_relationship', res.status)
     // Dedupe by title keeping the first (lowest-position) slot; drop position-0 noise when the
     // series has real positions.
     const seen = new Set<string>()
@@ -179,7 +215,9 @@ async function fetchHardcoverSeries(name: string, author: string): Promise<Serie
       entries: positioned,
     }
   } catch {
-    return empty
+    return failed(
+      ctrl.signal.aborted ? 'timeout' : receivedResponse ? 'invalid_response' : 'network_error',
+    )
   } finally {
     clearTimeout(timer)
   }
@@ -305,8 +343,16 @@ Deno.serve(async (req: Request) => {
     const payload = await fetchHardcoverSeries(name, (body.author ?? '').trim())
     await cacheSet(key, payload)
     return json(payload)
-  } catch (e) {
-    captureEdgeError('series', e)
-    return json({ name, sourceRef: null, memberCount: null, entries: [], unavailable: true })
+  } catch {
+    // Cache/infrastructure errors also stay unresolved, with no raw exception in diagnostics.
+    logEvent('warn', 'series', 'relationship_unavailable', { failureCode: 'internal_error' })
+    return json({
+      name,
+      sourceRef: null,
+      memberCount: null,
+      entries: [],
+      unavailable: true,
+      failureCode: 'internal_error',
+    })
   }
 })

@@ -56,6 +56,20 @@ describe('series classification keeps identity and membership evidence separate'
     )
     expect(result.outcome).toBe('unresolved')
     expect(result.reason).toMatch(/unavailable/i)
+    // Match the real wire contract exercised by corpus_series_discovery_test.sql.
+    expect(result).toMatchObject({
+      matched: true,
+      series: null,
+      position: null,
+      count: null,
+      identityConfidence: 'high',
+      membershipConfidence: 'low',
+      source: 'hardcover',
+    })
+    expect(result.evidence.map(({ kind }) => kind)).toEqual([
+      'candidate_label',
+      'provider_unavailable',
+    ])
   })
 
   it('routes a one-member or newly started series to administrator review', () => {

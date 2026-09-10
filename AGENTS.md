@@ -142,6 +142,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   provider relationship, keep book-identity confidence separate from membership confidence, and
   retain its evidence/reason. A singleton or source conflict waits for corpus-administrator review;
   unavailable is unresolved; a missing label is an observation, never proof of standalone status.
+  The database must preserve an explicit unresolved outcome even when the confirmed series name is
+  null; a null name with candidate/outage evidence is not a successful no-label observation.
+  Historical outage repair is owner-run and fingerprint-scoped, separate from migration; see
+  `docs/tasks/series-unavailable-recovery.md`.
   Trusted corpus series seeds household display directly and only replaces personal
   unknown/enrichment/corpus defaults—never a reader or CSV-import choice. Fantastic Fiction may be
   retained only as membership/name/order corroboration and never auto-promotes by itself; do not
