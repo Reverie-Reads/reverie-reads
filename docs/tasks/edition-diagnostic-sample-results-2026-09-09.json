@@ -1,0 +1,106 @@
+{
+  "registrationCommit": "8e0e59a81a981ce5fa49014fc7ab68a01d8c3b97",
+  "runtimeCommit": "ad9665487a1902232bc9f11149f98bf99f97fcb8",
+  "startedAt": "2026-09-10T00:57:26.481Z",
+  "finishedAt": "2026-09-10T00:57:58.976Z",
+  "singleUse": true,
+  "report": {
+    "version": 2,
+    "experiment": "edition_pages",
+    "mode": "live",
+    "cases": 10,
+    "frameSha256": "7547467d69bebf51fff6c4cf89738b1f804dd42019aa783037a846adcb88b484",
+    "outcomes": {
+      "google": {
+        "matched": 8,
+        "identity_review": 2
+      },
+      "openlibrary": {
+        "identity_review": 3,
+        "not_found": 2,
+        "matched": 5
+      }
+    },
+    "states": {
+      "identity_review": 4,
+      "candidate": 3,
+      "conflict": 2,
+      "cross_provider_agreement": 1
+    },
+    "diagnostics": {
+      "version": 1,
+      "providerReasons": {
+        "google": {
+          "none": 8,
+          "title_mismatch": 2
+        },
+        "openlibrary": {
+          "missing_contributors": 1,
+          "none": 7,
+          "title_mismatch": 2
+        }
+      },
+      "googleTerminalStage": {
+        "detail": 9,
+        "search": 1
+      },
+      "packetFormat": {
+        "unavailable": 4,
+        "unknown": 6
+      },
+      "candidateSource": {
+        "google": 3,
+        "both": 1
+      },
+      "candidateFormat": {
+        "unknown": 4
+      }
+    },
+    "protectedCurrent": 0,
+    "observations": {
+      "google": {
+        "available": 6,
+        "agrees": 4,
+        "differs": 2,
+        "unscored": 0
+      },
+      "openlibrary": {
+        "available": 3,
+        "agrees": 2,
+        "differs": 1,
+        "unscored": 0
+      }
+    },
+    "candidates": {
+      "available": 4,
+      "agrees": 4,
+      "differs": 0,
+      "unscored": 0
+    },
+    "automaticFills": 0,
+    "productionWrites": 0,
+    "modelCalls": 0,
+    "retention": "aggregate_only",
+    "acquisitionWallMs": 32480,
+    "transport": {
+      "google": {
+        "requests": 19,
+        "stopped": null,
+        "elapsedMs": 4838,
+        "statuses": {
+          "ok": 19
+        }
+      },
+      "openlibrary": {
+        "requests": 24,
+        "stopped": null,
+        "elapsedMs": 8211,
+        "statuses": {
+          "edition_redirect": 8,
+          "ok": 14,
+          "not_found": 2
+        }
+      }
+    }
+  }
+}
