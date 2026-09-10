@@ -311,6 +311,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   inside the review transaction; never update personal covers or bibliographic choices as a side
   effect. Administrator notes/history stay outside the offline cache. See
   `docs/reference/COVER_SOURCING_AND_STUDIO.md`.
+- **Shared order reviews preserve membership provenance.** Existing-slot position corrections or
+  clears require a source page and explanation through the revision-checked
+  `review_corpus_series_entry_order` RPC. Store rationale only in the administrator audit, never in
+  shared entry claims or the offline cache. A saved citation is historical evidence, not automatic
+  source qualification; show its reviewed position separately from the current one. Only a primary
+  linked slot updates the work projection, using the existing default-only reader-choice guards.
 - **Structured rows own personal series membership.** `series` + live `series_entries` are the
   authority; `books.series`, `position`, and `series_count` are a compatibility projection of one
   explicit `is_primary` entry. A book may have multiple live memberships, but at most one primary;

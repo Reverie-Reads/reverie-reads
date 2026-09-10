@@ -582,6 +582,15 @@ may browse active catalog rows but cannot write them directly. Corpus administra
 archive/restore, and maintain order through revision-checked RPCs; every decision is appended to
 `corpus_series_edits`. Archive and slot removal are tombstones, not destructive deletion.
 
+Existing-slot order reviews use `review_corpus_series_entry_order`: changed or cleared positions
+require an HTTPS source page and explanation, with the current series revision. The position claim
+is separate from membership provenance. The explanation lives only in administrator-readable
+`corpus_series_edits.next_value.orderReview`, never in shared entries or the offline cache. The
+editor shows the last cited review's position beside the current position; it does not imply that
+a historical citation verifies a later change. A link is recorded, not fetched or automatically
+qualified as authoritative. Linked title/author cannot change through this RPC; unbound slots retain
+their existing title/author editing. New-slot creation continues through the existing save RPC.
+
 `works.series/position/series_count/status` remains the compatibility projection for household
 surfaces and automatic personal defaults. A catalog change goes through that projection rather than
 writing personal tables directly. Consequently, an eligible `unknown`/`enrichment`/`corpus` default
