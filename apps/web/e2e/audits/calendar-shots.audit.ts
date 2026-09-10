@@ -148,8 +148,10 @@ async function openPlanner(page: Page, pinned = PINNED) {
     `/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )
   await page.getByRole('button', { name: /enter your library/i }).click({ timeout: 20_000 })
-  await page.goto('/planner')
-  await expect(page.getByRole('heading', { name: 'Planner' })).toBeVisible({ timeout: 20_000 })
+  await page.goto('/planner?tab=calendar')
+  await expect(page.getByRole('heading', { name: 'Keep your reading life close.' })).toBeVisible({
+    timeout: 20_000,
+  })
   await page.waitForTimeout(900) // let the (reduced-motion) sky settle before the shutter
 }
 
@@ -179,9 +181,11 @@ async function shot(page: Page, name: string, expectMarkedDays: number[]) {
     return
   }
   const labels = await page
-    .locator('button[aria-label*="entr"]')
+    .locator('.plan-calendar-grid button.has-entry')
     .evaluateAll((els) =>
-      els.map((e) => Number((e.getAttribute('aria-label') ?? '').match(/\s(\d{1,2})\s/)?.[1] ?? 0)),
+      els.map((e) =>
+        Number((e.getAttribute('aria-label') ?? '').match(/^\S+\s(\d{1,2}),/)?.[1] ?? 0),
+      ),
     )
   const got = [...new Set(labels.filter(Boolean))].sort((a, b) => a - b)
   const want = [...expectMarkedDays].sort((a, b) => a - b)
@@ -199,10 +203,9 @@ async function cellShot(page: Page, day: number, name: string, padY = 18) {
   // out and matched nothing, and its `div:text-is` fallback stopped matching once the numeral moved
   // inside a <span>; both branches then burned the full 30s locator timeout per crop, which read as
   // the whole shoot hanging. Match on the DAY portion of the label, which no month spelling affects.
-  const cell = page
-    .locator(`button[aria-label*=" ${day} —"], span:text-is("${day}"), div:text-is("${day}")`)
-    .first()
+  const cell = page.locator(`.plan-calendar-grid button[aria-label*=" ${day},"]`).first()
   await cell.waitFor({ state: 'visible', timeout: 5_000 })
+  await cell.scrollIntoViewIfNeeded()
   const box = await cell.boundingBox()
   if (!box) throw new Error(`cellShot: no cell found for day ${day} (${name})`)
   const pad = 18

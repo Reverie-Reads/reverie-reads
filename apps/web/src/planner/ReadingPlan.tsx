@@ -7,6 +7,7 @@ import {
   nextReadingPlanPosition,
   readingPlanDateLabel,
   sortReadingPlans,
+  summarizeReadingHistory,
   type Book,
   type PlanDate,
   type ReadingHistory,
@@ -471,89 +472,183 @@ function PlanCalendar({
   )
   const viewingCurrentMonth = month.y === today.y && month.m === (today.m ?? 1) - 1
   const hasLoosePlans = loose.soon.length + loose.thisYear.length + loose.thisMonth.length > 0
+  const yearRhythm = useMemo(() => {
+    const summary = history ? summarizeReadingHistory(history, month.y) : null
+    const plannedByMonth = Array<number>(12).fill(0)
+    for (const book of plans) {
+      if (book.plan.y === month.y && book.plan.m != null) {
+        const index = book.plan.m - 1
+        plannedByMonth[index] = (plannedByMonth[index] ?? 0) + 1
+      }
+    }
+    const finishedByMonth = summary?.months.map((records) => records.length) ?? Array(12).fill(0)
+    return {
+      finishedByMonth,
+      plannedByMonth,
+      finished: summary?.records.length ?? 0,
+      planned: plannedByMonth.reduce((sum, count) => sum + count, 0),
+      withoutMonth: summary?.withoutMonth.length ?? 0,
+      maxFinished: Math.max(1, ...finishedByMonth),
+    }
+  }, [history, month.y, plans])
+  const selectMonth = (index: number) => {
+    setSelectedDay(null)
+    setMonth((value) => ({ y: value.y, m: index }))
+  }
+  const changeYear = (amount: number) => {
+    setSelectedDay(null)
+    setMonth((value) => ({ ...value, y: value.y + amount }))
+  }
 
   return (
     <section aria-labelledby="plan-calendar-heading" className="plan-calendar">
-      <Surface tone="card" radius="panel" pad={3} raised className="plan-calendar-sheet">
-        <div className="plan-calendar-heading">
-          <button type="button" onClick={previous} aria-label="Previous month">
-            ←
-          </button>
-          <div>
-            <p className="plan-eyebrow">A calendar for possibilities</p>
-            <h2 id="plan-calendar-heading">
-              {MONTHS[month.m]} {month.y}
-            </h2>
-            <button
-              type="button"
-              className="plan-calendar-today"
-              onClick={returnToToday}
-              disabled={viewingCurrentMonth}
-            >
-              {viewingCurrentMonth ? 'This month' : 'Return to today'}
+      <div className="plan-calendar-workspace">
+        <Surface tone="field" radius="panel" pad={3} className="plan-year-rhythm">
+          <div className="plan-year-heading">
+            <button type="button" onClick={() => changeYear(-1)} aria-label="Previous year">
+              ←
+            </button>
+            <div>
+              <p className="plan-eyebrow">Your year, quietly gathered</p>
+              <h2>{month.y}</h2>
+            </div>
+            <button type="button" onClick={() => changeYear(1)} aria-label="Next year">
+              →
             </button>
           </div>
-          <button type="button" onClick={next} aria-label="Next month">
-            →
-          </button>
-        </div>
-        <p className="plan-calendar-instruction">
-          Choose a marked day to open it. An empty day leaves room for a book.
-        </p>
-        <div className="plan-month-summary" aria-label="Month summary">
-          <span>
-            <strong>{plannedCount}</strong> planned
-          </span>
-          <span>
-            <strong>{finishedCount}</strong> finished
-          </span>
-        </div>
-        <div className="plan-calendar-key" aria-label="Calendar key">
-          <span>
-            <i className="is-plan" aria-hidden="true" /> Planned
-          </span>
-          <span>
-            <i className="is-finished" aria-hidden="true" /> Finished
-          </span>
-        </div>
-        <div className="plan-calendar-grid">
-          {DOW.map((day) => (
-            <span key={day} className="plan-weekday">
-              {day}
+          <p className="plan-year-intro">
+            Each finish leaves a trace. Plans stay separate, so a possibility never becomes a
+            promise.
+          </p>
+          <div className="plan-year-summary" aria-label={`${month.y} reading summary`}>
+            <span>
+              <strong>{yearRhythm.finished}</strong> finish
+              {yearRhythm.finished === 1 ? '' : 'es'} logged
             </span>
-          ))}
-          {Array.from({ length: first }).map((_, index) => (
-            <span key={`empty-${index}`} />
-          ))}
-          {Array.from({ length: days }).map((_, index) => {
-            const day = index + 1
-            const entries = exactByDay.get(day) ?? []
-            const finished = finishedByDay.get(day) ?? []
-            const total = entries.length + finished.length
-            const isToday = viewingCurrentMonth && day === today.d
-            return (
+            <span>
+              <strong>{yearRhythm.planned}</strong> planned to a month
+            </span>
+          </div>
+          <div
+            className="plan-year-months"
+            role="group"
+            aria-label={`Choose a month in ${month.y}`}
+          >
+            {MONTHS.map((label, index) => {
+              const finished = yearRhythm.finishedByMonth[index] ?? 0
+              const planned = yearRhythm.plannedByMonth[index] ?? 0
+              const selected = index === month.m
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  aria-pressed={selected}
+                  aria-label={`${label} ${month.y}: ${finished} finished, ${planned} planned. Show ${label}.`}
+                  onClick={() => selectMonth(index)}
+                >
+                  <span className="plan-year-month-name">{label}</span>
+                  <span className="plan-year-month-count">{finished || '—'}</span>
+                  <span className="plan-year-month-track" aria-hidden="true">
+                    <i
+                      className="is-finished"
+                      style={{ width: `${(finished / yearRhythm.maxFinished) * 100}%` }}
+                    />
+                  </span>
+                  <span className="plan-year-month-plan">
+                    {planned ? `${planned} ${planned === 1 ? 'plan' : 'plans'}` : '\u00a0'}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {yearRhythm.withoutMonth > 0 && (
+            <p className="plan-year-precision-note">
+              {`${yearRhythm.withoutMonth} ${yearRhythm.withoutMonth === 1 ? 'finish is' : 'finishes are'} known only to ${month.y}, so ${yearRhythm.withoutMonth === 1 ? 'it is' : 'they are'} not placed in a month.`}
+            </p>
+          )}
+        </Surface>
+
+        <Surface tone="card" radius="panel" pad={3} raised className="plan-calendar-sheet">
+          <div className="plan-calendar-heading">
+            <button type="button" onClick={previous} aria-label="Previous month">
+              ←
+            </button>
+            <div>
+              <p className="plan-eyebrow">A calendar for possibilities</p>
+              <h2 id="plan-calendar-heading">
+                {MONTHS[month.m]} {month.y}
+              </h2>
               <button
-                key={day}
                 type="button"
-                className={`${total ? 'has-entry' : ''} ${isToday ? 'is-today' : ''}`.trim()}
-                aria-current={isToday ? 'date' : undefined}
-                aria-label={`${MONTHS[month.m]} ${day}, ${month.y}: ${entries.length} planned, ${finished.length} finished${total ? ` — ${[...entries.map((book) => book.title), ...finished.map((read) => read.book.title)].join(', ')}` : ''}`}
-                onClick={() =>
-                  total ? setSelectedDay(day) : add({ y: month.y, m: month.m + 1, d: day })
-                }
+                className="plan-calendar-today"
+                onClick={returnToToday}
+                disabled={viewingCurrentMonth}
               >
-                <span>{day}</span>
-                {total > 0 && (
-                  <small aria-hidden="true">
-                    {entries.length > 0 && <i className="is-plan">{entries.length}</i>}
-                    {finished.length > 0 && <i className="is-finished">{finished.length}</i>}
-                  </small>
-                )}
+                {viewingCurrentMonth ? 'This month' : 'Return to today'}
               </button>
-            )
-          })}
-        </div>
-      </Surface>
+            </div>
+            <button type="button" onClick={next} aria-label="Next month">
+              →
+            </button>
+          </div>
+          <p className="plan-calendar-instruction">
+            Choose a marked day to open it. An empty day leaves room for a book.
+          </p>
+          <div className="plan-month-summary" aria-label="Month summary">
+            <span>
+              <strong>{plannedCount}</strong> planned
+            </span>
+            <span>
+              <strong>{finishedCount}</strong> finished
+            </span>
+          </div>
+          <div className="plan-calendar-key" aria-label="Calendar key">
+            <span>
+              <i className="is-plan" aria-hidden="true" /> Planned
+            </span>
+            <span>
+              <i className="is-finished" aria-hidden="true" /> Finished
+            </span>
+          </div>
+          <div className="plan-calendar-grid">
+            {DOW.map((day) => (
+              <span key={day} className="plan-weekday">
+                {day}
+              </span>
+            ))}
+            {Array.from({ length: first }).map((_, index) => (
+              <span key={`empty-${index}`} />
+            ))}
+            {Array.from({ length: days }).map((_, index) => {
+              const day = index + 1
+              const entries = exactByDay.get(day) ?? []
+              const finished = finishedByDay.get(day) ?? []
+              const total = entries.length + finished.length
+              const isToday = viewingCurrentMonth && day === today.d
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  className={`${total ? 'has-entry' : ''} ${isToday ? 'is-today' : ''}`.trim()}
+                  aria-current={isToday ? 'date' : undefined}
+                  aria-label={`${MONTHS[month.m]} ${day}, ${month.y}: ${entries.length} planned, ${finished.length} finished${total ? ` — ${[...entries.map((book) => book.title), ...finished.map((read) => read.book.title)].join(', ')}` : ''}`}
+                  onClick={() =>
+                    total ? setSelectedDay(day) : add({ y: month.y, m: month.m + 1, d: day })
+                  }
+                >
+                  <span>{day}</span>
+                  {total > 0 && (
+                    <small aria-hidden="true">
+                      {entries.length > 0 && <i className="is-plan">{entries.length}</i>}
+                      {finished.length > 0 && <i className="is-finished">{finished.length}</i>}
+                    </small>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </Surface>
+      </div>
 
       <div className="plan-loose">
         <div className="plan-loose-heading">

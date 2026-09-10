@@ -174,6 +174,7 @@ const ROUTES = [
   '/stats',
   '/settings',
   '/planner',
+  '/planner?tab=calendar',
   '/clubs',
 ]
 test('no route scrolls sideways at a phone viewport', async ({ page }) => {

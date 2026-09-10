@@ -51,6 +51,12 @@
   text-transform: uppercase;
 }
 
+.plan-promise .plan-eyebrow,
+.plan-year-heading .plan-eyebrow,
+.plan-calendar-heading .plan-eyebrow {
+  color: var(--ink);
+}
+
 .plan-heading,
 .plan-calendar h2,
 .plan-current h2,
@@ -206,6 +212,162 @@
 .plan-calendar {
   max-width: 64rem;
   margin: 0 auto;
+}
+.plan-calendar-workspace {
+  display: grid;
+  gap: clamp(1rem, 2vw, 1.5rem);
+  align-items: start;
+}
+.plan-year-rhythm {
+  position: relative;
+  overflow: hidden;
+  background-image:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 6%, transparent), transparent 42%),
+    linear-gradient(180deg, transparent 72%, color-mix(in srgb, var(--ink) 3%, transparent));
+}
+.plan-year-rhythm::after {
+  position: absolute;
+  right: -2.5rem;
+  bottom: -3.5rem;
+  width: 9rem;
+  height: 9rem;
+  border: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+}
+.plan-year-heading {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  gap: 0.6rem;
+  align-items: center;
+  text-align: center;
+}
+.plan-year-heading > button {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: var(--card);
+}
+.plan-year-heading h2 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 6vw, 2.8rem);
+  font-weight: 600;
+  line-height: 1;
+}
+.plan-year-intro {
+  max-width: 38ch;
+  margin: 1rem auto 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  text-align: center;
+}
+.plan-year-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem 1rem;
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.plan-year-summary span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+.plan-year-summary strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.plan-year-months {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.3rem;
+  margin-top: 1.1rem;
+}
+.plan-year-months button {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-width: 0;
+  min-height: 5.3rem;
+  align-content: start;
+  border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  border-radius: min(var(--radius-control), 0.65rem);
+  padding: 0.5rem;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  text-align: left;
+}
+.plan-year-months button:hover {
+  border-color: color-mix(in srgb, var(--primary) 56%, var(--line));
+  color: var(--ink);
+}
+.plan-year-months button[aria-pressed='true'] {
+  border-color: var(--primary);
+  color: var(--ink);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+.plan-year-month-name {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.plan-year-month-count {
+  margin-top: 0.22rem;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.18rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.plan-year-month-track {
+  display: block;
+  height: 0.22rem;
+  margin-top: 0.4rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 45%, transparent);
+}
+.plan-year-month-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ink);
+}
+.plan-year-month-plan {
+  margin-top: 0.28rem;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.58rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plan-year-precision-note {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.9rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 360px) and (max-width: 959px) {
+  .plan-year-months {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 .plan-calendar-sheet {
   position: relative;
@@ -553,6 +715,15 @@
   }
   .plan-promise {
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr);
+  }
+}
+
+@media (min-width: 960px) {
+  .plan-calendar-workspace {
+    grid-template-columns: minmax(16rem, 0.38fr) minmax(0, 1fr);
+  }
+  .plan-year-months {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

@@ -184,6 +184,17 @@ test('a full-precision plan still round-trips through the trio', async ({ page }
 
     await page.goto('/planner')
     await expect(page.getByText('Mar 14, 2026', { exact: true })).toBeVisible({ timeout: 20_000 })
+
+    await page.getByRole('button', { name: /Calendar/ }).click()
+    await expect(page).toHaveURL(/\/planner\?tab=calendar/)
+    await expect(page.getByRole('group', { name: 'Choose a month in 2026' })).toBeVisible()
+    await expect(
+      page.getByRole('button', {
+        name: 'Mar 2026: 0 finished, 1 planned. Show Mar.',
+      }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Mar 2026: 0 finished, 1 planned. Show Mar.' }).click()
+    await expect(page.getByRole('heading', { name: 'Mar 2026' })).toBeVisible()
   } finally {
     await reset(c)
   }

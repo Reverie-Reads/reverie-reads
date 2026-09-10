@@ -180,4 +180,71 @@ describe('ReadingPlan', () => {
     expect(screen.getByRole('button', { name: /Year Book/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: /Soon Book/ })).toBeTruthy()
   })
+
+  it('shows a private year rhythm without placing an imprecise finish into a month', () => {
+    const year = new Date().getFullYear()
+    const finished = makeBook({ id: 'finished', title: 'Finished Book' })
+    const yearOnly = makeBook({ id: 'year-only', title: 'Year-only Finish' })
+    const history: ReadingHistory = {
+      records: [
+        {
+          id: 'february-read',
+          bookId: finished.id,
+          book: finished,
+          date: `${year}-02-14`,
+          format: 'Hardcover',
+          rating: null,
+          notes: null,
+          finished: { y: year, m: 2, d: 14 },
+        },
+        {
+          id: 'year-read',
+          bookId: yearOnly.id,
+          book: yearOnly,
+          date: String(year),
+          format: null,
+          rating: null,
+          notes: null,
+          finished: { y: year, m: null, d: null },
+        },
+      ],
+      years: [year],
+      markedRead: [],
+      stopped: [],
+      knownReadBooks: [finished, yearOnly],
+    }
+    const books = [
+      planned('february-plan', 'February Plan', 1000, { y: year, m: 2, d: null }),
+      planned('year-plan', 'Year Plan', 2000, { y: year, m: null, d: null }),
+    ]
+
+    render(<ReadingPlan books={books} view="calendar" openBook={vi.fn()} history={history} />)
+
+    expect(screen.getByLabelText(`${year} reading summary`)).toHaveTextContent('2 finishes logged')
+    expect(screen.getByLabelText(`${year} reading summary`)).toHaveTextContent(
+      '1 planned to a month',
+    )
+    expect(
+      screen.getByRole('button', {
+        name: `Feb ${year}: 1 finished, 1 planned. Show Feb.`,
+      }),
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: `Jan ${year}: 0 finished, 0 planned. Show Jan.`,
+      }),
+    ).toBeTruthy()
+    expect(screen.getByText(/1 finish is known only to .*it is not placed in a month/)).toBeTruthy()
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: `Feb ${year}: 1 finished, 1 planned. Show Feb.`,
+      }),
+    )
+    expect(screen.getByRole('heading', { name: `Feb ${year}` })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous year' }))
+    expect(screen.getByRole('group', { name: `Choose a month in ${year - 1}` })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: `Feb ${year - 1}` })).toBeTruthy()
+  })
 })
