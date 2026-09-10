@@ -16,7 +16,7 @@ Legacy matched/null/empty-evidence callers remain compatible. No historical data
 The `series` Edge Function accepts bare or Bearer-prefixed Hardcover tokens like `enrich` already
 does. This closes an adapter inconsistency, not a diagnosis of the owner's current credential.
 Fixed failure codes distinguish missing configuration, HTTP status, GraphQL failure, malformed
-response, no match, empty relationship, timeout, network and internal failure. Logs never include
+response, no match, empty relationship, timeout, network and internal failure. Relationship failure logs never include
 credentials, queries, names, raw upstream bodies or errors. Successful cache lifetime stays 24 hours;
 unavailable rows (including old ones) expire after five minutes. All failures remain unresolved,
 never standalone evidence. No LLM, new provider, or paid acquisition is introduced.
@@ -59,13 +59,27 @@ relationship retrieval and owner-run verification remain release gates.
 
 - Regression control: the new 50-assertion discovery test fails six assertions against the old
   local RPC, including the unavailable/null-name outcome and pending-review preservation.
-- Fresh reset with the forward migration: the entire database test suite passes, including all
-  50 discovery assertions. No production connection was used for these tests.
+- Fresh reset with the forward migration: the final database suite passes all 1,569 assertions
+  across 50 files, including 51 discovery assertions. The final fixture first proves its personal
+  reader choice exists on the affected work, then proves the outage preserves it.
+  No production connection was used for these tests.
 - The 18 mocked actual-handler tests and 12 classifier tests pass; HTTP is intercepted throughout.
 - The app's 930 unit tests and compiler-backed Workflow integration test pass.
 - The repository-wide `pnpm test` run is **not green**: the untouched Google trial scheduler's
   `paces concurrent workers through one shared request-start schedule` test failed its 20ms
   request-spacing assertion (402/403 trial tests passed). No trial files were changed or live
   providers called. This failure was not retried away.
-- Full fresh-database browser run (default one worker, retries zero), final build/static checks,
-  and the rollback recovery script checks are in progress; record their results before release.
+- Full fresh-database browser run: 272 passed, 10 expected skips, zero failures, one default worker,
+  retries zero (27.4 minutes). Application runtime was unchanged by subsequent fixture/docs edits.
+- Lint, typecheck, formatting and production build pass. The local build's known local-URL warning
+  is expected from the committed development environment, not a production deployment.
+- Recovery SQL success/audit/rollback, empty-input, stale-fingerprint and replay checks pass using
+  `bash scripts/stack-lock.sh node scripts/test-series-unavailable-recovery.mjs`.
+  The read-only inventory also executes locally. No incident rows exist in the clean local seed.
+- Verification corrections: an attempted database-suite run after browser tests encountered their
+  retained seed data, so final database verification used a fresh reset. The affected-work fixture
+  initially reused an occupied private series position; it now has a distinct series and explicit
+  precondition. The local recovery launcher initially set an empty `PGSERVICE`, which libpq rejected
+  before any SQL ran; it now removes that variable and pins `PGHOSTADDR` to loopback.
+- GitHub's complete checks passed for runtime commit `9f86dd4`. The final fixture/documentation/
+  local-launcher follow-up has no application runtime changes; its CI is a separate status.

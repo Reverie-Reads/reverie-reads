@@ -1,5 +1,5 @@
 begin;
-select plan(50);
+select plan(51);
 
 insert into auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
@@ -41,7 +41,11 @@ insert into public.books (
   ('b3000000-0000-4000-8000-000000000003', 'b1000000-0000-4000-8000-000000000002',
    'b2000000-0000-4000-8000-000000000008', 'Confirmed Match', 'A Writer',
    'The Empyrean', 2, 'standalone', false,
-   '{"origin":"unknown","source":"legacy_scalar"}'::jsonb);
+   '{"origin":"unknown","source":"legacy_scalar"}'::jsonb),
+  ('b3000000-0000-4000-8000-000000000004', 'b1000000-0000-4000-8000-000000000002',
+   'b2000000-0000-4000-8000-000000000006', 'Position Conflict', 'A Writer',
+   'Outage Reader Choice', 7, 'ongoing', true,
+   '{"origin":"reader","source":"book_edit"}'::jsonb);
 
 select has_column('public', 'works', 'series_check_state',
   'works store a series observation separately from publication status');
@@ -304,6 +308,12 @@ reset role;
 
 -- The real classifier's outage shape: a positive identity but NO confirmed series name.
 -- Keep this packet aligned with seriesClassification.test.ts, not a manufactured proposed label.
+select ok(
+  (select corpus_work_id = 'b2000000-0000-4000-8000-000000000006'
+     and series = 'Outage Reader Choice' and position = 7 and series_user_chosen
+     and series_claim ->> 'origin' = 'reader'
+   from public.books where id = 'b3000000-0000-4000-8000-000000000004'),
+  'the outage fixture starts with a real reader choice on the affected work');
 set local role authenticated;
 select is(
   public.record_corpus_series_discovery(
@@ -347,10 +357,10 @@ select ok(
    from public.works where id = 'b2000000-0000-4000-8000-000000000002'),
   'no-label observation still does not assert standalone');
 select ok(
-  (select series = 'My Reading Order' and position = 7 and series_user_chosen
+  (select series = 'Outage Reader Choice' and position = 7 and series_user_chosen
      and series_claim ->> 'origin' = 'reader'
-   from public.books where id = 'b3000000-0000-4000-8000-000000000002'),
-  'classification keeps reader-chosen membership and order intact');
+   from public.books where id = 'b3000000-0000-4000-8000-000000000004'),
+  'an outage keeps the affected work reader-chosen membership and order intact');
 
 select * from finish();
 rollback;

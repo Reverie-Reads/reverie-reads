@@ -41,6 +41,9 @@ const checks = `do $check$ begin
     raise exception 'Recovery audit missing'; end if;
 end; $check$;`
 function run(input) {
+  const localEnv = { ...process.env, PGHOSTADDR: '127.0.0.1' }
+  delete localEnv.PGSERVICE
+  delete localEnv.PGOPTIONS
   return execFileSync(
     'psql',
     [
@@ -55,7 +58,7 @@ function run(input) {
       input,
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, PGHOSTADDR: '127.0.0.1', PGSERVICE: '', PGOPTIONS: '' },
+      env: localEnv,
     },
   )
 }
