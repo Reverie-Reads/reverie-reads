@@ -1,6 +1,6 @@
 # Cover sourcing, quality, and Cover Studio
 
-Status: **current product policy and ordered implementation plan**, revised 2026-09-06. The source
+Status: **current product policy and ordered implementation plan**, revised 2026-09-09. The source
 rights analysis in `reverie-metadata-sourcing.md` remains authoritative when it is more restrictive.
 
 ## What “best cover” means
@@ -160,7 +160,7 @@ Already shipped:
 - server-side host and source checks before ingestion;
 - Google display-only behavior;
 - reader upload and camera capture;
-- full WebP at 1,600px, a 300px thumbnail WebP, and dominant color;
+- full WebP at 1,600px, a 720px card WebP, and dominant color;
 - broken-image and Google no-cover/strip rejection;
 - skin placeholders and a cover-attention review bucket.
 
@@ -169,6 +169,9 @@ Implemented in this change:
 - Google search, Discover, enrichment, and edition selection prefer the strongest official
   `imageLinks` field returned by the API;
 - new stored covers receive a 720px card derivative while retaining the 1,600px full image.
+- cover normalization decodes source bytes once, then produces full, card, and color outputs by
+  resizing one decoded image downward; measured results and preserved quality boundaries are in
+  `docs/tasks/cover-pipeline-efficiency.md`.
 - `/covers` provides a permanent personal Cover Studio with bounded Needs attention, automatic,
   reader-chosen, and all-cover views; title/author/ISBN search; source and saved-versus-linked
   language; observed loaded-image dimensions; camera/upload cropping; contextual edition choices;

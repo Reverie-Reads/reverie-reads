@@ -12,7 +12,7 @@
 // distorted by the act of asking for it. Only the serialization into the response is gated.
 
 export interface Span {
-  /** dotted stage name, e.g. `pace.ol-search.wait` | `fetch.google` | `normalize.decode.full` */
+  /** dotted stage name, e.g. `pace.ol-search.wait` | `fetch.google` | `normalize.decode.source` */
   s: string
   ms: number
 }

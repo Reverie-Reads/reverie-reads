@@ -206,8 +206,13 @@ The remaining items are ordered within P2, but they do not block the P0/P1 seque
    place. Exact pages remain a separate feature because they require an edition-bound position and
    denominator across schema, import/export, merge, and UI; chapters remain separate from club
    spoiler progress. See `docs/tasks/reading-progress-editor.md`.
-7. **Cover pipeline efficiency.** Remove repeated image decodes only after measuring CPU/memory and
-   preserving current cover-quality guards.
+7. **Cover pipeline efficiency — implemented for review.** The `covers` function now decodes each
+   source once and creates the 1,600px, 720px, and color outputs by resizing one image downward. The
+   rejected clone approach raised the live decoded-image count and slowed real uploads; the final
+   path keeps one live image, cut measured warm normalization work by about 60%, and preserved
+   byte-identical outputs for representative sources at or below the full-image boundary. A
+   2,400x3,600 sample that previously exhausted the local worker completed successfully. See
+   `docs/tasks/cover-pipeline-efficiency.md`.
 
 ## P3 — deferred, scheduled, or evidence-triggered
 

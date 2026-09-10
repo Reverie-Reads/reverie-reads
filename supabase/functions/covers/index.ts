@@ -161,75 +161,81 @@ interface Normalized {
   height: number
 }
 
-/** Resize (long edge cap), re-encode as webp, and read a dominant colour from a quantized copy. */
+/** Decode once, then create both WebP derivatives and a dominant colour from that image. */
 async function normalizeImage(bytes: Uint8Array, tr?: Trace): Promise<Normalized> {
   // magick-wasm init is ONCE PER ISOLATE. Timed separately because a cold isolate pays seconds here
   // and a warm one pays ~0 — and if Supabase's per-request CPU limit is killing isolates, this span
   // is non-zero on most requests instead of the first.
   await (tr ? tr.time('normalize.magickInit', () => ensureMagick()) : ensureMagick())
 
-  const encode = (edge: number, quality: number): Uint8Array =>
-    ImageMagick.read(bytes, (img) => {
-      img.autoOrient() // camera EXIF rotation
+  const timed = <T>(stage: string, fn: () => T): T => (tr ? tr.sync(stage, fn) : fn())
+  const decodeStarted = performance.now()
+
+  // ImageMagick owns the decoded image for this callback. Produce derivatives from largest to
+  // smallest so every later operation can reuse the pixels already in memory. This avoids both
+  // repeat decodes and full-resolution clones: writing does not replace the decoded pixels with the
+  // compressed output, and a later resize only moves downward. For an oversized source, the card
+  // derivative deliberately continues down from the bounded full image; at or below FULL_EDGE the
+  // derivatives remain byte-identical to the former independent passes in measured fixtures.
+  return ImageMagick.read(bytes, (img) => {
+    if (tr) tr.mark('normalize.decode.source', performance.now() - decodeStarted)
+    // Preserve the established response/log dimensions (the encoded source dimensions). The
+    // stored images remain auto-oriented exactly as before.
+    const width = img.width
+    const height = img.height
+    timed('normalize.prepare', () => img.autoOrient())
+
+    const encode = (edge: number, quality: number): Uint8Array => {
       if (Math.max(img.width, img.height) > edge) {
-        const g = new MagickGeometry(edge, edge) // fits within edge×edge, aspect preserved
-        img.resize(g)
+        const geometry = new MagickGeometry(edge, edge) // fit, aspect preserved
+        img.resize(geometry)
       }
       img.quality = quality
       img.strip() // EXIF/GPS never reaches the public bucket
-      return img.write(MagickFormat.WebP, (d) => d.slice())
-    })
+      return img.write(MagickFormat.WebP, (data) => data.slice())
+    }
 
-  // FOUR FULL DECODES OF THE SAME BYTES, timed one by one. Each ImageMagick.read re-decodes from
-  // scratch: full encode, thumb encode, a read whose only purpose is width/height, and the colour
-  // pass. Three of the four are avoidable — this instrumentation is what will say whether that is
-  // worth acting on or is noise against the network legs.
-  const full = tr
-    ? tr.sync('normalize.decode.full', () => encode(FULL_EDGE, 82))
-    : encode(FULL_EDGE, 82)
-  const thumb = tr
-    ? tr.sync('normalize.decode.thumb', () => encode(THUMB_EDGE, 78))
-    : encode(THUMB_EDGE, 78)
+    const full = timed('normalize.encode.full', () => encode(FULL_EDGE, 82))
+    const thumb = timed('normalize.encode.thumb', () => encode(THUMB_EDGE, 78))
 
-  const readDims = () =>
-    ImageMagick.read(bytes, (img) => ({ width: img.width, height: img.height }))
-  const { width, height } = tr ? tr.sync('normalize.decode.dims', readDims) : readDims()
-
-  // Dominant colour: quantize a small copy to a handful of colours and score the histogram by
-  // count × saturation, skipping near-white/near-black — the jacket's hue, not its margins.
-  let color: string | null = null
-  try {
-    const readColor = () =>
-      ImageMagick.read(bytes, (img) => {
+    // Dominant colour: quantize the decoded source after output generation and score its histogram
+    // by count × saturation, skipping near-white/near-black — the jacket's hue, not its margins.
+    let color: string | null = null
+    try {
+      color = timed('normalize.color', () => {
         img.resize(new MagickGeometry(64, 64))
-        const q = new QuantizeSettings()
-        q.colors = 8
-        img.quantize(q)
+        const quantize = new QuantizeSettings()
+        quantize.colors = 8
+        img.quantize(quantize)
         let best: { score: number; hex: string } | null = null
         for (const [key, rawCount] of img.histogram()) {
           const count = Number(rawCount) // magick-wasm counts arrive as BigInt
           // histogram keys are colour strings (#RRGGBB or #RRGGBBAA at 8-bit depth)
-          const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(key.trim())
-          if (!m) continue
-          const [r, g, b] = [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
-          const mx = Math.max(r, g, b) / 255
-          const mn = Math.min(r, g, b) / 255
-          const sat = mx === 0 ? 0 : (mx - mn) / mx
-          const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-          if (lum > 0.94 || lum < 0.05) continue // margins/shadows
-          const score = count * (0.35 + sat)
-          if (!best || score > best.score)
-            best = { score, hex: `#${m[1]}${m[2]}${m[3]}`.toLowerCase() }
+          const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(key.trim())
+          if (!match) continue
+          const [r, g, b] = [parseInt(match[1], 16), parseInt(match[2], 16), parseInt(match[3], 16)]
+          const max = Math.max(r, g, b) / 255
+          const min = Math.min(r, g, b) / 255
+          const saturation = max === 0 ? 0 : (max - min) / max
+          const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+          if (luminance > 0.94 || luminance < 0.05) continue // margins/shadows
+          const score = count * (0.35 + saturation)
+          if (!best || score > best.score) {
+            best = {
+              score,
+              hex: `#${match[1]}${match[2]}${match[3]}`.toLowerCase(),
+            }
+          }
         }
         return best?.hex ?? null
       })
-    color = tr ? tr.sync('normalize.decode.color', readColor) : readColor()
-  } catch (e) {
-    logEvent('warn', 'covers', 'color_extract_failed', { err: String(e) })
-    color = null // tint is a nicety — never fail ingest over it
-  }
+    } catch (error) {
+      logEvent('warn', 'covers', 'color_extract_failed', { err: String(error) })
+      color = null // tint is a nicety — never fail ingest over it
+    }
 
-  return { full, thumb, color, width, height }
+    return { full, thumb, color, width, height }
+  })
 }
 
 // ── storage ──
