@@ -247,6 +247,15 @@ select is(
    where work_id = 'b2000000-0000-4000-8000-000000000004'),
   'accepted', 'the accepted proposal remains as review history');
 
+-- A nonblank label alone is not a curated fixture. Establish the existing relationship before
+-- testing that dismissal preserves it; unverified-label dismissal is covered separately.
+do $$ begin
+  perform public.record_corpus_series_discovery(
+    'b2000000-0000-4000-8000-000000000005',
+    '{"matched":true,"identityConfidence":"high","membershipConfidence":"high","source":"hardcover","sourceRef":"hc-curated","series":"Curated Saga","position":4,"count":null,"evidence":[{"source":"hardcover","kind":"relational_membership","sourceRef":"hc-curated","series":"Curated Saga","position":4}]}'::jsonb
+  );
+end $$;
+
 select is(
   public.record_corpus_series_discovery(
     'b2000000-0000-4000-8000-000000000005',

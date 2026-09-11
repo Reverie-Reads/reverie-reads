@@ -156,6 +156,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   book-scoped cache keys include the target identity. Outages, duplicate/competing links and reached
   response caps never trigger further search. A recovered canonical name does not waive the existing
   database conflict-review gate or reader-choice protections. See `docs/tasks/series-book-id-fallback.md`.
+  Pending review preserves an existing shared graph byte-for-byte but cannot create, promote or
+  revive membership. Dismissing a proposal without an active primary graph anchor leaves the old
+  label unresolved; dismissal never copies rejected evidence into the graph. Only matching relational
+  evidence may supply a missing provider series reference, never a candidate book locator. See
+  `docs/tasks/series-review-trust.md`.
   Trusted corpus series seeds household display directly and only replaces personal
   unknown/enrichment/corpus defaults—never a reader or CSV-import choice. Fantastic Fiction may be
   retained only as membership/name/order corroboration and never auto-promotes by itself; do not
