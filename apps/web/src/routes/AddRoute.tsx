@@ -35,7 +35,12 @@ import { useCorpusAdminStatus } from '../data/enrichCorpus'
 import { resultIsbn, triageLabel, triageResults, type TriagedResult } from '../lib/addTriage'
 import { resolveCandidate, type ReviewAction } from '../data/duplicates'
 import { enrichBook, type CoverAlternate } from '../lib/enrich'
-import { searchEverywhere, type SearchResult } from '../lib/search'
+import {
+  googleBooksResultUrl,
+  partitionSearchResults,
+  searchEverywhere,
+  type SearchResult,
+} from '../lib/search'
 import { useEffectiveSkin, useLabels, useVoice } from '../skin/labels'
 import { Chip } from '../components/Chip'
 import { CoverImage } from '../components/CoverImage'
@@ -56,6 +61,7 @@ import { Surface } from '../components/Surface'
 import { LevelPicker } from '../components/LevelPicker'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import { delegatedMemberId, type AddDestination } from '../components/addDestination'
+import { GoogleBooksAttribution, GoogleBooksResultLink } from '../components/GoogleBooksAttribution'
 
 interface BarcodeDetectorLike {
   detect(source: CanvasImageSource): Promise<{ rawValue: string }[]>
@@ -73,6 +79,7 @@ interface SearchHit {
   cover: string
   isbn: string
   pub: string
+  sourceUrl?: string
 }
 
 /**
@@ -112,7 +119,10 @@ const ADD_RESULT_LIMIT = 8
  */
 async function searchCatalog(q: string): Promise<SearchResult[]> {
   const results = await searchEverywhere(q)
-  return results.filter((r) => r.title).slice(0, ADD_RESULT_LIMIT)
+  const sections = partitionSearchResults(results.filter((r) => r.title))
+  // Add keeps its concise catalog limit, while every Google result returned by the provider stays
+  // visible and in order. Truncating the combined array would silently alter Google's result set.
+  return [...sections.catalog.slice(0, ADD_RESULT_LIMIT), ...sections.google]
 }
 
 /** A catalog result as the form's prefill — `pub` takes the fn's `year`, and its ISBN-13-preferred
@@ -124,6 +134,7 @@ const hitOf = (r: SearchResult): SearchHit => ({
   cover: r.cover,
   isbn: resultIsbn(r),
   pub: r.year,
+  sourceUrl: r.sourceUrl,
 })
 
 /** A corpus row as the form's prefill. The five shared fields come from `workToHit` — the SAME
@@ -132,6 +143,7 @@ const hitOf = (r: SearchResult): SearchHit => ({
 const pickedFromWork = (w: WorkRow, result: SearchResult): Picked => ({
   ...workToHit(w, resultIsbn(result)),
   source: result.source,
+  sourceUrl: result.sourceUrl,
   series: w.series ?? '',
   ...(w.series
     ? { seriesClaim: makeSeriesClaim('corpus', 'catalog_prefill', { sourceRef: w.id }) }
@@ -567,6 +579,13 @@ function AddForm({
           />
         </div>
       </div>
+
+      {hit.source === 'google' && hit.sourceUrl && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <GoogleBooksAttribution />
+          <GoogleBooksResultLink result={hit} />
+        </div>
+      )}
 
       {/* Pick a cover — enrichment's alternate editions, before saving (upload/camera come after add). */}
       {alternates.length > 0 && (
@@ -1020,13 +1039,14 @@ function TriageRow({
       radius="card"
       tone="field"
       pad={0}
-      className="flex items-center gap-3 p-2"
+      className="flex flex-wrap items-center gap-3 p-2"
       data-testid="add-result"
       data-triage={t.state}
     >
       {!household && t.state === 'library' && t.book ? (
         <>
           <span className="flex flex-1 items-center gap-3">{inner}</span>
+          <GoogleBooksResultLink result={r} />
           <Link
             to="/book/$bookId"
             params={{ bookId: t.book.id }}
@@ -1038,16 +1058,19 @@ function TriageRow({
           </Link>
         </>
       ) : (
-        <button
-          type="button"
-          // A corpus row is the better prefill: it carries the series, position and genre the
-          // catalog result does not, so picking one fills them in rather than making the reader
-          // retype what the corpus already knows.
-          onClick={() => onPick(picked)}
-          className="flex flex-1 items-center gap-3 text-left"
-        >
-          {inner}
-        </button>
+        <>
+          <button
+            type="button"
+            // A corpus row is the better prefill: it carries the series, position and genre the
+            // catalog result does not, so picking one fills them in rather than making the reader
+            // retype what the corpus already knows.
+            onClick={() => onPick(picked)}
+            className="flex min-w-[12rem] flex-1 items-center gap-3 text-left"
+          >
+            {inner}
+          </button>
+          <GoogleBooksResultLink result={r} />
+        </>
       )}
     </Surface>
   )
@@ -1156,6 +1179,13 @@ function HouseholdAddForm({
         </div>
       </div>
 
+      {hit.source === 'google' && hit.sourceUrl && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <GoogleBooksAttribution />
+          <GoogleBooksResultLink result={hit} />
+        </div>
+      )}
+
       <p className="mt-3 text-[12.5px] text-muted">
         {targetMemberId
           ? `This adds one shared entry and a neutral personal book for ${targetMemberName ?? 'the selected member'}. It does not say they own, borrowed, want, or have read it.`
@@ -1257,7 +1287,9 @@ function AddScreen() {
   // Labelled the moment the hits arrive — on the library alone if the corpus query is still in
   // flight, gaining the corpus half when it resolves. Nothing here waits on a second round trip,
   // which is the regression that would be invisible on a fast connection.
-  const triaged = triageResults(results ?? [], books ?? [], corpus.data)
+  const resultSections = partitionSearchResults(results ?? [])
+  const catalogTriaged = triageResults(resultSections.catalog, books ?? [], corpus.data)
+  const googleTriaged = triageResults(resultSections.google, books ?? [], corpus.data)
 
   async function runSearch(term = q) {
     const query = term.trim()
@@ -1411,16 +1443,45 @@ function AddScreen() {
       {results && !picked && (
         <div className="mt-4 flex flex-col gap-2">
           {results.length ? (
-            <ul className="flex flex-col gap-2" data-testid="add-results">
-              {triaged.map((t, i) => (
-                <TriageRow
-                  key={`${t.result.isbn}|${t.result.title}|${i}`}
-                  t={t}
-                  onPick={setPicked}
-                  household={collectiveDestination}
-                />
-              ))}
-            </ul>
+            <div className="space-y-6" data-testid="add-results">
+              {catalogTriaged.length > 0 && (
+                <section aria-labelledby="add-catalog-results">
+                  <h2 id="add-catalog-results" className="mb-2 text-base font-semibold text-ink">
+                    Catalog matches
+                  </h2>
+                  <ul className="flex flex-col gap-2">
+                    {catalogTriaged.map((t, i) => (
+                      <TriageRow
+                        key={`${t.result.isbn}|${t.result.title}|${i}`}
+                        t={t}
+                        onPick={setPicked}
+                        household={collectiveDestination}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {googleTriaged.length > 0 && (
+                <section aria-labelledby="add-google-results">
+                  <div className="mb-2 flex min-h-[30px] items-center justify-between gap-3">
+                    <h2 id="add-google-results" className="text-base font-semibold text-ink">
+                      Google Books search results
+                    </h2>
+                    <GoogleBooksAttribution />
+                  </div>
+                  <ul className="flex flex-col gap-2">
+                    {googleTriaged.map((t, i) => (
+                      <TriageRow
+                        key={`${t.result.isbn}|${t.result.title}|${i}`}
+                        t={t}
+                        onPick={setPicked}
+                        household={collectiveDestination}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </div>
           ) : (
             <p className="text-[13px] text-muted">
               {voice.miss}{' '}
@@ -1494,6 +1555,7 @@ interface AddPrefill {
   isbn?: string
   cover?: string
   source?: 'hardcover' | 'google'
+  sourceUrl?: string
   pub?: string
   /** arrival from a wanting context (Discover, a shelf/TBR) — the ownership toggle defaults to
    *  "I want to read this" instead of "I own this" */
@@ -1508,6 +1570,7 @@ export function pickedFromAddPrefill(prefill: AddPrefill): Picked | null {
     authors: prefill.author ? [prefill.author] : [],
     cover: prefill.cover ?? '',
     source: prefill.source,
+    sourceUrl: prefill.sourceUrl,
     isbn: prefill.isbn ?? '',
     pub: prefill.pub ?? '',
   }
@@ -1527,6 +1590,9 @@ export const validateAddSearch = (s: Record<string, unknown>): AddPrefill => {
   if (str(s.isbn)) out.isbn = str(s.isbn)
   if (str(s.cover)) out.cover = str(s.cover)
   if (s.source === 'hardcover' || s.source === 'google') out.source = s.source
+  const sourceUrl = str(s.sourceUrl)
+  if (sourceUrl && googleBooksResultUrl({ source: out.source, sourceUrl }))
+    out.sourceUrl = sourceUrl
   if (str(s.pub)) out.pub = str(s.pub)
   if (s.want === true || s.want === 'true') out.want = true
   return out

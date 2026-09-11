@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { Book } from '@reverie/core'
 import {
   dedupeResults,
+  googleBooksResultUrl,
   libraryMatch,
+  partitionSearchResults,
   resultKey,
   resultToIncoming,
   type SearchResult,
@@ -29,7 +31,7 @@ const book = (b: { id?: string; title: string; isbn?: string; author?: string })
   }) as unknown as Book
 
 describe('resultKey', () => {
-  it('keys on ISBN-13 when present (dedupes editions across sources)', () => {
+  it('keys on ISBN-13 when present', () => {
     expect(resultKey(result({ isbn13: '978-0-316-58079-2', title: 'A' }))).toBe('9780316580792')
     expect(resultKey(result({ isbn: '0316580791', title: 'A' }))).toBe('0316580791')
   })
@@ -41,7 +43,7 @@ describe('resultKey', () => {
 })
 
 describe('dedupeResults', () => {
-  it('collapses the same book from Hardcover + Google', () => {
+  it('collapses repeated identities when a catalog section asks for dedupe', () => {
     const out = dedupeResults([
       result({
         source: 'hardcover',
@@ -71,6 +73,46 @@ describe('dedupeResults', () => {
       result({ title: 'powerless', authors: ['lauren roberts'] }),
     ])
     expect(out).toHaveLength(1)
+  })
+})
+
+describe('partitionSearchResults', () => {
+  it('dedupes catalog matches without altering Google order or cross-provider duplicates', () => {
+    const shared = {
+      title: 'Fourth Wing',
+      authors: ['Rebecca Yarros'],
+      isbn13: '9781649374042',
+    }
+    const sections = partitionSearchResults([
+      result({ source: 'hardcover', ...shared }),
+      result({
+        source: 'google',
+        ...shared,
+        sourceUrl: 'https://books.google.com/books?id=one',
+      }),
+      result({
+        source: 'google',
+        title: 'Iron Flame',
+        sourceUrl: 'https://books.google.com/books?id=two',
+      }),
+    ])
+
+    expect(sections.catalog).toHaveLength(1)
+    expect(sections.google.map((entry) => entry.sourceUrl)).toEqual([
+      'https://books.google.com/books?id=one',
+      'https://books.google.com/books?id=two',
+    ])
+  })
+
+  it('rejects missing and lookalike Google Books links', () => {
+    const missing = result({ source: 'google', title: 'Missing link' })
+    const lookalike = result({
+      source: 'google',
+      title: 'Lookalike',
+      sourceUrl: 'https://books.google.com.evil.example/books?id=x',
+    })
+    expect(partitionSearchResults([missing, lookalike]).google).toEqual([])
+    expect(googleBooksResultUrl(lookalike)).toBeNull()
   })
 })
 

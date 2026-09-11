@@ -38,7 +38,7 @@ describe('production search provider orchestration', () => {
     expect(outcome).toMatchObject({ degraded: true, unavailable: true })
   })
 
-  it('returns useful fallback results while marking a partial provider failure as degraded', async () => {
+  it('returns useful fallback results while preserving Google order and marking degradation', async () => {
     const outcome = await runSearchProviders(
       options({
         runHardcover: async () => {
@@ -48,8 +48,19 @@ describe('production search provider orchestration', () => {
       }),
     )
 
-    expect(outcome.results).toEqual(['google-book'])
+    expect(outcome.results).toEqual(['google-book', 'google-book'])
     expect(outcome).toMatchObject({ degraded: true, unavailable: false })
+  })
+
+  it('keeps provider sections contiguous without removing a Google duplicate', async () => {
+    const outcome = await runSearchProviders(
+      options({
+        runHardcover: async () => ['shared-book'],
+        runGoogle: async () => ['shared-book', 'google-second'],
+      }),
+    )
+
+    expect(outcome.results).toEqual(['shared-book', 'shared-book', 'google-second'])
   })
 
   it('does not spend a Google request when Hardcover already filled the result set', async () => {

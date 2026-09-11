@@ -43,6 +43,7 @@ const STUB_RESULTS = [
     isbn: '9781111111119',
     isbn13: '9781111111119',
     year: '2021',
+    sourceUrl: 'https://books.google.com/books?id=seeded-owned-book',
   },
 ]
 
@@ -193,6 +194,18 @@ test('Discover search: results dedupe against library, add owned + add-to-shelf,
     await expect(page.getByRole('group', { name: /browse a genre/i })).toBeHidden() // rail gone while querying
     // series shown on the result
     await expect(page.getByText(/Emberwild/)).toBeVisible()
+    // Google results remain a distinct provider block with the official attribution and a
+    // prominent source link on every result. The same work may appear in the catalog block too;
+    // cross-provider dedupe would alter Google's returned set.
+    await expect(page.getByRole('heading', { name: 'Catalog matches' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Google Books search results' })).toBeVisible()
+    await expect(page.getByTestId('google-books-attribution')).toHaveAttribute(
+      'src',
+      '/google-books-powered-by.png',
+    )
+    await expect(
+      page.getByRole('link', { name: /View Seeded Owned Book on Google Books/ }),
+    ).toHaveAttribute('href', 'https://books.google.com/books?id=seeded-owned-book')
     // the seeded owned book shows its shelf state, not add actions
     await expect(page.getByRole('link', { name: /On your shelf/i })).toBeVisible()
 

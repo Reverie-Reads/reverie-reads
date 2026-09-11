@@ -156,8 +156,8 @@ async function seed(c: Client): Promise<string> {
   return (row as { id: string }).id
 }
 
-/** The catalog answer, stubbed. `searchEverywhere` drops any result without a title AND a cover,
- *  so every one carries both — omitting the cover would silently empty the list. */
+/** The catalog answer, stubbed. Search requires a title; the cover may be absent because Reverie's
+ *  designed placeholder is a valid presentation for a real catalog result. */
 const RESULTS = [
   {
     source: 'hardcover',
@@ -177,12 +177,13 @@ const RESULTS = [
     year: '2021',
   },
   {
-    source: 'hardcover',
+    source: 'google',
     title: FRESH,
     authors: ['Zed Quill'],
     cover: 'https://example.invalid/c.jpg',
     isbn: '',
     year: '2024',
+    sourceUrl: 'https://books.google.com/books?id=triage-probe-fresh',
   },
 ]
 
@@ -230,6 +231,15 @@ test('each result says which of the three states it is in, in words', async ({ p
   await expect.poll(() => labelOf(page, CORPUS), { timeout: 15_000 }).toBe('In the corpus')
   expect(await labelOf(page, OWNED)).toBe('In your library · also in the corpus')
   expect(await labelOf(page, FRESH)).toBe('New to your library')
+  await expect(page.getByRole('heading', { name: 'Catalog matches' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Google Books search results' })).toBeVisible()
+  await expect(page.getByTestId('google-books-attribution')).toHaveAttribute(
+    'src',
+    '/google-books-powered-by.png',
+  )
+  await expect(
+    page.getByRole('link', { name: /View Triage Probe Fresh on Google Books/ }),
+  ).toHaveAttribute('href', 'https://books.google.com/books?id=triage-probe-fresh')
 })
 
 test('"Open it" lands on the book the reader already has — not on a second copy of it', async ({

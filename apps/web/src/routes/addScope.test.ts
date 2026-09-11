@@ -37,6 +37,33 @@ describe('Add route library scope', () => {
     })
   })
 
+  it('carries only an exact Google Books result link into the selected-book form', () => {
+    const valid = validateAddSearch({
+      title: 'Linked result',
+      source: 'google',
+      sourceUrl: 'https://books.google.com/books?id=linked-result',
+    })
+    expect(pickedFromAddPrefill(valid)).toMatchObject({
+      source: 'google',
+      sourceUrl: 'https://books.google.com/books?id=linked-result',
+    })
+
+    expect(
+      validateAddSearch({
+        title: 'Lookalike result',
+        source: 'google',
+        sourceUrl: 'https://books.google.com.example.test/books?id=lookalike',
+      }).sourceUrl,
+    ).toBeUndefined()
+    expect(
+      validateAddSearch({
+        title: 'Mislabeled result',
+        source: 'hardcover',
+        sourceUrl: 'https://books.google.com/books?id=mislabeled',
+      }).sourceUrl,
+    ).toBeUndefined()
+  })
+
   it.each(['personal', 'family', '', ['household'], 1, null])(
     'fails closed to personal for %j',
     (scope) => {

@@ -21,7 +21,8 @@ import { Modal } from '../components/Modal'
 import { CoverImage } from '../components/CoverImage'
 import { BookStateMarks } from '../components/BookStateMarks'
 import { SearchResults } from '../components/SearchResults'
-import { libraryMatch, type SearchResult } from '../lib/search'
+import { libraryMatch, partitionSearchResults, type SearchResult } from '../lib/search'
+import { GoogleBooksAttribution } from '../components/GoogleBooksAttribution'
 import { DiscoverBookPreview } from '../components/DiscoverBookPreview'
 import {
   batchCount,
@@ -250,6 +251,8 @@ function SearchSection({
 }) {
   const voice = useVoice()
   const q = useSearchEverywhere(query)
+  const sections = partitionSearchResults(q.data ?? [])
+  const resultCount = sections.catalog.length + sections.google.length
   return (
     <div>
       {q.isPending && (
@@ -274,21 +277,48 @@ function SearchSection({
           </p>
         </Surface>
       )}
-      {q.isSuccess && q.data.length === 0 && (
+      {q.isSuccess && resultCount === 0 && (
         <Surface radius="card" tone="bare" pad={5} className="text-center">
           <p className="text-[14px] text-ink">{voice.miss}</p>
           <p className="mt-1 text-[12.5px] text-muted">Try a title, an author, or an ISBN.</p>
         </Surface>
       )}
-      {q.isSuccess && q.data.length > 0 && (
-        <SearchResults
-          onPreview={(result) =>
-            onOpen({ ...result, pub: result.year, isbn: result.isbn13 ?? result.isbn })
-          }
-          results={q.data}
-          books={books}
-          renderActions={(r) => <ResultActions result={r} />}
-        />
+      {q.isSuccess && resultCount > 0 && (
+        <div className="space-y-8">
+          {sections.catalog.length > 0 && (
+            <section aria-labelledby="discover-catalog-results">
+              <h2 id="discover-catalog-results" className="mb-3 text-lg font-semibold text-ink">
+                Catalog matches
+              </h2>
+              <SearchResults
+                onPreview={(result) =>
+                  onOpen({ ...result, pub: result.year, isbn: result.isbn13 ?? result.isbn })
+                }
+                results={sections.catalog}
+                books={books}
+                renderActions={(r) => <ResultActions result={r} />}
+              />
+            </section>
+          )}
+          {sections.google.length > 0 && (
+            <section aria-labelledby="discover-google-results">
+              <div className="mb-3 flex min-h-[30px] items-center justify-between gap-3">
+                <h2 id="discover-google-results" className="text-lg font-semibold text-ink">
+                  Google Books search results
+                </h2>
+                <GoogleBooksAttribution />
+              </div>
+              <SearchResults
+                onPreview={(result) =>
+                  onOpen({ ...result, pub: result.year, isbn: result.isbn13 ?? result.isbn })
+                }
+                results={sections.google}
+                books={books}
+                renderActions={(r) => <ResultActions result={r} />}
+              />
+            </section>
+          )}
+        </div>
       )}
     </div>
   )
