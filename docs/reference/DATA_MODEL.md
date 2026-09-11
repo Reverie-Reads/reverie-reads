@@ -582,6 +582,13 @@ may browse active catalog rows but cannot write them directly. Corpus administra
 archive/restore, and maintain order through revision-checked RPCs; every decision is appended to
 `corpus_series_edits`. Archive and slot removal are tombstones, not destructive deletion.
 
+Pending review is not shared membership authority. It preserves an existing graph unchanged but
+cannot create, promote, revive, or refresh one from a candidate label. Dismissal without an active
+primary graph anchor leaves the old label unresolved; dismissal with an existing anchor retains it
+without copying rejected evidence into the graph. Explicit acceptance still publishes the reviewed
+relationship and reconciles eligible personal defaults. A candidate book locator cannot supply a
+provider series identity. See `../tasks/series-review-trust.md`.
+
 Existing-slot order reviews use `review_corpus_series_entry_order`: changed or cleared positions
 require an HTTPS source page and explanation, with the current series revision. The position claim
 is separate from membership provenance. The explanation lives only in administrator-readable
