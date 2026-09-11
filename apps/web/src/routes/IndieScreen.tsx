@@ -15,6 +15,7 @@ import {
 import { findBookstores, type Store } from '../lib/overpass'
 import { formatHours12 } from '@reverie/core'
 import { Surface } from '../components/Surface'
+import { CARTO_ATTRIBUTION, cartoBasemapUrl } from '../lib/cartoBasemap'
 
 const miles = (km: number) => `${(km * 0.621371).toFixed(1)} mi`
 const SEARCH_RADII = [
@@ -23,15 +24,10 @@ const SEARCH_RADII = [
   { meters: 80000, label: '50 miles' },
 ] as const
 
-// Map tiles are served from CARTO's CDN (dark or light to match the current room mode) — the
-// policy-respecting path for tiles (a CDN, not our origin). The throttled API calls (Overpass +
-// Nominatim) are proxied + cached through the `geo` Edge Function; tiles stay on the CDN. Owner
-// action at production volume: a tile plan / self-hosted tiles (free CARTO basemaps are light-use).
-const TILES = {
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-}
-const TILE_ATTR = '&copy; OpenStreetMap contributors &copy; CARTO'
+// CARTO's public-app key is client-visible by design and should be domain-restricted in CARTO.
+// Without it, the page keeps the useful store list and never requests watermarked tiles.
+const CARTO_BASEMAP_KEY = import.meta.env.VITE_CARTO_BASEMAP_KEY as string | undefined
+const CARTO_MAP_CONFIGURED = cartoBasemapUrl('light', CARTO_BASEMAP_KEY) !== null
 
 // Escape untrusted store text (OSM/Overpass names + addresses) before it goes into a popup's HTML.
 const esc = (s: string): string =>
@@ -75,8 +71,14 @@ function StoreMap({ loc, stores }: { loc: ResolvedLocation; stores: Store[] }) {
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
+    const tileUrl = cartoBasemapUrl(mode, CARTO_BASEMAP_KEY)
+    if (!tileUrl) return
     tileRef.current?.remove()
-    tileRef.current = L.tileLayer(TILES[mode], { attribution: TILE_ATTR }).addTo(map)
+    tileRef.current = L.tileLayer(tileUrl, {
+      attribution: CARTO_ATTRIBUTION,
+      maxZoom: 20,
+      subdomains: 'abcd',
+    }).addTo(map)
   }, [mode])
 
   // View — recenter when the resolved location changes (was: <MapContainer key={loc}>).
@@ -412,15 +414,19 @@ export default function IndieScreen() {
                   {' · '}chains excluded
                   {defaultStore ? ` · your store: ${defaultStore.name}` : ''}
                 </p>
-                <button
-                  type="button"
-                  aria-expanded={showMap}
-                  onClick={() => setShowMap((shown) => !shown)}
-                  className="skin-control min-h-11 border border-line px-4 text-[12.5px] font-semibold text-ink"
-                  style={{ background: 'var(--field)' }}
-                >
-                  {showMap ? 'Hide map' : 'Show map'}
-                </button>
+                {CARTO_MAP_CONFIGURED ? (
+                  <button
+                    type="button"
+                    aria-expanded={showMap}
+                    onClick={() => setShowMap((shown) => !shown)}
+                    className="skin-control min-h-11 border border-line px-4 text-[12.5px] font-semibold text-ink"
+                    style={{ background: 'var(--field)' }}
+                  >
+                    {showMap ? 'Hide map' : 'Show map'}
+                  </button>
+                ) : (
+                  <span className="text-[12.5px] text-muted">Map temporarily unavailable</span>
+                )}
               </div>
               {showMap ? (
                 <div className="mt-3">

@@ -56,12 +56,12 @@ export type SetCoverError =
  *
  *  · INGEST — Open Library, upload, camera, and Hardcover: the bytes go through the pipeline and
  *    are stored in the reader's own Storage path, with provenance.
- *  · HOTLINK — Google Books and unreviewed pasted hosts are rendered at display size, but never
- *    fetched by the server. The reader's pick still works and still counts as their choice; only
- *    the bytes stay where they are.
+ *  · LINK — unreviewed pasted hosts and historical display-only choices are rendered at display
+ *    size, but never fetched by the server. The reader's pick still works; only the bytes stay
+ *    where they are.
  *
- * The hotlink branch is what keeps a Google edition from becoming a dead end in the sheet — the
- * alternative was offering a candidate that errors when picked.
+ * Provider alternatives offered by the current sheet are all ingestible; this branch remains for
+ * reader-pasted links and existing historical choices.
  */
 export function useSetCover() {
   const qc = useQueryClient()

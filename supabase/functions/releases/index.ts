@@ -2,30 +2,26 @@
 // reader via the global releases_cache (enrichment_cache's sibling; 24h TTL). Two modes:
 //
 //   { mode: 'authors', names: string[] }  per-author recent + upcoming books (Hardcover edition
-//       discovery, optional PRH confirmation, Google fill). Cached names return instantly; at most
+//       discovery, optional PRH confirmation). Cached names return instantly; at most
 //       a few upstream author fetches per request —
 //       the client accumulates across calls exactly like the embed fn's rank mode.
 //       → { authors: { [name]: Hit[] }, pending: string[] }
-//   { mode: 'discover', genre, query }    a genre shelf (newest + relevance, quality-filtered
-//       server-side), cached per genre per day. → { hits: Hit[] }
+//   { mode: 'discover', genre }           compatibility response for older clients; the reviewed,
+//       bundled shelf only. New clients read the same shelf locally. → { hits: Hit[] }
 //
-// Google quirks absorbed here so clients stay dumb: orderBy=newest sorts by messy edition dates
-// (a 1927 reprint can outrank this year's release), so we fetch BOTH orderings, normalize via the
-// enrich mirror, dedupe, and sort/filter by real dates ourselves. The key is a fn secret
-// (GOOGLE_BOOKS_KEY) sent with the app's Referer (the key is referrer-restricted); keyless works
-// as a degraded fallback. Caller auth: any signed-in user (their token, verified) — cache access
-// itself is service-role.
+// Google Books is intentionally absent: its results belong in explicit search modules that retain
+// provider order, attribution, and per-result links. Releases merge providers and Discover applies
+// personal ranking, so neither surface can satisfy that contract. Caller auth: any signed-in user
+// (their token, verified) — cache access itself is service-role.
 
 import { SourceBodyError, SourceHttpError } from '../_shared/httpClassify.ts'
 import { captureEdgeError } from '../_shared/observe.ts'
 import { envInt } from '../_shared/ratelimit.ts'
-import { mapGenre, normalizeGoogle } from '../enrich/merge.ts'
 import { blendCuratedPool, tierDiscoverShelf } from './curated.ts'
 import {
   hardcoverEditionToRelease,
   mergeAuthorReleases,
   prhTitleToRelease,
-  releaseDatePrecision,
   type ReleaseHit,
   type ReleaseInfo,
 } from './source.ts'
@@ -39,14 +35,9 @@ const cors = {
 const DB_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const ANON = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-const BOOKS_KEY = Deno.env.get('GOOGLE_BOOKS_KEY') ?? ''
-const REFERER = Deno.env.get('BOOKS_KEY_REFERER') ?? 'https://reveriereads.app/'
 const PRH_KEY = (Deno.env.get('PRH_API_KEY') ?? '').trim()
 
-/** Ceiling on the discover pool cached + returned per genre. Mirrors DISCOVER_POOL in
- *  apps/web/src/lib/discover.ts; the client pages it into batches of DISCOVER_BATCH.
- *  The two deploy independently (Vercel vs Supabase), so neither side may ASSUME the other's
- *  number — the client pages whatever length it receives, and this only ever caps. */
+/** Ceiling on the reviewed Discover pool returned to older clients. */
 const DISCOVER_POOL = 60
 
 const svc = {
@@ -109,92 +100,6 @@ async function cacheSet(key: string, payload: unknown): Promise<void> {
     headers: { ...svc, Prefer: 'resolution=merge-duplicates' },
     body: JSON.stringify({ cache_key: key, payload, fetched_at: new Date().toISOString() }),
   })
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function toHit(rec: any): Hit {
-  const pub = [rec.pubY, rec.pubM, rec.pubD]
-    .filter((x: unknown) => x != null)
-    .map((x: number, i: number) => (i === 0 ? String(x) : String(x).padStart(2, '0')))
-    .join('-')
-  return {
-    title: rec.title ?? '',
-    authors: rec.authors ?? [],
-    cover: rec.cover ?? '',
-    isbn: rec.isbn13 || rec.isbn10 || '',
-    pub,
-    ...mapGenre(Array.isArray(rec.categories) ? rec.categories : []),
-    description: typeof rec.description === 'string' ? rec.description.slice(0, 2500) : '',
-  }
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
-
-function googleInfoLink(value: unknown): string | undefined {
-  if (typeof value !== 'string') return undefined
-  try {
-    const url = new URL(value.replace(/^http:/, 'https:'))
-    return url.protocol === 'https:' && url.hostname === 'books.google.com'
-      ? url.toString()
-      : undefined
-  } catch {
-    return undefined
-  }
-}
-
-async function googleVolumes(
-  q: string,
-  orderBy: 'newest' | 'relevance',
-  max = 20,
-  releaseCheckedAt?: string,
-): Promise<Hit[]> {
-  const key = BOOKS_KEY ? `&key=${BOOKS_KEY}` : ''
-  const endpoint = 'https://www.googleapis.com/books/v1/volumes'
-  const url = `${endpoint}?q=${encodeURIComponent(q)}&orderBy=${orderBy}&printType=books&langRestrict=en&maxResults=${max}${key}`
-  let res: Response
-  try {
-    res = await fetch(url, {
-      headers: BOOKS_KEY ? { Referer: REFERER } : {},
-      signal: AbortSignal.timeout(3500),
-    })
-  } catch {
-    // Network errors can echo the full URL. Keep the key-bearing request out of observability.
-    throw new Error(`Google Books release request failed for ${endpoint}`)
-  }
-  if (!res.ok) throw new Error(`google ${res.status}`)
-  const body = (await res.json()) as {
-    items?: { volumeInfo?: { infoLink?: unknown } }[]
-  }
-  return (body.items ?? []).map((volume) => {
-    const hit = toHit(normalizeGoogle(volume))
-    if (!releaseCheckedAt) return hit
-    const precision = releaseDatePrecision(hit.pub)
-    return {
-      ...hit,
-      ...(precision
-        ? {
-            release: {
-              source: 'google' as const,
-              precision,
-              sourceUrl: googleInfoLink(volume.volumeInfo?.infoLink),
-              checkedAt: releaseCheckedAt,
-              confirmedBy: ['google' as const],
-            },
-          }
-        : {}),
-    }
-  })
-}
-
-function dedupe(hits: Hit[]): Hit[] {
-  const seen = new Set<string>()
-  const out: Hit[] = []
-  for (const h of hits) {
-    const k = h.isbn.replace(/[^0-9Xx]/g, '') || `${norm(h.title)}|${norm(h.authors[0] ?? '')}`
-    if (!h.title || seen.has(k)) continue
-    seen.add(k)
-    out.push(h)
-  }
-  return out
 }
 
 /** Consume a unit from a provider-wide budget shared by every caller and Edge Function. */
@@ -331,10 +236,9 @@ async function prhAuthorReleases(
     .filter((hit): hit is ReleaseHit => hit !== null)
 }
 
-/** An author's useful release event per work. Hardcover discovers editions, PRH confirms its own
- * catalog when configured, and Google fills gaps. One provider failure cannot erase the others. */
+/** An author's useful release event per work. Hardcover discovers editions and PRH confirms its
+ * own catalog when configured. One provider failure cannot erase the other. */
 async function fetchAuthor(name: string): Promise<Hit[]> {
-  const q = `inauthor:"${name}"`
   const checkedAt = new Date().toISOString()
   const after = new Date()
   after.setUTCDate(after.getUTCDate() - 183)
@@ -342,8 +246,6 @@ async function fetchAuthor(name: string): Promise<Hit[]> {
   const settled = await Promise.allSettled([
     hardcoverAuthorReleases(name, afterIso, checkedAt),
     prhAuthorReleases(name, after, checkedAt),
-    googleVolumes(q, 'newest', 20, checkedAt),
-    googleVolumes(q, 'relevance', 20, checkedAt),
   ])
   if (settled.every((result) => result.status === 'rejected'))
     throw new Error('All release providers failed')
@@ -355,35 +257,9 @@ async function fetchAuthor(name: string): Promise<Hit[]> {
   return mergeAuthorReleases(own, Date.now())
 }
 
-/** A genre shelf that actually reads "new & notable": both orderings pulled wide, quality-gated,
- *  then tiered by REAL year — last 2 years first (newest-first), the last 8 as filler, and only
- *  then anything older. Google's own orderings can't be trusted for this (edition-date noise puts
- *  1927 reprints on top of "newest", and raw relevance is dominated by decades-old staples). */
-async function fetchDiscoverShelf(query: string, genre: string): Promise<Hit[]> {
-  const [newest, relevant] = await Promise.all([
-    googleVolumes(query, 'newest', 40),
-    googleVolumes(query, 'relevance', 40),
-  ])
-  const quality = (h: Hit) => h.title && h.cover && h.authors.length > 0
-  const all = dedupe([...newest, ...relevant].filter(quality))
-  // Curated injection for the four starved categories (docs/tasks/task-discover-curated-candidates.md)
-  // — additional candidates into the pool BEFORE ranking; a passthrough for every other genre. The
-  // tiering below is the same function that always ranked this shelf, now shared with the client
-  // fallback via the core module this file mirrors.
-  const pool = blendCuratedPool(genre, all)
-  const injected = pool.length - all.length
-  if (injected > 0)
-    console.log(`[discover] ${genre}: injected ${injected} curated of ${pool.length} pool`)
-  // Returns a POOL, not a shelf. The client shows DISCOVER_BATCH (20) at a time and cycles through
-  // the rest locally, so "new batch" costs ZERO extra calls — this payload is what the 24h
-  // per-genre cache already holds, and re-invoking with an offset would only hand back the same
-  // cached array. Cheaper than re-fetching by exactly one upstream round trip per batch.
-  //
-  // 60 = three batches, and it is a ceiling rather than a promise: ~80 raw come back from the two
-  // orderings, and quality-gating plus dedupe routinely leave fewer, so a genre that yields 34
-  // simply has two batches. Ordering still matters inside it — tierDiscoverShelf puts the last two
-  // years first, so later batches are progressively older, which is the right shape for "show me
-  // more" and the reason this is not a random sample.
+/** Compatibility shelf for clients deployed before Discover became local. */
+function fetchDiscoverShelf(genre: string): Hit[] {
+  const pool = blendCuratedPool(genre, [])
   return tierDiscoverShelf(pool as Hit[], new Date().getFullYear()).slice(0, DISCOVER_POOL)
 }
 
@@ -417,8 +293,8 @@ Deno.serve(async (req: Request) => {
       let budget = FETCH_BUDGET
       const t0 = Date.now()
       for (const name of names) {
-        // v3 separates the source-aware shape from the old Google-only hit arrays.
-        const key = `author:v3:${norm(name)}`
+        // v4 excludes Google-backed rows cached by the former blended release pipeline.
+        const key = `author:v4:${norm(name)}`
         const cached = (await cacheGet(key)) as Hit[] | null
         if (cached) {
           authors[name] = cached
@@ -441,13 +317,12 @@ Deno.serve(async (req: Request) => {
     }
 
     if (body.mode === 'discover') {
-      const query = (body.query ?? '').trim()
       const genre = norm(body.genre ?? '')
-      if (!query || !genre) return json({ error: 'missing genre/query' }, 400)
-      const key = `discover:v2:${genre}`
+      if (!genre) return json({ error: 'missing genre' }, 400)
+      const key = `discover:v3:${genre}`
       const cached = (await cacheGet(key)) as Hit[] | null
       if (cached) return json({ hits: cached })
-      const hits = await fetchDiscoverShelf(query, genre)
+      const hits = fetchDiscoverShelf(genre)
       await cacheSet(key, hits)
       return json({ hits })
     }

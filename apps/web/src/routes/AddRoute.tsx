@@ -131,7 +131,9 @@ const hitOf = (r: SearchResult): SearchHit => ({
   source: r.source,
   title: r.title,
   authors: r.authors,
-  cover: r.cover,
+  // Google art is displayed with its attributed search result, then stops at that boundary. The
+  // saved book can acquire a durable Hardcover/Open Library cover during enrichment or refinement.
+  cover: r.source === 'google' ? '' : r.cover,
   isbn: resultIsbn(r),
   pub: r.year,
   sourceUrl: r.sourceUrl,
@@ -581,9 +583,14 @@ function AddForm({
       </div>
 
       {hit.source === 'google' && hit.sourceUrl && (
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <GoogleBooksAttribution />
-          <GoogleBooksResultLink result={hit} />
+        <div className="mt-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <GoogleBooksAttribution />
+            <GoogleBooksResultLink result={hit} />
+          </div>
+          <p className="mt-2 text-[12px] text-muted">
+            Reverie will keep the book details and look for a cover that can stay with your library.
+          </p>
         </div>
       )}
 
@@ -875,7 +882,7 @@ export function bulkIncomingFromSearch(
     intensity: null,
     darkness: null,
     owned: { physical: 'paperback', ebook: false, audiobook: false },
-    cover: hit.cover,
+    cover: result.source === 'google' ? '' : hit.cover,
     isbn: hit.isbn,
     readStatus: 'Unread',
     source: 'Owned',
@@ -1101,7 +1108,7 @@ function HouseholdAddForm({
   const currentMember = household.members.find((member) => member.userId === session?.user.id)
   const canCreate = !!currentMember
   const canPersistPickedCover =
-    hit.source === 'google' || currentMember?.role === 'owner' || isCorpusAdmin
+    hit.source !== 'google' && (currentMember?.role === 'owner' || isCorpusAdmin)
   const pending = addExisting.isPending || createWork.isPending || addToMember.isPending
 
   async function save() {
@@ -1180,9 +1187,15 @@ function HouseholdAddForm({
       </div>
 
       {hit.source === 'google' && hit.sourceUrl && (
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <GoogleBooksAttribution />
-          <GoogleBooksResultLink result={hit} />
+        <div className="mt-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <GoogleBooksAttribution />
+            <GoogleBooksResultLink result={hit} />
+          </div>
+          <p className="mt-2 text-[12px] text-muted">
+            Reverie will keep the book details and look for a cover that can stay with the shared
+            library.
+          </p>
         </div>
       )}
 
@@ -1568,7 +1581,7 @@ export function pickedFromAddPrefill(prefill: AddPrefill): Picked | null {
     corpusWorkId: prefill.work,
     title: prefill.title,
     authors: prefill.author ? [prefill.author] : [],
-    cover: prefill.cover ?? '',
+    cover: prefill.source === 'google' && !prefill.work ? '' : (prefill.cover ?? ''),
     source: prefill.source,
     sourceUrl: prefill.sourceUrl,
     isbn: prefill.isbn ?? '',

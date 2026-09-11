@@ -115,7 +115,7 @@ describe('mergeAuthorReleases', () => {
 
   it('keeps one useful event per work and prefers the nearest future date', () => {
     const merged = mergeAuthorReleases(
-      [release('hardcover', '2027-05-01'), release('google', '2026-10-01')],
+      [release('hardcover', '2027-05-01'), release('prh', '2026-10-01')],
       now,
     )
     expect(merged).toHaveLength(1)
@@ -125,7 +125,6 @@ describe('mergeAuthorReleases', () => {
   it('prefers publisher data for the same date and records independent confirmation', () => {
     const merged = mergeAuthorReleases(
       [
-        release('google', '2026-10-01'),
         release('hardcover', '2026-10-01', {
           cover: 'https://example.com/cover.jpg',
           release: {
@@ -153,7 +152,7 @@ describe('mergeAuthorReleases', () => {
       release: {
         source: 'prh',
         formats: ['Hardcover', 'Ebook'],
-        confirmedBy: ['prh', 'hardcover', 'google'],
+        confirmedBy: ['prh', 'hardcover'],
       },
     })
   })
@@ -161,7 +160,7 @@ describe('mergeAuthorReleases', () => {
   it('orders upcoming, uncertain current-year, then newest recent work', () => {
     const merged = mergeAuthorReleases(
       [
-        release('google', '2026', { title: 'Date Taking Shape' }),
+        release('prh', '2026', { title: 'Date Taking Shape' }),
         release('hardcover', '2026-07-01', { title: 'Already Out' }),
         release('hardcover', '2026-10-01', { title: 'Coming Soon' }),
       ],

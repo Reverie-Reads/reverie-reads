@@ -1,6 +1,6 @@
 # Cover sourcing, quality, and Cover Studio
 
-Status: **current product policy and ordered implementation plan**, revised 2026-09-09. The source
+Status: **current product policy and ordered implementation plan**, revised 2026-09-11. The source
 rights analysis in `reverie-metadata-sourcing.md` remains authoritative when it is more restrictive.
 
 ## What “best cover” means
@@ -50,11 +50,17 @@ become more load-bearing until written reuse terms or a commercial agreement cov
 
 ### Google Books
 
-Use Google Books for live lookup and remote display. Do not persist its image bytes. Prefer the API's
-official fields in this order: `extraLarge`, `large`, `medium`, `small`, `thumbnail`, then
-`smallThumbnail`. The documented widths are approximately 1,280, 800, 575, 300, 128, and smaller;
-requesting the strongest returned field is more reliable than rewriting a thumbnail URL. Preserve the
-required Google attribution and a prominent path to the Google Books result.
+Use Google Books only when a reader explicitly searches. Keep its result block in provider order and
+visually separate from Reverie's catalog results. Show the required badge and a prominent, valid link
+to each Google Books result. Do not use those results in guided Discover, genre browsing,
+personalized ranking, release feeds, automatic enrichment, or Cover Studio alternatives.
+
+Within the attributed search result, prefer the API's official fields in this order: `extraLarge`,
+`large`, `medium`, `small`, `thumbnail`, then `smallThumbnail`. The documented widths are
+approximately 1,280, 800, 575, 300, 128, and smaller; requesting the strongest returned field is more
+reliable than rewriting a thumbnail URL. When the reader saves the result, keep the book identity and
+seek a durable Open Library or Hardcover cover; otherwise use the room placeholder. Never persist a
+new Google cover reference or image bytes. Historical reader choices remain untouched.
 
 Primary references:
 
@@ -86,12 +92,11 @@ making its images a commercial durable-storage dependency.
 
 Primary reference: [Hardcover developer documentation](https://github.com/hardcoverapp/hardcover-docs)
 
-### Paid coverage trial
+### Retired paid coverage trial
 
-Run a bounded ISBNdb trial against real unresolved books: contemporary indie, Kindle Unlimited,
-special editions, and titles that current providers misidentify. Do not subscribe on catalog size
-alone. Read the operative terms first and accept the provider only if the trial meets edition accuracy,
-cover coverage, image size, rights, latency, and cost thresholds.
+The bounded ISBNdb study is complete and the owner dropped it from the planned source stack. Do not
+make further paid requests without new owner approval. Preserve its single-use locks and see the
+September 9 result linked from `DATA_SOURCES.md`.
 
 ### Sources that do not fit the core pipeline
 
@@ -156,9 +161,9 @@ was last checked.
 Already shipped:
 
 - title/author enrichment with ISBN self-resolution;
-- edition candidates from Hardcover and Google Books;
+- edition candidates from Hardcover and exact-ISBN Open Library;
 - server-side host and source checks before ingestion;
-- Google display-only behavior;
+- attributed Google Books results in explicit search only;
 - reader upload and camera capture;
 - full WebP at 1,600px, a 720px card WebP, and dominant color;
 - broken-image and Google no-cover/strip rejection;
@@ -166,32 +171,28 @@ Already shipped:
 
 Implemented in this change:
 
-- Google search, Discover, enrichment, and edition selection prefer the strongest official
-  `imageLinks` field returned by the API;
-- new stored covers receive a 720px card derivative while retaining the 1,600px full image.
-- cover normalization decodes source bytes once, then produces full, card, and color outputs by
-  resizing one decoded image downward; measured results and preserved quality boundaries are in
-  `docs/tasks/cover-pipeline-efficiency.md`.
-- `/covers` provides a permanent personal Cover Studio with bounded Needs attention, automatic,
-  reader-chosen, and all-cover views; title/author/ISBN search; source and saved-versus-linked
-  language; observed loaded-image dimensions; camera/upload cropping; contextual edition choices;
-  and an explicit room-placeholder choice. A selected image or placeholder sets the existing
-  reader-choice guard, so enrichment cannot replace it.
+- Google Books is confined to explicit, attributed search; new saved books do not carry its cover
+  reference into the personal or shared catalog.
+- Discover uses the reviewed local shelf plus shared corpus and may still apply reader taste ranking.
+- Releases use Hardcover, optional PRH confirmation, and reader-entered dates.
+- Automatic enrichment uses Open Library and optional Hardcover under a fresh cache namespace.
+- Cover Studio uses Hardcover and exact-ISBN Open Library candidates. Existing reader-selected
+  Google covers remain readable and editable.
+- The landing sample uses manually reviewed exact-ISBN Open Library images.
 
 Implement next, in order:
 
-1. Add Google Books result links and the required attribution to every Google-backed display.
-2. The edition chooser now shows decoded image dimensions, resolution labels, and exact-ISBN
+1. The edition chooser shows decoded image dimensions, resolution labels, and exact-ISBN
    matches first (Discover quality follow-up). Provider title searches require conservative work
-   identity, and saving linked images retains their working fallback. Persisted quality metadata and broader
-   edition-confidence evaluation remain separate work; never change a reader-locked choice.
-3. Measure transfer size and cache hit rate for the new 720px card derivative, then add responsive
+   identity. Persisted quality metadata and broader edition-confidence evaluation remain separate
+   work; never change a reader-locked choice.
+2. Measure transfer size and cache hit rate for the 720px card derivative, then add responsive
    source selection if another stable size is justified.
-4. Persist source rights mode and reviewed quality observations if measurement proves the current
+3. Persist source rights mode and reviewed quality observations if measurement proves the current
    runtime-only labels insufficient. The personal Studio already shows current source,
    saved-versus-linked status, and decoded dimensions without treating them as edition proof.
-5. Run the bounded ISBNdb miss trial and seek written Hardcover cover-use terms.
-6. The administrator catalog queue is implemented at `/catalog/covers` (details below). The
+4. Seek written Hardcover cover-use terms before making its art more load-bearing.
+5. The administrator catalog queue is implemented at `/catalog/covers` (details below). The
    personal queue is implemented separately at `/covers`; it mutates only the reader's book and
    never treats that choice as a shared catalog approval.
 
@@ -210,7 +211,8 @@ Open a work to see its title, author, recorded ISBNs, complete cover, source lin
 size. Alternatives load only on request. The default searches the work; selecting an ISBN deliberately
 narrows the edition. Compare current and proposed art, confirm the printed identity, and approve,
 flag a specific concern, or set the work aside. A larger image alone is not proof of the right edition.
-Google stays linked; eligible provider art uses the existing corpus-owned ingestion path.
+Historical Google choices stay linked; current alternatives use eligible provider art through the
+existing corpus-owned ingestion path.
 
 Decisions retain an administrator note, image measurement, and audit history. The current review is
 bound to a fingerprint of the catalog identity and cover fields, plus a review revision. Changes

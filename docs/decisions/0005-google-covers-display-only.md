@@ -3,6 +3,9 @@
 **Status:** accepted · 2026-07-26
 **Context:** `fix/cover-sourcing` (#79; posture detail in `docs/reference/reverie-metadata-sourcing.md` §Covers)
 
+**September 11 addendum:** ADR 0010 narrows new Google Books use to explicit, attributed search.
+This ADR still governs the ingest boundary and preserved historical reader choices.
+
 ## Decision
 
 A cover may be **ingested and stored** only from Open Library, reader upload, camera capture, or

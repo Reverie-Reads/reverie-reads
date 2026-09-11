@@ -63,8 +63,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'The Serpent and the Wings of Night',
       authors: ['Carissa Broadbent'],
-      cover:
-        'https://books.google.com/books/content?id=wahW0AEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781960854339',
       pub: '2022',
       curated: true,
@@ -104,8 +103,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'Outlier',
       authors: ['Susie Tate'],
-      cover:
-        'https://books.google.com/books/content?id=uTsd0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781923232167',
       pub: '2025-08-12',
       curated: true,
@@ -195,8 +193,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'A Forbidden Alchemy',
       authors: ['Stacey McEwan'],
-      cover:
-        'https://books.google.com/books/content?id=DicXEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781761428517',
       pub: '2025-07-02',
       curated: true,
@@ -270,8 +267,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'The Terraformers',
       authors: ['Annalee Newitz'],
-      cover:
-        'https://books.google.com/books/content?id=Wo9pEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: 'https://covers.openlibrary.org/b/isbn/9781250228062-L.jpg?default=false',
       isbn: '9781250228062',
       pub: '2023-01-31',
       curated: true,
@@ -313,8 +309,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'King of Ashes',
       authors: ['S. A. Cosby'],
-      cover:
-        'https://books.google.com/books/content?id=PY4lEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781250832078',
       pub: '2025-06-10',
       curated: true,
@@ -354,8 +349,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'Murder by Cheesecake',
       authors: ['Rachel Ekstrom Courage'],
-      cover:
-        'https://books.google.com/books/content?id=wK090QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781420526370',
       pub: '2025-08-13',
       curated: true,

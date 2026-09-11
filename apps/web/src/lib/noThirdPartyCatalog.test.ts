@@ -38,9 +38,9 @@ describe('no client-side third-party catalog leg', () => {
     }
     expect(
       offenders,
-      'A client-side Google Books leg is back. Route it through the `search` or `releases` Edge ' +
-        'Function instead — see lib/search.ts and lib/discover.ts for why the browser must not ' +
-        'make this request.',
+      'A client-side Google Books leg is back. Route explicit reader search through the `search` ' +
+        'Edge Function instead — see lib/search.ts and lib/discover.ts for why the browser must ' +
+        'not make this request.',
     ).toEqual([])
   })
 })

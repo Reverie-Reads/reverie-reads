@@ -143,7 +143,7 @@ describe('runBackfill', () => {
         return [{ work_key: 'legacy', work_id: null, cover_url: null, isbns: [] }]
       },
       async fetchEnrichments(keys) {
-        expect(keys).toEqual(['no-isbndb-v1:ta:legacy'])
+        expect(keys).toEqual(['durable-sources-v1:ta:legacy'])
         return [
           { key: 'ta:legacy', work_id: 'old:1', record: { cover: 'https://old.invalid/a.jpg' } },
         ]
@@ -170,10 +170,10 @@ describe('runBackfill', () => {
         ]
       },
       async fetchEnrichments(keys) {
-        expect(keys).toEqual(['no-isbndb-v1:ta:complete-work'])
+        expect(keys).toEqual(['durable-sources-v1:ta:complete-work'])
         return [
           {
-            key: 'no-isbndb-v1:ta:complete-work',
+            key: 'durable-sources-v1:ta:complete-work',
             work_id: 'hc:work:1',
             record: { isbns: ['9780306406157', '9781649374042'] },
           },
@@ -204,8 +204,8 @@ describe('runBackfill', () => {
       },
       async fetchEnrichments() {
         return [
-          { key: 'no-isbndb-v1:ta:one', work_id: null, record: { isbn13: '9780306406157' } },
-          { key: 'no-isbndb-v1:ta:two', work_id: null, record: { isbn10: '0306406152' } },
+          { key: 'durable-sources-v1:ta:one', work_id: null, record: { isbn13: '9780306406157' } },
+          { key: 'durable-sources-v1:ta:two', work_id: null, record: { isbn10: '0306406152' } },
         ]
       },
       async updateWork() {

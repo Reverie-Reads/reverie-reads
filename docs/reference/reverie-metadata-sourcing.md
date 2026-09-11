@@ -14,9 +14,7 @@ enriches individual readers' libraries on demand. Almost every constraint that d
 the original — copyleft contamination, share-alike segregation, non-commercial traps in a
 published dataset, bulk-dump cadence, entity-reconciliation accuracy at scale — either
 doesn't apply or applies in a much weaker form. Meanwhile the one constraint the original
-correctly identifies as _the_ unresolved risk — cover images — applies to us directly and
-is the single place our shipped implementation currently diverges from a defensible
-posture.
+correctly identifies as _the_ unresolved risk — cover images — applies to us directly.
 
 This document keeps the original's research, discards its corpus-building apparatus, and
 re-scopes its conclusions to the product we actually run.
@@ -76,35 +74,28 @@ is a seed, not a complete answer.
 
 ### Tier 2 — live lookup only, never stored
 
-**Google Books.** Usable as a live lookup and display-time source. **Not** usable as a
-store: Google's terms prohibit creating permanent copies, prohibit caching beyond the
-cache header, and require deletion of stored content on termination. Google also licenses
-much of the underlying data rather than owning it.
+**Google Books.** Usable only for explicit reader-triggered search, where Reverie preserves
+provider order, a separate result block, the Google Books badge, and a valid per-result link.
+It is **not** a store: Google's terms prohibit creating permanent copies, prohibit caching
+beyond the cache header, and require deletion of stored content on termination. Google also
+licenses much of the underlying data rather than owning it.
 
-Practical consequence for us: Google is fine for search results, edition candidates, and
-hotlinked thumbnails. It is not a legitimate ingest source for our cover pipeline. See
-**Covers** below.
+Practical consequence for us: Google results and thumbnails stay within the attributed search
+experience. They do not feed guided Discover, genre browsing, personalized ranking, releases,
+automatic enrichment, or cover alternatives, and new saved books do not persist a Google cover
+reference. Historical reader choices remain readable and editable.
 
-### Tier 3 — paid gap-fill (recommended addition)
+### Tier 3 — paid gap-fill (evaluated and dropped)
 
-**ISBNdb — ~$36–100/month.** Roughly 111M titles with materially better coverage of
-contemporary and self-published print titles, bindings, page counts, publishers, and
-cover URLs than any open source. Bulk redistribution is prohibited — **which costs us
-nothing, because we publish nothing.** For a proprietary app doing per-book API
-enrichment, ISBNdb's constraints and Reverie's needs are unusually well matched.
-
-This is the documented answer to a problem we have hit repeatedly: every time enrichment
-comes back empty for an indie or KU title, or a cover simply doesn't exist at any free
-source, this is the gap being felt. Worth a trial subscription evaluated against a sample
-of real misses before committing.
-
-_Before subscribing: read the current ToS redistribution clause directly. The original
-analysis flagged that it had not verified the operative language._
+The bounded ISBNdb study is complete. Selective use improved 38 of 100 works, but the broad join
+also regressed 20, and the benefit did not justify subscription and retention dependence. The owner
+dropped ISBNdb from the planned stack. No further paid requests are authorized without a new owner
+decision; preserve the consumed study locks and follow `docs/tasks/isbndb-retirement.md`.
 
 ### Tier 4 — currently in use, risk flagged
 
-**Hardcover.** Currently our primary backend source for series seeding, trope
-suggestions, and Discover search. Three concerns, in order of seriousness: the license is
+**Hardcover.** Currently a backend source for explicit catalog search, release discovery, series
+evidence, and cover/edition candidates. Three concerns, in order of seriousness: the license is
 asserted as "same as OpenLibrary" rather than granted as CC0, with acknowledged rights
 caveats; API tokens are personal, backend/localhost-oriented, expire annually, and there
 is no allowlisting path for third-party sites; there is no bulk export or documented
@@ -138,19 +129,15 @@ already how our trope suggestions work.
 
 ---
 
-## Covers — the one place we currently diverge
+## Covers
 
 ### Current implementation
 
-Reverie's cover pipeline (shipped across the cover-system work) fetches an image, ingests
-it through an edge function, normalizes it to webp at 1600px long edge plus a 300px
-thumbnail, and stores it permanently in a user-scoped Supabase Storage path, retaining
-the source URL for provenance. Sources include Google Books, Open Library, Hardcover,
-user upload, and camera capture.
-
-**The divergence:** storing Google-derived images permanently is inconsistent with
-Google's terms. This was not an oversight in reasoning so much as a gap in what the
-sourcing analysis said versus what the pipeline was built to do.
+Reverie's cover pipeline fetches an eligible image, ingests it through an Edge Function,
+normalizes it to WebP at a 1,600px long edge plus a 720px card derivative, and stores it in a
+reader- or corpus-scoped Supabase Storage path with provenance. Eligible sources include Open
+Library, reviewed Hardcover assets, reader upload, and camera capture. The Edge boundary rejects
+Google image hosts even when a caller labels the URL differently.
 
 ### Target posture
 
@@ -163,9 +150,9 @@ sourcing analysis said versus what the pipeline was built to do.
 - **Publisher-supplied assets**, if ever obtained through a legitimate ONIX or trade
   relationship.
 
-**Display-time only, never persisted**:
+**Explicit search display only, never persisted for a new book**:
 
-- **Google Books** thumbnails — hotlink at display size, no ingest, no storage.
+- **Google Books** thumbnails — render only inside its attributed search-result block.
 - Any other source without an explicit grant.
 
 **Honest absence**: where no defensible cover exists, the skin-tokened placeholder is the
@@ -191,8 +178,8 @@ One rule, expressed once in `packages/core/src/covers.ts` and read by every call
   working display-time hotlink, but the server never resolves or fetches its reader-controlled
   hostname.
 - **Ingest chain prefers Open Library.** `fetchCover` resolves from Open Library only; a miss
-  returns empty rather than falling back to Google, because whatever it returns is persisted.
-  The enrich Edge Function already ordered `openlibrary,google`.
+  returns empty rather than falling through to a display-only source. Automatic enrichment uses
+  Open Library and optional Hardcover under the `durable-sources-v1:` namespace.
 - **There was a fifth ingest path, and it gated nothing — removed 2026-08.** The enrich Edge
   Function's `scheduleCoverCache` stored every resolved cover to a global `covers/{isbn}.jpg`,
   with no host check at all, while `PRECEDENCE.cover` puts `google` **second**. So the rule below
@@ -204,15 +191,15 @@ One rule, expressed once in `packages/core/src/covers.ts` and read by every call
   The lesson is the one this section already implies but did not enforce: "the `covers` function
   is the authoritative gate" is only true if no other function can write cover bytes, and nothing
   was checking that. `packages/core/src/noGlobalCoverCache.test.ts` now does.
-- **Google is display-time only.** It is refused at four ingest entry points — the lazy
+- **Google is explicit-search display only.** It is refused at four ingest entry points — the lazy
   backfill, the re-sharpen sweep, the cover sheet, and the `covers` Edge Function, which is
   the authoritative gate (the client is not the security boundary). Refusal is by **host** as
   well as by source label, because the lazy backfill migrates pre-existing covers under the
   label `url`, and a Google image wearing that label is still a Google image.
-- **Google still renders.** `coverCandidates`, the zoom upgrade, and the "image not available"
-  plate detection are untouched. Picking a Google edition in the cover sheet now stores the
-  _reference_ rather than the bytes, so it remains a working choice rather than a dead end;
-  the row is labelled "linked, not saved".
+- **Historical Google choices still render.** Existing reader-selected links and provenance remain
+  readable and editable. Current Cover Studio alternatives use Hardcover and exact-ISBN Open
+  Library. Saving a new Google Books search result keeps its identity and looks for a durable cover;
+  otherwise the active room supplies its designed placeholder.
 - **Upload and camera stay first-class stored sources**, and camera now leads the sheet.
 - **Hardcover's ingest posture is unchanged** by this pass. The doc flags its licence as
   asserted rather than granted, but that is remediation item 4's decision, not this one's.
@@ -325,9 +312,8 @@ Ordered by value, not urgency. None of these is an outage.
    already stored_.
 2. **Series seeding to Wikidata.** Primary source becomes CC0 with native decimal
    ordinals; Hardcover retained as gap-fill.
-3. **Evaluate ISBNdb.** Trial against a sample of real enrichment misses — indie, KU, and
-   contemporary titles where the current chain comes back empty. This is the documented
-   fix for a recurring gap. Read the ToS redistribution clause before subscribing.
+3. ~~**Evaluate ISBNdb.**~~ **Completed and dropped.** The measured benefit did not justify the
+   subscription and retention dependency; no further paid acquisition without owner approval.
 4. **Hardcover risk decision.** Decide deliberately whether to keep it as a suggestion
    source (acceptable, with everything reader-confirmed) or reduce dependence further.
    Token expiry and the absence of third-party allowlisting are the operational risks.
@@ -346,8 +332,8 @@ Ordered by value, not urgency. None of these is an outage.
   unambiguous ones.
 - **Hardcover's license is asserted, not granted**, and its tokens are not designed for a
   deployed third-party app.
-- **ISBNdb's operative redistribution language** should be read directly before
-  subscribing, not inferred.
+- **CARTO's basemap key is client-visible and should be domain-restricted.** Without it, the app
+  keeps the nearby-store list and suppresses the map instead of rendering watermarked tiles.
 - **Multi-user changes the calculus.** Everything above assumes private, per-user
   libraries with no public surface. Public shelves, shared lists, or marketing use of
   cover imagery would each warrant a fresh look.

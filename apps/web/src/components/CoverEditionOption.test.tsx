@@ -13,8 +13,8 @@ const edition: EditionOption = {
 it('puts exact ISBN ahead of source convenience, without reordering the input', () => {
   const exact: EditionOption = {
     ...edition,
-    source: 'google',
-    cover: 'https://books.google.com/books/content?id=exact&zoom=1',
+    source: 'openlibrary',
+    cover: 'https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg?default=false',
   }
   const other = { ...edition, isbn13: '9780140328721' }
   const pool = [other, exact]

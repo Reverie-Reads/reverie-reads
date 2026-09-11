@@ -6,7 +6,7 @@ import { supabase } from './supabase'
 
 /** One alternate edition, with context (never a bare image wall): cover + format + year + publisher. */
 export interface EditionOption {
-  source: 'hardcover' | 'google'
+  source: 'hardcover' | 'openlibrary'
   cover: string
   isbn13?: string
   isbn10?: string
@@ -30,7 +30,7 @@ export interface IngestResult {
 
 export type IngestOutcome = { status: 'ok'; data: IngestResult } | { status: 'error'; code: string }
 
-/** Fetch alternate editions for a book (Hardcover + Google, server-cached per book). */
+/** Fetch durable cover candidates for a book (Hardcover + exact-ISBN Open Library). */
 export async function fetchEditions(
   input: {
     isbn?: string

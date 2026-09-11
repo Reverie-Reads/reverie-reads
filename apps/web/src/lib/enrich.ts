@@ -1,3 +1,4 @@
+import { isGoogleContentCover } from '@reverie/core'
 import { supabase } from './supabase'
 
 /** Per-field provenance from the aggregator (which source supplied each field, and when). */
@@ -52,6 +53,19 @@ export interface EnrichResult {
   query?: string
   /** E1: alternate edition candidates for the Cover Studio picker */
   alternates?: CoverAlternate[]
+}
+
+/** Defensive client boundary for staggered web/function deploys and historical cache rows. */
+export function durableEnrichment(result: EnrichResult): EnrichResult {
+  const googleCover =
+    result.provenance?.cover?.source === 'google' || isGoogleContentCover(result.cover)
+  return {
+    ...result,
+    cover: googleCover ? '' : result.cover,
+    alternates: result.alternates?.filter(
+      (alternate) => alternate.source !== 'google' && !isGoogleContentCover(alternate.cover ?? ''),
+    ),
+  }
 }
 
 /** Ordered per-stage wall times from the Edge Function, present only when `trace` was requested. */
@@ -111,7 +125,7 @@ export async function enrichBookOutcome(input: {
     // Every source we asked threw. An outage is not a miss.
     if (flags.sourcesFailed)
       return { status: 'failed', reason: `all ${flags.sourcesAttempted ?? 0} sources failed` }
-    return { status: 'ok', data: data as EnrichResult, trace }
+    return { status: 'ok', data: durableEnrichment(data as EnrichResult), trace }
   } catch (e) {
     // A thrown invoke is a transport failure — offline, DNS, abort. Never an empty result.
     return { status: 'failed', reason: (e as Error)?.message || 'enrich threw' }
@@ -119,8 +133,8 @@ export async function enrichBookOutcome(input: {
 }
 
 /**
- * Ask the enrichment Edge Function for a full record (Google Books → Open Library →
- * Hardcover, cached). Returns null on any failure so callers degrade gracefully — an
+ * Ask the enrichment Edge Function for a full record (Open Library + Hardcover, cached). Returns
+ * null on any failure so callers degrade gracefully — an
  * ASIN-only/no-cover title still returns a (sparse) record rather than throwing.
  */
 export async function enrichBook(input: {

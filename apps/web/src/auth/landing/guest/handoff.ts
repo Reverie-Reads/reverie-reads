@@ -1,11 +1,4 @@
-import {
-  isGoogleContentCover,
-  isSkinId,
-  type Book,
-  type Incoming,
-  type ResolvedMode,
-  type SkinId,
-} from '@reverie/core'
+import { isSkinId, type Book, type Incoming, type ResolvedMode, type SkinId } from '@reverie/core'
 import type { GuestState, GuestView } from './state'
 import { GUEST_PRESETS } from './state'
 import {
@@ -50,7 +43,6 @@ export interface GuestHandoffSummary {
 
 const allowedCover = (cover: string): string => {
   if (cover.startsWith('/landing-covers/')) return cover
-  if (isGoogleContentCover(cover)) return cover
   try {
     const url = new URL(cover)
     return url.protocol === 'https:' && url.hostname === 'covers.openlibrary.org' ? cover : ''

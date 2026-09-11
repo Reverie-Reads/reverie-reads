@@ -7,14 +7,13 @@
 // "completing…") and mode:'full' (all enabled sources, the async completion). Deno Edge Function.
 //
 // Sources are enabled via env, like the buy-link attributionMode:
-//   ENRICH_SOURCES   csv, default "openlibrary,google"
+//   ENRICH_SOURCES   csv, default "openlibrary"; Google is explicit-search-only
 //   HARDCOVER_TOKEN  present → Hardcover on (backend-only beta, best-effort, low-volume)
 // ISBNdb is retired: neither legacy flags nor ENRICH_SOURCES can enable paid acquisition.
 
 import {
   mergeRecords,
   withholdByConfidence,
-  normalizeGoogle,
   normalizeHardcoverSearch,
   normalizeOpenLibrary,
   type EnrichedRecord,
@@ -65,11 +64,6 @@ const norm = workIdentityPart
 // The old local UA ('Reverie/1.0 (personal book library; enrichment aggregator)') identified the app
 // but carried NO contact address, which is the half OL's identified tier actually requires — so it
 // bought nothing. OL calls now use the shared olHeaders() (name + contact, one home, guard-tested).
-
-// Google Books API key — keyless calls share a low per-IP quota and 429 quickly; the key lifts it to
-// ~1,000/day. Appended to every Google query when configured.
-const GOOGLE_KEY = Deno.env.get('GOOGLE_BOOKS_KEY') ?? ''
-const googleKey = () => (GOOGLE_KEY ? `&key=${encodeURIComponent(GOOGLE_KEY)}` : '')
 
 // Hardcover bearer header — tolerate a token pasted WITH a leading "Bearer " (the common gotcha that
 // otherwise yields "Bearer Bearer …" → 401). Returns null when no token is set.
@@ -129,18 +123,6 @@ const time = <T>(tr: Trace | undefined, stage: string, fn: () => Promise<T>): Pr
 // ── Source adapters: fetch one source, return a normalized SourceRecord (or null). Pure parsing
 //    lives in ./merge.ts normalizers; adapters only know how to query. ──
 
-async function adapterGoogle(input: EnrichInput, tr?: Trace): Promise<SourceRecord | null> {
-  if (!(await paceSource('google', tr))) throw new Error('status 429')
-  const q = input.isbn
-    ? `isbn:${cleanIsbn(input.isbn)}`
-    : `intitle:${encodeURIComponent(`"${input.title}"`)}${input.author ? `+inauthor:${encodeURIComponent(`"${input.author}"`)}` : ''}`
-  const j = (await time(tr, 'fetch.google.adapter', () =>
-    fetchJson(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1${googleKey()}`),
-  )) as { items?: unknown[] }
-  const item = j?.items?.[0]
-  return item ? normalizeGoogle(item) : null
-}
-
 async function adapterOpenLibrary(input: EnrichInput, tr?: Trace): Promise<SourceRecord | null> {
   // search.json, NOT the covers endpoint — separate budgets, separate documented limits.
   if (!(await paceSource('ol-search', tr))) throw new Error('status 429')
@@ -188,12 +170,12 @@ async function adapterHardcover(input: EnrichInput, tr?: Trace): Promise<SourceR
   return first ?? null
 }
 
-// Keep historical EnrichSource/provenance shapes readable; only these adapters can make requests.
-type ActiveSource = Exclude<EnrichSource, 'isbndb' | 'manual'>
+// Keep historical EnrichSource/provenance shapes readable; only these durable adapters can make
+// enrichment requests. Google Books remains available through explicit attributed search.
+type ActiveSource = 'openlibrary' | 'hardcover'
 const ADAPTERS: Record<ActiveSource, (i: EnrichInput, tr?: Trace) => Promise<SourceRecord | null>> =
   {
     openlibrary: adapterOpenLibrary,
-    google: adapterGoogle,
     hardcover: adapterHardcover,
   }
 
@@ -201,20 +183,6 @@ const ADAPTERS: Record<ActiveSource, (i: EnrichInput, tr?: Trace) => Promise<Sou
 //    so resolution starts from a title+author SEARCH (not an ISBN lookup). Parsing stays in the
 //    ./merge.ts normalizers; these only know how to query each source's search endpoint. ──
 const SEARCH_LIMIT = 5
-
-async function searchGoogle(input: EnrichInput, tr?: Trace): Promise<ResolveCandidate[]> {
-  if (!(await paceSource('google', tr))) throw new Error('status 429')
-  if (!input.title) return []
-  const q = `intitle:${encodeURIComponent(`"${input.title}"`)}${input.author ? `+inauthor:${encodeURIComponent(`"${input.author}"`)}` : ''}`
-  const j = (await time(tr, 'fetch.google.search', () =>
-    fetchJson(
-      `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=${SEARCH_LIMIT}${googleKey()}`,
-    ),
-  )) as { items?: unknown[] }
-  return (j?.items ?? [])
-    .map((it): ResolveCandidate => ({ source: 'google', record: normalizeGoogle(it) }))
-    .filter((c) => c.record.title)
-}
 
 async function searchOpenLibrary(input: EnrichInput, tr?: Trace): Promise<ResolveCandidate[]> {
   if (!input.title) return []
@@ -239,11 +207,10 @@ const SEARCHERS: Partial<
   Record<EnrichSource, (i: EnrichInput, tr?: Trace) => Promise<ResolveCandidate[]>>
 > = {
   hardcover: searchHardcover,
-  google: searchGoogle,
   openlibrary: searchOpenLibrary,
 }
 
-/** Search the enabled sources (catalog priority: Hardcover → Google → Open Library) for candidates. */
+/** Search the enabled durable sources (catalog priority: Hardcover → Open Library). */
 async function gatherCandidates(
   input: EnrichInput,
   tr?: Trace,
@@ -253,7 +220,7 @@ async function gatherCandidates(
   attempted: number
   failed: number
 }> {
-  const order: ActiveSource[] = ['hardcover', 'google', 'openlibrary']
+  const order: ActiveSource[] = ['hardcover', 'openlibrary']
   const enabled = new Set(enabledSources())
   const candidates: ResolveCandidate[] = []
   let rateLimited = false
@@ -279,7 +246,7 @@ async function gatherCandidates(
 /** Distill E1 alternate candidates into the cover-picker shape (only those that carry a cover). */
 function distillAlternates(alts: ResolveCandidate[]): CoverAlternate[] {
   return alts
-    .filter((a) => a.record.cover)
+    .filter((a) => a.source !== 'google' && a.record.cover)
     .map((a) => ({
       source: a.source,
       cover: a.record.cover ?? '',
@@ -291,7 +258,7 @@ function distillAlternates(alts: ResolveCandidate[]): CoverAlternate[] {
 
 /** The enabled source roster, resolved from env (sources are pluggable like the buy-link mode). */
 function enabledSources(): ActiveSource[] {
-  const csv = (Deno.env.get('ENRICH_SOURCES') ?? 'openlibrary,google')
+  const csv = (Deno.env.get('ENRICH_SOURCES') ?? 'openlibrary')
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter((s): s is ActiveSource => Object.hasOwn(ADAPTERS, s))
@@ -340,18 +307,10 @@ Deno.serve(async (req: Request) => {
       const order = enabledSources()
       let rec: SourceRecord | null = null
       let used: EnrichSource | null = null
-      // CONTINUE WHEN A RECORD CARRIES NO COVER. `if (rec) break` was the bug: Open Library's
-      // search.json returns a bibliographic record for most books whether or not a cover image
-      // exists (`cover_i` is simply absent), so the loop took OL's record, broke, and never asked
-      // Google — reporting a successful enrichment with no cover. Fast mode's whole job is to put a
-      // cover on screen quickly, so a record without one is not a reason to stop looking. The last
-      // record is still kept as a fallback: bibliographic data beats nothing when no source has art.
+      // Continue when a record carries no cover. The last record remains a bibliographic fallback
+      // when no durable source has art.
       let fallback: { rec: SourceRecord; used: EnrichSource } | null = null
-      for (const s of order.includes('openlibrary')
-        ? (['openlibrary', 'google'].filter((s) =>
-            order.includes(s as ActiveSource),
-          ) as ActiveSource[])
-        : order) {
+      for (const s of order) {
         let candidate: SourceRecord | null = null
         try {
           candidate = await ADAPTERS[s](input, tr)

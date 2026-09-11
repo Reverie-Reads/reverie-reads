@@ -32,7 +32,8 @@ terminal, report, or task transcript must be revoked and replaced rather than re
 ```
 VITE_SUPABASE_URL=https://tzimctugmzuadrsitnpr.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_kp8TvVCeARWRqqk4z0a0CA_35y5KZgQ   # publishable — client-safe by design
-# optional: VITE_SENTRY_DSN, VITE_SOCIAL_AUTH_ENABLED, VITE_BUY_ATTRIBUTION_MODE + affiliate ids
+# optional: VITE_SENTRY_DSN, VITE_SOCIAL_AUTH_ENABLED, VITE_BUY_ATTRIBUTION_MODE + affiliate ids,
+# VITE_CARTO_BASEMAP_KEY (browser-safe Bookshops basemap key; restrict it to deployed domains)
 ```
 
 The durable administrator corpus sweep also needs two **server-only** Vercel variables. Never add

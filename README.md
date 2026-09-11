@@ -43,15 +43,16 @@ own values. Names only:
 
 - **Required:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
 - **Optional:** `VITE_SENTRY_DSN`, `VITE_SOCIAL_AUTH_ENABLED`,
-  `VITE_BUY_ATTRIBUTION_MODE`, `VITE_BOOKSHOP_AFFILIATE_ID`.
+  `VITE_BUY_ATTRIBUTION_MODE`, `VITE_BOOKSHOP_AFFILIATE_ID`,
+  `VITE_CARTO_BASEMAP_KEY` (required only to render the Bookshops map; the list works without it).
 - **Set by the build, not by you:** `VITE_BUILD_ID` and `VITE_RELEASE` are both baked to the
   deploy's commit SHA by a `define` in `apps/web/vite.config.ts`. Setting either in a `.env`
   has no effect — the define substitutes them at build time.
 - **Server / edge secrets** (deployment environment only — never in the repo): the Supabase
   service-role key, `HARDCOVER_TOKEN`, and any provider API keys. See `docs/reference/DEPLOY.md`.
 
-The publishable anon key is client-safe by design; the service-role key and all API keys
-are not and live only in deployment secrets.
+The publishable Supabase key and CARTO's domain-restricted basemap key are client-visible by design.
+The service-role key and server provider keys are secrets and live only in deployment settings.
 
 ### Commands
 

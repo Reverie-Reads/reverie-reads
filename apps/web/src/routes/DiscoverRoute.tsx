@@ -56,7 +56,7 @@ function personalBookForHit(hit: DiscoverHit, books: readonly Book[]): Book | un
     const exact = books.filter((book) => book.corpusWorkId === hit.corpusWorkId)
     if (exact.length) return exact.length === 1 ? exact[0] : undefined
   }
-  return libraryMatch({ ...hit, source: 'google', year: hit.pub }, books) ?? undefined
+  return libraryMatch(hit, books) ?? undefined
 }
 
 function Card({

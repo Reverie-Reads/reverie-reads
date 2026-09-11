@@ -581,12 +581,6 @@ export async function bulkCompleteCorpus(
             patch.coverSourceUrl = ingest.data.sourceUrl ?? outcome.data.cover
             if (ingest.data.color) patch.coverColor = ingest.data.color
           }
-        } else if (source === 'google') {
-          // Google permits display-time URLs but not durable byte storage. The admin RPC accepts
-          // only the exact allowlisted Books image host for this exception.
-          patch.coverUrl = outcome.data.cover
-          patch.coverSource = 'google'
-          patch.coverSourceUrl = outcome.data.cover
         }
       }
     }

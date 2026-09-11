@@ -93,8 +93,11 @@ export function googleBooksResultUrl(result: {
   }
 }
 
-/** A search result as an Incoming (for matchBook / intake). */
-export function resultToIncoming(r: SearchResult): Incoming {
+type SearchIdentity = Pick<SearchResult, 'title' | 'authors' | 'isbn'> &
+  Partial<Pick<SearchResult, 'isbn13' | 'series' | 'seriesPosition'>>
+
+/** A search identity as an Incoming (for matchBook / intake). */
+export function resultToIncoming(r: SearchIdentity): Incoming {
   const [first = '', ...rest] = (r.authors[0] ?? '').split(/\s+/)
   return {
     title: r.title,
@@ -108,7 +111,7 @@ export function resultToIncoming(r: SearchResult): Incoming {
 
 /** The library book a result already IS, or null — reuses core's ISBN/title-author matcher, so the
  *  result shows its shelf state (and links to it) instead of add actions (task §1). */
-export function libraryMatch(r: SearchResult, library: readonly Book[]): Book | null {
+export function libraryMatch(r: SearchIdentity, library: readonly Book[]): Book | null {
   const m = matchBook(resultToIncoming(r), library)
   return m.strength === 'none' ? null : m.book
 }

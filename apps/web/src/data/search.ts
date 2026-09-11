@@ -58,9 +58,9 @@ async function buildIncoming(result: SearchResult, possession: PossessionState):
     status: series ? 'ongoing' : 'standalone',
     genre: enr?.genre || '',
     genres: enr?.genres ?? [],
-    // The external cover is stored as-is; the cover system's lazy backfill materializes it into
-    // Storage on the book's first detail view (never a fabricated placeholder-as-cover).
-    cover: result.cover || enr?.cover || '',
+    // Google art belongs to the attributed search result. Enrichment may supply a durable
+    // Hardcover/Open Library cover; otherwise the room placeholder remains until refinement.
+    cover: (result.source === 'google' ? '' : result.cover) || enr?.cover || '',
     isbn: enr?.isbn13 || enr?.isbn || result.isbn13 || result.isbn || '',
     pub: { y: enr?.pubY ?? yearFromResult, m: enr?.pubM ?? null, d: enr?.pubD ?? null },
     ...possessionPatch(possession),

@@ -41,10 +41,12 @@ describe('Add route library scope', () => {
     const valid = validateAddSearch({
       title: 'Linked result',
       source: 'google',
+      cover: 'https://books.google.com/books/content?id=linked-result&img=1',
       sourceUrl: 'https://books.google.com/books?id=linked-result',
     })
     expect(pickedFromAddPrefill(valid)).toMatchObject({
       source: 'google',
+      cover: '',
       sourceUrl: 'https://books.google.com/books?id=linked-result',
     })
 

@@ -38,28 +38,18 @@ const input: CoverReviewInput = {
   reason: null,
   identityConfirmed: true,
   measurement: {
-    url: 'https://books.google.com/books/content?id=right&zoom=1',
+    url: 'https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg?default=false',
     width: 800,
     height: 1200,
   },
-  candidate: { source: 'google', cover: 'https://books.google.com/books/content?id=right&zoom=1' },
+  candidate: {
+    source: 'openlibrary',
+    cover: 'https://covers.openlibrary.org/b/isbn/9780306406157-L.jpg?default=false',
+  },
 }
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(supabase.rpc).mockResolvedValue({ data: work.id, error: null } as never)
-})
-it('keeps a working Google fallback linked and submits the exact reviewed snapshot', async () => {
-  await saveCatalogCoverReview(input)
-  expect(ingestCorpusCover).not.toHaveBeenCalled()
-  expect(supabase.rpc).toHaveBeenCalledWith(
-    'admin_review_corpus_cover',
-    expect.objectContaining({
-      p_work: 'work-1',
-      p_expected_fingerprint: 'exact-state',
-      p_expected_revision: 3,
-      p_candidate: expect.objectContaining({ url: input.measurement!.url, source: 'google' }),
-    }),
-  )
 })
 it('stages permitted artwork under the work before selecting it, with no personal write', async () => {
   vi.mocked(ingestCorpusCover).mockResolvedValue({
@@ -101,7 +91,9 @@ it('does not approve when ingestion fails and preserves stale-state errors for t
     data: null,
     error: new Error('This catalog record changed'),
   } as never)
-  await expect(saveCatalogCoverReview(input)).rejects.toThrow('record changed')
+  await expect(
+    saveCatalogCoverReview({ ...input, action: 'keep', candidate: undefined, measurement: null }),
+  ).rejects.toThrow('record changed')
 })
 it('retains server totals and bounded paging instead of loading the full corpus', async () => {
   vi.mocked(supabase.rpc).mockResolvedValue({

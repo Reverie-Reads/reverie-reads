@@ -1,9 +1,8 @@
 // Cover system Edge Function (docs/archive/task-cover-system.md) — two actions, one durable pipeline:
 //
 //  · action:'editions' — alternates for the cover sheet's editions chooser. Hardcover editions
-//    (backend token, GLOBAL 60 req/min budget via rate_limit_consume) + Google Books by ISBN falling
-//    back to title+author (the referrer-restricted key). Cached per book in enrichment_cache under
-//    an `editions:` key (7 days) so reopening the sheet costs zero external calls.
+//    (backend token, GLOBAL 60 req/min budget via rate_limit_consume) plus one exact-ISBN Open
+//    Library candidate. Cached per book in enrichment_cache for 7 days.
 //
 //  · action:'ingest' — every durable chosen cover flows through here (reviewed edition provider,
 //    camera, upload): receive the bytes (multipart) or fetch an exact trusted origin (server-side,
@@ -28,24 +27,14 @@ import {
 import { envInt, rateLimit, tooMany } from '../_shared/ratelimit.ts'
 import { captureEdgeError, logEvent } from '../_shared/observe.ts'
 import { Trace, wantsTrace } from '../_shared/trace.ts'
-import {
-  bestGoogleCoverLink,
-  isGoogleContentCover,
-  isGoogleNoCoverArt,
-  upgradeCoverUrl,
-} from '../_shared/coverUrl.ts'
+import { isGoogleContentCover, isGoogleNoCoverArt, upgradeCoverUrl } from '../_shared/coverUrl.ts'
 import { olHeaders } from '../_shared/olIdentity.ts'
 import {
   fetchPublicRemote,
   isTrustedCoverSourceUrl,
   UnsafeRemoteUrlError,
 } from '../_shared/publicRemoteUrl.ts'
-import {
-  editionsCacheKey,
-  hardcoverCoverBookId,
-  matchesGoogleCover,
-  uniqueCoverBookId,
-} from './editionIdentity.ts'
+import { editionsCacheKey, hardcoverCoverBookId, uniqueCoverBookId } from './editionIdentity.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -59,12 +48,6 @@ const dbHeaders = {
   Authorization: `Bearer ${SERVICE}`,
   'Content-Type': 'application/json',
 }
-
-const GOOGLE_KEY = Deno.env.get('GOOGLE_BOOKS_KEY') ?? ''
-const googleKey = () => (GOOGLE_KEY ? `&key=${encodeURIComponent(GOOGLE_KEY)}` : '')
-// The key is referrer-restricted — send the app's Referer with keyed calls (the releases pattern).
-const GOOGLE_REFERER = Deno.env.get('BOOKS_KEY_REFERER') ?? 'https://reveriereads.app/'
-const googleHeaders = (): HeadersInit => (GOOGLE_KEY ? { Referer: GOOGLE_REFERER } : {})
 
 const MAX_INPUT_BYTES = envInt('COVER_MAX_INPUT_BYTES', 8 * 1024 * 1024) // camera photos; crop already shrank most
 const FULL_EDGE = 1600 // long-edge cap for the stored cover — headroom for high-DPR (2–3×) detail/flip
@@ -398,8 +381,9 @@ async function handleIngest(req: Request, callerId: string, tr: Trace): Promise<
   if (!file) {
     const raw = (fields.url ?? '').trim()
     if (!/^https?:\/\//i.test(raw)) return json({ error: 'bad_url' }, 400)
-    // Fetch the LARGEST the source offers (Google zoom=0, OL -L) so the stored asset isn't a 128px
-    // thumbnail; record the upgraded URL as provenance so a re-sharpen never re-fetches the small one.
+    // Fetch the largest eligible source image (for Open Library, -L) so the stored asset is not a
+    // tiny thumbnail. Google hosts were rejected above and never reach this fetch. Record the
+    // upgraded URL as provenance so a re-sharpen never re-fetches the small one.
     const url = upgradeCoverUrl(raw, 'full')
     sourceUrl = sourceUrl ? upgradeCoverUrl(sourceUrl, 'full') : url
     let r: Response
@@ -547,7 +531,7 @@ async function handleIngest(req: Request, callerId: string, tr: Trace): Promise<
 // ── action: editions ──
 
 interface EditionOption {
-  source: 'hardcover' | 'google'
+  source: 'hardcover' | 'openlibrary'
   cover: string
   isbn13?: string
   isbn10?: string
@@ -660,55 +644,19 @@ async function hardcoverEditions(input: EditionsInput): Promise<EditionOption[]>
     .filter((x): x is EditionOption => x !== null)
 }
 
-/** Google Books: by ISBN (the exact edition) UNIONED with title+author (the other editions —
- *  a by-ISBN query alone returns a single volume, which would leave the chooser one row deep
- *  whenever Hardcover is unavailable). ≤2 calls, cached per book with the rest. */
-async function googleEditions(input: EditionsInput): Promise<EditionOption[]> {
+/** Open Library's exact-ISBN cover path. The image itself is validated by CoverImage before it can
+ * be picked and again by the ingest boundary before it is stored. */
+function openLibraryEdition(input: EditionsInput): EditionOption[] {
   const isbn = cleanIsbn(input.isbn ?? '')
-  const queries: string[] = []
-  if (isbn.length >= 10) queries.push(`isbn:${isbn}`)
-  if (input.title && input.author)
-    queries.push(
-      `intitle:${encodeURIComponent(`"${input.title}"`)}${input.author ? `+inauthor:${encodeURIComponent(`"${input.author}"`)}` : ''}`,
-    )
-  const items: { volumeInfo?: Record<string, unknown> }[] = []
-  for (const q of queries) {
-    const r = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=20&printType=books${googleKey()}`,
-      {
-        headers: googleHeaders(),
-      },
-    )
-    if (!r.ok) continue
-    const j = (await r.json()) as { items?: { volumeInfo?: Record<string, unknown> }[] }
-    items.push(...(j.items ?? []))
-  }
-  const out: EditionOption[] = []
-  for (const it of items) {
-    const v = it.volumeInfo ?? {}
-    if (!matchesGoogleCover(input, v)) continue
-    const cover = bestGoogleCoverLink(v.imageLinks)
-    if (!cover) continue
-    const ids =
-      (v.industryIdentifiers as { type?: string; identifier?: string }[] | undefined) ?? []
-    const isbn13 = ids.find((i) => i.type === 'ISBN_13')?.identifier
-    const isbn10 = ids.find((i) => i.type === 'ISBN_10')?.identifier
-    const year =
-      typeof v.publishedDate === 'string'
-        ? Number(v.publishedDate.slice(0, 4)) || undefined
-        : undefined
-    out.push({
-      source: 'google',
-      cover,
-      isbn13,
-      isbn10,
-      year,
-      publisher: typeof v.publisher === 'string' ? v.publisher : undefined,
-      pages: typeof v.pageCount === 'number' ? v.pageCount : undefined,
-      title: typeof v.title === 'string' ? v.title : undefined,
-    })
-  }
-  return out
+  if (isbn.length !== 10 && isbn.length !== 13) return []
+  return [
+    {
+      source: 'openlibrary',
+      cover: `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-L.jpg?default=false`,
+      ...(isbn.length === 13 ? { isbn13: isbn } : { isbn10: isbn }),
+      title: input.title,
+    },
+  ]
 }
 
 async function readEditionsCache(key: string): Promise<EditionOption[] | null> {
@@ -751,21 +699,21 @@ async function writeEditionsCache(key: string, editions: EditionOption[]): Promi
 }
 
 async function handleEditions(input: EditionsInput): Promise<Response> {
-  const key = editionsCacheKey(input)
+  // v2 excludes cached Google candidates from the retired blended chooser.
+  const key = `cover-editions:v2:${editionsCacheKey(input)}`
   if (!input.refresh) {
     const cached = await readEditionsCache(key)
     if (cached) return json({ editions: cached, source: 'cache' })
   }
 
-  const [hc, gb] = await Promise.all([
-    hardcoverEditions(input).catch(() => [] as EditionOption[]),
-    googleEditions(input).catch(() => [] as EditionOption[]),
-  ])
+  const hc = await hardcoverEditions(input).catch(() => [] as EditionOption[])
+  const ol = openLibraryEdition(input)
 
-  // Dedupe: Hardcover leads (richer edition context); Google fills in what Hardcover didn't carry.
+  // Dedupe: Hardcover leads because it carries richer edition context; Open Library fills the
+  // exact-ISBN cover path when the provider did not return that edition.
   const seen = new Set<string>()
   const editions: EditionOption[] = []
-  for (const e of [...hc, ...gb]) {
+  for (const e of [...hc, ...ol]) {
     const k = e.isbn13 || e.isbn10 || e.cover
     if (!k || seen.has(k)) continue
     seen.add(k)

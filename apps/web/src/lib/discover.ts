@@ -1,6 +1,5 @@
 import {
   blendCuratedPool,
-  bestGoogleCoverLink,
   tierDiscoverShelf,
   embeddingText,
   genreKey,
@@ -9,12 +8,9 @@ import {
 } from '@reverie/core'
 import { supabase } from './supabase'
 
-// Discover v1 (owner-approved): a genre-keyed browse of the wider catalog, one tap from Add.
-// Client-side Google Books, the same source and pattern as the Add screen's search — each reader
-// spends their own anonymous quota, and TanStack Query's staleTime keeps a session to a handful of
-// calls. The upgrade path (deliberately out of v1): a `discover` edge function with a shared
-// per-genre daily cache + Hardcover trending, and Tier-2 embeddings re-ranking these results
-// toward the reader's taste. This module stays pure/fetch-thin so that swap is a one-liner.
+// Discover combines the shared corpus with a small, reviewed shelf bundled with the app. Google
+// Books is reserved for explicit search, where its provider order, badge, and result links remain
+// intact. A personalized or blended shelf cannot meet that display contract.
 
 /** Same shape as the Add screen's search hits — a Discover pick IS an add prefill. */
 export interface DiscoverHit extends DiscoveryBook {
@@ -32,51 +28,6 @@ export interface DiscoverHit extends DiscoveryBook {
    *  in the network tab and the fn's cache rows, never rendered to the reader */
   curated?: boolean
 }
-
-/** Google Books subject query per core genre (keys = the canonical lowercased genres). Cozy has no
- *  BISAC top of its own — its room browses the cozy-mystery shelf; nonfiction leads with the
- *  biography/memoir bucket (the largest general-reader nonfiction shelf). */
-export const GENRE_DISCOVER_QUERY: Record<string, string> = {
-  romance: 'subject:romance',
-  fantasy: 'subject:fantasy',
-  'science fiction': 'subject:"science fiction"',
-  horror: 'subject:horror',
-  mystery: 'subject:mystery',
-  literary: 'subject:"literary fiction"',
-  cozy: 'subject:"cozy mysteries"',
-  nonfiction: 'subject:"biography & autobiography"',
-  'young adult': 'subject:"young adult fiction"',
-}
-
-/** The subject query for any genre spelling (resolved via genreKey); an unknown genre browses
- *  its own name as a subject — a reader's custom world is still browsable. */
-export function discoverQuery(genre: string): string {
-  const key = genreKey(genre)
-  return GENRE_DISCOVER_QUERY[key] ?? `subject:"${key}"`
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/** Map a raw Google volume to a hit (https-forced cover, canonical ISBN-13 preferred). */
-export function volumeToHit(item: any): DiscoverHit {
-  const v = item?.volumeInfo ?? {}
-  const ids: any[] = v.industryIdentifiers ?? []
-  const ind = ids.find((x) => x.type === 'ISBN_13') ?? ids[0]
-  const sourceUrl =
-    typeof v.infoLink === 'string'
-      ? v.infoLink.replace(/^http:/, 'https:')
-      : item?.id
-        ? `https://books.google.com/books?id=${encodeURIComponent(item.id)}`
-        : undefined
-  return {
-    title: v.title ?? '',
-    authors: v.authors ?? [],
-    cover: bestGoogleCoverLink(v.imageLinks),
-    isbn: ind?.identifier ?? '',
-    pub: v.publishedDate ?? '',
-    ...(sourceUrl ? { source: 'google' as const, sourceUrl } : {}),
-  }
-}
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const norm = (s: string): string =>
   s
@@ -130,8 +81,7 @@ export function isOwned(h: DiscoverHit, owned: Set<string>): boolean {
 
 /** How many hits a shelf shows at once. */
 export const DISCOVER_BATCH = 20
-/** Ceiling on the pool the fn caches and returns per genre — three batches' worth.
- *  Mirrored as DISCOVER_POOL in supabase/functions/releases/index.ts. */
+/** Ceiling on the reviewed pool returned per genre — three batches' worth. */
 export const DISCOVER_POOL = 60
 
 /** The pool minus what the reader already shelves, when the toggle asks for that.
@@ -167,50 +117,13 @@ export function batchOf(hits: readonly DiscoverHit[], index: number): DiscoverHi
 }
 
 /**
- * The Discover shelf for a genre — ONE path: the `releases` fn's shared per-genre daily cache
- * (24h TTL, one upstream lookup serves every reader, recency-gated + curated server-side).
- *
- * ── THE CLIENT FALLBACK WAS REMOVED, and this site is why the PR exists ─────────────────────────
- * DiscoverRoute's useQuery has no `enabled` guard, so this runs on ROUTE MOUNT. The old fallback
- * therefore sent the reader's IP to Google on navigation alone — no typing, no click, no consent —
- * whenever the fn erred or returned an empty shelf. That is the automatic, no-action shape, and it
- * is the one that cannot be defended by "the key is referrer-restricted": the exposure is the
- * REQUEST, not the key.
- *
- * Availability cost, stated rather than waved past: with the fn down, a genre shelf is empty and
- * DiscoverRoute renders its error state (:225 / :391). That is a smaller loss than it looks — the
- * server path serves every reader from one 24h-cached lookup per genre, so an outage has to
- * outlast the cache before anyone sees an empty shelf at all.
+ * The reviewed Discover shelf for a genre. It is local and deterministic: shared catalog results
+ * are joined by the route, then taste ranking may personalize the combined candidates. Keeping
+ * provider search out of this path is what makes that ranking safe.
  */
-export async function fetchDiscover(genre: string, signal?: AbortSignal): Promise<DiscoverHit[]> {
-  const query = discoverQuery(genre)
-  try {
-    const { data, error } = await supabase.functions.invoke('releases', {
-      body: { mode: 'discover', genre: genreKey(genre), query },
-      ...(signal ? { signal } : {}),
-    })
-    if (!error) {
-      const hits = ((data as { hits?: DiscoverHit[] })?.hits ?? []).filter(
-        (h) => h?.title && h.cover && h.authors?.length,
-      )
-      if (hits.length) return hits.slice(0, DISCOVER_POOL)
-    }
-  } catch {
-    /* degrade to the LOCAL curated pool below — never to a network fetch */
-  }
-  // Fn down or empty: the LOCAL-ONLY degradation. blendCuratedPool draws from curated titles that
-  // SHIP IN THE BUNDLE — zero network, so the no-third-party-request guarantee holds in exactly
-  // the state that used to leak (the old fallback fetched Google here; the first draft of this PR
-  // then threw, which discover-curated.spec.ts correctly failed: the curated shelf for the four
-  // starved genres IS deliberate fn-down behavior, not a side effect of the fetch it rode with).
-  // In-scope genres render their curated set, tiered so recent titles lead; out-of-scope genres
-  // return [] and the route shows its empty-shelf state, same as always.
+export async function fetchDiscover(genre: string, _signal?: AbortSignal): Promise<DiscoverHit[]> {
   const pool = blendCuratedPool(genreKey(genre), []) as DiscoverHit[]
   if (!pool.length) return []
-  // Same ceiling as the live path, and deliberately still a no-op here: the curated sets are 8-12
-  // titles, all under DISCOVER_BATCH, so this path returns exactly what it always did — one short
-  // batch and no cycle control. The fallback's BEHAVIOUR is unchanged by the batching work; only
-  // the constant it clamps against moved.
   return tierDiscoverShelf(pool, new Date().getFullYear()).slice(0, DISCOVER_POOL)
 }
 

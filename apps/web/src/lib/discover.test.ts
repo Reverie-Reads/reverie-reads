@@ -1,17 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { CORE_GENRES, type Book } from '@reverie/core'
+import type { Book } from '@reverie/core'
 import {
   batchCount,
   batchOf,
   dedupeHits,
   DISCOVER_BATCH,
-  discoverQuery,
-  GENRE_DISCOVER_QUERY,
+  fetchDiscover,
   isOwned,
   ownedKeys,
   sortByTaste,
   visibleHits,
-  volumeToHit,
   type DiscoverHit,
 } from './discover'
 
@@ -31,42 +29,17 @@ const book = (b: { title: string; isbn?: string; author?: string }): Book =>
     contributors: b.author ? [{ name: b.author, role: 'author' }] : [],
   }) as unknown as Book
 
-describe('discover — genre queries', () => {
-  it('covers exactly the nine canonical genres (same alignment guard as the taxonomies)', () => {
-    expect(Object.keys(GENRE_DISCOVER_QUERY).sort()).toEqual(
-      CORE_GENRES.map((g) => g.toLowerCase()).sort(),
-    )
-  })
-
-  it('resolves any genre spelling via genreKey; unknown genres browse themselves', () => {
-    expect(discoverQuery('Sci-Fi')).toBe(GENRE_DISCOVER_QUERY['science fiction'])
-    expect(discoverQuery('Thriller')).toBe(GENRE_DISCOVER_QUERY.mystery)
-    expect(discoverQuery('Science fiction')).toBe(GENRE_DISCOVER_QUERY['science fiction'])
-    expect(discoverQuery('gardening')).toBe('subject:"gardening"')
-  })
-})
-
-describe('discover — volume mapping', () => {
-  it('maps a raw volume: https cover, edge=curl stripped, ISBN-13 preferred', () => {
-    const h = volumeToHit({
-      volumeInfo: {
-        title: 'Iron Flame',
-        authors: ['Rebecca Yarros'],
-        publishedDate: '2023-11-07',
-        imageLinks: { thumbnail: 'http://books.google.com/x.jpg&edge=curl' },
-        industryIdentifiers: [
-          { type: 'ISBN_10', identifier: '1649374178' },
-          { type: 'ISBN_13', identifier: '9781649374172' },
-        ],
-      },
-    })
-    expect(h).toEqual({
-      title: 'Iron Flame',
-      authors: ['Rebecca Yarros'],
-      cover: 'https://books.google.com/x.jpg',
-      isbn: '9781649374172',
-      pub: '2023-11-07',
-    })
+describe('discover — reviewed shelf', () => {
+  it('normalizes genre aliases without making a provider request', async () => {
+    const shelf = await fetchDiscover('Sci-Fi')
+    expect(shelf.length).toBeGreaterThan(0)
+    expect(shelf.every((candidate) => candidate.source !== 'google')).toBe(true)
+    expect(
+      shelf.every(
+        (candidate) => !candidate.cover || candidate.cover.includes('covers.openlibrary.org'),
+      ),
+    ).toBe(true)
+    expect(await fetchDiscover('gardening')).toEqual([])
   })
 })
 

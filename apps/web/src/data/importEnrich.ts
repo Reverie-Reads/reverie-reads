@@ -7,7 +7,7 @@ import { booksKey } from './books'
 import type { QueryClient } from '@tanstack/react-query'
 
 // Cover handoff (docs/archive/task-import-quality.md §3, PR #50): a fresh import leaves missing covers as the
-// skin-tokened placeholder immediately; this kicks the enrichment pass (Google Books/Open Library →
+// skin-tokened placeholder immediately; this kicks the enrichment pass (Open Library/Hardcover →
 // ingest pipeline) to backfill covers + pub data for the JUST-IMPORTED books first. Best-effort and
 // fire-and-forget — enrichment failures degrade to the honest placeholder, never a wrong-cover guess.
 // bulkComplete's own guards apply: it fills only blanks, never overwrites a user-chosen cover, and

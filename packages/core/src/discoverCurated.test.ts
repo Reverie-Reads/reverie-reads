@@ -39,7 +39,7 @@ const surfaced = (genre: string, live: BlendableHit[]): BlendableHit[] =>
   tierDiscoverShelf(blendCuratedPool(genre, live), THIS_YEAR).slice(0, 12)
 
 describe('curated data integrity', () => {
-  it('covers exactly the four starved categories with the Phase-1 resolved counts', () => {
+  it('covers exactly the four reviewed categories with the approved counts', () => {
     expect(Object.keys(CURATED_DISCOVER).sort()).toEqual([
       'fantasy',
       'mystery',
@@ -57,7 +57,10 @@ describe('curated data integrity', () => {
       for (const h of hits) {
         expect(h.title, `${genre}: title`).toBeTruthy()
         expect(h.authors.length, `${genre} ${h.title}: authors`).toBeGreaterThan(0)
-        expect(h.cover, `${genre} ${h.title}: cover`).toMatch(/^https:\/\//)
+        expect(
+          h.cover === '' || h.cover.startsWith('https://covers.openlibrary.org/'),
+          `${genre} ${h.title}: reviewed Open Library cover or honest absence`,
+        ).toBe(true)
         expect(h.isbn, `${genre} ${h.title}: isbn-13`).toMatch(/^97[89]\d{10}$/)
         expect(h.pub, `${genre} ${h.title}: pub year`).toMatch(/^\d{4}/)
         expect(h.curated, `${genre} ${h.title}: provenance`).toBe(true)
