@@ -30,6 +30,13 @@ export interface SearchResult {
   year: string
   series?: string
   seriesPosition?: number | null
+  /** Required on Google Books results so every displayed result can link to its source page. */
+  sourceUrl?: string
+}
+
+export interface SearchResultSections {
+  catalog: SearchResult[]
+  google: SearchResult[]
 }
 
 const norm = (s: string): string =>
@@ -53,6 +60,37 @@ export function dedupeResults(results: SearchResult[]): SearchResult[] {
     out.push(r)
   }
   return out
+}
+
+/**
+ * Keep Google Books search results separate and in provider order. Catalog results may still use
+ * Reverie's ordinary identity dedupe; Google results must not be reordered, cross-deduplicated, or
+ * displayed without their required Google Books link.
+ */
+export function partitionSearchResults(results: SearchResult[]): SearchResultSections {
+  const catalog: SearchResult[] = []
+  const google: SearchResult[] = []
+  for (const result of results) {
+    if (result.source === 'google') {
+      if (googleBooksResultUrl(result)) google.push(result)
+    } else {
+      catalog.push(result)
+    }
+  }
+  return { catalog: dedupeResults(catalog), google }
+}
+
+export function googleBooksResultUrl(result: {
+  source?: SearchResult['source']
+  sourceUrl?: string
+}): string | null {
+  if (result.source !== 'google' || !result.sourceUrl) return null
+  try {
+    const url = new URL(result.sourceUrl)
+    return url.protocol === 'https:' && url.hostname === 'books.google.com' ? url.toString() : null
+  } catch {
+    return null
+  }
 }
 
 /** A search result as an Incoming (for matchBook / intake). */
@@ -89,8 +127,7 @@ export async function searchEverywhere(q: string, signal?: AbortSignal): Promise
     ...(signal ? { signal } : {}),
   })
   if (error) throw new Error(`search unavailable: ${error.message}`)
-  const results = ((data as { results?: SearchResult[] })?.results ?? []).filter(
-    (r) => r?.title && r.cover,
-  )
-  return dedupeResults(results)
+  const results = ((data as { results?: SearchResult[] })?.results ?? []).filter((r) => r?.title)
+  const sections = partitionSearchResults(results)
+  return [...sections.catalog, ...sections.google]
 }

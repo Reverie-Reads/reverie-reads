@@ -50,9 +50,13 @@ export async function runSearchProviders<T>(
       ? await attempt('google', true, options.runGoogle)
       : ({ provider: 'google', status: 'disabled', results: [] } satisfies SearchProviderAttempt<T>)
 
-  const results = options
-    .dedupe([...hardcover.results, ...google.results])
-    .slice(0, options.resultLimit)
+  // Keep the Google result set in the provider's original order and do not remove entries merely
+  // because Hardcover returned the same work. Google Books' display rules prohibit reordering or
+  // altering its search results and require them to remain visually separate from another search
+  // provider. The caller renders these contiguous provider blocks as separate sections.
+  const hardcoverResults = options.dedupe(hardcover.results).slice(0, options.resultLimit)
+  const googleResults = google.results.slice(0, options.resultLimit)
+  const results = [...hardcoverResults, ...googleResults]
   const failures = [hardcover, google].filter(
     (provider): provider is SearchProviderAttempt<T> & { status: 'failed' } =>
       provider.status === 'failed',

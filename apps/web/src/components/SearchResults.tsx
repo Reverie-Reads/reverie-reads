@@ -4,6 +4,7 @@ import { splitName, type Book } from '@reverie/core'
 import { CoverImage } from './CoverImage'
 import { libraryMatch, type SearchResult } from '../lib/search'
 import { Surface } from './Surface'
+import { GoogleBooksResultLink } from './GoogleBooksAttribution'
 
 // The shared search results surface — one visual, both surfaces (Discover grid + the shelf picker's
 // list). Each result shows cover / title / author / year / series (task §1). A result already in the
@@ -95,6 +96,7 @@ export function SearchResults({
               <span className="flex-none">
                 {inLib ? <OnShelf book={inLib} /> : renderActions(r)}
               </span>
+              <GoogleBooksResultLink result={r} />
             </Surface>
           )
         })}
@@ -142,6 +144,7 @@ export function SearchResults({
                 </button>
               )}
               {inLib ? <OnShelf book={inLib} /> : renderActions(r)}
+              <GoogleBooksResultLink result={r} />
             </div>
           </div>
         )

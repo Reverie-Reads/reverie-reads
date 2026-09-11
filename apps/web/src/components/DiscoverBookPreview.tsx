@@ -5,6 +5,7 @@ import { Modal } from './Modal'
 import { CoverImage } from './CoverImage'
 import { fetchDiscoveryDetails, plainDescription } from '../lib/discoveryDetails'
 import { hitKey, type DiscoverHit } from '../lib/discover'
+import { GoogleBooksAttribution, GoogleBooksResultLink } from './GoogleBooksAttribution'
 
 export function DiscoverBookPreview({
   hit,
@@ -70,6 +71,12 @@ export function DiscoverBookPreview({
           )}
         </div>
       </div>
+      {hit.source === 'google' && hit.sourceUrl && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <GoogleBooksAttribution />
+          <GoogleBooksResultLink result={hit} />
+        </div>
+      )}
       {reason && (
         <p className="mt-6 border-l-2 border-line pl-4 text-base leading-relaxed text-muted">
           {reason}
@@ -136,6 +143,8 @@ export function DiscoverBookPreview({
               author: hit.authors[0] || undefined,
               isbn: hit.isbn || undefined,
               cover: hit.cover || undefined,
+              source: hit.source,
+              sourceUrl: hit.sourceUrl,
               pub: hit.pub || undefined,
               want: true,
               discoverSession,

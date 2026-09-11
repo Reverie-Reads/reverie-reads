@@ -64,6 +64,8 @@ interface SearchResult {
   year: string
   series?: string
   seriesPosition?: number | null
+  /** Google Books information page. Required for every Google result shown to a reader. */
+  sourceUrl?: string
 }
 
 const json = (body: unknown, status = 200) =>
@@ -176,7 +178,7 @@ async function googleSearch(q: string): Promise<SearchResult[]> {
   }
   // Keep the key-bearing request URL out of errors, structured logs, and Sentry payloads.
   if (!r.ok) throw new SourceHttpError(r.status, endpoint)
-  let j: { items?: { volumeInfo?: Record<string, unknown> }[] }
+  let j: { items?: { id?: string; volumeInfo?: Record<string, unknown> }[] }
   try {
     j = (await r.json()) as { items?: { volumeInfo?: Record<string, unknown> }[] }
   } catch {
@@ -186,8 +188,11 @@ async function googleSearch(q: string): Promise<SearchResult[]> {
   for (const it of j.items ?? []) {
     const v = it.volumeInfo ?? {}
     if (typeof v.title !== 'string' || !v.title) continue
+    const sourceUrl = googleBooksUrl(v.infoLink ?? v.canonicalVolumeLink, it.id)
+    // A displayed Google result must link prominently back to Google Books. An unexpected malformed
+    // response stays out of the UI rather than producing a result the client cannot present lawfully.
+    if (!sourceUrl) continue
     const cover = bestGoogleCoverLink(v.imageLinks)
-    if (!cover) continue
     const ids =
       (v.industryIdentifiers as { type?: string; identifier?: string }[] | undefined) ?? []
     const isbn13 = ids.find((i) => i.type === 'ISBN_13')?.identifier
@@ -202,9 +207,22 @@ async function googleSearch(q: string): Promise<SearchResult[]> {
       isbn13,
       isbn10,
       year: /^\d{4}$/.test(year) ? year : '',
+      sourceUrl,
     })
   }
   return out
+}
+
+function googleBooksUrl(value: unknown, volumeId?: string): string | undefined {
+  if (typeof value === 'string') {
+    try {
+      const url = new URL(value.replace(/^http:/, 'https:'))
+      if (url.protocol === 'https:' && url.hostname === 'books.google.com') return url.toString()
+    } catch {
+      /* fall through to the stable volume id */
+    }
+  }
+  return volumeId ? `https://books.google.com/books?id=${encodeURIComponent(volumeId)}` : undefined
 }
 
 // ── dedupe ──
@@ -227,7 +245,8 @@ function dedupe(results: SearchResult[]): SearchResult[] {
 
 // ── cache (enrichment_cache, `search:` keys, short TTL) ──
 
-const cacheKey = (q: string): string => `search:${norm(q)}`
+// v2 excludes pre-attribution cache entries, which lack sourceUrl and used cross-provider dedupe.
+const cacheKey = (q: string): string => `search:v2:${norm(q)}`
 
 async function readCache(key: string): Promise<SearchResult[] | null> {
   if (!DB_URL) return null

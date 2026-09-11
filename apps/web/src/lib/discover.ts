@@ -25,6 +25,9 @@ export interface DiscoverHit extends DiscoveryBook {
   cover: string
   isbn: string
   pub: string
+  /** Search-result provenance. Present when this preview came from live catalog search. */
+  source?: 'hardcover' | 'google'
+  sourceUrl?: string
   /** provenance: true only on curated-injection hits (packages/core discoverCurated) — debuggable
    *  in the network tab and the fn's cache rows, never rendered to the reader */
   curated?: boolean
@@ -58,12 +61,19 @@ export function volumeToHit(item: any): DiscoverHit {
   const v = item?.volumeInfo ?? {}
   const ids: any[] = v.industryIdentifiers ?? []
   const ind = ids.find((x) => x.type === 'ISBN_13') ?? ids[0]
+  const sourceUrl =
+    typeof v.infoLink === 'string'
+      ? v.infoLink.replace(/^http:/, 'https:')
+      : item?.id
+        ? `https://books.google.com/books?id=${encodeURIComponent(item.id)}`
+        : undefined
   return {
     title: v.title ?? '',
     authors: v.authors ?? [],
     cover: bestGoogleCoverLink(v.imageLinks),
     isbn: ind?.identifier ?? '',
     pub: v.publishedDate ?? '',
+    ...(sourceUrl ? { source: 'google' as const, sourceUrl } : {}),
   }
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
