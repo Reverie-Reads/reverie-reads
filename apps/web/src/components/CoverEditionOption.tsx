@@ -61,7 +61,7 @@ export function CoverEditionOption({
           {image && ` · ${image.width} × ${image.height}`}
         </span>
         <span className="mt-1 block text-xs text-muted">
-          {edition.source === 'google' ? 'Google Books' : 'Hardcover'}
+          {edition.source === 'openlibrary' ? 'Open Library' : 'Hardcover'}
           {!mayIngestCover(edition.source, edition.cover) && ' · Linked image'}
         </span>
       </span>

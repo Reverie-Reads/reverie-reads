@@ -2,7 +2,7 @@
 // no Deno or network dependencies so the ordinary Vitest suite can exercise provider payloads and
 // the cross-source selection policy without booting the Edge runtime.
 
-export type ReleaseSource = 'prh' | 'hardcover' | 'google'
+export type ReleaseSource = 'prh' | 'hardcover'
 export type ReleaseDatePrecision = 'year' | 'month' | 'day'
 export type ReleaseKind = 'new_work' | 'new_edition'
 
@@ -228,7 +228,7 @@ function bounds(pub: string): { first: number; last: number } | null {
   return { first, last }
 }
 
-const sourceRank: Record<ReleaseSource, number> = { prh: 0, hardcover: 1, google: 2 }
+const sourceRank: Record<ReleaseSource, number> = { prh: 0, hardcover: 1 }
 
 function temporalRank(hit: ReleaseHit, now: number): [number, number, number] {
   const b = bounds(hit.pub)

@@ -23,10 +23,9 @@ export function CoverPicker({
 
   const pick = (alt: CoverAlternate) => {
     if (!alt.cover || saving) return
-    const source =
-      alt.source === 'hardcover' || alt.source === 'openlibrary' ? alt.source : 'google'
+    if (alt.source !== 'hardcover' && alt.source !== 'openlibrary') return
     setCover.mutate(
-      { book, source, url: alt.cover, sourceUrl: alt.cover },
+      { book, source: alt.source, url: alt.cover, sourceUrl: alt.cover },
       {
         onSettled: () => {
           setOpen(false)
@@ -49,7 +48,11 @@ export function CoverPicker({
     )
   }
 
-  const alts = alternates ?? []
+  // Old enrichment cache rows can still contain Google candidates. They are display-only search
+  // results and never belong in a persistent cover picker.
+  const alts = (alternates ?? []).filter(
+    (alternate) => alternate.source === 'hardcover' || alternate.source === 'openlibrary',
+  )
   return (
     <Surface tone="field" radius="card" pad={0} className="mt-1 p-2">
       {isLoading && <div className="text-[11px] text-muted">Finding editions…</div>}

@@ -30,7 +30,7 @@ beforeEach(() => {
   env = {
     SUPABASE_URL: 'https://database.invalid',
     SUPABASE_SERVICE_ROLE_KEY: 'synthetic-test-value',
-    ENRICH_SOURCES: 'google,isbndb',
+    ENRICH_SOURCES: 'openlibrary,google,isbndb',
     ISBNDB_ENABLED: 'true',
     ISBNDB_KEY: 'synthetic-retired-key',
   }
@@ -75,7 +75,18 @@ beforeEach(() => {
           ],
         })
       }
-      if (u.hostname === 'openlibrary.org') return Response.json({ docs: [] })
+      if (u.hostname === 'openlibrary.org')
+        return Response.json({
+          docs: [
+            {
+              title: TITLE,
+              author_name: [AUTHOR],
+              number_of_pages_median: 123,
+              isbn: [ISBN],
+              cover_i: 321,
+            },
+          ],
+        })
       if (u.hostname === 'api.hardcover.app') {
         return Response.json({ data: { search: { results: { hits: [] } } } })
       }
@@ -105,11 +116,13 @@ async function request(body) {
 
 function assertNoPaidCalls() {
   expect(calls.some(({ url }) => url.hostname.includes('isbndb'))).toBe(false)
+  expect(calls.some(({ url }) => url.hostname === 'www.googleapis.com')).toBe(false)
   expect(envReads).not.toContain('ISBNDB_KEY')
   expect(envReads).not.toContain('ISBNDB_ENABLED')
+  expect(envReads).not.toContain('GOOGLE_BOOKS_KEY')
 }
 
-describe('ISBNdb retirement at the actual enrichment handler', () => {
+describe('retired providers at the actual enrichment handler', () => {
   it.each(['fast', 'full'])(
     'does not activate ISBNdb via CSV, flag or key in %s mode',
     async (mode) => {
@@ -117,8 +130,8 @@ describe('ISBNdb retirement at the actual enrichment handler', () => {
       const body = await request({ isbn: ISBN, mode })
       expect(body.title).toBe(TITLE)
       expect(body.pageCount).toBe(123)
-      expect(body.provenance.pageCount.source).toBe('google')
-      expect(calls.some(({ url }) => url.hostname === 'www.googleapis.com')).toBe(true)
+      expect(body.provenance.pageCount.source).toBe('openlibrary')
+      expect(calls.some(({ url }) => url.hostname === 'www.googleapis.com')).toBe(false)
       assertNoPaidCalls()
     },
   )
@@ -143,7 +156,7 @@ describe('ISBNdb retirement at the actual enrichment handler', () => {
     const body = await request({ title: TITLE, author: AUTHOR, isbn: ISBN })
     expect(body.title).toBe(TITLE)
     expect(new Set(calls.map(({ url }) => url.hostname))).toEqual(
-      new Set(['database.invalid', 'openlibrary.org', 'www.googleapis.com', 'api.hardcover.app']),
+      new Set(['database.invalid', 'openlibrary.org', 'api.hardcover.app']),
     )
     assertNoPaidCalls()
   })
@@ -181,12 +194,12 @@ describe('ISBNdb retirement at the actual enrichment handler', () => {
     expect(first.source).not.toBe('cache')
     const writes = calls.filter(({ init }) => init.method === 'POST')
     expect(writes).toHaveLength(1)
-    expect(JSON.parse(writes[0].init.body).key).toBe(`no-isbndb-v1:${oldKey}`)
+    expect(JSON.parse(writes[0].init.body).key).toBe(`durable-sources-v1:${oldKey}`)
     expect(cache.get(oldKey)).toBe(oldRow)
     const reads = calls.filter(
       ({ url, init }) => url.hostname === 'database.invalid' && !init.method,
     )
-    expect(reads[0].url.searchParams.get('key')).toBe(`eq.no-isbndb-v1:${oldKey}`)
+    expect(reads[0].url.searchParams.get('key')).toBe(`eq.durable-sources-v1:${oldKey}`)
 
     calls.length = 0
     const second = await request(input)
@@ -203,7 +216,8 @@ describe('ISBNdb retirement at the actual enrichment handler', () => {
     expect(calls.some(({ url, init }) => url.hostname === 'database.invalid' && !init.method)).toBe(
       false,
     )
-    expect(calls.some(({ url }) => url.hostname === 'www.googleapis.com')).toBe(true)
+    expect(calls.some(({ url }) => url.hostname === 'openlibrary.org')).toBe(true)
+    expect(calls.some(({ url }) => url.hostname === 'www.googleapis.com')).toBe(false)
     assertNoPaidCalls()
   })
 })

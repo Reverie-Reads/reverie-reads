@@ -62,10 +62,10 @@ describe('guest library handoff', () => {
     expect(handoff.books[0]!.incoming.cover).toBe('')
   })
 
-  it('keeps the public Google Books cover used by the sample library', () => {
+  it('keeps the exact-edition Open Library cover used by the sample library', () => {
     const state = initialGuestState()
     const handoff = createGuestHandoff(state, { skin: 'folio', mode: 'light' })
-    expect(handoff.books[0]!.incoming.cover).toContain('books.google.com/books/content')
+    expect(handoff.books[0]!.incoming.cover).toContain('covers.openlibrary.org/b/isbn/')
   })
 
   it('expires and removes stale or malformed browser data', () => {

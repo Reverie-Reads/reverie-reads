@@ -22,6 +22,11 @@ date and obsolete hosted-secret removal remain unverified.
   backfill shares that definition and rejects off-roster returned keys. No fallback to old keys.
 - Keep historical source types and already-normalized merge compatibility. Those are not live
   acquisition paths. The trial harness is historical and untouched, not authorized for new calls.
+
+The September 11 Google display-boundary follow-on removes Google from automatic enrichment and
+advances the active cache namespace to `durable-sources-v1:` so historical mixed Google rows cannot
+re-enter that path. This follow-on does not rewrite existing reader choices or historical rows.
+
 - Preserve old cache rows, personal choices, shared works and audit history. No deletion,
   credential change, billing change, corpus update, migration or deployment occurs in this patch.
 

@@ -1,6 +1,6 @@
 -- Which books were stamped `enriched_at` without anything actually being checked.
 -- HISTORICAL ONLY: queries below use pre-retirement cache keys and must not diagnose current
--- cache misses after the no-isbndb-v1 cutover. A missing old key is not evidence nothing answered.
+-- cache misses after the no-isbndb-v1 and durable-sources-v1 cutovers. A missing old key is not evidence nothing answered.
 -- See docs/tasks/isbndb-retirement.md; do not run the suggested un-stamp from this stale join.
 -- READ-ONLY. Owner's to run — Code has no production read access (see BACKLOG).
 --

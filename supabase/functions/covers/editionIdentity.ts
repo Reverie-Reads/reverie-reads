@@ -38,24 +38,6 @@ export function matchesCoverWork(input: CoverIdentity, title: unknown, authors: 
   )
 }
 
-/** Exact edition evidence may survive a different title spelling; title alone never suffices. */
-export function matchesGoogleCover(input: CoverIdentity, volume: Record<string, unknown>): boolean {
-  const wantedIsbn = isbnKey(input.isbn)
-  const identifiers = Array.isArray(volume.industryIdentifiers) ? volume.industryIdentifiers : []
-  if (
-    wantedIsbn &&
-    identifiers.some((value: unknown) => {
-      if (!value || typeof value !== 'object') return false
-      const id = value as { type?: unknown; identifier?: unknown }
-      return (
-        (id.type === 'ISBN_10' || id.type === 'ISBN_13') && isbnKey(id.identifier) === wantedIsbn
-      )
-    })
-  )
-    return true
-  return matchesCoverWork(input, volume.title, volume.authors)
-}
-
 export function uniqueCoverBookId(ids: unknown[]): number | null {
   const parsed = ids.map((id) => (typeof id === 'string' && /^\d+$/.test(id) ? Number(id) : id))
   if (

@@ -1,7 +1,7 @@
 # Book data sources
 
-Reliability is scored **for this project's use case** — covering romance / romantasy / dark-romance,
-including indie and Kindle Unlimited titles, _and_ being usable from a personal app (several
+Reliability is scored **for this project's use case** — a genre-neutral personal library that includes
+trade, indie, Kindle Unlimited, and special-edition titles (several
 "best" databases are effectively locked behind affiliate sales or library membership).
 
 ## Covers & backlist metadata
@@ -24,15 +24,15 @@ candidates remain review-only and output is aggregate-only. Cross-provider agree
 establish independent lineage. Production enrichment and the consumed study runtime are unchanged;
 a broader fresh-reference comparison remains required before production integration.
 
-| Source                      | Reliability /5 | Cost                                                  | How to grab data                                                                                                                                                                                        |
-| --------------------------- | -------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Google Books**            | 4.5            | Free; ~1,000 requests/day default, more on request    | `GET …/books/v1/volumes?q=isbn:X` or `intitle:"…"+inauthor:"…"`; JSON → `volumeInfo.imageLinks.thumbnail`. Optional API key                                                                             |
-| **Hardcover**               | 4              | Free public API; ~$5/mo Supporter adds librarian edit | GraphQL `POST https://api.hardcover.app/v1/graphql` with a free Bearer token. Books carry editions, series, release dates, genres                                                                       |
-| **ISBNdb**                  | 4 (paid)       | ~$15 / $36 / $100 / $300 per month tiers              | `GET https://api2.isbndb.com/book/{isbn}` with API-key header; ~1 req/sec; bulk up to 1,000/call on higher tiers                                                                                        |
-| **Apple / iTunes Search**   | 3.5            | Free, no key (~20 calls/min)                          | `GET https://itunes.apple.com/search?media=ebook&term=…`; `artworkUrl100` → swap to higher res. Strong for audiobook art                                                                                |
-| **Open Library**            | 3.5            | Free                                                  | Search `…/search.json?title=&author=`; covers `https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg`. Cover-by-ISBN limited to 100 req/IP / 5 min; search 1 req/sec (3 with a User-Agent + contact email) |
-| **LibraryThing covers**     | 3              | Free dev key; attribution                             | `https://covers.librarything.com/devkey/{KEY}/large/isbn/{isbn}`                                                                                                                                        |
-| **Open Library bulk dumps** | 3              | Free                                                  | Monthly data dumps to match offline; zero runtime calls                                                                                                                                                 |
+| Source                      | Reliability /5 | Cost                                                  | How to grab data                                                                                                                                                                                          |
+| --------------------------- | -------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Google Books**            | 4.5 search     | Free; ~1,000 requests/day default, more on request    | **Explicit search only.** Preserve provider order, badge, and per-result link; do not use in personalized/generated shelves, releases, enrichment, or current cover alternatives. Optional server API key |
+| **Hardcover**               | 4              | Free public API; ~$5/mo Supporter adds librarian edit | GraphQL `POST https://api.hardcover.app/v1/graphql` with a free Bearer token. Books carry editions, series, release dates, genres                                                                         |
+| **ISBNdb**                  | 4 (paid)       | ~$15 / $36 / $100 / $300 per month tiers              | `GET https://api2.isbndb.com/book/{isbn}` with API-key header; ~1 req/sec; bulk up to 1,000/call on higher tiers                                                                                          |
+| **Apple / iTunes Search**   | 3.5            | Free, no key (~20 calls/min)                          | `GET https://itunes.apple.com/search?media=ebook&term=…`; `artworkUrl100` → swap to higher res. Strong for audiobook art                                                                                  |
+| **Open Library**            | 3.5            | Free                                                  | Search `…/search.json?title=&author=`; covers `https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg`. Cover-by-ISBN limited to 100 req/IP / 5 min; search 1 req/sec (3 with a User-Agent + contact email)   |
+| **LibraryThing covers**     | 3              | Free dev key; attribution                             | `https://covers.librarything.com/devkey/{KEY}/large/isbn/{isbn}`                                                                                                                                          |
+| **Open Library bulk dumps** | 3              | Free                                                  | Monthly data dumps to match offline; zero runtime calls                                                                                                                                                   |
 
 > **Open Library cover resolution — credit.** The ISBN-direct cover endpoint
 > (`/b/isbn/{isbn}-L.jpg?default=false`) and eager batch ingest into our own Storage — rather than
@@ -58,11 +58,13 @@ a broader fresh-reference comparison remains required before production integrat
 - **Hotlinking + CORS.** Cover URLs scraped from Amazon/B&N break unpredictably from a browser. API-served image URLs (Google / Open Library / Apple) are CORS-safe.
 - **Cache aggressively.** Open Library will `403` quickly otherwise. The app caches covers at runtime; the enrich scripts bake them into the seed.
 
-### Recommended stack (all free, no gatekeeping)
+### Recommended stack
 
-**Google Books primary → Open Library cover fallback → Hardcover for the misses**, then a manual
-cover-URL / upload field for ASIN-only stragglers. The app already does this chain at runtime;
-`scripts/enrich_covers.mjs` and `scripts/enrich_hardcover.mjs` pre-bake it into the seed.
+Use **Open Library plus optional Hardcover for automatic enrichment and cover candidates**. Keep
+Google Books as a separate, attributed, reader-triggered search source. Use Hardcover, optional PRH
+confirmation, and manual reader entry for releases. Reader photo/upload and the designed room
+placeholder cover the unresolved edition gap without turning a display source into durable catalog
+data.
 
 ## Selective ISBNdb metadata trial
 
@@ -387,14 +389,14 @@ pre-orders and author newsletters, and Goodreads (which did author-follow + new-
 closed its API. The viable model is **follow the authors you already own and check for their next
 book** (`scripts/fetch_upcoming.mjs`).
 
-| Source                   | Reliability /5    | Cost                         | How to get upcoming dates                                                                                                   |
-| ------------------------ | ----------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **Hardcover**            | 4                 | Free                         | **Active primary discovery.** GraphQL editions provide date, format, publisher, territory, ISBN, and parent work by author. |
-| **Penguin Random House** | 3 (trad only)     | Free key (manual activation) | **Optional confirmation when `PRH_API_KEY` is configured.** `onsale` is authoritative for the PRH.US catalog only.          |
-| **Google Books**         | 3                 | Free                         | **Active fallback.** `inauthor:"…"` fills gaps; partial `publishedDate` values retain their year/month precision.           |
-| **ISBNdb**               | 2.5               | Paid                         | Pre-pub ISBNs exist but it isn't a "what's coming" feed; KU ebooks without ISBNs never appear                               |
-| **Amazon pre-orders**    | data 5 / usable 1 | Gated                        | Where indie dates actually are, but the API is closed to new sign-ups                                                       |
-| **Manual + newsletters** | 5                 | Free                         | **Active reader entry.** Planner → Releases accepts title, author, and a flexible year/month/full date before Add.          |
+| Source                   | Reliability /5    | Cost                         | How to get upcoming dates                                                                                                                    |
+| ------------------------ | ----------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Hardcover**            | 4                 | Free                         | **Active primary discovery.** GraphQL editions provide date, format, publisher, territory, ISBN, and parent work by author.                  |
+| **Penguin Random House** | 3 (trad only)     | Free key (manual activation) | **Optional confirmation when `PRH_API_KEY` is configured.** `onsale` is authoritative for the PRH.US catalog only.                           |
+| **Google Books**         | 3                 | Free                         | **Excluded from releases.** Merging/reranking provider results conflicts with its display contract; it remains available in explicit search. |
+| **ISBNdb**               | 2.5               | Paid                         | Pre-pub ISBNs exist but it isn't a "what's coming" feed; KU ebooks without ISBNs never appear                                                |
+| **Amazon pre-orders**    | data 5 / usable 1 | Gated                        | Where indie dates actually are, but the API is closed to new sign-ups                                                                        |
+| **Manual + newsletters** | 5                 | Free                         | **Active reader entry.** Planner → Releases accepts title, author, and a flexible year/month/full date before Add.                           |
 
 The shared 24-hour `releases_cache` amortizes provider calls across readers. The cached hit keeps
 its provider, source URL, checked time, format, publisher, territory, and whether Hardcover can

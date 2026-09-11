@@ -394,6 +394,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   actually loaded, never the size of its CSS box; reader replacement remains explicit. Alternate
   cover searches require exact ISBN or conservative title/author identity; search rank alone is not
   evidence. Preserve a working linked-image fallback when saving a reader's choice.
+- **Google Books is explicit-search-only.** Keep its results in the provider's original order,
+  visually separate from catalog results, with the required badge and a valid per-result Google
+  Books link. Do not use Google results in guided Discover, genre browsing, personalized ranking,
+  release feeds, automatic enrichment, or cover alternatives, and do not persist a new Google
+  cover reference when a reader saves a search result. Preserve existing reader choices and
+  historical provenance; this boundary is not a cleanup migration.
 - **Reflect and Planner share recorded history.** Use `useReadingHistory` and the pure
   `buildReadingHistory` / `summarizeReadingHistory` model for period counts. Base book queries do
   not hydrate logs. Current DNF is not a dated attempt, a Read flag is not a synthetic session,
@@ -442,7 +448,7 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
 
 **ISBNdb retirement (owner, September 9).** Production enrichment no longer has an ISBNdb HTTP
 adapter; old keys/flags/CSV cannot reactivate it. Enrichment and the owner-run corpus backfill share
-the `no-isbndb-v1:` cache namespace, with no fallback to historical mixed-source rows. Historical
+the `durable-sources-v1:` cache namespace, with no fallback to historical mixed-source rows. Historical
 source types remain readable, not proof of a live provider. Do not delete old cache or catalog rows
 as part of this cutover: incomplete union/personal provenance prevents safe blanket cleanup.
 No further paid trial acquisition without new owner approval; consumed study locks stay intact.
@@ -589,8 +595,9 @@ function` + fresh `create` resets it to the PUBLIC-execute default — verified 
 - **The fresh-worktree `.env.local` failure class is CLOSED (2026-08-21): the committed
   `apps/web/.env` carries the local-stack demo values in every Vite mode, so a fresh worktree
   builds and tests with no env setup at all.** `.env.local` is now an optional per-machine
-  override and the ONLY home for real keys (Sentry DSN, Google Books) — never commit those into
-  `.env`. History, kept because the misdiagnosis pattern generalises: >=5 incidents where the
+  override and the ONLY home for real values (Sentry DSN, the browser-safe CARTO basemap key) —
+  never commit those into `.env`. Server provider keys stay in the deployment secret store.
+  History, kept because the misdiagnosis pattern generalises: >=5 incidents where the
   missing gitignored file made unit tests fail in ways that read as real regressions
   (offline-session boot stuck on "Turning the page…", cache-scoping restores finding nothing) —
   10 failing tests on 2026-08-19 (#288), 17 on 2026-08-20 (#297), plus build refusals. On a

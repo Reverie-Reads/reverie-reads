@@ -7,7 +7,7 @@ import { authFailure } from './support/authError'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
 import { ok, okUser } from './support/ok'
 
-// DISCOVER COVER QUALITY (fix/discover-cover-quality; docs/audits/discover-cover-quality.md).
+// EXPLICIT SEARCH COVER QUALITY (fix/discover-cover-quality; docs/audits/discover-cover-quality.md).
 //
 // The defect this guards against shipped green because the earlier verification asserted the SRC
 // ATTRIBUTE — the zoom=2 rewrite was visible on every card while Google was serving a 300×48 scan
@@ -100,52 +100,63 @@ async function openDiscover(page: Page) {
     return route.fulfill({ body: px(file), contentType: 'image/png' })
   })
 
-  // The Discover rail payload: four hits, one per audit class, covers at zoom=1 exactly as the
-  // real Google payload carries them (the upgrade to zoom=2 happens in the render chain).
-  await page.route('**/functions/v1/releases**', (r) =>
+  // An explicit Google Books search payload: four hits, one per audit class, with covers at
+  // zoom=1 exactly as the real provider payload carries them (the upgrade to zoom=2 happens in
+  // the render chain). Google Books no longer powers ranked or guided Discover surfaces.
+  await page.route('**/functions/v1/search**', (r) =>
     r.fulfill({
       json: {
-        hits: [
+        results: [
           {
+            source: 'google',
             title: 'Modern Ebook',
             authors: ['A One'],
             cover: gUrl(VOLUMES.modern),
             isbn: '',
-            pub: '2025',
+            year: '2025',
+            sourceUrl: `https://books.google.com/books?id=${VOLUMES.modern}`,
           },
           {
+            source: 'google',
             title: 'Old Scan',
             authors: ['A Two'],
             cover: gUrl(VOLUMES.oldscan),
             isbn: '',
-            pub: '1987',
+            year: '1987',
+            sourceUrl: `https://books.google.com/books?id=${VOLUMES.oldscan}`,
           },
           {
+            source: 'google',
             title: 'Metadata Only',
             authors: ['A Three'],
             cover: gUrl(VOLUMES.metaonly),
             isbn: '',
-            pub: '2021',
+            year: '2021',
+            sourceUrl: `https://books.google.com/books?id=${VOLUMES.metaonly}`,
           },
           {
+            source: 'google',
             title: 'No Asset',
             authors: ['A Four'],
             cover: gUrl(VOLUMES.noasset),
             isbn: '',
-            pub: '2020',
+            year: '2020',
+            sourceUrl: `https://books.google.com/books?id=${VOLUMES.noasset}`,
           },
         ],
       },
     }),
   )
-  for (const p of ['search', 'enrich', 'embed', 'series', 'covers'])
+  await page.route('**/functions/v1/releases**', (r) => r.fulfill({ json: { hits: [] } }))
+  for (const p of ['enrich', 'embed', 'series', 'covers'])
     await page.route(`**/functions/v1/${p}**`, (r) => r.fulfill({ json: {} }))
 
   await page.goto(
     `/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )
   await page.getByRole('button', { name: /enter your library/i }).click({ timeout: 20_000 })
-  await page.goto('/discover?genre=horror')
+  await page.goto('/discover?browse=true')
+  await page.getByLabel('Search the wider catalog').fill('cover quality fixtures')
   await expect(page.getByText('Modern Ebook')).toBeVisible({ timeout: 20_000 })
   // Let the fallback chain settle: a degenerate first candidate loads, gets rejected on load,
   // and the zoom=1 retry loads — two sequential image round-trips at most.
@@ -155,24 +166,22 @@ async function openDiscover(page: Page) {
 /** The PAINTED image state for the card containing `title` — dimensions of what actually
  *  rendered, not what was requested. */
 async function paintedCover(page: Page, title: string) {
-  return page.evaluate((t) => {
-    // Scope the image query to the semantic card containing this title, so a neighbouring
-    // card's image can never satisfy it.
-    const leaf = [...document.querySelectorAll<HTMLElement>('main *')].find(
-      (n) => n.childElementCount === 0 && n.textContent?.trim() === t,
-    )
-    const card = leaf?.closest<HTMLElement>('article') ?? null
-    const coverBox = card?.querySelector<HTMLElement>('[class*="aspect-"]') ?? null
-    const img = coverBox?.querySelector('img') ?? null
-    return {
-      found: !!coverBox,
-      hasImg: !!img,
-      naturalW: img?.naturalWidth ?? 0,
-      naturalH: img?.naturalHeight ?? 0,
-      complete: img?.complete ?? false,
-      src: img?.currentSrc?.slice(0, 140) ?? '',
-    }
-  }, title)
+  return page
+    .getByRole('button', { name: `View details for ${title}`, exact: true })
+    .evaluate((card) => {
+      // Scope the image query to the result's accessible preview control. The old release card used
+      // an <article>; explicit search deliberately uses a button so opening details is one action.
+      const coverBox = card.querySelector<HTMLElement>('[class*="aspect-"]') ?? null
+      const img = coverBox?.querySelector('img') ?? null
+      return {
+        found: !!coverBox,
+        hasImg: !!img,
+        naturalW: img?.naturalWidth ?? 0,
+        naturalH: img?.naturalHeight ?? 0,
+        complete: img?.complete ?? false,
+        src: img?.currentSrc?.slice(0, 140) ?? '',
+      }
+    })
 }
 
 test('rendered covers: upgraded where real, zoom=1 where degenerate, placeholder where nothing — asserted on painted pixels', async ({

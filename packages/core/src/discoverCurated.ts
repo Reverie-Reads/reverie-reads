@@ -6,11 +6,11 @@
 // BEFORE ranking: same year-tier logic as live candidates, not pinned, not a separate rail.
 // Horror/Literary/Nonfiction/Cozy/YA are deliberately untouched (blend is a passthrough there).
 //
-// Every record was resolved from docs/research/discover-2020plus-titles.md via Open Library +
-// Google Books (Phase 1, 41/41 with ISBN-13 + cover). `pub` carries the ORIGINAL publication year
-// (edition dates inflate recency — the audit's reprint complaint), with the source's full date
-// kept only where its year agrees. The category tag comes from the research list, NOT from Google
-// categories — the bare-['Fiction'] problem is exactly why these can't self-categorize.
+// Every record retains its reviewed ISBN-13. A reviewed exact-ISBN Open Library cover is used when
+// available; otherwise `cover` is empty and the room's designed placeholder is the honest result.
+// `pub` carries the ORIGINAL publication year (edition dates inflate recency), with the source's
+// full date kept only where its year agrees. The category tag comes from the research list rather
+// than a changing provider category.
 //
 // Mirrored by supabase/functions/releases/curated.ts (Deno can't import the workspace package);
 // discoverCuratedParity.test.ts asserts identical data + blend output. Keep both in sync.
@@ -27,9 +27,8 @@ export interface CuratedHit {
   curated: true
 }
 
-/** The four starved categories (audit §5: 0% 2020+ at fn depth). Keys are canonical genre keys
- *  (genreKey output / GENRE_DISCOVER_QUERY keys). The healthy and not-yet-justified categories
- *  are absent ON PURPOSE — an absent key means blendCuratedPool is a passthrough. */
+/** The four reviewed categories. Keys are canonical genre keys (genreKey output). The other
+ * categories are absent on purpose; an absent key means blendCuratedPool is a passthrough. */
 export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
   romance: [
     {
@@ -75,8 +74,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'The Serpent and the Wings of Night',
       authors: ['Carissa Broadbent'],
-      cover:
-        'https://books.google.com/books/content?id=wahW0AEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781960854339',
       pub: '2022',
       curated: true,
@@ -116,8 +114,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'Outlier',
       authors: ['Susie Tate'],
-      cover:
-        'https://books.google.com/books/content?id=uTsd0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781923232167',
       pub: '2025-08-12',
       curated: true,
@@ -207,8 +204,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'A Forbidden Alchemy',
       authors: ['Stacey McEwan'],
-      cover:
-        'https://books.google.com/books/content?id=DicXEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781761428517',
       pub: '2025-07-02',
       curated: true,
@@ -282,8 +278,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'The Terraformers',
       authors: ['Annalee Newitz'],
-      cover:
-        'https://books.google.com/books/content?id=Wo9pEAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: 'https://covers.openlibrary.org/b/isbn/9781250228062-L.jpg?default=false',
       isbn: '9781250228062',
       pub: '2023-01-31',
       curated: true,
@@ -325,8 +320,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'King of Ashes',
       authors: ['S. A. Cosby'],
-      cover:
-        'https://books.google.com/books/content?id=PY4lEQAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781250832078',
       pub: '2025-06-10',
       curated: true,
@@ -366,8 +360,7 @@ export const CURATED_DISCOVER: Record<string, CuratedHit[]> = {
     {
       title: 'Murder by Cheesecake',
       authors: ['Rachel Ekstrom Courage'],
-      cover:
-        'https://books.google.com/books/content?id=wK090QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api',
+      cover: '',
       isbn: '9781420526370',
       pub: '2025-08-13',
       curated: true,

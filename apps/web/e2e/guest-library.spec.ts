@@ -3,17 +3,19 @@ import { expect, test } from '@playwright/test'
 test('the sample library uses large cover sources and saves only after consent', async ({
   page,
 }) => {
-  await page.route('**books.google.com/books/content**', (route) =>
-    route.fulfill({ path: 'public/landing-covers/acotar.jpg' }),
-  )
   await page.goto('/')
   const demo = page.getByTestId('guest-library-compact')
   const covers = demo.locator('img')
 
   await expect(covers).toHaveCount(2)
-  for (const cover of await covers.all()) {
-    await expect(cover).toHaveAttribute('src', /books\.google\.com\/books\/content.*zoom=0/)
-  }
+  await expect(covers.nth(0)).toHaveAttribute(
+    'src',
+    'https://covers.openlibrary.org/b/isbn/9780141441146-L.jpg?default=false',
+  )
+  await expect(covers.nth(1)).toHaveAttribute(
+    'src',
+    'https://covers.openlibrary.org/b/isbn/9780441478125-L.jpg?default=false',
+  )
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('reverie.guest-handoff.v1')))
     .toBeNull()

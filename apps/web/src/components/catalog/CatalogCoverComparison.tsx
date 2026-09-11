@@ -295,12 +295,6 @@ export function CatalogCoverComparison({
             ))}
           </div>
         )}
-        {alternatives.data?.some((e) => e.source === 'google') && (
-          <p className="mt-3 text-xs text-muted">
-            Google Books images stay linked. Select an image to view its Google Books page before
-            approval.
-          </p>
-        )}
       </details>
 
       <fieldset disabled={save.isPending} className="mt-5 min-w-0">

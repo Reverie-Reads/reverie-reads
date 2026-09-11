@@ -1035,7 +1035,7 @@ function SettingsScreen() {
             ))}
           </ul>
           <p className="mt-3 text-[12px] text-muted">
-            Book metadata is fetched from public sources (Open Library, Google Books) through our
+            Book metadata is fetched from reviewed sources (Open Library and Hardcover) through our
             server and cached globally by work — never tied to you. Export or delete everything
             below.
           </p>

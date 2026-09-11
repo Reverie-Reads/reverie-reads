@@ -19,7 +19,6 @@ import { Surface } from '../components/Surface'
 const sourceLabel: Record<ReleaseSource, string> = {
   prh: 'Publisher catalog',
   hardcover: 'Hardcover',
-  google: 'Google Books',
 }
 
 function checkedLabel(value: string): string {
@@ -49,10 +48,7 @@ function ReleaseCard({ release: r }: { release: AuthorRelease }) {
               author: r.author || undefined,
               isbn: r.isbn || undefined,
               cover: r.cover || undefined,
-              source:
-                release?.source === 'hardcover' || release?.source === 'google'
-                  ? release.source
-                  : undefined,
+              source: release?.source === 'hardcover' ? release.source : undefined,
               pub: r.pub || undefined,
               want: true,
             },
@@ -280,8 +276,8 @@ function TrackRelease({ suggestedAuthor }: { suggestedAuthor?: string }) {
 }
 
 // The library derives "your authors" from loved and repeated reads. Hardcover supplies edition
-// discovery, PRH confirms its own catalog when configured, and Google fills gaps. Provider results
-// stay in the shared cache; the reader sees where a date came from before adding the book.
+// discovery and PRH confirms its own catalog when configured. Provider results stay in the shared
+// cache; the reader sees where a date came from before adding the book.
 export function FromYourAuthors({ books }: { books: Book[] }) {
   const followsQ = useAuthorFollows()
   const setFollow = useSetFollow()

@@ -22,6 +22,7 @@ describe('bulk Add series evidence', () => {
     expect(incoming.position).toBe('')
     expect(incoming.status).toBe('standalone')
     expect(incoming.seriesClaim).toBeUndefined()
+    expect(incoming.cover).toBe('https://example.test/fourth-wing.jpg')
   })
 
   it('keeps a result with no series unknown instead of inventing membership', () => {
@@ -35,5 +36,6 @@ describe('bulk Add series evidence', () => {
     expect(incoming.position).toBe('')
     expect(incoming.status).toBe('standalone')
     expect(incoming.seriesClaim).toBeUndefined()
+    expect(incoming.cover).toBe('')
   })
 })

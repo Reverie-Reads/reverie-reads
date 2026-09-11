@@ -56,10 +56,15 @@ async function signIn(page: Page) {
   })
 }
 
-test('place search returns a useful list before the optional map and can expand its radius', async ({
+test('place search keeps the useful list when the optional basemap is not configured', async ({
   page,
 }) => {
   const radii: number[] = []
+  const cartoRequests: string[] = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).hostname.endsWith('basemaps.cartocdn.com'))
+      cartoRequests.push(request.url())
+  })
   await page.route('**/api/bookstores?*', async (route) => {
     radii.push(Number(new URL(route.request().url()).searchParams.get('radius')))
     return route.fulfill({
@@ -111,6 +116,8 @@ test('place search returns a useful list before the optional map and can expand 
   await expect(page.getByText('Near Redmond, Oregon')).toBeVisible()
   await expect(page.getByText('Juniper Books', { exact: true })).toBeVisible()
   await expect(page.getByText('Barnes & Noble', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('Map temporarily unavailable', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Show map' })).toHaveCount(0)
   await expect(
     page.getByRole('region', { name: 'Map of nearby independent bookstores' }),
   ).toHaveCount(0)
@@ -124,12 +131,9 @@ test('place search returns a useful list before the optional map and can expand 
   )
   expect(radii).toEqual([40000])
 
-  await page.getByRole('button', { name: 'Show map' }).click()
-  await expect(
-    page.getByRole('region', { name: 'Map of nearby independent bookstores' }),
-  ).toBeVisible()
   await page.getByRole('button', { name: '50 miles' }).click()
   await expect.poll(() => radii).toEqual([40000, 80000])
+  expect(cartoRequests).toEqual([])
 })
 
 test('the Edge directory cache carries a web route outage', async ({ page }) => {

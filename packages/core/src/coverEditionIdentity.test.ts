@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 import {
   editionsCacheKey,
   hardcoverCoverBookId,
-  matchesGoogleCover,
   matchesCoverWork,
   uniqueCoverBookId,
 } from '../../../supabase/functions/covers/editionIdentity'
@@ -22,21 +21,6 @@ describe('alternate cover identity', () => {
         hit(2, 'Audition', 'Katie Kitamura'),
       ]),
     ).toBe(2)
-    expect(matchesGoogleCover(audition, { title: 'Audition', authors: ['Maddie Ziegler'] })).toBe(
-      false,
-    )
-    expect(
-      matchesGoogleCover(
-        { title: 'Birds of Belize', author: 'H. Lee Jones' },
-        { title: 'Bridge of Birds', authors: ['Barry Hughart'] },
-      ),
-    ).toBe(false)
-    expect(
-      matchesGoogleCover(
-        { title: 'Bandit Roads', author: 'Richard Grant' },
-        { title: 'Bandit', authors: ['Molly Brodak'] },
-      ),
-    ).toBe(false)
   })
 
   it('requires a full known author for title-based matches, not just a name fragment', () => {
@@ -57,44 +41,6 @@ describe('alternate cover identity', () => {
         'H Lee Jones',
         'Another Contributor',
       ]),
-    ).toBe(true)
-  })
-
-  it('accepts the same edition through either ISBN representation, not an unrelated identifier', () => {
-    const input = { ...audition, isbn: '0-14-144114-3' }
-    expect(
-      matchesGoogleCover(input, {
-        industryIdentifiers: [{ type: 'ISBN_13', identifier: '9780141441146' }],
-      }),
-    ).toBe(true)
-    expect(
-      matchesGoogleCover(input, {
-        industryIdentifiers: [{ type: 'OTHER', identifier: '9780141441146' }],
-      }),
-    ).toBe(false)
-    expect(
-      matchesGoogleCover(input, {
-        industryIdentifiers: [{ type: 'ISBN_13', identifier: '9780141187761' }],
-      }),
-    ).toBe(false)
-    expect(
-      matchesGoogleCover(
-        { isbn: 'not-an-isbn' },
-        { industryIdentifiers: [{ type: 'ISBN_13', identifier: 'invalid' }] },
-      ),
-    ).toBe(false)
-  })
-
-  it('keeps an alternate edition when title and author agree', () => {
-    expect(
-      matchesGoogleCover(
-        { ...audition, isbn: '9780141441146' },
-        {
-          title: 'Audition',
-          authors: ['Katie Kitamura'],
-          industryIdentifiers: [{ type: 'ISBN_13', identifier: '9780141187761' }],
-        },
-      ),
     ).toBe(true)
   })
 
@@ -128,7 +74,7 @@ describe('alternate cover identity', () => {
     )
   })
 
-  it('keeps the tested guards in the deployed edition path, ahead of image extraction and cache reuse', () => {
+  it('keeps the tested guards in the deployed edition path, ahead of cover construction and cache reuse', () => {
     const edge = readFileSync(
       join(__dirname, '../../../supabase/functions/covers/index.ts'),
       'utf8',
@@ -136,10 +82,13 @@ describe('alternate cover identity', () => {
     expect(edge).toContain('bookId = hardcoverCoverBookId(input, d?.search?.results?.hits)')
     expect(edge).toContain('bookId = uniqueCoverBookId(matches.map((edition) => edition.book_id))')
     expect(edge).toContain('if (matches.length && bookId == null) return []')
-    expect(edge.indexOf('if (!matchesGoogleCover(input, v)) continue')).toBeLessThan(
-      edge.indexOf('const cover = bestGoogleCoverLink(v.imageLinks)'),
-    )
+    const openLibrary = edge.indexOf('function openLibraryEdition(input: EditionsInput)')
+    expect(openLibrary).toBeGreaterThan(-1)
+    expect(
+      edge.indexOf('if (isbn.length !== 10 && isbn.length !== 13) return []', openLibrary),
+    ).toBeLessThan(edge.indexOf('https://covers.openlibrary.org/b/isbn/', openLibrary))
+    expect(edge).not.toContain('bestGoogleCoverLink')
     expect(edge).toContain("from './editionIdentity.ts'")
-    expect(edge).toContain('const key = editionsCacheKey(input)')
+    expect(edge).toContain('const key = `cover-editions:v2:${editionsCacheKey(input)}`')
   })
 })

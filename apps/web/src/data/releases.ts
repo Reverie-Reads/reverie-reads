@@ -12,7 +12,7 @@ import { isOwned, ownedKeys, type DiscoverHit } from '../lib/discover'
 // upstream fetches are budgeted per request), then windows/dedupes/owner-filters locally.
 
 export type FollowState = 'followed' | 'muted'
-export type ReleaseSource = 'prh' | 'hardcover' | 'google'
+export type ReleaseSource = 'prh' | 'hardcover'
 
 export interface ReleaseInfo {
   source: ReleaseSource
@@ -27,7 +27,7 @@ export interface ReleaseInfo {
 }
 
 export interface ReleaseHit extends DiscoverHit {
-  /** Absent only on cached responses from the retired Google-only release shape. */
+  /** Optional while a provider response is being normalized or a stale client response is read. */
   release?: ReleaseInfo
 }
 
