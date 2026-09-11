@@ -20,8 +20,15 @@ at single-user scale; it's the readiness list to work down as MAU grows.
   hits → near-flat enrichment cost. Same for geocode results.
 - **Proxy + cache the free third-party services before adding users** — Nominatim,
   Overpass, and map tiles all have usage policies that throttle/ban heavy direct traffic.
-  Route through Edge Functions with a contact User-Agent, caching, and rate-limit; line up
-  paid providers (hosted/self-host Overpass, a tile plan) as a growth trigger.
+  The `geo` Edge Function identifies Reverie, caches shared results, rate-limits calls, and can
+  change `OVERPASS_ENDPOINTS` without a web release. Store discovery uses two sequential public
+  Overpass endpoints because those community services are explicitly best-effort, with a last-known
+  result available for up to 90 days during an outage. The reader flow keeps their location and
+  offers a retry plus Bookshop.org's store directory when both are down.
+  Keep this low-cost path through beta. Consider hosted/self-hosted Overpass or Google Places only
+  after measured demand or support failures justify recurring operations or spend. As of 2026-09,
+  Google lists 5,000 free monthly Nearby Search Pro events, then $32 per 1,000 in its first paid
+  tier; pricing and reuse terms require a fresh review before adoption.
 - **API quotas → paid tiers:** Google Books (~1,000/day) and Open Library (per-IP) don't
   scale on the free path; budget heavier caching or paid metadata. Track the **Supabase**
   free-tier ceilings (MAU, DB size, edge invocations, storage) and set an upgrade trigger.

@@ -109,8 +109,11 @@ writes, migrations, function deployment, and deletion remain owner-run operation
       confirm spoiler-gated comments stay hidden until the reader reaches them.
 - [ ] **Catalog administration:** review cover and metadata queues, defer once, reject a stale save,
       and confirm shared edits never overwrite a personal reader choice.
-- [ ] **Indie links:** choose a local shop and test Bookshop, Libro, and direct-store destinations;
-      copy must accurately describe which purchase supports which shop and that Reverie takes no cut.
+- [ ] **Indie bookstores:** search by city/ZIP and browser location; test 10-, 25-, and 50-mile
+      results, list-before-map behavior, directions, choosing/clearing a preferred shop, retry after
+      a directory failure, and the no-results path. Test Bookshop, Libro, and direct-store
+      destinations; copy must accurately describe which purchase supports which shop and that
+      Reverie takes no cut. Confirm OpenStreetMap attribution remains visible with the map closed.
 
 ## P3 — recovery and install checks
 

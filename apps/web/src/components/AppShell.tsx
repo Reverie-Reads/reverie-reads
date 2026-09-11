@@ -9,6 +9,7 @@ import { SkinEvolveReveal } from './SkinEvolveReveal'
 import { ThemeToggle } from './ThemeToggle'
 import { Surface } from './Surface'
 import { PowerGlyph } from './PowerGlyph'
+import { PlusGlyph } from './PlusGlyph'
 import { isHouseholdAddContext } from './appShellScope'
 import { NavigationGlyph } from './NavigationGlyph'
 import { ReverieMark } from './ReverieMark'
@@ -175,7 +176,7 @@ function Sidebar({
           collapsed ? 'px-0' : 'px-4'
         }`}
       >
-        <span aria-hidden>＋</span>
+        <PlusGlyph className="h-[17px] w-[17px] shrink-0" />
         {!collapsed && <span>{householdAdd ? 'Add to household' : 'Add a book'}</span>}
       </Link>
 
@@ -411,7 +412,7 @@ function MobileTabBar({
               aria-label={householdAdd ? 'Add to household' : 'Add a book'}
               className="rv-mobile-add skin-control skin-btn-primary grid h-12 w-12 -translate-y-3 place-items-center text-[20px]"
             >
-              <span aria-hidden>＋</span>
+              <PlusGlyph className="h-5 w-5" />
             </Link>
             <span
               aria-hidden

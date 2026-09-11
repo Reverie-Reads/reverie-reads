@@ -5,6 +5,7 @@ import {
   haversineKm,
   isChain,
   parseStores,
+  safeStoreWebsite,
   type OverpassEl,
 } from './indie'
 
@@ -63,7 +64,7 @@ describe('parseStores', () => {
     const ccb = out.find((s) => s.id === 'node/1')!
     expect(ccb.name).toBe('Crescent City Books')
     expect(ccb.address).toBe('Chartres St New Orleans')
-    expect(ccb.website).toBe('https://ccbooks.com')
+    expect(ccb.website).toBe('https://ccbooks.com/')
     expect(ccb.distanceKm).toBeGreaterThan(0)
     expect(out.some((s) => s.name === 'Barnes & Noble')).toBe(false)
   })
@@ -80,7 +81,29 @@ describe('parseStores', () => {
       29.95,
       -90.07,
     )
-    expect(out[0]).toMatchObject({ name: 'Indie', phone: '555-1234', website: 'https://i.co' })
+    expect(out[0]).toMatchObject({ name: 'Indie', phone: '555-1234', website: 'https://i.co/' })
+  })
+
+  it('drops invalid coordinates and collapses duplicate mapped shapes', () => {
+    const out = parseStores(
+      [
+        { type: 'node', id: 1, lat: 29.95, lon: -90.07, tags: { name: 'One Shop' } },
+        { type: 'way', id: 2, center: { lat: 29.9502, lon: -90.0702 }, tags: { name: 'One Shop' } },
+        { type: 'node', id: 3, lat: Number.NaN, lon: -90.07, tags: { name: 'Broken' } },
+      ],
+      29.95,
+      -90.07,
+    )
+    expect(out.map((store) => store.id)).toEqual(['node/1'])
+  })
+})
+
+describe('safeStoreWebsite', () => {
+  it('keeps HTTP(S), repairs bare domains, and rejects executable schemes', () => {
+    expect(safeStoreWebsite('bookshop.example/path')).toBe('https://bookshop.example/path')
+    expect(safeStoreWebsite('http://bookshop.example')).toBe('http://bookshop.example/')
+    expect(safeStoreWebsite('javascript:alert(1)')).toBe('')
+    expect(safeStoreWebsite('data:text/html,bad')).toBe('')
   })
 })
 
