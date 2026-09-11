@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { authorOf, isBorrowedBook, isDnf, isPossessed, stateSuffix, type Book } from '@reverie/core'
 import { Spine } from './Spine'
 import { CoverImage } from './CoverImage'
+import { PlusGlyph } from './PlusGlyph'
 import { StatePill } from './StatePill'
 import { ProgressMeter } from './Structure'
 
@@ -809,7 +810,7 @@ export function SpineShelf({
                 className="flex h-36 w-9 items-center justify-center rounded-md border border-dashed border-line text-[18px]"
                 style={{ background: 'var(--chip)', color: 'var(--muted)' }}
               >
-                ＋
+                <PlusGlyph />
               </span>
             </button>
           )}

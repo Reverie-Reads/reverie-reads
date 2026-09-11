@@ -17,8 +17,13 @@ import { formatHours12 } from '@reverie/core'
 import { Surface } from '../components/Surface'
 
 const miles = (km: number) => `${(km * 0.621371).toFixed(1)} mi`
+const SEARCH_RADII = [
+  { meters: 16000, label: '10 miles' },
+  { meters: 40000, label: '25 miles' },
+  { meters: 80000, label: '50 miles' },
+] as const
 
-// Map tiles are served from CARTO's CDN (dark for Nocturne, light for Magnolia Dawn) — the
+// Map tiles are served from CARTO's CDN (dark or light to match the current room mode) — the
 // policy-respecting path for tiles (a CDN, not our origin). The throttled API calls (Overpass +
 // Nominatim) are proxied + cached through the `geo` Edge Function; tiles stay on the CDN. Owner
 // action at production volume: a tile plan / self-hosted tiles (free CARTO basemaps are light-use).
@@ -121,13 +126,13 @@ function ShopOnlineFallback() {
   return (
     <div className="mt-3 flex flex-wrap gap-2">
       <a
-        href="https://bookshop.org"
+        href="https://bookshop.org/pages/bookstores"
         target="_blank"
         rel="noreferrer"
         className="skin-control border border-line px-4 py-2 text-[13px] font-semibold text-ink"
         style={{ background: 'var(--field)' }}
       >
-        Print &amp; ebooks · Bookshop.org ↗
+        Find a Bookshop.org bookstore ↗
       </a>
       <a
         href="https://libro.fm"
@@ -144,10 +149,12 @@ function ShopOnlineFallback() {
 
 function StoreList({
   stores,
+  origin,
   defaultId,
   onSetDefault,
 }: {
   stores: Store[]
+  origin: ResolvedLocation
   defaultId: string | null
   onSetDefault: (s: Store | null) => void
 }) {
@@ -180,6 +187,14 @@ function StoreList({
                   Website ↗
                 </a>
               )}
+              <a
+                href={`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${origin.lat}%2C${origin.lng}%3B${s.lat}%2C${s.lng}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary"
+              >
+                Directions ↗
+              </a>
               <button
                 type="button"
                 onClick={() => onSetDefault(isDefault ? null : s)}
@@ -199,6 +214,8 @@ function StoreList({
 export default function IndieScreen() {
   const [loc, setLoc] = useState<ResolvedLocation | null>(() => loadLocation())
   const [query, setQuery] = useState('')
+  const [radius, setRadius] = useState(40000)
+  const [showMap, setShowMap] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { data: profile } = useProfile()
@@ -211,14 +228,19 @@ export default function IndieScreen() {
     })
 
   const stores = useQuery({
-    queryKey: ['bookstores', loc?.lat, loc?.lng],
-    queryFn: async () => (loc ? findBookstores(loc.lat, loc.lng) : []),
+    queryKey: ['bookstores', loc?.lat, loc?.lng, radius],
+    queryFn: async () => (loc ? findBookstores(loc.lat, loc.lng, radius) : []),
     enabled: !!loc,
     staleTime: 1000 * 60 * 30,
+    // The Edge function already retries transient upstream failures and fails over between
+    // providers. Client retries would repeat that whole sequence, hide the outage state, and spend
+    // shared public-service capacity before the reader chooses to try again.
+    retry: false,
   })
 
   const apply = (resolved: ResolvedLocation) => {
     setLoc(resolved)
+    setShowMap(false)
     saveLocation(resolved)
   }
 
@@ -261,7 +283,7 @@ export default function IndieScreen() {
         inventory; we won’t promise “in stock near you.”
       </Surface>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4 grid gap-3">
         <button
           type="button"
           onClick={() => void detectLocation()}
@@ -274,33 +296,44 @@ export default function IndieScreen() {
         >
           📍 Use my location
         </button>
-        <span className="text-[12.5px] text-muted">or</span>
-        {/* input + Find wrap as one unit — wrapping between them orphaned "Find" on its own line */}
-        <div className="flex min-w-[240px] flex-1 items-center gap-2">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void findByQuery()
-            }}
-            placeholder="ZIP code or city"
-            aria-label="ZIP code or city"
-            className="skin-field h-11 w-full min-w-0 flex-1 border border-line px-4 text-[14px] text-ink outline-none"
-            style={{ background: 'var(--field)' }}
-          />
+        <div className="flex items-center gap-3" aria-hidden="true">
+          <span className="h-px flex-1 bg-line" />
+          <span className="text-[12.5px] text-muted">or search a place</span>
+          <span className="h-px flex-1 bg-line" />
+        </div>
+        <form
+          className="flex min-w-0 items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void findByQuery()
+          }}
+        >
+          <label className="min-w-0 flex-1 text-[12.5px] font-semibold text-ink">
+            ZIP code, city, or neighborhood
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="For example, Redmond, Oregon"
+              className="skin-field mt-1 h-11 w-full min-w-0 border border-line px-4 text-[14px] text-ink outline-none"
+              style={{ background: 'var(--field)' }}
+            />
+          </label>
           <button
-            type="button"
-            onClick={() => void findByQuery()}
+            type="submit"
             disabled={busy || !query.trim()}
             className="skin-control h-11 shrink-0 border border-line px-5 text-[14px] font-semibold text-ink disabled:opacity-50"
             style={{ background: 'var(--card)' }}
           >
-            Find
+            {busy ? 'Finding…' : 'Find'}
           </button>
-        </div>
+        </form>
       </div>
 
-      {error && <p className="mt-3 text-[13px] text-primary">{error}</p>}
+      {error && (
+        <p role="status" className="mt-3 text-[13px] text-primary">
+          {error}
+        </p>
+      )}
 
       {!loc ? (
         <Surface tone="bare" radius="card" pad={5} className="mt-6 text-center">
@@ -327,15 +360,44 @@ export default function IndieScreen() {
             </button>
           </p>
 
+          <fieldset className="mb-4">
+            <legend className="mb-2 text-[12.5px] font-semibold text-ink">Search distance</legend>
+            <div className="flex flex-wrap gap-2">
+              {SEARCH_RADII.map((option) => (
+                <button
+                  key={option.meters}
+                  type="button"
+                  aria-pressed={radius === option.meters}
+                  onClick={() => {
+                    setRadius(option.meters)
+                    setShowMap(false)
+                  }}
+                  className="skin-control min-h-11 border border-line px-4 text-[12.5px] font-semibold text-ink"
+                  style={{
+                    background: radius === option.meters ? 'var(--chip)' : 'var(--field)',
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
           {stores.isLoading && (
             <p className="py-8 text-center text-[14px] text-muted">Finding nearby bookshops…</p>
           )}
           {stores.isError && (
             <Surface tone="bare" radius="card" pad={5} className="text-center">
               <p className="text-[14px] text-muted">
-                Couldn’t reach the bookstore directory just now — but you can still support indies
-                online:
+                The bookstore directory couldn’t answer just now. Your location is still here.
               </p>
+              <button
+                type="button"
+                onClick={() => void stores.refetch()}
+                className="skin-control skin-btn-primary mt-4 min-h-11 px-5 text-[13px] font-semibold"
+              >
+                Try the directory again
+              </button>
               <div className="flex justify-center">
                 <ShopOnlineFallback />
               </div>
@@ -343,24 +405,63 @@ export default function IndieScreen() {
           )}
           {stores.data && stores.data.length > 0 && (
             <>
-              <StoreMap loc={loc} stores={stores.data} />
-              <p className="mt-3 text-[12.5px] text-muted">
-                {stores.data.length} independent shop(s) nearby · chains excluded
-                {defaultStore ? ` · your store: ${defaultStore.name}` : ''}
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[12.5px] text-muted" aria-live="polite">
+                  {stores.data.length} independent {stores.data.length === 1 ? 'shop' : 'shops'}{' '}
+                  nearby
+                  {' · '}chains excluded
+                  {defaultStore ? ` · your store: ${defaultStore.name}` : ''}
+                </p>
+                <button
+                  type="button"
+                  aria-expanded={showMap}
+                  onClick={() => setShowMap((shown) => !shown)}
+                  className="skin-control min-h-11 border border-line px-4 text-[12.5px] font-semibold text-ink"
+                  style={{ background: 'var(--field)' }}
+                >
+                  {showMap ? 'Hide map' : 'Show map'}
+                </button>
+              </div>
+              {showMap ? (
+                <div className="mt-3">
+                  <StoreMap loc={loc} stores={stores.data} />
+                </div>
+              ) : null}
               <StoreList
                 stores={stores.data}
+                origin={loc}
                 defaultId={defaultStore?.id ?? null}
                 onSetDefault={setDefault}
               />
+              <p className="mt-4 text-[11.5px] text-muted">
+                Listings and location data ©{' '}
+                <a
+                  href="https://www.openstreetmap.org/copyright"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline decoration-line underline-offset-2"
+                >
+                  OpenStreetMap contributors
+                </a>
+                .
+              </p>
             </>
           )}
           {stores.data && stores.data.length === 0 && (
             <Surface tone="bare" radius="card" pad={5} className="mt-4 text-center">
               <p className="text-[14px] text-muted">
-                No independent bookstores found nearby — map coverage is uneven outside the US and
-                some shops aren’t listed yet. You can still buy from indies online:
+                No independent bookstores were listed within {miles(radius / 1000)}. Map coverage is
+                uneven, and some shops are missing.
               </p>
+              {radius < 80000 ? (
+                <button
+                  type="button"
+                  onClick={() => setRadius(radius === 16000 ? 40000 : 80000)}
+                  className="skin-control skin-btn-primary mt-4 min-h-11 px-5 text-[13px] font-semibold"
+                >
+                  Search farther
+                </button>
+              ) : null}
               <div className="flex justify-center">
                 <ShopOnlineFallback />
               </div>

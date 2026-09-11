@@ -45,6 +45,20 @@ const CHAINS: RegExp[] = [
 ]
 export const isChain = (name: string): boolean => CHAINS.some((re) => re.test(name))
 
+/** OSM website tags are community-authored. Accept HTTP(S) only and repair the common bare-domain
+ * shape; an arbitrary scheme must never become a clickable link. */
+export function safeStoreWebsite(value: string | undefined): string {
+  const raw = value?.trim()
+  if (!raw) return ''
+  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`
+  try {
+    const parsed = new URL(candidate)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : ''
+  } catch {
+    return ''
+  }
+}
+
 export function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const R = 6371
   const dLat = ((bLat - aLat) * Math.PI) / 180
@@ -74,7 +88,17 @@ export function parseStores(elements: readonly OverpassEl[], lat: number, lng: n
     const t = el.tags ?? {}
     const eLat = el.lat ?? el.center?.lat
     const eLng = el.lon ?? el.center?.lon
-    if (eLat == null || eLng == null) continue
+    if (
+      eLat == null ||
+      eLng == null ||
+      !Number.isFinite(eLat) ||
+      !Number.isFinite(eLng) ||
+      eLat < -90 ||
+      eLat > 90 ||
+      eLng < -180 ||
+      eLng > 180
+    )
+      continue
     const name = t.name ?? 'Unnamed bookshop'
     if (isChain(name)) continue
     const address = [
@@ -95,11 +119,19 @@ export function parseStores(elements: readonly OverpassEl[], lat: number, lng: n
       address,
       hours: t.opening_hours ?? '',
       phone: t.phone ?? t['contact:phone'] ?? '',
-      website: t.website ?? t['contact:website'] ?? '',
+      website: safeStoreWebsite(t.website ?? t['contact:website']),
       distanceKm: haversineKm(lat, lng, eLat, eLng),
     })
   }
-  return stores.sort((a, b) => a.distanceKm - b.distanceKm)
+  const seen = new Set<string>()
+  return stores
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .filter((store) => {
+      const key = `${store.name.trim().toLocaleLowerCase()}|${store.lat.toFixed(3)}|${store.lng.toFixed(3)}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
 }
 
 /** OSM `opening_hours` times rendered 12-hour, everything else left exactly as written.

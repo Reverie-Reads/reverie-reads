@@ -27,11 +27,25 @@ const cors = {
 // overrides for a richer value (an email).
 const CONTACT = Deno.env.get('GEO_CONTACT') ?? 'https://reveriereads.app'
 const UA = `Reverie/1.0 (indie bookstore finder; ${CONTACT})`
-const OVERPASS = 'https://overpass-api.de/api/interpreter'
+// The former single upstream currently returns 406 to the production Edge region. Public
+// Overpass instances are explicitly best-effort, so use the current global alternative first and
+// keep a second sequential fallback. An owner can replace the list without a client release.
+const OVERPASS = (
+  Deno.env.get('OVERPASS_ENDPOINTS') ??
+  'https://overpass-api.de/api/interpreter,https://overpass.private.coffee/api/interpreter'
+)
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean)
 const NOMINATIM = 'https://nominatim.openstreetmap.org'
 
 const DAY = 86_400_000
 const TTL: Record<string, number> = { stores: 7 * DAY, geocode: 30 * DAY, reverse: 30 * DAY }
+const MAX_STALE: Record<string, number> = {
+  stores: 90 * DAY,
+  geocode: 180 * DAY,
+  reverse: 180 * DAY,
+}
 
 const DB_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -71,10 +85,23 @@ interface GeoInput {
  */
 async function fetchUpstream(url: string, init?: RequestInit): Promise<unknown> {
   for (let attempt = 0; attempt < 2; attempt++) {
-    const r = await fetch(url, {
-      ...init,
-      headers: { 'User-Agent': UA, Accept: 'application/json', ...(init?.headers ?? {}) },
-    })
+    let r: Response
+    try {
+      r = await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(10_000),
+        headers: {
+          'User-Agent': UA,
+          Referer: 'https://reveriereads.app/indie',
+          Accept: 'application/json',
+          ...(init?.headers ?? {}),
+        },
+      })
+    } catch (error) {
+      // A network timeout is an endpoint failure. Move to the next configured Overpass host;
+      // retrying the same silent host doubles the reader's wait without new evidence.
+      throw error
+    }
     const disposition = classifyHttp(r.status)
 
     if (disposition === 'retry' && attempt === 0) {
@@ -106,10 +133,15 @@ function cacheKeyFor(input: GeoInput): string {
   if (input.op === 'geocode') return `geocode:${(input.q ?? '').trim().toLowerCase()}`
   if (input.op === 'reverse')
     return `reverse:${(input.lat ?? 0).toFixed(3)},${(input.lng ?? 0).toFixed(3)}`
-  return `stores:${(input.lat ?? 0).toFixed(2)},${(input.lng ?? 0).toFixed(2)}:${input.radius ?? 25000}`
+  return `stores:${(input.lat ?? 0).toFixed(2)},${(input.lng ?? 0).toFixed(2)}:${input.radius ?? 40000}`
 }
 
-async function readCache(key: string, op: string): Promise<unknown | null> {
+interface CachedPayload {
+  payload: unknown
+  fresh: boolean
+}
+
+async function readCache(key: string, op: string): Promise<CachedPayload | null> {
   if (!DB_URL) return null
   try {
     const r = await fetch(
@@ -119,8 +151,9 @@ async function readCache(key: string, op: string): Promise<unknown | null> {
     const rows = (await r.json()) as { payload: unknown; fetched_at: string }[]
     const row = rows?.[0]
     if (!row) return null
-    if (Date.now() - Date.parse(row.fetched_at) > (TTL[op] ?? 7 * DAY)) return null
-    return row.payload
+    const age = Date.now() - Date.parse(row.fetched_at)
+    if (!Number.isFinite(age) || age > (MAX_STALE[op] ?? 90 * DAY)) return null
+    return { payload: row.payload, fresh: age <= (TTL[op] ?? 7 * DAY) }
   } catch {
     return null
   }
@@ -141,13 +174,21 @@ async function writeCache(key: string, payload: unknown): Promise<void> {
 
 async function fetchLive(input: GeoInput): Promise<unknown> {
   if (input.op === 'stores') {
-    const around = `(around:${input.radius ?? 25000},${input.lat},${input.lng})`
-    const query = `[out:json][timeout:25];(node["shop"="books"]${around};way["shop"="books"]${around};relation["shop"="books"]${around};);out center;`
-    return await fetchUpstream(OVERPASS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'data=' + encodeURIComponent(query),
-    })
+    const around = `(around:${input.radius ?? 40000},${input.lat},${input.lng})`
+    const query = `[out:json][timeout:20];nwr["shop"="books"]${around};out center;`
+    let lastError: unknown = new Error('no Overpass endpoint configured')
+    for (const endpoint of OVERPASS) {
+      try {
+        return await fetchUpstream(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'data=' + encodeURIComponent(query),
+        })
+      } catch (error) {
+        lastError = error
+      }
+    }
+    throw lastError
   }
   if (input.op === 'geocode') {
     return await fetchUpstream(
@@ -164,19 +205,51 @@ Deno.serve(async (req: Request) => {
   const rl = await rateLimit(req, 'geo', envInt('GEO_RATE_MAX', 60), 60)
   if (!rl.allowed) return tooMany(rl.retryAfter, cors)
   try {
-    const input = (await req.json()) as GeoInput
-    if (!['stores', 'geocode', 'reverse'].includes(input.op)) return json({ error: 'bad op' }, 400)
+    const input = (await req.json()) as GeoInput | null
+    if (!input || !['stores', 'geocode', 'reverse'].includes(input.op)) {
+      return json({ error: 'bad op' }, 400)
+    }
+    if (input.op === 'geocode') {
+      const query = input.q?.trim() ?? ''
+      if (!query || query.length > 160) return json({ error: 'invalid place query' }, 400)
+      input.q = query
+    } else {
+      if (
+        !Number.isFinite(input.lat) ||
+        !Number.isFinite(input.lng) ||
+        input.lat! < -90 ||
+        input.lat! > 90 ||
+        input.lng! < -180 ||
+        input.lng! > 180
+      ) {
+        return json({ error: 'invalid coordinates' }, 400)
+      }
+      if (input.op === 'stores') {
+        input.radius = input.radius ?? 40000
+        if (!Number.isInteger(input.radius) || input.radius < 5000 || input.radius > 80000) {
+          return json({ error: 'invalid radius' }, 400)
+        }
+      }
+    }
 
     const key = cacheKeyFor(input)
     const cached = await readCache(key, input.op)
-    if (cached != null) return json({ payload: cached, source: 'cache' })
+    if (cached?.fresh) return json({ payload: cached.payload, source: 'cache' })
 
-    const payload = await fetchLive(input)
-    if (payload != null) await writeCache(key, payload)
-    return json({ payload: payload ?? null, source: 'live' })
+    try {
+      const payload = await fetchLive(input)
+      if (payload != null) await writeCache(key, payload)
+      return json({ payload: payload ?? null, source: 'live' })
+    } catch (error) {
+      if (cached) {
+        captureEdgeError('geo', error)
+        return json({ payload: cached.payload, source: 'stale' })
+      }
+      throw error
+    }
   } catch (e) {
     // Surface a clean failure; the client falls back to its degraded state (B4).
     captureEdgeError('geo', e)
-    return json({ error: String(e), payload: null }, 502)
+    return json({ error: 'location provider unavailable', payload: null }, 502)
   }
 })

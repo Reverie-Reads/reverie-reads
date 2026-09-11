@@ -13,12 +13,16 @@ export type { Store } from '@reverie/core'
 export async function findBookstores(
   lat: number,
   lng: number,
-  radiusMeters = 25000,
+  radiusMeters = 40000,
 ): Promise<Store[]> {
   const { data, error } = await supabase.functions.invoke('geo', {
     body: { op: 'stores', lat, lng, radius: radiusMeters },
   })
   if (error) throw error
-  const payload = (data as { payload?: { elements?: OverpassEl[] } } | null)?.payload
+  const envelope = data as { error?: string; payload?: { elements?: OverpassEl[] } | null } | null
+  if (envelope?.error || !envelope?.payload) {
+    throw new Error(envelope?.error || 'Bookstore directory returned no response')
+  }
+  const payload = envelope.payload
   return parseStores(payload?.elements ?? [], lat, lng)
 }
