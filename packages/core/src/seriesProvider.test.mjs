@@ -82,6 +82,182 @@ async function request(body = { name: 'The Sequence', author: 'Ada Reader' }) {
   return response.json()
 }
 
+describe('duplicate series names with an explicit book target', () => {
+  const target = {
+    name: 'The Sequence',
+    author: 'Ada Reader',
+    title: 'Fourth Book',
+    hardcoverBookId: 42,
+  }
+  function duplicates() {
+    const row = (id, title, position) => ({
+      position,
+      book: { id, title, contributions: [{ author: { name: 'Ada Reader' } }] },
+    })
+    // The larger, first result is deliberately NOT the right relationship.
+    const graphs = [
+      {
+        id: 8,
+        name: target.name,
+        books_count: 99,
+        book_series: [row(50, 'Other Book', 1), row(51, 'Another Book', 2)],
+      },
+      { id: 7, name: target.name, books_count: 1, book_series: [row(42, target.title, 4)] },
+    ]
+    upstream = async (_url, init) => {
+      const { query, variables } = JSON.parse(init.body)
+      expect(variables).toEqual({ name: target.name })
+      expect(query).not.toMatch(/_ilike|_like|_regex/)
+      return Response.json({ data: { series: graphs } })
+    }
+    return graphs
+  }
+
+  it('selects only the unique exact book relationship in one bounded request', async () => {
+    const graphs = duplicates()
+    graphs[1].book_series[0].book.contributions.unshift({ author: { name: 'Translator Person' } })
+    await boot()
+    const result = await request(target)
+    expect(result).toMatchObject({ sourceRef: '7', name: target.name, memberCount: null })
+    expect(result.unavailable).toBeUndefined()
+    expect(result.membershipEntries).toEqual([
+      { title: target.title, author: target.author, position: 4 },
+    ])
+    expect(requests).toHaveLength(1)
+    const query = JSON.parse(requests[0].body).query
+    expect(query).toContain('limit: 5')
+    expect(query).toContain('limit: 201')
+    expect(query).toContain('contributions(limit: 51)')
+    expect(await request(target)).toEqual(result)
+    expect(requests).toHaveLength(1)
+  })
+
+  it.each([
+    [
+      'competing membership',
+      (g) => g[0].book_series.push(structuredClone(g[1].book_series[0])),
+      'ambiguous_relationship',
+    ],
+    [
+      'duplicate target row',
+      (g) => g[1].book_series.push(structuredClone(g[1].book_series[0])),
+      'identity_mismatch',
+    ],
+    [
+      'wrong full title',
+      (g) => {
+        g[1].book_series[0].book.title = 'Fourth Book: A Different Work'
+      },
+      'identity_mismatch',
+    ],
+    [
+      'wrong full author',
+      (g) => {
+        g[1].book_series[0].book.contributions = [{ author: { name: 'A. Reader' } }]
+      },
+      'identity_mismatch',
+    ],
+    [
+      'missing target',
+      (g) => {
+        g[1].book_series[0].book.id = 43
+      },
+      'ambiguous_relationship',
+    ],
+    [
+      'series limit',
+      (g) =>
+        g.push(...Array.from({ length: 3 }, (_, i) => ({ ...structuredClone(g[0]), id: 10 + i }))),
+      'relationship_limit',
+    ],
+    [
+      'nonselected relationship limit',
+      (g) => {
+        g[0].book_series = Array(201).fill(g[0].book_series[0])
+      },
+      'relationship_limit',
+    ],
+    [
+      'nonselected contributor limit',
+      (g) => {
+        g[0].book_series[0].book.contributions = Array(51).fill({ author: { name: 'Ada Reader' } })
+      },
+      'relationship_limit',
+    ],
+    [
+      'missing relationship array',
+      (g) => {
+        delete g[0].book_series
+      },
+      'invalid_response',
+    ],
+    [
+      'missing contributors',
+      (g) => {
+        delete g[0].book_series[0].book.contributions
+      },
+      'invalid_response',
+    ],
+    [
+      'invalid series ID',
+      (g) => {
+        g[1].id = 0
+      },
+      'invalid_response',
+    ],
+    [
+      'repeated series ID',
+      (g) => {
+        g[0].id = 7
+      },
+      'invalid_response',
+    ],
+  ])('refuses %s without another provider request', async (_label, mutate, failureCode) => {
+    mutate(duplicates())
+    await boot()
+    expect(await request(target)).toMatchObject({ unavailable: true, sourceRef: null, failureCode })
+    expect(requests).toHaveLength(1)
+  })
+
+  it('isolates target successes and failures from other books and name-only requests', async () => {
+    duplicates()
+    await boot()
+    expect((await request(target)).sourceRef).toBe('7')
+    expect(await request({ name: target.name, author: target.author })).toMatchObject({
+      failureCode: 'ambiguous_relationship',
+    })
+    expect((await request({ ...target, hardcoverBookId: 50, title: 'Other Book' })).sourceRef).toBe(
+      '8',
+    )
+    expect(await request({ ...target, title: 'Wrong Book' })).toMatchObject({
+      failureCode: 'identity_mismatch',
+    })
+    expect(await request({ ...target, author: 'Other Author' })).toMatchObject({
+      unavailable: true,
+    })
+    expect((await request(target)).sourceRef).toBe('7')
+    expect(requests).toHaveLength(5)
+  })
+
+  it('does not reuse old cache semantics or let a recent name ambiguity block exact identity', async () => {
+    duplicates()
+    for (const key of [
+      'series-exact-v1:["The Sequence","Ada Reader"]',
+      'series-book-v1:["The Sequence","Ada Reader",42,"Fourth Book"]',
+    ])
+      cache.set(key, {
+        payload: { unavailable: true, failureCode: 'ambiguous_relationship', httpStatus: 200 },
+        fetched_at: new Date().toISOString(),
+      })
+    await boot()
+    expect(await request({ name: target.name, author: target.author })).toMatchObject({
+      failureCode: 'ambiguous_relationship',
+    })
+    expect((await request(target)).sourceRef).toBe('7')
+    expect(requests).toHaveLength(2)
+  })
+})
+
 describe('series relationship handler diagnostics and retry cache', () => {
   const target = {
     name: 'The Sequence (Reader)',
@@ -132,8 +308,8 @@ describe('series relationship handler diagnostics and retry cache', () => {
     expect(await request(target)).toEqual(result)
     expect(requests).toHaveLength(3)
     expect([...cache.keys()]).toEqual([
-      'series-exact-v1:["The Sequence (Reader)","Ada Reader"]',
-      'series-book-v1:["The Sequence (Reader)","Ada Reader",42,"Fourth Book"]',
+      'series-exact-v2:["The Sequence (Reader)","Ada Reader"]',
+      'series-book-v2:["The Sequence (Reader)","Ada Reader",42,"Fourth Book"]',
     ])
   })
 
@@ -323,6 +499,7 @@ describe('series relationship handler diagnostics and retry cache', () => {
     await request({ ...target, name: 'The Sequence' })
     expect(requests).toHaveLength(1)
     const data = structuredClone(success)
+    data.data.series[0].book_series[0].book.id = 1
     data.data.series.push({ ...data.data.series[0], id: 8 })
     cache.clear()
     upstream = async () => Response.json(data)
@@ -553,7 +730,7 @@ describe('series relationship handler diagnostics and retry cache', () => {
   it.each([true, false])(
     'retries an unavailable cache after five minutes (new diagnostic=%s)',
     async (diagnostic) => {
-      const key = 'series-exact-v1:["The Sequence","Ada Reader"]'
+      const key = 'series-exact-v2:["The Sequence","Ada Reader"]'
       cache.set(key, {
         cache_key: key,
         fetched_at: new Date(Date.now() - 6 * 60_000).toISOString(),

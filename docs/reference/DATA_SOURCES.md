@@ -129,6 +129,10 @@ fallback: revalidate title/full author, require one relationship, then fetch and
 series by its distinct provider series ID. Both classifier callers preserve the original candidate
 label and the recovered canonical relationship as separate evidence. Existing stored-name/order
 conflicts still require administrator review; a cache hit or direct ID never waives those guards.
+Duplicate exact-name graphs may instead be disambiguated within the original bounded name response:
+one graph must contain exactly one matching book ID with the full title and author, and every
+returned graph must be complete below the response caps. Competing or malformed relationships
+remain unresolved. Target-specific results use an isolated book cache, never the shared name cache.
 Hardcover relationship row counts remain unknown lengths. This production adapter change does not
 promote the separate trial resolver or alter qualification gates. See
 [the fallback contract and rollout](../tasks/series-book-id-fallback.md).
