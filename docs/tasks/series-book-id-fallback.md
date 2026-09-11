@@ -15,8 +15,8 @@ and series references are not converted. The sweep's `workId` remains its corpus
 ## Fail-closed fallback
 
 - Only a valid HTTP-200 GraphQL response with an empty exact-name series array admits fallback.
-  Missing tokens, authorization errors, HTTP failures, timeouts, GraphQL errors and name ambiguity
-  stop without fallback.
+  Missing tokens, authorization errors, HTTP failures, timeouts, GraphQL errors and unresolved name
+  ambiguity stop without direct-book fallback.
 - The direct book response must match the requested numeric ID, exact normalized full title and
   expected full author anywhere in its contributors. Subtitle, initials and surname-only matches
   cannot pass. IDs are positive GraphQL 32-bit integers.
@@ -25,13 +25,28 @@ and series references are not converted. The sweep's `workId` remains its corpus
 - Fetch the selected series by its series ID. Require that ID and name to agree, and exactly one
   published relationship row with the original book ID and exact title/full author. Ordinary
   mixed-edition deduplication and slot-collision/collection guards still apply.
-- Caps are sentinel limits: 51 contributors, 21 book relationships and 201 series relationships;
+- Caps are sentinel limits: five exact-name series, 51 contributors, 21 book relationships and 201 series relationships;
   reaching a cap fails unresolved. At most three upstream calls, each with a five-second deadline,
   with no automatic retry. Successful name lookups make only the original one call.
-- Opt-in requests use `series-book-v1:[name,author,bookId,title]`, separate from the existing
-  case-sensitive name-only cache. Ordinary name results are still reused across book locators;
-  only fallback responses enter the book-scoped cache. Success TTL remains 24 hours and failures five minutes. No old
+- Opt-in requests use `series-book-v2:[name,author,bookId,title]`, separate from the
+  case-sensitive `series-exact-v2:[name,author]` cache. Ordinary name results are still reused across book locators;
+  fallback and target-disambiguated responses enter the book-scoped cache. Success TTL remains 24 hours and failures five minutes. No old
   cache rows are deleted or read as fallback evidence.
+
+## Duplicate exact-name relationships
+
+When several exact-name graphs are returned, an explicit book target may select exactly one graph
+containing exactly one row with that book ID, normalized full title and full author. All returned
+graphs must be structurally valid and below the sentinel caps; malformed or capped non-selected
+graphs cannot prove absence. Duplicate target rows, competing memberships, wrong identity and no
+matching target remain unresolved. The first/largest graph, a similar name, or a source row count
+never breaks a tie. The existing membership-observation and shelf-slot cleaning still applies.
+
+This uses the original single name request, not another provider or a direct-book retry. A recent
+name-only ambiguity can admit one fresh bounded name request with the explicit target, because the
+cached payload does not retain book IDs. Target-specific successes and failures are isolated by
+book ID, title, author and candidate name; repeating the same target uses that cache. The v2 cache
+namespace prevents old partial-response or ambiguous-result semantics from bypassing this contract.
 
 ## Classification and writes
 
@@ -61,4 +76,5 @@ the PR before readiness is claimed.
 After public merge and private sync, the owner deploys the series function and web build through
 the existing guarded workflow. No migration is required. New callers against the old function
 remain unresolved on name misses; old callers against the new function retain name-only behavior.
+The duplicate-name follow-up changes only the series function; its existing callers need no web change.
 Do not enable a general catalog sweep to verify this change.

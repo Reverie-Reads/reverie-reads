@@ -156,6 +156,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   book-scoped cache keys include the target identity. Outages, duplicate/competing links and reached
   response caps never trigger further search. A recovered canonical name does not waive the existing
   database conflict-review gate or reader-choice protections. See `docs/tasks/series-book-id-fallback.md`.
+  Duplicate exact-name series may be disambiguated in the same bounded response only when one
+  graph contains exactly one matching explicit book ID with the exact title/full author. Validate
+  every returned graph before choosing; incomplete or competing relationships remain unresolved.
+  Book-specific successes and failures never enter the shared name-only cache.
   Pending review preserves an existing shared graph byte-for-byte but cannot create, promote or
   revive membership. Dismissing a proposal without an active primary graph anchor leaves the old
   label unresolved; dismissal never copies rejected evidence into the graph. Only matching relational
