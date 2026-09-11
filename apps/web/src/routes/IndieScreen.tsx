@@ -232,6 +232,10 @@ export default function IndieScreen() {
     queryFn: async () => (loc ? findBookstores(loc.lat, loc.lng, radius) : []),
     enabled: !!loc,
     staleTime: 1000 * 60 * 30,
+    // The Edge function already retries transient upstream failures and fails over between
+    // providers. Client retries would repeat that whole sequence, hide the outage state, and spend
+    // shared public-service capacity before the reader chooses to try again.
+    retry: false,
   })
 
   const apply = (resolved: ResolvedLocation) => {
