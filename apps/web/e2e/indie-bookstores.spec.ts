@@ -60,17 +60,8 @@ test('place search returns a useful list before the optional map and can expand 
   page,
 }) => {
   const radii: number[] = []
-  await page.route('**/functions/v1/geo', async (route) => {
-    const input = route.request().postDataJSON() as { op: string; radius?: number }
-    if (input.op === 'geocode') {
-      return route.fulfill({
-        json: {
-          payload: [{ lat: '44.2726', lon: '-121.1739', display_name: 'Redmond, Oregon' }],
-          source: 'cache',
-        },
-      })
-    }
-    radii.push(input.radius ?? 0)
+  await page.route('**/api/bookstores?*', async (route) => {
+    radii.push(Number(new URL(route.request().url()).searchParams.get('radius')))
     return route.fulfill({
       json: {
         payload: {
@@ -95,9 +86,21 @@ test('place search returns a useful list before the optional map and can expand 
             },
           ],
         },
-        source: 'live',
+        source: 'web',
       },
     })
+  })
+  await page.route('**/functions/v1/geo', async (route) => {
+    const input = route.request().postDataJSON() as { op: string; radius?: number }
+    if (input.op === 'geocode') {
+      return route.fulfill({
+        json: {
+          payload: [{ lat: '44.2726', lon: '-121.1739', display_name: 'Redmond, Oregon' }],
+          source: 'cache',
+        },
+      })
+    }
+    throw new Error(`Unexpected geo operation: ${input.op}`)
   })
 
   await signIn(page)
@@ -129,8 +132,47 @@ test('place search returns a useful list before the optional map and can expand 
   await expect.poll(() => radii).toEqual([40000, 80000])
 })
 
+test('the Edge directory cache carries a web route outage', async ({ page }) => {
+  await page.route('**/api/bookstores?*', (route) =>
+    route.fulfill({ status: 502, json: { statusMessage: 'Bookstore directory unavailable' } }),
+  )
+  await page.route('**/functions/v1/geo', async (route) => {
+    const input = route.request().postDataJSON() as { op: string }
+    if (input.op === 'geocode') {
+      return route.fulfill({
+        json: { payload: [{ lat: '44.2726', lon: '-121.1739', display_name: 'Redmond, Oregon' }] },
+      })
+    }
+    return route.fulfill({
+      json: {
+        payload: {
+          elements: [
+            {
+              type: 'node',
+              id: 3,
+              lat: 44.274,
+              lon: -121.176,
+              tags: { name: 'Cached Juniper Books' },
+            },
+          ],
+        },
+        source: 'cache',
+      },
+    })
+  })
+
+  await signIn(page)
+  await page.goto('/indie')
+  await page.getByLabel('ZIP code, city, or neighborhood').fill('Redmond, Oregon')
+  await page.getByRole('button', { name: 'Find', exact: true }).click()
+  await expect(page.getByText('Cached Juniper Books', { exact: true })).toBeVisible()
+})
+
 test('directory failure keeps the location and offers a working retry', async ({ page }) => {
   let storeAttempts = 0
+  await page.route('**/api/bookstores?*', (route) =>
+    route.fulfill({ status: 502, json: { statusMessage: 'Bookstore directory unavailable' } }),
+  )
   await page.route('**/functions/v1/geo', async (route) => {
     const input = route.request().postDataJSON() as { op: string }
     if (input.op === 'geocode') {

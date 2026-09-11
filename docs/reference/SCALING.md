@@ -21,12 +21,16 @@ at single-user scale; it's the readiness list to work down as MAU grows.
 - **Proxy + cache the free third-party services before adding users** — Nominatim,
   Overpass, and map tiles all have usage policies that throttle/ban heavy direct traffic.
   The `geo` Edge Function identifies Reverie, caches shared results, rate-limits calls, and can
-  change `OVERPASS_ENDPOINTS` without a web release. Store discovery uses two sequential public
-  Overpass endpoints because those community services are explicitly best-effort, with a last-known
-  result available for up to 90 days during an outage. The reader flow keeps their location and
-  offers a retry plus Bookshop.org's store directory when both are down.
-  Keep this low-cost path through beta. Consider hosted/self-hosted Overpass or Google Places only
-  after measured demand or support failures justify recurring operations or spend. As of 2026-09,
+  change `OVERPASS_ENDPOINTS` without a web release. Store discovery first uses a fixed-query
+  Nitro route with two-decimal coordinates and a seven-day Vercel CDN cache, then the Edge Function
+  as its alternate network path and last-known cache. The route accepts no caller-supplied Overpass
+  text and only the product's 10-, 25-, and 50-mile radii. The reader flow keeps their location and
+  offers a retry plus Bookshop.org's store directory when both paths are down.
+  Keep this low-cost path through the unpaid beta. Public Overpass instances are best-effort and
+  their published guidance directs commercial apps toward hosted or self-hosted service, so select
+  that production source before paid launch rather than treating the beta route as source clearance.
+  Consider hosted/self-hosted Overpass or Google Places after measured demand clarifies the right
+  operating cost. As of 2026-09,
   Google lists 5,000 free monthly Nearby Search Pro events, then $32 per 1,000 in its first paid
   tier; pricing and reuse terms require a fresh review before adoption.
 - **API quotas → paid tiers:** Google Books (~1,000/day) and Open Library (per-IP) don't
