@@ -5,6 +5,7 @@ import {
 } from '@reverie/core'
 import { supabase } from './supabase'
 import type { EnrichResult } from './enrich'
+import { hardcoverSeriesLookupTarget } from './seriesLookup'
 
 interface SeriesFunctionPayload {
   name?: string
@@ -21,9 +22,14 @@ interface SeriesFunctionPayload {
 export async function fetchCatalogSeriesSnapshot(
   name: string,
   author: string,
+  target?: { title: string; workId?: string },
 ): Promise<SeriesCatalogSnapshot> {
   const { data, error } = await supabase.functions.invoke('series', {
-    body: { name, author },
+    body: {
+      name,
+      author,
+      ...(target ? hardcoverSeriesLookupTarget(target.title, author, target.workId) : undefined),
+    },
   })
   if (error) {
     return {
@@ -64,7 +70,14 @@ export async function classifyEnrichedSeries(input: {
 }): Promise<SeriesClassification> {
   const candidate = input.result.series?.trim() ?? ''
   const source = input.result.provenance?.series?.source ?? input.result.source ?? 'catalog'
-  const snapshots = candidate ? [await fetchCatalogSeriesSnapshot(candidate, input.author)] : []
+  const snapshots = candidate
+    ? [
+        await fetchCatalogSeriesSnapshot(candidate, input.author, {
+          title: input.title,
+          workId: input.result.workId,
+        }),
+      ]
+    : []
   return classifySeriesMembership({
     title: input.title,
     author: input.author,
