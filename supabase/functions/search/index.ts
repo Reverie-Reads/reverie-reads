@@ -125,11 +125,6 @@ async function hardcoverGql(query: string, variables: Record<string, unknown>): 
  *  result can show its series name (task §1) — Google can't. */
 function hcDocToResult(doc: any): SearchResult | null {
   if (!doc?.title) return null
-  const isbns: string[] = [
-    ...new Set((doc.isbns ?? []).map((x: string) => cleanIsbn(String(x))).filter(Boolean)),
-  ] as string[]
-  const isbn13 = isbns.find((i) => i.length === 13)
-  const isbn10 = isbns.find((i) => i.length === 10)
   const year = doc.release_year
     ? String(doc.release_year)
     : String(doc.release_date ?? '').slice(0, 4)
@@ -138,9 +133,7 @@ function hcDocToResult(doc: any): SearchResult | null {
     title: String(doc.title),
     authors: (doc.author_names ?? []).filter(Boolean),
     cover: String(doc.image?.url ?? '').replace(/^http:/, 'https:'),
-    isbn: isbn13 ?? isbn10 ?? '',
-    isbn13,
-    isbn10,
+    isbn: '',
     year: /^\d{4}$/.test(year) ? year : '',
     series: (doc.series_names ?? [])[0] || undefined,
     seriesPosition:
@@ -246,7 +239,7 @@ function dedupe(results: SearchResult[]): SearchResult[] {
 // ── cache (enrichment_cache, `search:` keys, short TTL) ──
 
 // v2 excludes pre-attribution cache entries, which lack sourceUrl and used cross-provider dedupe.
-const cacheKey = (q: string): string => `search:v2:${norm(q)}`
+const cacheKey = (q: string): string => `search:v3:${norm(q)}`
 
 async function readCache(key: string): Promise<SearchResult[] | null> {
   if (!DB_URL) return null

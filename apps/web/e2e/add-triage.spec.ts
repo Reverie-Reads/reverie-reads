@@ -1,7 +1,7 @@
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import type { Route } from '@playwright/test'
-import { TRYST_LABELS } from '@reverie/core'
+import { TRYST_LABELS, workKeyOf } from '@reverie/core'
 import { createClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
@@ -29,11 +29,11 @@ const SERVICE =
 const EMAIL = 'add-triage-e2e@reverie.local'
 const PASSWORD = 'add-triage-e2e-password'
 
-// One title per state, sharing a prefix so the corpus lookup's single term reaches all three —
-// which is also the shape the feature assumes (ONE ranged query for the whole result set).
+// Owned and fresh share the query prefix. The corpus title deliberately does not, so its
+// compatible exact-edition result must be joined by the second, ISBN-based lookup.
 const TERM = 'Triage Probe'
 const OWNED = `${TERM} Owned`
-const CORPUS = `${TERM} Corpus`
+const CORPUS = 'canonical ember archive'
 const CORPUS_CANONICAL = 'Canonical Ember Archive'
 const FRESH = `${TERM} Fresh`
 const CORPUS_FIRST_ISBN = '9780306406157'
@@ -60,6 +60,7 @@ const CORPUS_RESULT_ISBN = '9781649374042'
  */
 const CORPUS_GENRE = 'literary'
 const CORPUS_AUTHOR = 'Quill Marrowbane'
+const CORPUS_KEY = workKeyOf({ title: CORPUS_CANONICAL, last: CORPUS_AUTHOR })
 
 test.describe.configure({ mode: 'serial' })
 
@@ -103,7 +104,10 @@ async function client(): Promise<Client> {
 async function seed(c: Client): Promise<string> {
   await ok(c.admin.from('books').delete().eq('owner_id', c.uid), 'add-triage books cleanup')
   await ok(
-    c.admin.from('works').delete().eq('work_key', 'canonicalemberarchive|canonicalember'),
+    c.admin
+      .from('works')
+      .delete()
+      .in('work_key', [CORPUS_KEY, 'canonicalemberarchive|canonicalember']),
     'add-triage works cleanup',
   )
 
@@ -114,12 +118,12 @@ async function seed(c: Client): Promise<string> {
   await ok(
     c.admin.from('works').insert([
       {
-        work_key: 'canonicalemberarchive|canonicalember',
-        // Neither title nor author matches TERM/the catalog result. The only correct join is the
-        // batched result-ISBN lookup that begins after the catalog response arrives.
+        work_key: CORPUS_KEY,
+        // Title and full author agree with the selected edition. Neither contains the search
+        // term, so the batched ISBN lookup still has to run after catalog results arrive.
         title: CORPUS_CANONICAL,
-        contributors: [{ name: 'Canonical Ember', role: 'author', position: 0 }],
-        author_text: 'Canonical Ember',
+        contributors: [{ name: CORPUS_AUTHOR, role: 'author', position: 0 }],
+        author_text: CORPUS_AUTHOR,
         // The matching edition is deliberately SECOND: clicking must preserve it rather than
         // replacing it with the work row's first ISBN.
         isbns: [CORPUS_FIRST_ISBN, CORPUS_RESULT_ISBN],
@@ -169,9 +173,10 @@ const RESULTS = [
     year: '2019',
   },
   {
-    source: 'hardcover',
+    source: 'google',
+    sourceUrl: 'https://books.google.com/books?id=triage-probe-corpus',
     title: CORPUS,
-    // Deliberately differs from the corpus author; ISBN is the only identity shared by both.
+    // An explicit edition can carry this ISBN; a Hardcover work search cannot.
     authors: [CORPUS_AUTHOR],
     cover: 'https://example.invalid/b.jpg',
     isbn: CORPUS_RESULT_ISBN,
@@ -265,9 +270,7 @@ test('a book already in the library offers no add gesture at all', async ({ page
   await expect(row(page, CORPUS).locator('button')).toHaveCount(1)
 })
 
-test('the ISBN lookup finds alternate metadata and a click preserves the matched edition', async ({
-  page,
-}) => {
+test('an exact edition lookup preserves corpus details and the matched ISBN', async ({ page }) => {
   const c = await client()
   await search(page)
   await expect.poll(() => labelOf(page, CORPUS), { timeout: 15_000 }).toBe('In the corpus')
@@ -299,6 +302,46 @@ test('the ISBN lookup finds alternate metadata and a click preserves the matched
       return data?.isbn ?? ''
     })
     .toBe(CORPUS_RESULT_ISBN)
+})
+
+test('a conflicting ISBN result never replaces its identity with corpus details', async ({
+  page,
+}) => {
+  const c = await client()
+  await seed(c)
+  await stub(page)
+  const conflictingTitle = `${TERM} Conflicting edition`
+  await page.route('**/functions/v1/search**', (r) =>
+    r.fulfill({
+      json: {
+        results: [
+          ...RESULTS,
+          {
+            source: 'google',
+            title: conflictingTitle,
+            authors: ['Another Writer'],
+            isbn: CORPUS_RESULT_ISBN,
+            cover: '',
+            year: '',
+            sourceUrl: 'https://books.google.com/books?id=triage-conflict',
+          },
+        ],
+      },
+    }),
+  )
+  await signIn(page, c.session)
+  await page.goto('/add')
+  await page.getByLabel('Search for a book').fill(TERM)
+  await page.getByRole('button', { name: 'Search', exact: true }).click()
+  await expect(rows(page)).toHaveCount(4)
+  // The positive peer proves the shared ISBN response reached the UI before the negative check.
+  await expect.poll(() => labelOf(page, CORPUS), { timeout: 15_000 }).toBe('In the corpus')
+  expect(await labelOf(page, conflictingTitle)).toBe('New to your library')
+  await row(page, conflictingTitle).locator('button').click()
+  await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(conflictingTitle)
+  await expect(page.getByLabel('Contributor 1 name', { exact: true })).toHaveValue('Another Writer')
+  await expect(page.getByPlaceholder('Series')).toHaveValue('')
+  await expect(page.getByPlaceholder('Book #')).toHaveValue('')
 })
 
 test('classification does not block the results — labels arrive after the list does', async ({

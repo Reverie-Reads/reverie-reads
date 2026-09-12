@@ -4,6 +4,7 @@ import { splitName, type Book } from '@reverie/core'
 import { CoverImage } from './CoverImage'
 import { libraryMatch, type SearchResult } from '../lib/search'
 import { Surface } from './Surface'
+import { LibraryStatus } from './LibraryStatus'
 import { GoogleBooksResultLink } from './GoogleBooksAttribution'
 
 // The shared search results surface — one visual, both surfaces (Discover grid + the shelf picker's
@@ -33,15 +34,15 @@ function ResultMeta({ result }: { result: SearchResult }) {
   )
 }
 
-/** "On your shelf ✓" — a result already in the library, linking to its book (task §1). */
+/** Existing membership stays compact while the book link retains a touch-sized target. */
 function OnShelf({ book }: { book: Book }) {
   return (
     <Link
       to="/book/$bookId"
       params={{ bookId: book.id }}
-      className="skin-label inline-block rounded-full border border-line px-2.5 py-1 text-[11px] text-muted"
+      className="inline-flex min-h-11 items-center self-start gap-1.5 hover:underline underline-offset-4"
     >
-      On your shelf ✓
+      <LibraryStatus />
     </Link>
   )
 }

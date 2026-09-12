@@ -93,8 +93,6 @@ const ALLOW: Record<string, string> = {
     'the paperback/hardcover toggle — data values the author explicitly capitalized; --control-transform would override that to PAPERBACK in three skins',
   'routes/PlannerRoute.tsx|text-[12.5px] font-semibold capitalize':
     'the calendar/releases tab pills — same explicit `capitalize` on data values, same override',
-  'components/SearchResults.tsx|skin-label inline-block':
-    'the “On your shelf ✓” badge — a status chip that happens to be a <Link>; it already carries `.skin-label`, so it is a label, not a control',
   'components/MoodChip.tsx|inline-flex items-center gap-1.5':
     'a mood chip — renders the mood name in the display face, italic; uppercasing reader-facing content words is a copy change, not a radius fix',
   'components/AppShell.tsx|flex flex-col items-center gap-1.5':

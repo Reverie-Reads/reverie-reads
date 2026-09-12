@@ -1,3 +1,4 @@
+import { LibraryStatus } from '../components/LibraryStatus'
 import { SearchSaveNotice } from '../components/SearchSaveNotice'
 import { ReadingTips } from '../components/ReadingTips'
 import { useEffect, useMemo, useState } from 'react'
@@ -125,15 +126,9 @@ function Card({
           Book details
         </button>
         {owned ? (
-          <Surface
-            as="span"
-            tone="bare"
-            radius="control"
-            pad={0}
-            className="skin-label inline-block px-2.5 py-1 text-[11px] text-muted"
-          >
-            On your shelf
-          </Surface>
+          <span className="inline-flex min-h-11 items-center">
+            <LibraryStatus />
+          </span>
         ) : (
           <button
             type="button"

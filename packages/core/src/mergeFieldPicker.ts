@@ -1,4 +1,10 @@
-import { FILL_BLANK_FIELDS, mergeDifferences, mergeImport, type Incoming } from './match'
+import {
+  editionFieldsCanFill,
+  FILL_BLANK_FIELDS,
+  mergeDifferences,
+  mergeImport,
+  type Incoming,
+} from './match'
 import type { Book } from './types'
 
 /**
@@ -70,6 +76,11 @@ export function mergeFieldOptions(existing: Book, incoming: Incoming): MergeFiel
   // control offering to swap a value it cannot display is worse than no control.
   const contested = new Map(mergeDifferences(existing, incoming).map((d) => [d.key, d]))
   for (const f of FILL_BLANK_FIELDS) {
+    if (
+      (f.key === 'pages' || f.key === 'pub') &&
+      !editionFieldsCanFill(existing.isbn, incoming.isbn ?? '')
+    )
+      continue
     if (!f.incomingHas(incoming)) continue // nothing offered — nothing to decide
     if (f.existingBlank(existing)) {
       const theirs = f.show ? f.show(incoming) : ''

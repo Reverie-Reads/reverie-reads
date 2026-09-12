@@ -141,6 +141,7 @@ export function DiscoverBookPreview({
               work: hit.corpusWorkId,
               title: hit.title,
               author: hit.authors[0] || undefined,
+              authors: hit.authors,
               isbn: hit.isbn || undefined,
               cover: hit.cover || undefined,
               source: hit.source,

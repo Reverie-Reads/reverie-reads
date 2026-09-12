@@ -117,7 +117,7 @@ describe('partitionSearchResults', () => {
 })
 
 describe('resultToIncoming', () => {
-  it('splits the author and carries ISBN + series', () => {
+  it('splits the author without treating a work ISBN as a selected edition', () => {
     const inc = resultToIncoming(
       result({
         title: 'Zephyr',
@@ -131,7 +131,7 @@ describe('resultToIncoming', () => {
       title: 'Zephyr',
       first: 'Imogen',
       last: 'Vale',
-      isbn: '9780316580792',
+      isbn: '',
       series: 'Windborne',
       position: 2,
     })

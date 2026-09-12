@@ -4,7 +4,10 @@ import {
   contributorsFromAuthors,
   formatAuthors,
   makeSeriesClaim,
+  normalizeIsbn,
   parseNumericField,
+  PAGE_COUNT,
+  parsePubDate,
   possessionPatch,
   SERIES_POSITION,
   SKINS,
@@ -38,6 +41,7 @@ import { enrichBook, type CoverAlternate } from '../lib/enrich'
 import {
   googleBooksResultUrl,
   partitionSearchResults,
+  selectedSearchIsbn,
   searchEverywhere,
   type SearchResult,
 } from '../lib/search'
@@ -134,8 +138,8 @@ const hitOf = (r: SearchResult): SearchHit => ({
   // Google art is displayed with its attributed search result, then stops at that boundary. The
   // saved book can acquire a durable Hardcover/Open Library cover during enrichment or refinement.
   cover: r.source === 'google' ? '' : r.cover,
-  isbn: resultIsbn(r),
-  pub: r.year,
+  isbn: selectedSearchIsbn(r),
+  pub: '',
   sourceUrl: r.sourceUrl,
 })
 
@@ -155,9 +159,8 @@ const pickedFromWork = (w: WorkRow, result: SearchResult): Picked => ({
 })
 
 function parsePub(s: string): Book['pub'] {
-  const m = s.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/)
-  if (!m) return { y: null, m: null, d: null }
-  return { y: +(m[1] ?? 0), m: m[2] ? +m[2] : null, d: m[3] ? +m[3] : null }
+  const p = parsePubDate(s)
+  return { y: p.pubY ?? null, m: p.pubM ?? null, d: p.pubD ?? null }
 }
 
 /**
@@ -312,6 +315,7 @@ function AddForm({
     // Release cards and the manual horizon form carry flexible precision into Add. Keeping this
     // editable lets the reader correct a catalog date before it becomes their own record.
     pub: hit.pub ?? '',
+    pages: '',
   })
   // Subgenres are a multi-pick; the first selection leads (drives the cover gradient).
   // Empty, not the skin genre's first subgenre. Pre-selecting one both stored an unchosen value and
@@ -328,6 +332,7 @@ function AddForm({
   // Position gets the same treatment Edit got in #78: one explicit parser, errors shown rather than
   // silently coerced. `Number(v) || ''` turned 0 into "unset" and quietly ate "1.5 (novella)".
   const [positionError, setPositionError] = useState<string | null>(null)
+  const [pagesError, setPagesError] = useState<string | null>(null)
   const [publicationError, setPublicationError] = useState<string | null>(null)
   // Track whether the user edited genre, so enrichment fills it but never overrides their choice.
   const genreEdited = useRef(false)
@@ -350,6 +355,7 @@ function AddForm({
     setForm((p) => ({ ...p, [k]: v }))
     if (k === 'position') setPositionError(null)
     if (k === 'pub') setPublicationError(null)
+    if (k === 'pages') setPagesError(null)
   }
   const ownSubOptions = [
     ...subs.filter((x) => !subgenresForGenre(form.genre || skinGenre).includes(x)),
@@ -360,15 +366,25 @@ function AddForm({
   // in progress reads as itself rather than as "Untitled".
   const { first: previewFirst, last: previewLast } = toFirstLast(contribs)
 
+  const currentIdentity = useRef('')
+  currentIdentity.current = JSON.stringify([form.title, contribs.map((c) => c.name)])
+
   async function fetchDetails() {
+    const requestedIdentity = currentIdentity.current
     setEnriching(true)
     setCoverNote(null)
     const res = await enrichBook({
       title: form.title,
-      author: formatAuthors(contribs),
+      author:
+        contribs.find((c) => c.role === 'author' || c.role === 'co_author')?.name ||
+        contribs[0]?.name,
       isbn: hit.isbn,
     })
     setEnriching(false)
+    if (requestedIdentity !== currentIdentity.current) {
+      setCoverNote('The title or contributors changed. Fetch details again for this book.')
+      return
+    }
     if (!res) {
       setCoverNote('Couldn’t reach the catalog just now — add details by hand, or try again.')
       return
@@ -383,13 +399,25 @@ function AddForm({
       // A resolved book search is not series-membership evidence. Corpus classification fills this
       // later when a relational source contains the book; readers can still enter it explicitly.
       genre: genreEdited.current ? p.genre : res.genre || p.genre,
+      pages:
+        p.title === form.title && !p.pages && res.pageCount != null
+          ? String(res.pageCount)
+          : p.pages,
+      pub:
+        p.title === form.title && !p.pub && res.pubY != null
+          ? [
+              String(res.pubY),
+              ...(res.pubM == null ? [] : [String(res.pubM).padStart(2, '0')]),
+              ...(res.pubD == null ? [] : [String(res.pubD).padStart(2, '0')]),
+            ].join('-')
+          : p.pub,
     }))
     // Cover — honor the match confidence the backend already scores (ISBN, exact title, author
     // conflict, ambiguity). A HIGH match (or an ISBN scan) auto-fills; anything softer shows the
     // choice rather than silently committing a guess. Alternates are always offered for override.
     const alts = res.alternates ?? []
     setAlternates(alts)
-    const strong = res.confidence === 'high' || !!hit.isbn
+    const strong = res.confidence === 'high'
     if (res.cover && !cover) setCover(res.cover) // tentative preview either way — never overwrites a user pick
     if (!strong && res.cover) {
       setCoverNote(
@@ -413,6 +441,11 @@ function AddForm({
     const parsedPub = form.pub.trim() ? parseReleasePub(form.pub) : parsePub('')
     if (!parsedPub) {
       setPublicationError('Use YYYY, YYYY-MM, or YYYY-MM-DD.')
+      return
+    }
+    const parsedPages = parseNumericField(form.pages, PAGE_COUNT)
+    if (!parsedPages.ok) {
+      setPagesError(parsedPages.error)
       return
     }
     const f = form.format.toLowerCase()
@@ -471,6 +504,7 @@ function AddForm({
       readStatus: form.readStatus,
       source: 'Owned',
       pub: parsedPub,
+      pages: parsedPages.value,
     }
     // Dedup on intake: a strong match folds into the existing record instead of duplicating.
     // With auto-merge off, a match comes back for an inline decision instead.
@@ -687,6 +721,18 @@ function AddForm({
             </option>
           ))}
         </select>
+        <label className="text-[12px] text-muted">
+          Pages
+          <input
+            value={form.pages}
+            onChange={(e) => set('pages', e.target.value)}
+            inputMode="numeric"
+            placeholder="Unknown"
+            aria-invalid={!!pagesError}
+            className={inputClass}
+            style={inputStyle}
+          />
+        </label>
         <input
           value={form.pub}
           onChange={(e) => set('pub', e.target.value)}
@@ -700,6 +746,11 @@ function AddForm({
       {positionError && (
         <p role="alert" className="mt-1.5 text-[12px]" style={{ color: 'var(--accent-ink)' }}>
           {positionError}
+        </p>
+      )}
+      {pagesError && (
+        <p role="alert" className="mt-1.5 text-[12px] text-ink">
+          {pagesError}
         </p>
       )}
       {publicationError && (
@@ -868,6 +919,7 @@ export function bulkIncomingFromSearch(
   const authorParts = (hit.authors[0] ?? '').trim().split(/\s+/)
   return {
     title: hit.title,
+    contributors: contributorsFromAuthors(hit.authors),
     first: authorParts.length > 1 ? (authorParts[0] ?? '') : '',
     last: authorParts.length > 1 ? authorParts.slice(1).join(' ') : (authorParts[0] ?? ''),
     series: '',
@@ -1565,6 +1617,7 @@ interface AddPrefill {
   work?: string
   title?: string
   author?: string
+  authors?: string[]
   isbn?: string
   cover?: string
   source?: 'hardcover' | 'google'
@@ -1580,12 +1633,12 @@ export function pickedFromAddPrefill(prefill: AddPrefill): Picked | null {
   return {
     corpusWorkId: prefill.work,
     title: prefill.title,
-    authors: prefill.author ? [prefill.author] : [],
+    authors: prefill.authors?.length ? prefill.authors : prefill.author ? [prefill.author] : [],
     cover: prefill.source === 'google' && !prefill.work ? '' : (prefill.cover ?? ''),
     source: prefill.source,
     sourceUrl: prefill.sourceUrl,
-    isbn: prefill.isbn ?? '',
-    pub: prefill.pub ?? '',
+    isbn: prefill.source === 'hardcover' && !prefill.work ? '' : (prefill.isbn ?? ''),
+    pub: prefill.source === 'hardcover' && !prefill.work ? '' : (prefill.pub ?? ''),
   }
 }
 
@@ -1600,7 +1653,20 @@ export const validateAddSearch = (s: Record<string, unknown>): AddPrefill => {
   if (str(s.work)) out.work = str(s.work)
   if (str(s.title)) out.title = str(s.title)
   if (str(s.author)) out.author = str(s.author)
-  if (str(s.isbn)) out.isbn = str(s.isbn)
+  if (
+    Array.isArray(s.authors) &&
+    s.authors.length <= 20 &&
+    s.authors.every((a) => typeof a === 'string' && a.trim().length > 0 && a.length <= 200)
+  )
+    out.authors = s.authors as string[]
+  // The router JSON-parses unquoted numeric query values. ISBNs are identifiers, so turn a
+  // losslessly parsed, valid numeric ISBN back into text; never reconstruct missing digits.
+  // Explicitly clear invalid supplied values so the raw query cannot leak through route merging.
+  if ('isbn' in s)
+    out.isbn =
+      typeof s.isbn === 'number' && Number.isSafeInteger(s.isbn) && normalizeIsbn(String(s.isbn))
+        ? String(s.isbn)
+        : (str(s.isbn) ?? '')
   if (str(s.cover)) out.cover = str(s.cover)
   if (s.source === 'hardcover' || s.source === 'google') out.source = s.source
   const sourceUrl = str(s.sourceUrl)

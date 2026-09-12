@@ -1,5 +1,12 @@
-import { matchBook, normalizeIsbn, workIdentityPart, workKeyOf, type Book } from '@reverie/core'
-import { resultToIncoming, type SearchResult } from './search'
+import {
+  isStrong,
+  matchBook,
+  normalizeIsbn,
+  workIdentityPart,
+  workKeyOf,
+  type Book,
+} from '@reverie/core'
+import { resultToIncoming, selectedSearchIsbn, type SearchResult } from './search'
 import type { WorkRow } from '../data/works'
 
 /**
@@ -58,7 +65,7 @@ export interface TriagedResult {
  */
 function libraryHit(r: SearchResult, library: readonly Book[]): Book | null {
   const m = matchBook(resultToIncoming(r), library)
-  return m.strength === 'none' ? null : m.book
+  return isStrong(m.strength) ? m.book : null
 }
 
 /** The corpus identity of a catalog result: normalized title + normalized FULL author name — core's
@@ -92,11 +99,7 @@ export function workRowKeys(w: WorkRow): string[] {
 /** One catalog result may expose the same edition through any of these fields. Canonicalizing here
  * makes ISBN-10 scans join the ISBN-13 values persisted on works. */
 export function resultIsbn(r: SearchResult): string {
-  for (const raw of [r.isbn13, r.isbn, r.isbn10]) {
-    const isbn = normalizeIsbn(raw ?? '')
-    if (isbn) return isbn
-  }
-  return ''
+  return selectedSearchIsbn(r)
 }
 
 /**
@@ -145,15 +148,17 @@ export function triageResults(
     const book = libraryHit(result, library)
     const isbn = resultIsbn(result)
     const rk = resultWorkKey(result)
-    // ISBN is edition identity and survives catalog title/author variation, so it is the stronger
-    // join. The work key remains the fallback for records without an ISBN.
+    // ISBN joins still require compatible title/full-author identity. A contradictory source
+    // cannot silently replace the selected bibliography with a shared-work prefill.
     // An ISBN collision is terminal. Falling through to a title match here would let the client
     // offer a corpus attachment that the SQL identity boundary must reject as ambiguous.
-    const work = ambiguousIsbns.has(isbn)
-      ? null
-      : ((isbn ? byIsbn.get(isbn) : undefined) ??
-        (rk && !ambiguousKeys.has(rk) ? byKey.get(rk) : undefined) ??
-        null)
+    const work =
+      ambiguousIsbns.has(isbn) ||
+      (isbn && byIsbn.has(isbn) && !workRowKeys(byIsbn.get(isbn)!).includes(rk))
+        ? null
+        : ((isbn ? byIsbn.get(isbn) : undefined) ??
+          (rk && !ambiguousKeys.has(rk) ? byKey.get(rk) : undefined) ??
+          null)
     return { result, book, work, state: book ? 'library' : work ? 'corpus' : 'new' }
   })
 }

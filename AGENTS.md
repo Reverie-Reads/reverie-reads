@@ -504,6 +504,16 @@ one valid tuple, preserving precision. Weak or competing personal duplicate matc
 persisted reader verdict keys remain unchanged. Historical repair remains separate and owner-run.
 See `docs/tasks/book-data-correction-sequence.md` and `docs/tasks/book-source-admission.md`.
 
+## Saved metadata continuity
+
+Selected-edition pages and publication dates retain their ISBN through search, Add and import.
+Hardcover work-search ISBN arrays never select a reader's copy; search labels never establish series.
+Personal fill-only merges and duplicate field choices cannot donate pages/dates across different or
+missing selected ISBNs. Keep existing reader values and whole valid publication tuples, including
+source precision. The Pages field is optional; invalid input is an error, unknown stays blank.
+See `docs/tasks/saved-metadata-continuity.md`. Future shared fills and explicit duplicate selections
+must not coalesce publication axes independently; historical repair remains separate.
+
 ## ISBNdb retirement
 
 **ISBNdb retirement (owner, September 9).** Production enrichment no longer has an ISBNdb HTTP

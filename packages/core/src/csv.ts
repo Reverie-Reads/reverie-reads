@@ -98,10 +98,11 @@ export function parseCsvRows(text: string): CsvParsedRow[] {
   const cR = col('my rating', 'star rating', 'rating')
   const cD = col('date read', 'last date read', 'dates read', 'read dates')
   const cS = col('exclusive shelf', 'read status', 'bookshelves', 'shelves')
-  const cY = col('original publication year', 'year published', 'publication year')
+  const cY = col('year published', 'publication year')
   const cI13 = col('isbn13', 'isbn-13')
   const cI10 = col('isbn', 'isbn-10')
   const cB = col('binding')
+  const cPages = col('number of pages', 'page count', 'pages')
   const cDA = col('date added')
   const cRev = col('my review')
   const cPN = col('private notes')
@@ -211,7 +212,13 @@ export function parseCsvRows(text: string): CsvParsedRow[] {
       rating,
       readStatus,
       reads,
-      pub: { y: py, m: null, d: null },
+      pub: { y: py && py > 0 && py <= 9999 ? py : null, m: null, d: null },
+      pages:
+        /^\d+$/.test(cell(r, cPages).trim()) &&
+        Number(cell(r, cPages)) > 0 &&
+        Number(cell(r, cPages)) <= 20000
+          ? Number(cell(r, cPages))
+          : null,
       source: 'Imported',
       // Goodreads shelf → possession: `to-read` is a want; a `borrowed`/`loan` shelf is borrowed;
       // read / currently-reading rows are books that passed through the reader's hands (owned).
@@ -277,7 +284,7 @@ export function importCsv(existing: readonly Book[], text: string): CsvImportRes
   const cR = col('my rating', 'star rating', 'rating')
   const cD = col('date read', 'last date read', 'dates read', 'read dates')
   const cS = col('exclusive shelf', 'read status', 'bookshelves', 'shelves')
-  const cY = col('original publication year', 'year published', 'publication year')
+  const cY = col('year published', 'publication year')
   if (cT < 0)
     throw new CsvImportError('No Title column found — is this a Goodreads/StoryGraph export?')
 

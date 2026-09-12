@@ -1,3 +1,4 @@
+import { validPublicationDate } from './partialDate'
 // Column mapping + ingest for real library exports (Import I2). Real exports vary in column names
 // and shape, so ingest is driven by a ColumnProfile (which headers map to which fields). Built-in
 // profiles cover the two real shapes (Library, Chism) plus a generic Goodreads/StoryGraph fallback;
@@ -32,6 +33,7 @@ export interface ColumnProfile {
   releaseDate?: string[]
   readDate?: string[] // when the reader finished it → a read entry (distinct from releaseDate)
   isbn?: string[] // ISBN-10/13 identifier column
+  pages?: string[]
   rating?: string[] // the reader's own 0–5 rating
   readStatus?: string[] // generic read-status column
   owned?: string[] // ownership column (yes/no; blank = owned) — Reverie template's "Owned"
@@ -58,6 +60,7 @@ export const REVERIE_PROFILE: ColumnProfile = {
   title: ['title'],
   author: ['author', 'authors'],
   isbn: ['isbn', 'isbn13', 'isbn-13', 'isbn10', 'isbn-10'],
+  pages: ['number of pages', 'page count', 'pages'],
   readStatus: ['status', 'read status'],
   rating: ['rating', 'my rating'],
   readDate: ['date read', 'last date read'],
@@ -68,6 +71,8 @@ export const REVERIE_PROFILE: ColumnProfile = {
 
 export const LIBRARY_PROFILE: ColumnProfile = {
   name: 'library',
+  isbn: ['isbn13', 'isbn-13', 'isbn', 'isbn10', 'isbn-10'],
+  pages: ['number of pages', 'page count', 'pages'],
   title: ['title'],
   authorFirst: ['author first', 'author, first', 'first', 'first name'],
   authorLast: ['author last', 'author, last', 'last', 'last name'],
@@ -99,6 +104,8 @@ export const CHISM_PROFILE: ColumnProfile = {
 
 export const GENERIC_PROFILE: ColumnProfile = {
   name: 'generic',
+  isbn: ['isbn13', 'isbn-13', 'isbn', 'isbn10', 'isbn-10'],
+  pages: ['number of pages', 'page count', 'pages'],
   title: ['title'],
   author: ['author', 'authors'],
   authorFirst: ['first name', 'author first'],
@@ -107,7 +114,7 @@ export const GENERIC_PROFILE: ColumnProfile = {
   seriesOrder: ['series order', 'series number'],
   genre: ['genre', 'genres', 'shelf', 'bookshelves'],
   tags: ['tags', 'tag'],
-  releaseDate: ['release date', 'date published', 'original publication year', 'year published'],
+  releaseDate: ['release date', 'date published', 'year published', 'publication year'],
   readStatus: ['read status', 'exclusive shelf', 'status'],
   owned: ['owned', 'own', 'ownership'],
 }
@@ -179,13 +186,18 @@ function parseReadDate(raw: string): string | null {
 
 /** Parse a release-date cell: 4-digit year, ISO/US date, or an Excel serial → PubDate. */
 export function parseReleaseDate(raw: string): PubDate {
+  const p = parseReleaseDateParts(raw)
+  return validPublicationDate(p) ? p : { y: null, m: null, d: null }
+}
+
+function parseReleaseDateParts(raw: string): PubDate {
   const s = (raw ?? '').trim()
   if (!s) return { y: null, m: null, d: null }
   if (/^\d{4}$/.test(s)) return { y: Number(s), m: null, d: null }
-  const iso = s.match(/^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?/)
+  const iso = s.match(/^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?$/)
   if (iso)
     return { y: Number(iso[1]), m: Number(iso[2]) || null, d: iso[3] ? Number(iso[3]) : null }
-  const us = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/)
+  const us = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
   if (us) return { y: Number(us[3]), m: Number(us[1]) || null, d: Number(us[2]) || null }
   // Excel serial day-number (days since 1899-12-30).
   const serial = Number(s)
@@ -335,6 +347,12 @@ export function rowToImported(row: string[], idx: Record<string, number>): Impor
     ...possessionPatch(possession),
     owned: emptyOwned(),
     ...(isbn ? { isbn } : {}),
+    pages:
+      /^\d+$/.test(cell('pages').trim()) &&
+      Number(cell('pages')) > 0 &&
+      Number(cell('pages')) <= 20000
+        ? Number(cell('pages'))
+        : null,
     ...(rating ? { rating } : {}),
     ...(reads.length ? { reads } : {}),
   }

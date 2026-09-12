@@ -144,7 +144,7 @@ async function book(sb: SupabaseClient, title: string) {
   const { data } = await sb
     .from('books')
     .select(
-      'id, title, series, position, genre, subgenre, format, rating, ownership, borrowed, wishlist, read_status, pub_y, added_at',
+      'id, title, series, position, genre, subgenre, format, rating, ownership, borrowed, wishlist, read_status, pages, pub_y, pub_m, pub_d, added_at',
     )
     .eq('title', title)
     .maybeSingle()
@@ -204,7 +204,10 @@ test('Goodreads import: fidelity fixes land in the DB, summary is honest, axe gr
     expect(zephyr.format).toBe('Hardcover') // Binding → format
     expect(zephyr.rating).toBe(5)
     expect(zephyr.ownership).toBe('owned') // read shelf
-    expect(zephyr.pub_y).toBe(2020) // Original Publication Year preferred
+    expect(zephyr.pub_y).toBe(2021) // Year Published describes this edition; original work year is 2020.
+    expect(zephyr.pub_m).toBeNull()
+    expect(zephyr.pub_d).toBeNull()
+    expect(zephyr.pages).toBe(448)
     expect(new Date(zephyr.added_at as string).getUTCFullYear()).toBe(2024) // Date Added survived
 
     // honest absence — Nightjar has no genre/binding/pages cell, so it carries none fabricated
@@ -212,6 +215,7 @@ test('Goodreads import: fidelity fixes land in the DB, summary is honest, axe gr
     expect(nightjar.genre).toBe('') // NOT 'romance'
     expect(nightjar.subgenre).toBeFalsy() // NOT 'Romance'
     expect(nightjar.format).toBeFalsy() // NOT 'Paperback' (no Binding cell)
+    expect(nightjar.pages).toBeNull()
     // #1-3 omnibus: series kept, no single position
     expect(nightjar.series).toBe('The Hollow Court')
     expect(nightjar.position).toBeNull()

@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest'
 import { pickedFromAddPrefill, validateAddSearch } from './AddRoute'
 
 describe('Add route library scope', () => {
+  it('keeps an ISBN from an unquoted direct link as text through the form pick', () => {
+    const prefill = validateAddSearch({ title: 'Direct link', isbn: 9780804429573 })
+    expect(prefill.isbn).toBe('9780804429573')
+    expect(pickedFromAddPrefill(prefill)?.isbn).toBe('9780804429573')
+    expect(validateAddSearch({ isbn: '080442957X' }).isbn).toBe('080442957X')
+  })
+
+  it.each([9780804429574, 804429573, Number.MAX_SAFE_INTEGER + 1, ['9780804429573']])(
+    'clears an invalid non-text ISBN instead of passing %j to enrichment',
+    (isbn) => {
+      expect(validateAddSearch({ isbn }).isbn).toBe('')
+    },
+  )
+
   it('accepts only the explicit household scope while preserving catalog identity', () => {
     expect(
       validateAddSearch({
