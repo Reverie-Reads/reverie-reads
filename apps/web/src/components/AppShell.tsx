@@ -297,7 +297,7 @@ function TabLink({ item }: { item: NavigationItem }) {
       <span className="rv-mobile-tab-glyph leading-none" aria-hidden>
         <NavigationGlyph name={item.icon} className="h-[19px] w-[19px]" />
       </span>
-      <span className="skin-label block w-full leading-[1.25]">{item.label}</span>
+      <span className="skin-label block leading-[1.25]">{item.label}</span>
     </Link>
   )
 }

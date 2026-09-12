@@ -184,12 +184,35 @@ test('independent exploration creates no books and its guide fits every room on 
         await page.reload()
         await expect(page.locator('html')).toHaveAttribute('data-skin', skin)
         await expect(page.locator('html')).toHaveAttribute('data-mode', mode)
+        await page.evaluate(() => document.fonts.ready)
         await page.getByRole('button', { name: 'Change my pace', exact: true }).click()
         await expect(page.getByRole('button', { name: 'Start gently', exact: true })).toBeVisible()
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
           `${skin}/${mode}: no sideways scrolling`,
         ).toBe(true)
+        // Measure painted text, not the span's assigned width: overflowing glyphs can crowd
+        // another dock item without ever increasing the document's scrollWidth.
+        const dockLabels = await page.locator('.rv-mobile-tab').evaluateAll((tabs) =>
+          tabs.map((tab) => {
+            const label = tab.querySelector('.skin-label')!
+            const range = document.createRange()
+            range.selectNodeContents(label)
+            const text = range.getBoundingClientRect()
+            const bounds = tab.getBoundingClientRect()
+            return {
+              label: label.textContent,
+              text: { left: text.left, right: text.right },
+              tab: { left: bounds.left, right: bounds.right },
+              contained: text.left >= bounds.left && text.right <= bounds.right,
+            }
+          }),
+        )
+        expect(dockLabels.length).toBeGreaterThan(0)
+        expect(
+          dockLabels.filter((label) => !label.contained),
+          `${skin}/${mode}: dock labels`,
+        ).toEqual([])
         const result = await new AxeBuilder({ page })
           .include('main')
           .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])

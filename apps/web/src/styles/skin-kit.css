@@ -548,6 +548,9 @@ textarea.skin-field::placeholder {
   letter-spacing: 0.045em;
   text-transform: var(--label-transform);
 }
+.rv-mobile-tab .skin-label {
+  letter-spacing: inherit;
+}
 .rv-mobile-tab-active {
   color: var(--accent-ink) !important;
 }
