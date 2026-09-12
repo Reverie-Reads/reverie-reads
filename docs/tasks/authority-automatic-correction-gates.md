@@ -40,6 +40,8 @@ An eventual automatic proposal must satisfy **all** of these conditions:
 - Exactly one unambiguous primary membership, with no conflicting admitted source or current trusted
   claim. Imprints, marketing groupings, self-titled/singleton ambiguities and multiple memberships
   wait for review. Different source/catalog labels need an explicit reviewed alias, not a model rename.
+  The eventual adapter must consider admitted claims across acquisition passes; selecting a fallback
+  answer must not erase a still-admissible contradiction observed in the first pass.
 - Only a missing, untrusted shared membership may be filled. A conflicting existing label—including
   an enrichment label—goes to the existing review queue. Trusted/reviewed shared choices are protected.
 - Position is independently evidence-bound. Fill only a missing position when explicit positive

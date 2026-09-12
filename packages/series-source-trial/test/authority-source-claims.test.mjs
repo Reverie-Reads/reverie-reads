@@ -63,6 +63,33 @@ test('accepts direct publisher relationships without upgrading review-only statu
   assert.equal(result.reviewOnly, true)
 })
 
+test('a single consistent structured claim can still enter the existing structural repair lane', () => {
+  const output = proposal()
+  output.memberships = []
+  const result = validate(output)
+  assert.deepEqual(result.errors, ['series classification requires a membership'])
+  assert.equal(shouldRepairAuthorityAcquisition(result), true)
+})
+
+test('structural repair cannot resolve competing names or positions', () => {
+  for (const claim of [
+    { name: 'Another Sequence', kind: 'book_series', position: 2 },
+    { name: 'The Sequence', kind: 'book_series', position: 3 },
+  ]) {
+    const output = proposal()
+    output.memberships = []
+    output.authoritySources[0].relationshipClaims.push(claim)
+    assert.equal(shouldRepairAuthorityAcquisition(validate(output)), false)
+  }
+})
+
+test('structural repair cannot manufacture missing extracted relationship claims', () => {
+  const output = proposal()
+  output.memberships = []
+  output.authoritySources[0].relationshipClaims = []
+  assert.equal(shouldRepairAuthorityAcquisition(validate(output)), false)
+})
+
 test('only generic series/books suffixes normalize; articles and named forms stay distinct', () => {
   for (const [name, safe] of [
     ['The Sequence series', true],

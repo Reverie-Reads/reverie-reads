@@ -451,6 +451,14 @@ export function validateAuthorityAcquisition(target, output, consultedUrls, poli
       if (!Array.isArray(source.relationshipClaims)) {
         errors.push(`authority source ${index} requires relationshipClaims`)
       }
+      if (
+        asArray(source.supports).includes('series_membership') &&
+        !asArray(source.relationshipClaims).length
+      ) {
+        policyViolations.push(
+          `authority source ${index} membership support lacks a relationship claim`,
+        )
+      }
       for (const claim of asArray(source.relationshipClaims)) {
         if (
           !isObject(claim) ||
@@ -471,7 +479,11 @@ export function validateAuthorityAcquisition(target, output, consultedUrls, poli
         const selected = output.memberships.filter(
           (membership) => relationshipKey(membership?.series) === relationshipKey(claim.name),
         )
-        if (claim.kind === 'book_series' && !selected.length) {
+        if (
+          claim.kind === 'book_series' &&
+          !selected.length &&
+          !(output.classification === 'series' && output.memberships.length === 0)
+        ) {
           policyViolations.push(`authority source ${index} has an unrepresented series claim`)
         }
         if (claim.kind === 'unknown') {
@@ -532,6 +544,20 @@ export function validateAuthorityAcquisition(target, output, consultedUrls, poli
       policyViolations.push(
         `authority source ${index} does not summarize an affirmative standalone statement`,
       )
+    }
+  }
+
+  if (output.classification === 'series' && output.memberships.length === 0) {
+    const pendingClaims = sources
+      .filter((source) =>
+        sourceClassificationEligible(source, policy.classificationBlockedUrls, 'series_membership'),
+      )
+      .flatMap((source) => asArray(source.relationshipClaims))
+      .filter((claim) => claim?.kind === 'book_series')
+    const names = new Set(pendingClaims.map((claim) => relationshipKey(claim.name)))
+    const positions = new Set(pendingClaims.map((claim) => claim.position).filter(Number.isFinite))
+    if (names.size > 1 || positions.size > 1) {
+      policyViolations.push('empty membership proposal has competing source claims')
     }
   }
 
