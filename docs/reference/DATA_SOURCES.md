@@ -310,6 +310,19 @@ visible so validation fails, and a series proposal with no surviving membership 
 This removes only the claim dependent on risky evidence; it never transfers support from another
 claim or invents a replacement.
 
+Current authority acquisition requires a `relationshipClaims` array on every source: exact name,
+relationship type, and explicit position or null. The validator compares source claims with the
+selected memberships, preserves articles and named forms, and blocks omitted competing series,
+conflicting positions, and selected non-bibliographic groupings. These are model-extracted claims,
+not source qualification. A publisher Series field or `/series/` URL can describe an imprint or
+anniversary collection. The reviewed Random House 100 and Thousand Voices catalog profiles, and
+the scoped Conform/Thousand Voices author-page conflict, cannot establish classification or be
+laundered through structural repair. Rejected groupings never establish standalone status.
+Old saved proposals remain usable for offline regression inspection without inventing the new
+fields; current acquisition requires them and uses a new prompt/cache version. All outputs remain
+review-only. The narrow future correction contract and outstanding qualification requirements are
+in `docs/tasks/authority-automatic-correction-gates.md`.
+
 Provider data is cleaned before it reaches that resolver. Google contributes identity only.
 Open Library, Wikidata, Inventaire, and BookBrainz contribute a membership only after the exact
 author-matched work appears in a structured relationship; mirrored Wikidata observations share one

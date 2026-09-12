@@ -70,7 +70,7 @@ const seriesOutput = {
 test('instructs the scout to distinguish direct numbered sequences from lone numerals', () => {
   assert.equal(
     AUTHORITY_ACQUISITION_PROMPT_VERSION,
-    'authority-acquisition-v11-preserve-series-label',
+    'authority-acquisition-v12-source-relationship-claims',
   )
   assert.match(authorityAcquisitionInstructions, /directly compares the exact target/)
   assert.match(authorityAcquisitionInstructions, /lone numeral, a numbered edition/)
@@ -279,6 +279,12 @@ test('drops a demoted membership without discarding an independently supported c
     evidenceSummary: 'The selection-frame page proposes a conflicting series name.',
   })
   const policy = authorityPolicyForCase({ sampleSources: [{ url: blockedUrl }] })
+  mixed.authoritySources[0].relationshipClaims = [
+    { name: 'The Sequence', kind: 'book_series', position: 2 },
+  ]
+  mixed.authoritySources[1].relationshipClaims = [
+    { name: 'Conflicting Sequence', kind: 'book_series', position: 2 },
+  ]
 
   const cleaned = canonicalizeAuthorityAcquisition(mixed, [publisherUrl, blockedUrl], policy)
   const validation = validateAuthorityAcquisition(
@@ -440,6 +446,7 @@ test('keeps selection frames and known marketing taxonomies out of truth evidenc
   output.memberships = []
   output.authoritySources[0].supports = ['identity', 'standalone']
   output.authoritySources[0].evidenceSummary = 'The list calls this a standalone novel.'
+  output.authoritySources[0].relationshipClaims = []
   const policy = authorityPolicyForCase({ sampleSources: [{ url: publisherUrl }] })
 
   const selectionOnly = validateAuthorityAcquisition(
@@ -699,6 +706,9 @@ test('demotes blocked sources to identity without withholding independent member
   })
   const policy = authorityPolicyForCase({ sampleSources: [{ url: publisherUrl }] })
   const cleaned = canonicalizeAuthorityAcquisition(output, [publisherUrl, authorUrl], policy)
+  for (const source of cleaned.authoritySources) {
+    source.relationshipClaims = [{ name: 'The Sequence', kind: 'book_series', position: 2 }]
+  }
 
   assert.deepEqual(cleaned.authoritySources[0].supports, ['identity'])
   assert.deepEqual(cleaned.memberships[0].evidenceUrls, [authorUrl])

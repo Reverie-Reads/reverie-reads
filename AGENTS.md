@@ -230,6 +230,13 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   third-party evidence when reproduced on an author or publisher page. Preserve the attribution in
   the evidence summary and demote its classification support; first-party hosting does not turn the
   quoted speaker into the page owner.
+  Current acquisition also requires per-source relationship names, types, and explicit positions.
+  Unrepresented bibliographic claims, mismatched cited names/orders, and selected non-book groupings
+  are review-only. A catalog's Series field cannot turn an imprint or anniversary collection into
+  a book series. Scoped publisher-collection and imprint-conflict profiles survive source demotion
+  and cannot enter the structural repair lane. Legacy saved outputs may be replayed without new
+  facts, but cannot satisfy the current required-claims policy. See
+  `docs/tasks/authority-automatic-correction-gates.md`; automatic integration remains gated.
 - **Production qualification is private, locked, and single-use.** Never append qualification
   identities or truth to the public development gold file. Build the reviewed oversample under
   ignored `private-results/` from complete identity frames whose population, eligible, and
