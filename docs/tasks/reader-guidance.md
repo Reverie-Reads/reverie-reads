@@ -5,6 +5,23 @@ of the existing product. It does not add another Pro candidate family.
 
 ## Reader experience
 
+### Next iteration: animated guided walkthrough
+
+Owner requested September 12, 2026, after the approved book-data correction sequence.
+The shipped guide is a reference, but does not yet deliver the requested first-use experience.
+Build an optional animated walkthrough in the real app: highlight the relevant control, show the
+action and its result, then guide the reader to the next step in adding a book, opening it,
+recording a read and choosing or planning what comes next. Offer the gentle and full flows at
+welcome; keep independent exploration, pause, skip, resume and replay available.
+
+This supersedes the earlier design preference below against a spotlight. A focused visual tour
+may use anchored callouts and transitions while preserving keyboard access, readable contrast,
+mobile layout and a reduced-motion equivalent. Keep the written Library guide as a reference.
+Demonstrations must use clearly labelled temporary examples or wait for deliberate reader actions;
+never fabricate or save reading progress, books, plans or Pro access. Tour movement must not lose
+an unfinished form or create a confusing page jump. Verify actual first-use flows, including empty
+libraries, saved arrangements and interruptions, before shipping.
+
 The first welcome offers three explicit choices:
 
 - **Start gently:** four practical stops through adding books, reading, choosing a next read and

@@ -6,7 +6,7 @@
 // this scores + selects. Wrong-book safety: an ambiguous or common-title match is marked LOW rather
 // than guessed. Mirrored by supabase/functions/enrich/resolve.ts (enrichParity.test.ts asserts parity).
 
-import { cleanIsbn, isbn10to13 } from './match'
+import { normalizeIsbn } from './match'
 import type { EnrichSource, SourceRecord } from './enrich'
 
 export type Confidence = 'high' | 'medium' | 'low' | 'none'
@@ -64,7 +64,7 @@ export interface ResolvedMatch {
 export const foldDiacritics = (s: string): string =>
   String(s ?? '')
     .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\p{M}/gu, '')
 
 /** Clean a field for a search query: fold diacritics, collapse whitespace, trim (data has "Celia "). */
 export const cleanField = (s: string): string =>
@@ -76,7 +76,7 @@ export const cleanField = (s: string): string =>
 export const matchKey = (s: string): string =>
   foldDiacritics(String(s ?? ''))
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
 
 /** The normalized title+author a search adapter should actually query (trimmed, diacritic-folded). */
@@ -118,38 +118,23 @@ const titlesClose = (a: string, b: string): boolean => {
   return jaccard(tokenSet(a), tokenSet(b)) >= 0.6 // strong word overlap
 }
 
-/** Surname token for author comparison ("Sarah J. Maas" → "maas"). */
-const surname = (author: string): string => {
-  const parts = matchKey(author).split(' ').filter(Boolean)
-  return parts.length ? (parts[parts.length - 1] ?? '') : ''
-}
-
 const authorMatches = (
   queryAuthor: string | undefined,
   candAuthors: string[] | undefined,
 ): boolean => {
-  if (!queryAuthor || !queryAuthor.trim()) return false
-  const qk = matchKey(queryAuthor)
-  const qs = surname(queryAuthor)
-  for (const a of candAuthors ?? []) {
-    const ak = matchKey(a)
-    if (!ak) continue
-    if (ak === qk) return true
-    if (ak.includes(qk) || qk.includes(ak)) return true
-    if (qs.length >= 3 && surname(a) === qs) return true // same surname, initials/middle differ
-  }
-  return false
+  const key = matchKey(queryAuthor ?? '')
+  return !!key && (candAuthors ?? []).some((author) => matchKey(author) === key)
 }
 
 /** Self-resolve a candidate's ISBN-13: direct 13, else any 13 in `isbns`, else promote a 10. */
 export function selfIsbn13(r: SourceRecord): string {
-  const direct = cleanIsbn(r.isbn13 ?? '')
-  if (direct.length === 13) return direct
-  const all = (r.isbns ?? []).map(cleanIsbn)
-  const thirteen = all.find((i) => i.length === 13)
-  if (thirteen) return thirteen
-  const ten = cleanIsbn(r.isbn10 ?? '') || all.find((i) => i.length === 10) || ''
-  return ten.length === 10 ? isbn10to13(ten) : ''
+  if (r.scope === 'work') return ''
+  return (
+    normalizeIsbn(r.isbn13 ?? '') ||
+    normalizeIsbn(r.isbn10 ?? '') ||
+    (r.isbns ?? []).map(normalizeIsbn).find(Boolean) ||
+    ''
+  )
 }
 
 const completeness = (r: SourceRecord): number => (r.cover ? 2 : 0) + (selfIsbn13(r) ? 1 : 0)
@@ -203,7 +188,7 @@ export function scoreCandidate(q: MatchQuery, c: ResolveCandidate): ScoredCandid
     confidence = 'medium' // close title + confirmed author
   else confidence = 'low' // close title only, unconfirmed
 
-  if (confidence === 'medium' && authorMatch && seriesMatch) confidence = 'high'
+  // A search series label cannot upgrade an inexact title to confirmed identity.
 
   return { ...c, confidence, titleExact: exact, authorMatch, seriesMatch }
 }

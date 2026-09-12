@@ -15,6 +15,8 @@ export type EnrichSource = 'openlibrary' | 'google' | 'hardcover' | 'isbndb' | '
 
 /** One source's normalized contribution. Every field optional — sources fill what they have. */
 export interface SourceRecord {
+  scope?: 'work' | 'edition'
+  subtitle?: string
   title?: string
   authors?: string[]
   series?: string
@@ -52,6 +54,8 @@ export interface FieldProvenance {
 
 /** The merged, most-complete record plus per-field provenance. */
 export interface EnrichedRecord {
+  admissionVersion?: 2
+  admissionIdentity?: { title: string; author: string; isbn: string }
   title: string
   authors: string[]
   author: string
@@ -112,7 +116,7 @@ const STR_KEYS = [
   'isbn13',
   'isbn10',
 ] as const
-const NUM_KEYS = ['seriesPosition', 'pageCount', 'pubY', 'pubM', 'pubD'] as const
+const NUM_KEYS = ['seriesPosition', 'pageCount'] as const
 
 const dedupe = (a: (string | undefined | null)[]): string[] => [
   ...new Set(a.map((x) => String(x ?? '').trim()).filter(Boolean)),
@@ -225,13 +229,41 @@ export function parsePubDate(s: string): {
   pubM: number | null
   pubD: number | null
 } {
-  const m = String(s || '').match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/)
-  if (!m) return { pubY: null, pubM: null, pubD: null }
-  return {
-    pubY: Number(m[1]) || null,
-    pubM: m[2] ? Number(m[2]) : null,
-    pubD: m[3] ? Number(m[3]) : null,
+  const empty = { pubY: null, pubM: null, pubD: null }
+  const value = String(s || '').trim()
+  let parts = value.match(/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/)
+  if (!parts) {
+    const named = value.match(/^([A-Za-z]+)\s+(?:(\d{1,2}),?\s+)?(\d{4})$/)
+    const months = [
+      'january',
+      'february',
+      'march',
+      'april',
+      'may',
+      'june',
+      'july',
+      'august',
+      'september',
+      'october',
+      'november',
+      'december',
+    ]
+    const month = named
+      ? months.findIndex(
+          (m) => m === named[1]?.toLowerCase() || m.slice(0, 3) === named[1]?.toLowerCase(),
+        ) + 1
+      : 0
+    if (!named || !month) return empty
+    parts = [value, named[3]!, String(month), named[2] ?? '']
   }
+  const y = Number(parts[1])
+  const m = parts[2] ? Number(parts[2]) : null
+  const d = parts[3] ? Number(parts[3]) : null
+  if (!Number.isInteger(y) || y < 1 || y > 9999 || (m !== null && (m < 1 || m > 12))) return empty
+  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
+  const days = m ? [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1] : undefined
+  if (d !== null && (!days || d < 1 || d > days)) return empty
+  return { pubY: y, pubM: m, pubD: d }
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -284,6 +316,8 @@ export function normalizeOpenLibrary(doc: any): SourceRecord {
   if (doc.key) ids.work = String(doc.key).replace(/^\/works\//, '')
   if (Array.isArray(doc.edition_key) && doc.edition_key[0]) ids.edition = String(doc.edition_key[0])
   return {
+    scope: 'work',
+    subtitle: typeof doc.subtitle === 'string' ? doc.subtitle : undefined,
     title: doc.title ?? '',
     authors: doc.author_name ?? [],
     pubY: doc.first_publish_year ?? null,
@@ -310,6 +344,7 @@ export function normalizeHardcover(book: any): SourceRecord {
     .map((c: any) => c?.author?.name ?? '')
     .filter(Boolean)
   return {
+    scope: 'work',
     title: book.title ?? '',
     authors,
     pageCount: book.pages ?? null,
@@ -337,10 +372,10 @@ export function normalizeHardcoverSearch(doc: any): SourceRecord {
   const tags: string[] = [...(doc.genres ?? []), ...(doc.moods ?? []), ...(doc.tags ?? [])]
     .map((t: any) => (typeof t === 'string' ? t : (t?.tag ?? t?.name ?? '')))
     .filter(Boolean)
-  const releaseDate = String(
-    doc.release_date ?? (doc.release_year ? `${doc.release_year}-01-01` : ''),
-  )
+  const releaseDate = String(doc.release_date ?? (doc.release_year ? String(doc.release_year) : ''))
   return {
+    scope: 'work',
+    subtitle: typeof doc.subtitle === 'string' ? doc.subtitle : undefined,
     title: doc.title ?? '',
     authors: doc.author_names ?? [],
     series: (doc.series_names ?? [])[0] ?? '',
@@ -412,6 +447,22 @@ export function mergeRecords(
     const { value, prov } = resolveScalar(key, sources, true)
     ;(out as unknown as Record<string, unknown>)[key] = value
     if (prov) out.provenance[key] = prov
+  }
+
+  for (const source of PRECEDENCE.pubY ?? []) {
+    const date = sources
+      .filter((s) => s.source === source)
+      .sort((a, b) => b.at.localeCompare(a.at))[0]
+    if (!date?.record.pubY) continue
+    const r = date.record
+    const parsed = parsePubDate(
+      `${r.pubY}${r.pubM != null ? `-${String(r.pubM).padStart(2, '0')}` : ''}${r.pubD != null ? `-${String(r.pubD).padStart(2, '0')}` : ''}`,
+    )
+    if (!parsed.pubY || (r.pubD != null && r.pubM == null)) continue
+    Object.assign(out, parsed)
+    for (const field of ['pubY', 'pubM', 'pubD'] as const)
+      if (parsed[field] !== null) out.provenance[field] = { source, at: date.at }
+    break
   }
 
   // description: longest non-empty wins (more text ≈ more complete).
@@ -490,7 +541,17 @@ export function mergeRecords(
       }
     }
     for (const k of STR_KEYS) applyStr(k as keyof EnrichedRecord)
-    for (const k of NUM_KEYS) applyNum(k as keyof EnrichedRecord)
+    for (const k of NUM_KEYS) applyNum(k)
+    if (user.pubY != null || user.pubM != null || user.pubD != null) {
+      const ownDate = parsePubDate(
+        `${user.pubY ?? ''}${user.pubM != null ? `-${String(user.pubM).padStart(2, '0')}` : ''}${user.pubD != null ? `-${String(user.pubD).padStart(2, '0')}` : ''}`,
+      )
+      for (const key of ['pubY', 'pubM', 'pubD'] as const) {
+        out[key] = ownDate[key]
+        delete out.provenance[key]
+        if (ownDate[key] != null) out.provenance[key] = { source: 'manual', at }
+      }
+    }
     applyStr('description')
     applyStr('genre')
     if (user.authors?.length) {

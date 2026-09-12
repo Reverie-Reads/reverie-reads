@@ -146,7 +146,7 @@ describe('libraryMatch (de-dupe against the library)', () => {
   it('matches by ISBN', () => {
     const m = libraryMatch(
       result({
-        title: 'Fourth Wing (special ed.)',
+        title: 'Fourth Wing',
         authors: ['Rebecca Yarros'],
         isbn13: '9781649374042',
       }),
@@ -164,4 +164,25 @@ describe('libraryMatch (de-dupe against the library)', () => {
   it('returns null for a book not in the library', () => {
     expect(libraryMatch(result({ title: 'Brand New', authors: ['Nobody'] }), library)).toBeNull()
   })
+})
+
+it('a surname-only candidate is not presented as a book already in the library', () => {
+  expect(
+    libraryMatch(result({ title: 'Shared Title', authors: ['John Smith'] }), [
+      book({ title: 'Shared Title', author: 'Jane Smith' }),
+    ]),
+  ).toBeNull()
+})
+
+it('a conflicting title suffix is not hidden as an existing book solely because its ISBN matches', () => {
+  expect(
+    libraryMatch(
+      result({
+        title: 'Fourth Wing (special ed.)',
+        authors: ['Rebecca Yarros'],
+        isbn13: '9781649374042',
+      }),
+      [book({ title: 'Fourth Wing', author: 'Rebecca Yarros', isbn: '9781649374042' })],
+    ),
+  ).toBeNull()
 })

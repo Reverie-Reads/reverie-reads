@@ -6,14 +6,40 @@
 import type { EnrichSource, SourceRecord } from './merge.ts'
 
 // ISBN helpers inlined from packages/core/src/match.ts (mirrored, same as merge.ts).
-const cleanIsbn = (raw: string): string => (raw || '').replace(/[^0-9Xx]/g, '').toUpperCase()
-function isbn10to13(isbn10: string): string {
+export const cleanIsbn = (raw: string): string => (raw || '').replace(/[^0-9Xx]/g, '').toUpperCase()
+
+function validIsbn10(c: string): boolean {
+  if (!/^\d{9}[\dX]$/.test(c)) return false
+  let sum = 0
+  for (let i = 0; i < 10; i++) {
+    const digit = c[i] === 'X' ? 10 : Number(c[i])
+    sum += digit * (10 - i)
+  }
+  return sum % 11 === 0
+}
+
+function validIsbn13(c: string): boolean {
+  if (!/^97[89]\d{10}$/.test(c)) return false
+  let sum = 0
+  for (let i = 0; i < 12; i++) sum += Number(c[i]) * (i % 2 === 0 ? 1 : 3)
+  return Number(c[12]) === (10 - (sum % 10)) % 10
+}
+
+export function isbn10to13(isbn10: string): string {
   const c = cleanIsbn(isbn10)
-  if (c.length !== 10) return ''
+  if (!validIsbn10(c)) return ''
   const core = '978' + c.slice(0, 9)
   let sum = 0
   for (let i = 0; i < 12; i++) sum += Number(core[i]) * (i % 2 === 0 ? 1 : 3)
   return core + ((10 - (sum % 10)) % 10)
+}
+
+/** Canonical ISBN-13 for matching (ISBN-10 promoted), or '' if not a usable ISBN. */
+export function normalizeIsbn(raw: string): string {
+  const c = cleanIsbn(raw)
+  if (validIsbn13(c)) return c
+  if (validIsbn10(c)) return isbn10to13(c)
+  return ''
 }
 
 export type Confidence = 'high' | 'medium' | 'low' | 'none'
@@ -71,7 +97,7 @@ export interface ResolvedMatch {
 export const foldDiacritics = (s: string): string =>
   String(s ?? '')
     .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\p{M}/gu, '')
 
 /** Clean a field for a search query: fold diacritics, collapse whitespace, trim (data has "Celia "). */
 export const cleanField = (s: string): string =>
@@ -83,7 +109,7 @@ export const cleanField = (s: string): string =>
 export const matchKey = (s: string): string =>
   foldDiacritics(String(s ?? ''))
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim()
 
 /** The normalized title+author a search adapter should actually query (trimmed, diacritic-folded). */
@@ -125,38 +151,23 @@ const titlesClose = (a: string, b: string): boolean => {
   return jaccard(tokenSet(a), tokenSet(b)) >= 0.6 // strong word overlap
 }
 
-/** Surname token for author comparison ("Sarah J. Maas" → "maas"). */
-const surname = (author: string): string => {
-  const parts = matchKey(author).split(' ').filter(Boolean)
-  return parts.length ? (parts[parts.length - 1] ?? '') : ''
-}
-
 const authorMatches = (
   queryAuthor: string | undefined,
   candAuthors: string[] | undefined,
 ): boolean => {
-  if (!queryAuthor || !queryAuthor.trim()) return false
-  const qk = matchKey(queryAuthor)
-  const qs = surname(queryAuthor)
-  for (const a of candAuthors ?? []) {
-    const ak = matchKey(a)
-    if (!ak) continue
-    if (ak === qk) return true
-    if (ak.includes(qk) || qk.includes(ak)) return true
-    if (qs.length >= 3 && surname(a) === qs) return true // same surname, initials/middle differ
-  }
-  return false
+  const key = matchKey(queryAuthor ?? '')
+  return !!key && (candAuthors ?? []).some((author) => matchKey(author) === key)
 }
 
 /** Self-resolve a candidate's ISBN-13: direct 13, else any 13 in `isbns`, else promote a 10. */
 export function selfIsbn13(r: SourceRecord): string {
-  const direct = cleanIsbn(r.isbn13 ?? '')
-  if (direct.length === 13) return direct
-  const all = (r.isbns ?? []).map(cleanIsbn)
-  const thirteen = all.find((i) => i.length === 13)
-  if (thirteen) return thirteen
-  const ten = cleanIsbn(r.isbn10 ?? '') || all.find((i) => i.length === 10) || ''
-  return ten.length === 10 ? isbn10to13(ten) : ''
+  if (r.scope === 'work') return ''
+  return (
+    normalizeIsbn(r.isbn13 ?? '') ||
+    normalizeIsbn(r.isbn10 ?? '') ||
+    (r.isbns ?? []).map(normalizeIsbn).find(Boolean) ||
+    ''
+  )
 }
 
 const completeness = (r: SourceRecord): number => (r.cover ? 2 : 0) + (selfIsbn13(r) ? 1 : 0)
@@ -210,7 +221,7 @@ export function scoreCandidate(q: MatchQuery, c: ResolveCandidate): ScoredCandid
     confidence = 'medium' // close title + confirmed author
   else confidence = 'low' // close title only, unconfirmed
 
-  if (confidence === 'medium' && authorMatch && seriesMatch) confidence = 'high'
+  // A search series label cannot upgrade an inexact title to confirmed identity.
 
   return { ...c, confidence, titleExact: exact, authorMatch, seriesMatch }
 }

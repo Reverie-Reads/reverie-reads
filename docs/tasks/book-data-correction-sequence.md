@@ -4,11 +4,11 @@ Owner approved September 12, 2026. Builds on the source-to-screen audit in `docs
 
 ## 1. Reliable shelf additions
 
-In progress. A failed shelf write after successful book intake must remain visible. Retry only the membership, preserving the book and any later edits. A successful write whose response was lost must not duplicate or reorder the membership. Cover both Discover and the shelf picker with real local persistence and injected failure responses.
+Implemented in the preceding shelf patch; full release verification is recorded in its PR. A failed shelf write after successful book intake must remain visible. Retry only the membership, preserving the book and any later edits. A successful write whose response was lost must not duplicate or reorder the membership. Cover both Discover and the shelf picker with real local persistence and injected failure responses.
 
 ## 2. Source identity and edition scope
 
-Next, after the shelf patch is verified. Admit every fetched source independently against the requested identity. Exact selected editions own page counts, language, binding and publication dates; work search medians and arbitrary ISBN-array entries do not. Preserve full contributor checks, source-declared subtitles and competing-match uncertainty. Update the cache namespace and every promotion reader together. Keep weak personal duplicate matches in review without changing persisted verdict keys. No broad completion sweep before these safeguards pass.
+Implemented in this source-admission patch; release verification remains required. Admit every fetched source independently against the requested identity. Exact selected editions own page counts, language, binding and publication dates; work search medians and arbitrary ISBN-array entries do not. Preserve full contributor checks, source-declared subtitles and competing-match uncertainty. Update the cache namespace and every promotion reader together. Keep weak personal duplicate matches in review without changing persisted verdict keys. No broad completion sweep before these safeguards pass.
 
 ## 3. Saved metadata continuity
 

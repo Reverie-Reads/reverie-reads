@@ -1,4 +1,6 @@
-import { assertNoCrossWorkIsbnCollisions, canonicalIsbns } from './corpus-import-lib'
+import { assertNoCrossWorkIsbnCollisions } from './corpus-import-lib'
+import { workIdentityPart } from '../packages/core/src/normalize'
+import { sourceTitleMatches } from '../packages/core/src/enrichAdmission'
 import { enrichmentCacheKey } from '../supabase/functions/enrich/cacheKey'
 
 export interface BackfillWork {
@@ -9,6 +11,9 @@ export interface BackfillWork {
 }
 
 export interface BackfillHit {
+  confidence?: string | null
+  complete?: boolean
+  fetched_at?: string
   key: string
   work_id: string | null
   record: Record<string, unknown> | null
@@ -27,47 +32,61 @@ export interface CorpusBackfillStore {
   updateWork(workKey: string, patch: BackfillPatch): Promise<void>
 }
 
-const sameStrings = (a: readonly string[], b: readonly string[]): boolean =>
-  a.length === b.length && a.every((value, i) => value === b[i])
-
 const stringValue = (value: unknown): string => (typeof value === 'string' ? value : '')
 
 export function backfillPatch(w: BackfillWork, hit: BackfillHit): BackfillPatch {
   const rec = hit.record ?? {}
+  const identity = rec.admissionIdentity as { title?: string; author?: string } | undefined
+  const age = Date.now() - Date.parse(hit.fetched_at ?? '')
+  if (
+    rec.admissionVersion !== 2 ||
+    hit.confidence !== 'high' ||
+    !Number.isFinite(age) ||
+    age < 0 ||
+    age >= (hit.complete ? 30 : 3) * 86400000 ||
+    typeof identity?.title !== 'string' ||
+    !identity.title ||
+    typeof identity.author !== 'string' ||
+    !identity.author ||
+    `${workIdentityPart(identity.title)}|${workIdentityPart(identity.author)}` !== w.work_key ||
+    typeof rec.title !== 'string' ||
+    !sourceTitleMatches(identity.title, { title: rec.title }) ||
+    !Array.isArray(rec.authors) ||
+    !rec.authors.some(
+      (author) =>
+        typeof author === 'string' &&
+        workIdentityPart(author) === workIdentityPart(identity.author!),
+    )
+  )
+    return {}
   const patch: BackfillPatch = {}
   const recordWorkId = stringValue(rec.workId)
-  if (!w.work_id && (hit.work_id || recordWorkId)) patch.work_id = hit.work_id || recordWorkId
+  if (hit.work_id && recordWorkId && hit.work_id !== recordWorkId) return {}
+  if (!w.work_id && /^(hardcover|openlibrary):/.test(recordWorkId)) patch.work_id = recordWorkId
 
   const cover = stringValue(rec.cover)
   if (!w.cover_url && cover) {
-    patch.cover_url = cover
     const provenance = rec.provenance
     if (provenance && typeof provenance === 'object') {
       const coverProvenance = (provenance as { cover?: unknown }).cover
       if (coverProvenance && typeof coverProvenance === 'object') {
         const source = stringValue((coverProvenance as { source?: unknown }).source)
-        if (source) patch.cover_source = source
+        if (source === 'openlibrary' || source === 'hardcover') {
+          patch.cover_url = cover
+          patch.cover_source = source
+        }
       }
     }
   }
 
-  const recordIsbns = Array.isArray(rec.isbns) ? rec.isbns.map(stringValue) : []
-  const isbns = canonicalIsbns([
-    ...w.isbns,
-    stringValue(rec.isbn),
-    stringValue(rec.isbn13),
-    stringValue(rec.isbn10),
-    ...recordIsbns,
-  ])
-  if (!sameStrings(w.isbns, isbns)) patch.isbns = isbns
+  // A title/author cache entry identifies a work, never a selected edition. Preserve its ISBNs.
   return patch
 }
 
 /**
- * Repeatable corpus enrichment promotion. Every work is inspected on every run because a cache
- * record may learn a new edition after its cover and work_id were already complete. All proposed
- * ISBN sets are collision-checked together before the first update, so a bad cache result cannot
- * leave a half-written run behind.
+ * Repeatable, fill-only work promotion from freshly admitted cache records. This path can fill
+ * a missing cover or provider work locator, never edition ISBNs. Existing ISBN sets are still
+ * collision-checked before the first update so an unresolved catalog collision stops the run.
  */
 export async function runBackfill(store: CorpusBackfillStore): Promise<{
   examined: number

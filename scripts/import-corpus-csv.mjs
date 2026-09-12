@@ -485,7 +485,7 @@ async function runBackfillCommand() {
       for (let i = 0; i < keys.length; i += 200) {
         const { data, error } = await supabase
           .from('enrichment_cache')
-          .select('key, work_id, record')
+          .select('key, work_id, record, confidence, complete, fetched_at')
           .in('key', keys.slice(i, i + 200))
         if (error) throw new Error(`enrichment cache select (chunk at ${i}): ${error.message}`)
         rows.push(...(data ?? []))

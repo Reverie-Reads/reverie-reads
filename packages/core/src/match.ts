@@ -141,20 +141,14 @@ const TYPO_MAX_LEN_DELTA = 8
 /**
  * Find the best existing library record for an incoming book.
  *
- * Priority: ISBN exact (10↔13 normalized) → title + FULL author → title + last name →
- * title+series+position → fuzzy (same author, title equal ignoring subtitle) → fuzzy (same author,
+ * Priority: compatible unique ISBN (10↔13 normalized) → unique title + FULL author →
+ * surname / title+series+position for review → fuzzy (same author, title equal ignoring subtitle) → fuzzy (same author,
  * title within a typo's distance). Returns strength 'none' if nothing matches. Matches only on real
  * shared keys — enrichment may fill the incoming ISBN, but a match is never fabricated.
  *
- * ── TWO STRONG AUTHOR LEGS, AND WHY NEITHER ALONE IS ENOUGH ────────────────────────────────────
- * The full-author leg is SPLIT-INVARIANT: 'Scarlett'/'St. Clair' and 'Scarlett St.'/'Clair' are the
- * same name cut in two different places, and keying on `last` alone cannot see that. Measured on the
- * 2026-08-23 import: 12 books, every "St." author in the file.
- * The last-name leg stays because full-author alone would REGRESS middle-initial variance —
- * 'Jennifer L. Armentrout' vs 'Jennifer Armentrout' matches today via `last` and would stop. Its
- * false-positive surface is exactly what it is today; nothing was widened to keep it.
- * (This also brings library matching into line with corpus identity: `workKeyOf` is already
- * full-author.)
+ * Full-author comparison remains split-invariant. Surname-only and series-label matches
+ * suggest review; they never silently combine personal books. Competing exact candidates also
+ * require review. Persisted verdict keys below stay unchanged.
  *
  * ── THE EMPTY-AUTHOR GUARD, WHICH IS A BEHAVIOUR CHANGE ────────────────────────────────────────
  * A leg fires only when its own author component is non-empty. Without that, a row with no author
@@ -166,33 +160,51 @@ const TYPO_MAX_LEN_DELTA = 8
 export function matchBook(incoming: Incoming, library: readonly Book[]): BookMatch {
   const inIsbn = normalizeIsbn(incoming.isbn ?? '')
   if (inIsbn) {
-    const m = library.find((b) => normalizeIsbn(b.isbn) === inIsbn)
-    if (m) return { book: m, strength: 'isbn' }
+    const matches = library.filter((b) => normalizeIsbn(b.isbn) === inIsbn)
+    const m = matches[0]
+    if (m) {
+      const titleConflict =
+        !!fold(incoming.title) && !!fold(m.title) && fold(incoming.title) !== fold(m.title)
+      const authorConflict =
+        !!foldedFullAuthor(incoming) &&
+        !!foldedFullAuthor(m) &&
+        foldedFullAuthor(incoming) !== foldedFullAuthor(m)
+      return {
+        book: m,
+        strength: titleConflict || authorConflict || matches.length > 1 ? 'fuzzy' : 'isbn',
+      }
+    }
   }
 
   const inTitle = fold(incoming.title)
 
   // Strong leg 1 — title + FULL author. Guarded on a non-empty folded name.
   const inFull = foldedFullAuthor(incoming)
-  if (inFull) {
-    const m = library.find((b) => {
+  if (inFull && inTitle) {
+    const matches = library.filter((b) => {
       const bFull = foldedFullAuthor(b)
       return !!bFull && bFull === inFull && fold(b.title) === inTitle
     })
-    if (m) return { book: m, strength: 'title-author' }
+    const m = matches[0]
+    if (m) return { book: m, strength: matches.length > 1 ? 'fuzzy' : 'title-author' }
   }
 
-  // Strong leg 2 — title + last name. Guarded the same way, on `last`.
+  // Surname agreement only proposes review; distinct people can share a surname.
   const inLast = fold(incoming.last)
-  if (inLast) {
+  if (inLast && inTitle) {
     const m = library.find((b) => {
       const bLast = fold(b.last)
       return !!bLast && bLast === inLast && fold(b.title) === inTitle
     })
-    if (m) return { book: m, strength: 'title-author' }
+    if (m) return { book: m, strength: 'fuzzy' }
   }
 
-  if (incoming.series) {
+  if (
+    inTitle &&
+    incoming.series &&
+    typeof incoming.position === 'number' &&
+    Number.isFinite(incoming.position)
+  ) {
     const m = library.find(
       (b) =>
         !!b.series &&
@@ -200,7 +212,7 @@ export function matchBook(incoming: Incoming, library: readonly Book[]): BookMat
         norm(b.series) === norm(incoming.series ?? '') &&
         String(b.position) === String(incoming.position ?? ''),
     )
-    if (m) return { book: m, strength: 'title-series-pos' }
+    if (m) return { book: m, strength: 'fuzzy' }
   }
 
   // Same author, same title once the subtitle is dropped.

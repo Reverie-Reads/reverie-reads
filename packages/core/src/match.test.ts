@@ -63,7 +63,7 @@ describe('matchBook', () => {
   ]
 
   it('matches by ISBN across 10/13 forms (strong)', () => {
-    const m = matchBook({ title: 'Whatever', isbn: '9780306406157' }, library)
+    const m = matchBook({ title: 'Fourth Wing', isbn: '9780306406157' }, library)
     expect(m.strength).toBe('isbn')
     expect(m.book.id).toBe('a')
   })
@@ -321,14 +321,14 @@ describe('matchBook hardening — the measured import failures', () => {
     }
   })
 
-  describe('2. the last-name leg stays — middle-initial variance must not regress', () => {
-    // The regression guard for keeping BOTH strong legs. Full-author alone breaks this pair.
+  describe('2. surname and initial variance remain available for review', () => {
+    // A near match remains visible without silently merging different contributors.
     it('Jennifer L. Armentrout matches Jennifer Armentrout on the same title', () => {
       const m = matchBook(
         { title: 'A Shadow in the Ember', first: 'Jennifer', last: 'Armentrout' },
         lib({ title: 'A Shadow in the Ember', first: 'Jennifer L.', last: 'Armentrout' }),
       )
-      expect(m.strength).toBe('title-author')
+      expect(m.strength).toBe('fuzzy')
       expect(m.book.id).toBe('x')
     })
   })
@@ -387,12 +387,12 @@ describe('matchBook hardening — the measured import failures', () => {
       expect(m.strength).toBe('none')
     })
 
-    it('but an authorless row STILL matches on ISBN — that leg is untouched', () => {
+    it('a matching ISBN with a contradictory title still needs review', () => {
       const m = matchBook(
         { title: 'Untitled Manuscript', isbn: '9780306406157' },
         lib({ title: 'Something Else', first: '', last: '', isbn: '0306406152' }),
       )
-      expect(m.strength).toBe('isbn')
+      expect(m.strength).toBe('fuzzy')
       expect(m.book.id).toBe('x')
     })
   })
@@ -447,12 +447,12 @@ describe('matchBook hardening — the measured import failures', () => {
   })
 
   describe('7. unchanged legs', () => {
-    it('title + series + position still matches', () => {
+    it('title + series + position offers review without confirming identity', () => {
       const m = matchBook(
         { title: 'Book Two', series: 'The Cycle', position: 2 },
         lib({ title: 'Book Two', first: '', last: '', series: 'The Cycle', position: 2 }),
       )
-      expect(m.strength).toBe('title-series-pos')
+      expect(m.strength).toBe('fuzzy')
     })
 
     it("isStrong's set is exactly isbn / title-author / title-series-pos", () => {
@@ -462,5 +462,36 @@ describe('matchBook hardening — the measured import failures', () => {
       expect(isStrong('fuzzy')).toBe(false)
       expect(isStrong('none')).toBe(false)
     })
+  })
+})
+
+describe('uncertain personal identities never silently combine', () => {
+  it('different first names with the same surname require review', () => {
+    const saved = makeBook({ id: 'smith', title: 'Shared Title', first: 'Jane', last: 'Smith' })
+    const result = matchBook({ title: 'Shared Title', first: 'John', last: 'Smith' }, [saved])
+    expect(result.strength).toBe('fuzzy')
+    expect(isStrong(result.strength)).toBe(false)
+  })
+  it('missing series positions are not shared membership evidence', () => {
+    const saved = makeBook({
+      id: 'one',
+      title: 'Shared Title',
+      first: 'Jane',
+      last: 'Smith',
+      series: 'Shared series',
+      position: '',
+    })
+    expect(
+      matchBook(
+        {
+          title: 'Shared Title',
+          first: 'Alex',
+          last: 'Other',
+          series: 'Shared series',
+          position: '',
+        },
+        [saved],
+      ).strength,
+    ).toBe('none')
   })
 })
