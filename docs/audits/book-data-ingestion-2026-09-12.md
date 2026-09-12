@@ -30,6 +30,17 @@ trial sources are identified separately; they are not counted as active provider
 | Reverie/custom CSV                                       | Explicit column profiles and generic aliases for identity, classification, dates and reader state.                                                        | Same intake and explicit import provenance.                                                                                                        | Current column-profile shape has no page-count mapping. Do not silently claim unsupported columns were imported.                                                                                                                                   |
 | Reverie backup / manual entry                            | Current personal schema, structured reads/contributors, preferences and explicit reader choices.                                                          | Existing restore validation and personal-write paths.                                                                                              | Personal `Book` has pages but no publisher/language/description fields. Shared works do have those fields. Adding new personal fields requires a deliberate model/export/restore decision, not spreading provider JSON into rows.                  |
 
+Bundled curated Discover shelves and the CC0 bibliographic seed are additional local inputs, not
+live providers. They supply intentionally bounded work descriptions/classification and retain their
+curated marker; a seed or reviewed shelf is not edition verification. Household/shared-catalog
+prefill reuses existing work rows and explicit reader-choice guards, rather than fetching a new
+provider record when a page opens.
+
+Personalization is derived data, not another bibliography source. `embed` uses `gte-small` inside
+the Supabase runtime to rank existing book/candidate text; its scores are not saved as authors,
+page counts, genres or series evidence. Adaptive appearance computes weights from existing reader
+state. Neither path fills missing bibliographic facts.
+
 Production does **not** acquire ISBNdb, Apple/iTunes, LibraryThing, Inventaire, BookBrainz, Exa, or
 LLM-authority results through these paths. Some names remain in historical provenance types, rate
 configurations, scripts, or no-write trials. That is not evidence of enabled production coverage.
@@ -69,7 +80,9 @@ ranking from automatic acceptance. Retire reusable old enrichment cache entries 
 
 `normalizeOpenLibrary` assigns `number_of_pages_median`, the first language, the first edition key,
 the first 13-digit ISBN, and `first_publish_year` to fields read by downstream code as one record.
-Those array positions are not linked to one another. Even an ISBN-filtered work search does not
+Those array positions are not linked to one another. `fetchDiscoveryDetails` subsequently treats
+any matching ISBN in the merged ISBN union as enough to release publisher/language details; this
+consumer does not restore the edition relationship lost by the upstream merge. Even an ISBN-filtered work search does not
 make its median or first edition the selected edition. The synthetic reproduction shows this exact
 projection. Hardcover enrichment likewise works from a work search, while its richer edition API
 is used only by Cover Studio.
