@@ -58,5 +58,12 @@
     "source": null,
     "markedFailed": false,
     "confidence": "high"
+  },
+  "cacheBackfillUnqualifiedRecord": {
+    "suppliedConfidence": "none",
+    "mismatchedIdentity": true,
+    "proposedWorkId": "different-provider-work",
+    "proposedCover": true,
+    "proposedIsbns": ["9780140328721"]
   }
 }

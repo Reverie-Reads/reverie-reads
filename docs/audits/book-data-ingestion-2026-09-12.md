@@ -36,6 +36,12 @@ curated marker; a seed or reviewed shelf is not edition verification. Household/
 prefill reuses existing work rows and explicit reader-choice guards, rather than fetching a new
 provider record when a page opens.
 
+The older owner-run `scripts/import-corpus-csv.mjs` is a separate operational input, not the app's
+CSV importer. It consumes a bespoke library CSV, can promote existing personal bibliographic rows
+to shared works, and has a `--backfill` path joining the current enrichment-cache key namespace.
+It makes no new provider request. Its direct-write behavior needs its own safeguards before reuse;
+see D7. No invocation against a database was made for this audit.
+
 Personalization is derived data, not another bibliography source. `embed` uses `gte-small` inside
 the Supabase runtime to rank existing book/candidate text; its scores are not saved as authors,
 page counts, genres or series evidence. Adaptive appearance computes weights from existing reader
@@ -159,6 +165,28 @@ model before broadening the feed.
 language scope explicit, acquire imprecise releases through a bounded compatible query, and keep
 edition provenance attached to any edition-specific display or Add prefill.
 
+### D7 — Older owner-run import/backfill paths also need the new admission boundary
+
+**Priority: P1 before another owner-run import or cache promotion.**
+
+`scripts/corpus-backfill.ts` joins by the requested cache key and proposes missing provider work ID,
+cover and accumulated ISBNs without revalidating the cached identity, confidence or field scope.
+The actual pure patch builder accepted a synthetic unrelated title/author with `confidence: none`
+and proposed all three. Canonical ISBN validation and a whole-plan cross-work collision check are
+valuable, but cannot detect a wrong, previously unassigned ISBN. The backing cache query also does
+not read or filter expiration. A current namespace alone does not establish fresh, correct evidence.
+
+The bespoke CSV operator directly upserts the owner's existing bibliographic projection into shared
+works, including nullable pages, dates, covers and legacy series fields. That differs from the
+current fill-only, review-aware app completion path. Its header still describes series membership
+being created on first UI interaction, which is no longer the app's read-only series-page contract.
+These are operator/payload findings, not evidence that this script recently ran or changed production.
+
+**Required correction:** include these writers in D1/D2 cache invalidation and admission work; reject
+expired or unqualified records, preserve reviewed shared fields, and reconcile or retire the older
+direct-write operator against the current series/contributor model before reuse. Retain collision
+preflight and dry-run review. Do not run it as a repair for the findings in this audit.
+
 ## Verified protections to preserve
 
 - Google search remains separate and attributed; it does not supply generated shelves, releases,
@@ -183,6 +211,7 @@ It proves the work projection, surname false match, fabricated date, mixed-sourc
 acceptance and dropped CSV page count. A separate actual-handler probe confirms unrelated-source
 admission and failure-to-empty conversion with all HTTP requests intercepted; no live credentials
 or provider requests were used. It contains no personal library data or provider payload.
+The pure backfill patch builder was also executed with synthetic cached data and no store/writer.
 The remaining findings are source-to-writer/display call-path evidence in the files cited above.
 
 One owner-supplied ISBN was checked read-only against the two free public edition endpoints and the
@@ -202,7 +231,8 @@ reviewed coordination receipt. Trial outputs remain no-write and cannot repair p
 2. D3: date tuple/precision guard in normalizers, merges and the authoritative corpus write path.
 3. D4: intake/CSV/read-only detail completeness; tests assert saved and reloaded values, including
    an existing reader value that must survive conflicting provider data.
-4. D5/D6: outage/cache behavior and coverage; distinguish legitimate sparse records from failure.
+4. D5/D6/D7: outage/cache behavior, coverage and older operator admission; distinguish legitimate
+   sparse records from failure, and prevent unqualified cache promotion on every writer path.
 5. Fresh database browser regression, then private public-source sync, function/migration deployment
    as required, and a small owner-reviewed production smoke sample. Historical repairs stay separate.
 
