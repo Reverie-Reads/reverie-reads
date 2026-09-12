@@ -9,12 +9,15 @@ import { registerGuideChapterDetails, type GuideChapterDetailsProps } from './ch
 const state = vi.hoisted(() => ({
   guidance: null as Guidance | null,
   isError: false,
+  isPending: false,
   mutate: vi.fn(),
 }))
 vi.mock('../data/profile', () => ({
   useProfile: () => ({ data: { guidance: state.guidance }, isError: state.isError }),
 }))
-vi.mock('./data', () => ({ useUpdateGuidance: () => ({ mutate: state.mutate }) }))
+vi.mock('./data', () => ({
+  useUpdateGuidance: () => ({ mutate: state.mutate, isPending: state.isPending }),
+}))
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ to, children }: { to: string; children: ReactNode }) => <a href={to}>{children}</a>,
 }))
@@ -30,6 +33,7 @@ beforeEach(() => {
     tour: null,
   }
   state.isError = false
+  state.isPending = false
   state.mutate.mockClear()
 })
 afterEach(() => {
@@ -47,6 +51,42 @@ function ExtraDetails({ chapterId, expanded }: GuideChapterDetailsProps) {
 }
 
 describe('guide chapter extensions', () => {
+  it('shows full navigation as a saved status instead of a redundant action', () => {
+    render(<GuideScreen />)
+    expect(screen.getByRole('status').textContent).toBe('Full navigation is on.')
+    expect(screen.queryByRole('button', { name: 'Show full navigation' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Show all features' })).toBeNull()
+    expect(state.mutate).not.toHaveBeenCalled()
+  })
+
+  it('reveals navigation without pausing or restarting the active walkthrough', () => {
+    state.guidance = { ...state.guidance!, mode: 'gentle', tour: 'plan' }
+    const view = render(<GuideScreen />)
+    fireEvent.click(screen.getByRole('button', { name: 'Show full navigation' }))
+    expect(state.mutate).toHaveBeenCalledWith(
+      { mode: 'full', complete: true },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    )
+    state.guidance = { ...state.guidance, mode: 'full' }
+    view.rerender(<GuideScreen />)
+    state.mutate.mock.calls[0]![1].onSuccess()
+    expect(document.activeElement).toBe(screen.getByRole('status'))
+    expect(screen.getByRole('status').textContent).toBe('Full navigation is on.')
+    expect(screen.getByRole('heading', { name: 'Leave a place for what comes next' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Pause walkthrough' })).toBeTruthy()
+  })
+
+  it('shows a pending save instead of offering another navigation change', () => {
+    state.guidance = { ...state.guidance!, mode: 'gentle' }
+    state.isPending = true
+    render(<GuideScreen />)
+    expect(screen.getByRole('button', { name: 'Saving…' }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('button', { name: 'Change my pace' }).hasAttribute('disabled')).toBe(
+      true,
+    )
+    expect(screen.getByRole('status').textContent).toBe('Navigation opens a little at a time.')
+  })
+
   it('keeps the complete core guide usable when routine reading tips are off', () => {
     render(
       <ReadingTipsProvider show={false}>

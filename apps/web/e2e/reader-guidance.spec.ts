@@ -103,7 +103,7 @@ test('a new phone reader starts gently, imports history and keeps introductions 
     await page.getByRole('combobox', { name: 'Choose a stop', exact: true }).selectOption('share')
     await page.getByRole('button', { name: 'Add this to my navigation', exact: true }).click()
     await expect.poll(async () => (await account.guidance()).revealed).toContain('share')
-    await page.getByRole('button', { name: 'Show all features', exact: true }).click()
+    await page.getByRole('button', { name: 'Show full navigation', exact: true }).click()
     await expect.poll(async () => (await account.guidance()).mode).toBe('full')
     await page.reload()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
@@ -115,6 +115,77 @@ test('a new phone reader starts gently, imports history and keeps introductions 
         .analyze()
     ).violations
     expect(violations).toEqual([])
+  } finally {
+    await account.cleanup()
+  }
+})
+
+test('showing full navigation gives saved feedback, reveals destinations and preserves the walkthrough', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  await page.setViewportSize({ width: 320, height: 740 })
+  const account = await freshReader(page)
+  try {
+    await page.getByRole('button', { name: 'Start gently', exact: true }).click()
+    await page.getByRole('button', { name: 'Continue without importing', exact: true }).click()
+    await page.getByRole('button', { name: 'Open my library', exact: true }).click()
+    await expect(page).toHaveURL(/\/library$/)
+    await page.goto('/guide')
+    await page.getByRole('combobox', { name: 'Choose a stop' }).selectOption('plan')
+    await expect.poll(async () => (await account.guidance()).tour).toBe('plan')
+    await page.getByRole('button', { name: 'More', exact: true }).click()
+    const menu = page.getByRole('navigation', { name: 'More destinations' })
+    await expect(menu.getByRole('link', { name: 'Stats', exact: true })).toHaveCount(0)
+    await expect(menu.getByRole('link', { name: 'Clubs', exact: true })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+    const arrangement = await account.reader
+      .from('profiles')
+      .select('arrangement')
+      .eq('id', account.uid)
+      .single()
+    if (arrangement.error) throw arrangement.error
+    await page.route('**/rest/v1/rpc/update_reader_guidance', (route) =>
+      route.fulfill({ status: 503, json: { message: 'Test save interrupted' } }),
+    )
+    const reveal = page.getByRole('button', { name: 'Show full navigation', exact: true })
+    await reveal.click()
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Your choice could not be saved' }),
+    ).toBeVisible()
+    expect(await account.guidance()).toMatchObject({ mode: 'gentle', tour: 'plan' })
+    await expect(reveal).toBeEnabled()
+    await page.unroute('**/rest/v1/rpc/update_reader_guidance')
+    await reveal.focus()
+    await page.keyboard.press('Enter')
+    const status = page.getByRole('status').filter({ hasText: 'Full navigation is on.' })
+    await expect(status).toBeVisible()
+    await expect(status).toBeFocused()
+    await expect(reveal).toHaveCount(0)
+    expect(await account.guidance()).toMatchObject({ mode: 'full', tour: 'plan' })
+    await page.reload()
+    await expect(status).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Pause walkthrough', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Leave a place for what comes next' }),
+    ).toBeVisible()
+    await expect(reveal).toHaveCount(0)
+    await page.getByRole('button', { name: 'More', exact: true }).click()
+    await expect(menu.getByRole('link', { name: 'Stats', exact: true })).toBeVisible()
+    await expect(menu.getByRole('link', { name: 'Clubs', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
+    const saved = await account.reader
+      .from('profiles')
+      .select('arrangement')
+      .eq('id', account.uid)
+      .single()
+    if (saved.error) throw saved.error
+    expect(saved.data).toEqual(arrangement.data)
+    const books = await account.reader.from('books').select('id', { count: 'exact', head: true })
+    if (books.error) throw books.error
+    expect(books.count).toBe(0)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: 'test-results/full-navigation-phone.png', fullPage: true })
   } finally {
     await account.cleanup()
   }
