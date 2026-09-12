@@ -1,3 +1,5 @@
+import { selectedSearchIsbn } from '../lib/search'
+import type { EnrichResult } from '../lib/enrich'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   contributorsFromAuthors,
@@ -38,16 +40,21 @@ async function buildIncoming(result: SearchResult, possession: PossessionState):
   const enr = await enrichBook({
     title: result.title,
     author: result.authors[0],
-    isbn: result.isbn13 ?? result.isbn,
+    isbn: selectedSearchIsbn(result),
   })
-  const authors = enr?.authors?.length ? enr.authors : result.authors
+  return incomingFromSearch(result, possession, enr)
+}
+
+export function incomingFromSearch(result: SearchResult, possession: PossessionState, enr: EnrichResult | null): Incoming {
+  const authors = [...new Set([...result.authors, ...(enr?.authors ?? [])])]
   const primary = authors[0] ?? ''
   const { first, last } = splitName(primary)
-  const series = enr?.series || result.series || ''
-  const position = enr?.seriesPosition ?? result.seriesPosition ?? ''
-  const yearFromResult = /^\d{4}$/.test(result.year) ? Number(result.year) : null
+  const series = ''
+  const position = ''
+  const isbn = selectedSearchIsbn(result)
+  const edition = !!isbn && (enr?.isbn13 || enr?.isbn) === isbn
   return {
-    title: enr?.title || result.title,
+    title: result.title,
     first,
     last,
     contributors: contributorsFromAuthors(authors),
@@ -61,8 +68,9 @@ async function buildIncoming(result: SearchResult, possession: PossessionState):
     // Google art belongs to the attributed search result. Enrichment may supply a durable
     // Hardcover/Open Library cover; otherwise the room placeholder remains until refinement.
     cover: (result.source === 'google' ? '' : result.cover) || enr?.cover || '',
-    isbn: enr?.isbn13 || enr?.isbn || result.isbn13 || result.isbn || '',
-    pub: { y: enr?.pubY ?? yearFromResult, m: enr?.pubM ?? null, d: enr?.pubD ?? null },
+    isbn,
+    pages: edition ? enr?.pageCount ?? null : null,
+    pub: { y: edition ? enr?.pubY ?? null : null, m: edition ? enr?.pubM ?? null : null, d: edition ? enr?.pubD ?? null : null },
     ...possessionPatch(possession),
     owned: { physical: false, ebook: false, audiobook: false },
     source: 'Discover',

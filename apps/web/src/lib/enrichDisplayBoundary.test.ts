@@ -73,3 +73,31 @@ describe('enrichment display boundary', () => {
     expect(durable.alternates).toEqual([])
   })
 })
+
+it('retains admitted exact-edition facts and discards wrong or unqualified edition fields', () => {
+  const current = result({
+    admissionVersion: 2,
+    isbn13: '9780306406157',
+    pageCount: 321,
+    pubY: 2010,
+    pubM: 9,
+    pubD: 28,
+  })
+  expect(durableEnrichment(current, '0-306-40615-2')).toMatchObject({
+    pageCount: 321,
+    pubY: 2010,
+    pubM: 9,
+    pubD: 28,
+  })
+  for (const r of [current, { ...current, admissionVersion: undefined }]) {
+    expect(durableEnrichment(r, '9780143117841')).toMatchObject({
+      pageCount: null,
+      pubY: null,
+      isbn: '',
+    })
+  }
+  expect(
+    durableEnrichment({ ...current, admissionVersion: undefined }, '9780306406157').pageCount,
+  ).toBeNull()
+  expect(durableEnrichment(current).pageCount).toBeNull()
+})

@@ -1,4 +1,4 @@
-import { isStrong, matchBook, type Book, type Incoming } from '@reverie/core'
+import { isStrong, matchBook, normalizeIsbn, type Book, type Incoming } from '@reverie/core'
 import { supabase } from './supabase'
 
 // One search implementation, two surfaces (Discover field + the shelf picker's "search everywhere").
@@ -32,6 +32,16 @@ export interface SearchResult {
   seriesPosition?: number | null
   /** Required on Google Books results so every displayed result can link to its source page. */
   sourceUrl?: string
+}
+
+/** Hardcover search ISBN arrays span editions; they do not select a reader's copy. */
+export function selectedSearchIsbn(
+  r: Pick<SearchResult, 'source' | 'isbn' | 'isbn13' | 'isbn10'>,
+): string {
+  if (r.source === 'hardcover') return ''
+  const values = [r.isbn13, r.isbn10, r.isbn].filter((s): s is string => !!s)
+  const ids = values.map(normalizeIsbn)
+  return ids.length && ids.every((id) => !!id && id === ids[0]) ? ids[0]! : ''
 }
 
 export interface SearchResultSections {
@@ -103,7 +113,7 @@ export function resultToIncoming(r: SearchIdentity): Incoming {
     title: r.title,
     first,
     last: rest.join(' '),
-    isbn: r.isbn13 ?? r.isbn ?? '',
+    isbn: 'source' in r ? selectedSearchIsbn(r as SearchResult) : (r.isbn13 ?? r.isbn ?? ''),
     series: r.series,
     position: r.seriesPosition ?? '',
   }

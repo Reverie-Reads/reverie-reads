@@ -1,4 +1,4 @@
-import { isGoogleContentCover } from '@reverie/core'
+import { isGoogleContentCover, normalizeIsbn, validPublicationDate } from '@reverie/core'
 import { supabase } from './supabase'
 
 /** Per-field provenance from the aggregator (which source supplied each field, and when). */
@@ -21,6 +21,7 @@ export interface CoverAlternate {
 
 /** Full normalized record returned by the enrichment aggregator (docs/reference/ENRICHMENT_STRATEGY.md). */
 export interface EnrichResult {
+  admissionVersion?: number
   title: string
   authors: string[]
   author: string
@@ -56,11 +57,41 @@ export interface EnrichResult {
 }
 
 /** Defensive client boundary for staggered web/function deploys and historical cache rows. */
-export function durableEnrichment(result: EnrichResult): EnrichResult {
+export function durableEnrichment(result: EnrichResult, requestedIsbn = ''): EnrichResult {
+  const requested = normalizeIsbn(requestedIsbn)
+  const returned = [result.isbn, result.isbn13, result.isbn10].filter(Boolean).map(normalizeIsbn)
+  const edition =
+    result.admissionVersion === 2 &&
+    !!requested &&
+    returned.length > 0 &&
+    returned.every((isbn) => isbn === requested)
+  const pub = { y: result.pubY, m: result.pubM, d: result.pubD }
+  const date = edition && validPublicationDate(pub) ? pub : { y: null, m: null, d: null }
+
   const googleCover =
     result.provenance?.cover?.source === 'google' || isGoogleContentCover(result.cover)
   return {
     ...result,
+    isbn: edition ? requested : '',
+    isbn13: edition ? requested : '',
+    isbn10: edition ? result.isbn10 : '',
+    isbns: edition ? [requested] : [],
+    pageCount:
+      edition &&
+      Number.isInteger(result.pageCount) &&
+      result.pageCount! > 0 &&
+      result.pageCount! <= 20000
+        ? result.pageCount
+        : null,
+    pubY: date.y,
+    pubM: date.m,
+    pubD: date.d,
+    publisher: edition ? result.publisher : '',
+    language: edition ? result.language : '',
+    binding: edition ? result.binding : undefined,
+    editionId: edition ? result.editionId : undefined,
+    series: '',
+    seriesPosition: null,
     cover: googleCover ? '' : result.cover,
     alternates: result.alternates?.filter(
       (alternate) => alternate.source !== 'google' && !isGoogleContentCover(alternate.cover ?? ''),
@@ -120,12 +151,24 @@ export async function enrichBookOutcome(input: {
       rateLimited?: boolean
       sourcesFailed?: boolean
       sourcesAttempted?: number
+      identityUnresolved?: boolean
+      admissionVersion?: number
+      confidence?: string
     }
     if (flags.rateLimited) return { status: 'rate_limited' }
     // Every source we asked threw. An outage is not a miss.
     if (flags.sourcesFailed)
       return { status: 'failed', reason: `all ${flags.sourcesAttempted ?? 0} sources failed` }
-    return { status: 'ok', data: durableEnrichment(data as EnrichResult), trace }
+    if (flags.admissionVersion !== 2)
+      return {
+        status: 'failed',
+        reason: 'catalog identity checks need the updated enrichment service',
+      }
+    if (flags.confidence !== 'high')
+      return flags.identityUnresolved
+        ? { status: 'failed', reason: 'catalog identity is unresolved' }
+        : { status: 'empty', trace }
+    return { status: 'ok', data: durableEnrichment(data as EnrichResult, input.isbn), trace }
   } catch (e) {
     // A thrown invoke is a transport failure — offline, DNS, abort. Never an empty result.
     return { status: 'failed', reason: (e as Error)?.message || 'enrich threw' }

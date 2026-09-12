@@ -25,6 +25,18 @@ export function emptyDate(): PartialDate {
   return { y: null, m: null, d: null }
 }
 
+/** Validate a publication tuple without inventing missing precision. */
+export function validPublicationDate(p: PartialDate | null | undefined): boolean {
+  if (!p || !Number.isInteger(p.y) || p.y! < 1 || p.y! > 9999) return false
+  if (p.m == null) return p.d == null
+  if (!Number.isInteger(p.m) || p.m < 1 || p.m > 12) return false
+  if (p.d == null) return true
+  if (!Number.isInteger(p.d) || p.d < 1) return false
+  const y = p.y!
+  const leap = y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
+  return p.d <= ([31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][p.m - 1] ?? 0)
+}
+
 /** Has the reader stated anything at all? Precision below the year is meaningless without one. */
 export function hasDate(p: PartialDate | null | undefined): boolean {
   return !!p && p.y != null

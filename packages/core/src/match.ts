@@ -3,6 +3,7 @@ import { authorOf, norm, workIdentityPart } from './normalize'
 import { contributorsChanged, reconcileContributors } from './contributors'
 import { mergePossession } from './ownership'
 import { normalizeBookGenres } from './genreNormalize'
+import { validPublicationDate } from './partialDate'
 
 // ── ISBN normalization (match the same book whether it stored ISBN-10 or ISBN-13) ──
 
@@ -384,6 +385,13 @@ const str =
   (b: Book | Incoming): string =>
     String(b[key] ?? '')
 
+/** A selected edition never borrows facts from an absent, invalid or different ISBN. */
+export function editionFieldsCanFill(existingIsbn: string, incomingIsbn: string): boolean {
+  const incoming = normalizeIsbn(incomingIsbn)
+  if (existingIsbn.trim()) return !!incoming && normalizeIsbn(existingIsbn) === incoming
+  return !incomingIsbn.trim() || !!incoming
+}
+
 export const FILL_BLANK_FIELDS: readonly FillBlankField[] = [
   text('first', 'author first', str('first')),
   text('last', 'author last', str('last')),
@@ -405,6 +413,16 @@ export const FILL_BLANK_FIELDS: readonly FillBlankField[] = [
   text('subgenre', 'subgenre', str('subgenre')),
   text('format', 'format', str('format')),
   text('isbn', 'ISBN', str('isbn')),
+  {
+    key: 'pages',
+    label: 'pages',
+    existingBlank: (b) => b.pages == null,
+    incomingHas: (inc) => Number.isInteger(inc.pages) && inc.pages! > 0 && inc.pages! <= 20000,
+    apply: (patch, inc) => {
+      patch.pages = inc.pages
+    },
+    show: (b) => (b.pages == null ? '' : String(b.pages)),
+  },
   // NOT REPORTED — a cover is a URL, which cannot be stated in a few words on a one-line summary,
   // and a cover difference is already visible as a picture on the card.
   text('cover', 'cover'),
@@ -440,7 +458,7 @@ export const FILL_BLANK_FIELDS: readonly FillBlankField[] = [
     key: 'pub',
     label: 'published',
     existingBlank: (b) => !b.pub || !b.pub.y,
-    incomingHas: (inc) => !!inc.pub?.y,
+    incomingHas: (inc) => validPublicationDate(inc.pub),
     apply: (patch, inc) => {
       patch.pub = inc.pub
     },
@@ -520,6 +538,11 @@ export function mergeImport(existing: Book, incoming: Incoming): ImportMergeResu
   const patch: Partial<Book> = {}
 
   for (const f of FILL_BLANK_FIELDS) {
+    if (
+      (f.key === 'pages' || f.key === 'pub') &&
+      !editionFieldsCanFill(existing.isbn, incoming.isbn ?? '')
+    )
+      continue
     if (f.existingBlank(existing) && f.incomingHas(incoming)) f.apply(patch, incoming)
   }
 

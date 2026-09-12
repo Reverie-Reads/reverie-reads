@@ -12,7 +12,7 @@ Implemented in this source-admission patch; release verification remains require
 
 ## 3. Saved metadata continuity
 
-After source admission. Carry valid supported values through search, Add, CSV, fill-only merges, saving and reopening. Preserve existing reader values and prevent one edition from donating pages/dates to another ISBN. Publication dates retain their original precision and never combine incompatible source tuples.
+Implemented in the metadata-continuity patch; release verification remains required. Carry valid supported values through search, Add, CSV, fill-only merges, saving and reopening. Preserve existing reader values and prevent one edition from donating pages/dates to another ISBN. Publication dates retain their original precision and never combine incompatible source tuples.
 
 ## 4. Targeted existing-data review
 

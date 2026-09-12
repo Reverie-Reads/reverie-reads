@@ -63,8 +63,9 @@ describe('triageResults', () => {
     const t = triageResults(
       [
         result({
-          title: 'Fourth Wing (collector’s ed.)',
-          authors: ['R. Yarros'],
+          source: 'google',
+          title: 'Fourth Wing',
+          authors: ['Rebecca Yarros'],
           isbn13: '9781649374042',
         }),
       ],
@@ -104,7 +105,7 @@ describe('triageResults', () => {
     expect(state([result({ title: 'The Odyssey', authors: [] })], authorless, [])).toEqual(['new'])
   })
 
-  it('the guard does not cost the legs that never look at the author', () => {
+  it('contradictory ISBN identity and series slots do not hide Add', () => {
     const authorless = [
       makeBook({ id: 'isbnOnly', title: 'Whatever They Called It', isbn: '9780306406157' }),
       makeBook({
@@ -123,7 +124,7 @@ describe('triageResults', () => {
         authorless,
         [],
       )[0]?.book?.id,
-    ).toBe('isbnOnly')
+    ).toBeUndefined()
     // title + series + position still matches with no last name in sight
     expect(
       triageResults(
@@ -131,7 +132,7 @@ describe('triageResults', () => {
         authorless,
         [],
       )[0]?.book?.id,
-    ).toBe('ser')
+    ).toBeUndefined()
   })
 
   it('a real last name still title-author matches — the guard is not a blanket refusal', () => {
@@ -160,7 +161,7 @@ describe('triageResults', () => {
     expect(t[0]?.book).toBeNull()
   })
 
-  it('ISBN joins a catalog edition to the corpus even when title and author differ', () => {
+  it('a contradictory ISBN result cannot substitute shared title and contributors', () => {
     const rows = [
       work({
         title: 'The Canonical Title',
@@ -171,6 +172,7 @@ describe('triageResults', () => {
     const t = triageResults(
       [
         result({
+          source: 'google',
           title: 'Publisher Alternate Title',
           authors: ['V. Stone'],
           isbn10: '0-306-40615-2',
@@ -179,8 +181,8 @@ describe('triageResults', () => {
       [],
       rows,
     )
-    expect(t[0]?.state).toBe('corpus')
-    expect(t[0]?.work).toBe(rows[0])
+    expect(t[0]?.state).toBe('new')
+    expect(t[0]?.work).toBeNull()
   })
 
   it('a cross-work ISBN collision is ambiguous, never silently first-row-wins', () => {
@@ -211,6 +213,7 @@ describe('triageResults', () => {
     const t = triageResults(
       [
         result({
+          source: 'google',
           title: 'Exact Title',
           authors: ['Exact Author'],
           isbn13: '9780306406157',
@@ -302,9 +305,11 @@ describe('triageResults', () => {
 
 describe('the corpus identity is the importer’s, not the library matcher’s', () => {
   it('canonicalizes whichever catalog ISBN field is available', () => {
-    expect(resultIsbn(result({ isbn10: '0-306-40615-2' }))).toBe('9780306406157')
+    expect(resultIsbn(result({ source: 'google', isbn10: '0-306-40615-2' }))).toBe('9780306406157')
     expect(resultIsbn(result({ isbn: 'not-an-isbn' }))).toBe('')
-    expect(resultIsbn(result({ isbn13: 'bad', isbn10: '0-306-40615-2' }))).toBe('9780306406157')
+    expect(resultIsbn(result({ source: 'google', isbn13: 'bad', isbn10: '0-306-40615-2' }))).toBe(
+      '',
+    )
   })
 
   it('keys on the FULL author name — works.work_key’s shape', () => {

@@ -8,7 +8,7 @@ import { keepOfflineCacheEmpty } from './support/offlineCache'
 import { ok, okData, okUser } from './support/ok'
 
 // Discover search e2e (docs/archive/task-discover-search.md): search field → results (deduped against the
-// library, "On your shelf" for owned) → add owned / add-to-shelf unowned, and the shelf picker's
+// library, "In your library" for owned) → add owned / add-to-shelf unowned, and the shelf picker's
 // "search everywhere" seam adding the same way. The `search` + `enrich` edge functions are STUBBED
 // so the run is deterministic and offline; the real Hardcover+Google backend is exercised in the
 // eyeball. A dedicated throwaway user keeps the seed + a11y sweep untouched.
@@ -165,7 +165,7 @@ test('Discover search: results dedupe against library, add owned + add-to-shelf,
   test.setTimeout(180_000)
   const c = await client()
   await reset(c)
-  // Seed one owned book that matches a stub result → it should show "On your shelf", not add buttons.
+  // Seed one owned book that matches a stub result → it should show "In your library", not add buttons.
   await ok(
     c.sb.from('books').insert({
       owner_id: c.uid,
@@ -208,7 +208,7 @@ test('Discover search: results dedupe against library, add owned + add-to-shelf,
       page.getByRole('link', { name: /View Seeded Owned Book on Google Books/ }),
     ).toHaveAttribute('href', 'https://books.google.com/books?id=seeded-owned-book')
     // the seeded owned book shows its shelf state, not add actions
-    await expect(page.getByRole('link', { name: /On your shelf/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /In your library/i })).toBeVisible()
 
     // axe on the results surface
     await expectResolvedMode(page, 'dark', 'discover results surface')
@@ -224,9 +224,9 @@ test('Discover search: results dedupe against library, add owned + add-to-shelf,
       })
       .toBe('owned')
     const added = await bookByTitle(c.sb, c.uid, 'Wildfire Vow')
-    expect(added?.series).toBe('Emberwild') // full metadata (series) landed, not a thin stub
-    // once added, the card flips to "On your shelf" (deduped against the now-larger library)
-    await expect(page.getByRole('link', { name: /On your shelf/i })).toHaveCount(2, {
+    expect(added?.series).toBeNull() // search labels never establish series membership
+    // once added, the card flips to "In your library" (deduped against the now-larger library)
+    await expect(page.getByRole('link', { name: /In your library/i })).toHaveCount(2, {
       timeout: 15_000,
     })
 
@@ -489,4 +489,101 @@ for (const surface of ['Discover', 'Shelf picker'] as const) {
       }
     })
   }
+}
+
+for (const surface of ['Discover', 'Add form'] as const) {
+  test(`${surface}: exact-edition pages, date and contributors survive save and reopen`, async ({
+    page,
+  }) => {
+    const c = await client()
+    await reset(c)
+    await stubBackends(page)
+    const title = `Edition continuity ${surface}`
+    const isbn = '9780804429573'
+    const result = {
+      source: 'google',
+      title,
+      authors: ['Aster Writer', 'Birch Writer'],
+      isbn,
+      year: '1813',
+      cover: '',
+      sourceUrl: 'https://books.google.com/books?id=continuity-fixture',
+    }
+    await page.route('**/functions/v1/search**', (r) => r.fulfill({ json: { results: [result] } }))
+    await page.route('**/functions/v1/enrich**', (r) =>
+      r.fulfill({
+        json: {
+          admissionVersion: 2,
+          confidence: 'high',
+          title,
+          authors: result.authors,
+          author: result.authors[0],
+          isbn,
+          isbn13: isbn,
+          isbn10: '',
+          pageCount: 321,
+          pubY: 2010,
+          pubM: 9,
+          pubD: 28,
+          genres: [],
+          cover: '',
+          series: '',
+          seriesPosition: null,
+          source: 'openlibrary',
+        },
+      }),
+    )
+    try {
+      await signIn(page, c.session)
+      if (surface === 'Discover') {
+        await page.goto('/discover?browse=true')
+        await page.getByLabel('Search the wider catalog').fill('continuity')
+        await page.getByRole('button', { name: '＋ Add', exact: true }).click()
+      } else {
+        const query = new URLSearchParams({
+          title,
+          author: result.authors[0]!,
+          authors: JSON.stringify(result.authors),
+          isbn,
+          source: 'google',
+        })
+        await page.goto(`/add?${query}`)
+        await page.getByRole('button', { name: /Fetch details/ }).click()
+        await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('321')
+        await expect(page.getByLabel('Publication date', { exact: true })).toHaveValue('2010-09-28')
+        // A reader's edit wins over a later fetch.
+        await page.getByLabel('Pages', { exact: true }).fill('543')
+        await page.getByRole('button', { name: /Fetch details/ }).click()
+        await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('543')
+        await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
+      }
+      const saved = async () =>
+        (
+          await okData(
+            c.sb
+              .from('books')
+              .select('id,isbn,pages,pub_y,pub_m,pub_d,book_authors(position,authors(name))')
+              .eq('owner_id', c.uid)
+              .eq('title', title),
+            'read saved edition',
+          )
+        )[0]
+      await expect.poll(async () => (await saved())?.pages).toBe(surface === 'Discover' ? 321 : 543)
+      const book = (await saved())!
+      expect(book).toMatchObject({ isbn, pub_y: 2010, pub_m: 9, pub_d: 28 })
+      expect(JSON.stringify(book.book_authors)).toContain('Birch Writer')
+      await page.goto(`/book/${book.id}`)
+      await page.reload()
+      await expect(page.getByRole('heading', { name: title, exact: true }).first()).toBeVisible()
+      expect(await saved()).toMatchObject({
+        id: book.id,
+        pages: surface === 'Discover' ? 321 : 543,
+        pub_y: 2010,
+        pub_m: 9,
+        pub_d: 28,
+      })
+    } finally {
+      await reset(c)
+    }
+  })
 }
