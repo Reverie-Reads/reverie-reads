@@ -88,7 +88,7 @@ describe('scoreCandidate — confidence tiers', () => {
         .confidence,
     ).toBe('none')
   })
-  it('series match corroborates a close+author medium up to high', () => {
+  it('a series search label cannot upgrade an inexact title', () => {
     const s = scoreCandidate(
       { title: 'King of Wrath', author: 'Ana Huang', series: 'Kings of Sin' },
       cand('hardcover', {
@@ -97,16 +97,16 @@ describe('scoreCandidate — confidence tiers', () => {
         series: 'Kings of Sin',
       }),
     )
-    expect(s.confidence).toBe('high')
+    expect(s.confidence).toBe('medium')
     expect(s.seriesMatch).toBe(true)
   })
-  it('matches a surname even when middle initials differ', () => {
+  it('requires full contributor agreement rather than matching a surname', () => {
     const s = scoreCandidate(
       { title: 'A Court of Thorns and Roses', author: 'Sarah Maas' },
       cand('openlibrary', { title: 'A Court of Thorns and Roses', authors: ['Sarah J. Maas'] }),
     )
-    expect(s.authorMatch).toBe(true)
-    expect(s.confidence).toBe('high')
+    expect(s.authorMatch).toBe(false)
+    expect(s.confidence).toBe('low')
   })
 })
 

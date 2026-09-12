@@ -13,7 +13,7 @@
 
 import {
   mergeRecords,
-  withholdByConfidence,
+  parsePubDate,
   normalizeHardcoverSearch,
   normalizeOpenLibrary,
   type EnrichedRecord,
@@ -21,7 +21,8 @@ import {
   type SourceRecord,
   type StampedSource,
 } from './merge.ts'
-import { selectBestMatch, selfIsbn13, type Confidence, type ResolveCandidate } from './resolve.ts'
+import type { Confidence } from './resolve.ts'
+import { admitSourceRecord, normalizeIsbn, sourceTitleMatches } from './admission.ts'
 import { envInt, rateLimit, tooMany } from '../_shared/ratelimit.ts'
 import { paceSource } from '../_shared/sourcePace.ts'
 import { Trace, wantsTrace } from '../_shared/trace.ts'
@@ -59,7 +60,6 @@ interface EnrichInput {
   refresh?: boolean
 }
 
-const cleanIsbn = (s: string) => (s || '').replace(/[^0-9Xx]/g, '').toUpperCase()
 const norm = workIdentityPart
 // The old local UA ('Reverie/1.0 (personal book library; enrichment aggregator)') identified the app
 // but carried NO contact address, which is the half OL's identified tier actually requires — so it
@@ -87,7 +87,7 @@ const hardcoverAuth = (): string | null => {
  */
 async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   for (let attempt = 0; attempt < 2; attempt++) {
-    const r = await fetch(url, init)
+    const r = await fetch(url, { ...init, signal: AbortSignal.timeout(8000) })
     const disposition = classifyHttp(r.status)
 
     if (disposition === 'rate_limited') {
@@ -108,7 +108,27 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
     // Only an OK response's body is parsed, and a malformed one is its own failure — not a
     // silently-empty success that would stamp the book as checked.
     try {
-      return await r.json()
+      const reader = r.body?.getReader()
+      if (!reader) throw new Error('Missing body')
+      const chunks: Uint8Array[] = []
+      let size = 0
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        size += value.byteLength
+        if (size > 1_000_000) {
+          await reader.cancel()
+          throw new Error('Response too large')
+        }
+        chunks.push(value)
+      }
+      const bytes = new Uint8Array(size)
+      let offset = 0
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset)
+        offset += chunk.length
+      }
+      return JSON.parse(new TextDecoder().decode(bytes))
     } catch {
       throw new SourceBodyError(r.status, url)
     }
@@ -123,19 +143,131 @@ const time = <T>(tr: Trace | undefined, stage: string, fn: () => Promise<T>): Pr
 // ── Source adapters: fetch one source, return a normalized SourceRecord (or null). Pure parsing
 //    lives in ./merge.ts normalizers; adapters only know how to query. ──
 
+const SEARCH_LIMIT = 5
+class IdentityUnresolved extends Error {}
+const strings = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && !!v.trim()) : []
+
+function chooseAdmitted(input: EnrichInput, records: SourceRecord[]): SourceRecord | null {
+  if (!records.length) return null
+  if (records.length >= SEARCH_LIMIT)
+    throw new IdentityUnresolved('Search response reached its cap')
+  const matches = records
+    .map((record) => admitSourceRecord(input, record))
+    .filter((r): r is SourceRecord => !!r)
+  if (matches.length !== 1) throw new IdentityUnresolved('No unique full identity match')
+  return matches[0]
+}
+
+async function olJson(path: string, tr?: Trace): Promise<unknown> {
+  if (!(await paceSource('ol-search', tr)))
+    throw new SourceHttpError(429, 'https://openlibrary.org')
+  return time(tr, 'fetch.ol-edition', () =>
+    fetchJson(`https://openlibrary.org${path}`, { headers: olHeaders() }),
+  )
+}
+
 async function adapterOpenLibrary(input: EnrichInput, tr?: Trace): Promise<SourceRecord | null> {
-  // search.json, NOT the covers endpoint — separate budgets, separate documented limits.
-  if (!(await paceSource('ol-search', tr))) throw new Error('status 429')
-  const fields =
-    'key,edition_key,title,author_name,first_publish_year,isbn,number_of_pages_median,subject,language,cover_i,series'
-  const url = input.isbn
-    ? `https://openlibrary.org/search.json?q=isbn:${cleanIsbn(input.isbn)}&fields=${fields}&limit=1`
-    : `https://openlibrary.org/search.json?title=${encodeURIComponent(input.title ?? '')}&author=${encodeURIComponent(input.author ?? '')}&fields=${fields}&limit=1`
-  const j = (await time(tr, 'fetch.ol-search.adapter', () =>
-    fetchJson(url, { headers: olHeaders() }),
-  )) as { docs?: unknown[] }
-  const doc = j?.docs?.[0]
-  return doc ? normalizeOpenLibrary(doc) : null
+  const isbn = normalizeIsbn(input.isbn ?? '')
+  if (input.isbn?.trim() && !isbn) throw new IdentityUnresolved('Invalid requested ISBN')
+  if (!isbn) {
+    const fields = 'key,title,subtitle,author_name,subject,cover_i,isbn'
+    const raw = (await olJson(
+      `/search.json?title=${encodeURIComponent(input.title ?? '')}&author=${encodeURIComponent(input.author ?? '')}&fields=${fields}&limit=${SEARCH_LIMIT}`,
+      tr,
+    )) as { docs?: unknown[] }
+    if (!Array.isArray(raw?.docs))
+      throw new SourceBodyError(200, 'https://openlibrary.org/search.json')
+    return chooseAdmitted(input, raw.docs.map(normalizeOpenLibrary))
+  }
+  let raw: unknown
+  try {
+    raw = await olJson(`/isbn/${isbn}.json`, tr)
+  } catch (error) {
+    if (error instanceof SourceHttpError && error.status === 404) return null
+    throw error
+  }
+  if (!raw || typeof raw !== 'object')
+    throw new SourceBodyError(200, 'https://openlibrary.org/isbn')
+  const edition = raw as Record<string, unknown>
+  const title = typeof edition.title === 'string' ? edition.title : ''
+  const subtitle = typeof edition.subtitle === 'string' ? edition.subtitle : undefined
+  if (
+    [edition.isbn_13, edition.isbn_10].some(
+      (values) =>
+        values != null &&
+        (!Array.isArray(values) ||
+          values.some((value) => typeof value !== 'string' || !value.trim())),
+    )
+  )
+    throw new IdentityUnresolved('Malformed edition ISBNs')
+  const isbns = [...strings(edition.isbn_13), ...strings(edition.isbn_10)]
+  if (
+    !title.trim() ||
+    !isbns.length ||
+    isbns.some((value) => normalizeIsbn(value) !== isbn) ||
+    typeof edition.key !== 'string' ||
+    !/^\/books\/OL\d+M$/.test(edition.key) ||
+    (input.title?.trim() && !sourceTitleMatches(input.title, { title, subtitle }))
+  )
+    throw new IdentityUnresolved('Edition identity differs')
+  if (!Array.isArray(edition.authors) || !edition.authors.length || edition.authors.length > 8)
+    throw new IdentityUnresolved('Edition authors incomplete')
+  const authors: string[] = []
+  for (const ref of edition.authors) {
+    if (!ref || typeof ref.key !== 'string' || !/^\/authors\/OL\d+A$/.test(ref.key))
+      throw new IdentityUnresolved('Edition author reference invalid')
+    const author = (await olJson(`${ref.key}.json`, tr)) as { key?: string; name?: string }
+    if (author?.key !== ref.key || typeof author.name !== 'string' || !author.name.trim())
+      throw new IdentityUnresolved('Edition author unresolved')
+    authors.push(author.name)
+  }
+  const languages = Array.isArray(edition.languages) ? edition.languages : []
+  const language =
+    languages.length === 1 && /^\/languages\/[a-z]{3}$/.test(languages[0]?.key ?? '')
+      ? languages[0].key.slice(-3)
+      : ''
+  const pages = edition.number_of_pages
+  const covers = Array.isArray(edition.covers) ? edition.covers : []
+  const workRefs = Array.isArray(edition.works) ? edition.works : []
+  const work =
+    workRefs.length === 1 && /^\/works\/OL\d+W$/.test(workRefs[0]?.key ?? '')
+      ? workRefs[0].key.slice(7)
+      : undefined
+  const record: SourceRecord = {
+    scope: 'edition',
+    title,
+    subtitle,
+    authors,
+    isbns,
+    isbn13: isbn,
+    pageCount:
+      typeof pages === 'number' && Number.isInteger(pages) && pages > 0 && pages <= 20000
+        ? pages
+        : null,
+    publisher: strings(edition.publishers).join('; '),
+    ...parsePubDate(typeof edition.publish_date === 'string' ? edition.publish_date : ''),
+    binding: typeof edition.physical_format === 'string' ? edition.physical_format : '',
+    language,
+    categories: strings(edition.subjects).slice(0, 12),
+    description:
+      typeof edition.description === 'string'
+        ? edition.description
+        : edition.description &&
+            typeof edition.description === 'object' &&
+            'value' in edition.description &&
+            typeof edition.description.value === 'string'
+          ? edition.description.value
+          : '',
+    cover:
+      Number.isInteger(covers[0]) && covers[0] > 0
+        ? `https://covers.openlibrary.org/b/id/${covers[0]}-L.jpg`
+        : '',
+    ids: { edition: edition.key.slice(7), ...(work ? { work } : {}) },
+  }
+  const admitted = admitSourceRecord(input, record)
+  if (!admitted) throw new IdentityUnresolved('Edition does not match the requested book')
+  return admitted
 }
 
 // Hardcover text search. Their API BLOCKS `_ilike` filters ("not permitted on this server"), so a
@@ -147,7 +279,8 @@ async function hardcoverSearchRecords(
   limit: number,
   tr?: Trace,
 ): Promise<SourceRecord[]> {
-  if (!(await paceSource('hardcover', tr))) throw new Error('status 429')
+  if (!(await paceSource('hardcover', tr)))
+    throw new SourceHttpError(429, 'https://api.hardcover.app')
   const auth = hardcoverAuth()
   if (!auth || !title) return []
   const j = (await time(tr, 'fetch.hardcover', () =>
@@ -160,14 +293,17 @@ async function hardcoverSearchRecords(
         variables: { q: title, n: limit },
       }),
     }),
-  )) as { data?: { search?: { results?: { hits?: { document?: unknown }[] } } } }
-  const hits = j?.data?.search?.results?.hits ?? []
+  )) as { errors?: unknown; data?: { search?: { results?: { hits?: { document?: unknown }[] } } } }
+  if (j?.errors || !Array.isArray(j?.data?.search?.results?.hits))
+    throw new SourceBodyError(200, 'https://api.hardcover.app/v1/graphql')
+  const hits = j.data.search.results.hits
+  if (hits.length >= limit) throw new IdentityUnresolved('Search response reached its cap')
   return hits.map((h) => normalizeHardcoverSearch(h?.document)).filter((r) => r.title)
 }
 
 async function adapterHardcover(input: EnrichInput, tr?: Trace): Promise<SourceRecord | null> {
-  const [first] = await hardcoverSearchRecords(input.title, 1, tr)
-  return first ?? null
+  if (!input.title || !input.author) return null
+  return chooseAdmitted(input, await hardcoverSearchRecords(input.title, SEARCH_LIMIT, tr))
 }
 
 // Keep historical EnrichSource/provenance shapes readable; only these durable adapters can make
@@ -178,83 +314,6 @@ const ADAPTERS: Record<ActiveSource, (i: EnrichInput, tr?: Trace) => Promise<Sou
     openlibrary: adapterOpenLibrary,
     hardcover: adapterHardcover,
   }
-
-// ── Search adapters: title+author → up to SEARCH_LIMIT candidates. The real catalog has NO ISBNs,
-//    so resolution starts from a title+author SEARCH (not an ISBN lookup). Parsing stays in the
-//    ./merge.ts normalizers; these only know how to query each source's search endpoint. ──
-const SEARCH_LIMIT = 5
-
-async function searchOpenLibrary(input: EnrichInput, tr?: Trace): Promise<ResolveCandidate[]> {
-  if (!input.title) return []
-  if (!(await paceSource('ol-search', tr))) throw new Error('status 429')
-  const fields =
-    'key,edition_key,title,author_name,first_publish_year,isbn,number_of_pages_median,subject,language,cover_i,series'
-  const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(input.title)}&author=${encodeURIComponent(input.author ?? '')}&fields=${fields}&limit=${SEARCH_LIMIT}`
-  const j = (await time(tr, 'fetch.ol-search.search', () =>
-    fetchJson(url, { headers: olHeaders() }),
-  )) as { docs?: unknown[] }
-  return (j?.docs ?? [])
-    .map((d): ResolveCandidate => ({ source: 'openlibrary', record: normalizeOpenLibrary(d) }))
-    .filter((c) => c.record.title)
-}
-
-async function searchHardcover(input: EnrichInput, tr?: Trace): Promise<ResolveCandidate[]> {
-  const records = await hardcoverSearchRecords(input.title, SEARCH_LIMIT, tr)
-  return records.map((record): ResolveCandidate => ({ source: 'hardcover', record }))
-}
-
-const SEARCHERS: Partial<
-  Record<EnrichSource, (i: EnrichInput, tr?: Trace) => Promise<ResolveCandidate[]>>
-> = {
-  hardcover: searchHardcover,
-  openlibrary: searchOpenLibrary,
-}
-
-/** Search the enabled durable sources (catalog priority: Hardcover → Open Library). */
-async function gatherCandidates(
-  input: EnrichInput,
-  tr?: Trace,
-): Promise<{
-  candidates: ResolveCandidate[]
-  rateLimited: boolean
-  attempted: number
-  failed: number
-}> {
-  const order: ActiveSource[] = ['hardcover', 'openlibrary']
-  const enabled = new Set(enabledSources())
-  const candidates: ResolveCandidate[] = []
-  let rateLimited = false
-  let attempted = 0
-  let failed = 0
-  for (const s of order) {
-    const fn = SEARCHERS[s]
-    if (!enabled.has(s) || !fn) continue
-    attempted++
-    try {
-      candidates.push(...(await fn(input, tr)))
-    } catch (e) {
-      // Classified by the error's OWN status, not by string-matching its message. A network error
-      // and a 404 are both failures; only a 429 is a rate limit. Counting failures is what lets the
-      // caller tell "every source refused us" from "the sources answered and had nothing".
-      failed++
-      if (dispositionOf(e) === 'rate_limited') rateLimited = true
-    }
-  }
-  return { candidates, rateLimited, attempted, failed }
-}
-
-/** Distill E1 alternate candidates into the cover-picker shape (only those that carry a cover). */
-function distillAlternates(alts: ResolveCandidate[]): CoverAlternate[] {
-  return alts
-    .filter((a) => a.source !== 'google' && a.record.cover)
-    .map((a) => ({
-      source: a.source,
-      cover: a.record.cover ?? '',
-      isbn13: selfIsbn13(a.record),
-      title: a.record.title ?? '',
-      author: (a.record.authors ?? [])[0] ?? '',
-    }))
-}
 
 /** The enabled source roster, resolved from env (sources are pluggable like the buy-link mode). */
 function enabledSources(): ActiveSource[] {
@@ -290,7 +349,12 @@ Deno.serve(async (req: Request) => {
     // 1) Cache: a fresh hit returns immediately — ZERO external calls (the main cost lever).
     if (!input.refresh) {
       const cached = await tr.time('enrich.readCache', () => readCache(key))
-      if (cached && isFresh(cached)) {
+      if (
+        cached &&
+        cached.confidence === 'high' &&
+        cached.record.admissionVersion === 2 &&
+        isFresh(cached)
+      ) {
         return json({
           ...toResponse(cached.record),
           source: 'cache',
@@ -302,113 +366,50 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 2) Fast pass: one source by ISBN/title for an instant "completing…" record.
-    if (mode === 'fast') {
-      const order = enabledSources()
-      let rec: SourceRecord | null = null
-      let used: EnrichSource | null = null
-      // Continue when a record carries no cover. The last record remains a bibliographic fallback
-      // when no durable source has art.
-      let fallback: { rec: SourceRecord; used: EnrichSource } | null = null
-      for (const s of order) {
-        let candidate: SourceRecord | null = null
-        try {
-          candidate = await ADAPTERS[s](input, tr)
-        } catch {
-          candidate = null
-        }
-        if (!candidate) continue
-        if (candidate.cover) {
-          rec = candidate
-          used = s
-          break
-        }
-        fallback ??= { rec: candidate, used: s }
-      }
-      if (!rec && fallback) {
-        rec = fallback.rec
-        used = fallback.used
-      }
-      if (!rec || !used) return json(toResponse(emptyMerged(input)))
-      const merged = mergeRecords([{ source: used, at: new Date().toISOString(), record: rec }])
-      return json({ ...toResponse(merged), source: used, completing: true, ...traceOf(input, tr) })
-    }
-
-    // 3) Full pass: resolve identity, then merge field-by-field across sources, cache, return complete.
+    // Every provider must independently confirm identity, in either response mode.
     const stamped: StampedSource[] = []
-    let rateLimited = false
-    // How many sources we ASKED, and how many threw. `attempted > 0 && failed === attempted` is the
-    // difference between "nobody had this book" and "nobody would talk to us" — the distinction the
-    // client needs so it does not stamp a book as checked when nothing was ever checked.
     let attempted = 0
     let failed = 0
-    let confidence: Confidence = cleanIsbn(input.isbn ?? '') ? 'high' : 'none' // a real ISBN is exact
-    let matchQuery = ''
-    let alternates: CoverAlternate[] = []
-    let fetchInput = input
-
-    // 3a) No ISBN (the real catalog case): a title+author SEARCH → best match + confidence →
-    //     SELF-RESOLVE an ISBN-13 → fetch the canonical edition + best cover by that ISBN below.
-    const title = input.title
-    if (!cleanIsbn(input.isbn ?? '') && title) {
-      const {
-        candidates,
-        rateLimited: searchRL,
-        attempted: searchAttempted,
-        failed: searchFailed,
-      } = await gatherCandidates(input, tr)
-      if (searchRL) rateLimited = true
-      attempted += searchAttempted
-      failed += searchFailed
-      const r = selectBestMatch({ title, author: input.author }, candidates)
-      confidence = r.confidence
-      matchQuery = r.query
-      alternates = distillAlternates(r.alternates)
-      if (r.best) {
-        // Keep the confirmed match (title/author/series/cover) in the merge regardless of the ISBN fetch.
-        stamped.push({ source: r.best.source, at: new Date().toISOString(), record: r.best.record })
-        if (r.isbn13) fetchInput = { ...input, isbn: r.isbn13 }
-      }
-    }
-
-    // 3b) Query enabled sources (by the self-resolved ISBN when we have one) to complete + best cover.
-    for (const s of enabledSources()) {
+    let identityUnresolved = false
+    let rateLimited = false
+    for (const source of enabledSources()) {
       attempted++
       try {
-        const rec = await ADAPTERS[s](fetchInput, tr)
-        if (rec) stamped.push({ source: s, at: new Date().toISOString(), record: rec })
-      } catch (e) {
+        const record = await ADAPTERS[source](input, tr)
+        if (record) stamped.push({ source, at: new Date().toISOString(), record })
+      } catch (error) {
         failed++
-        if (dispositionOf(e) === 'rate_limited') rateLimited = true
-        // degrade gracefully — skip this source, keep going
+        if (error instanceof IdentityUnresolved) identityUnresolved = true
+        if (dispositionOf(error) === 'rate_limited') rateLimited = true
       }
+      if (mode === 'fast' && stamped.length) break
     }
-    // Withhold what the match confidence doesn't back — none: cover + series; low: series only
-    // (cover has three downstream safety nets; series has none). Before writeCache, so cached
-    // records are clean too, not just this response.
-    const merged = withholdByConfidence(mergeRecords(stamped), confidence)
+    const merged = mergeRecords(stamped)
+    merged.admissionVersion = 2
+    merged.admissionIdentity = {
+      title: input.title?.trim() || merged.title,
+      author: input.author?.trim() || merged.authors[0] || '',
+      isbn: normalizeIsbn(input.isbn ?? ''),
+    }
     const sourceList = stamped.map((s) => s.source).join('+') || null
-
-    if (sourceList)
-      await tr.time('enrich.writeCache', () =>
-        writeCache(key, merged, { confidence, query: matchQuery, alternates }),
-      )
-    // Flag rate-limited only when nothing resolved, so a bulk run pauses/resumes instead of
-    // stamping the book checked. A partial record is still useful → not flagged.
+    const confidence: Confidence = sourceList ? 'high' : 'none'
     const body = {
       ...toResponse(merged),
       source: sourceList,
       confidence,
-      query: matchQuery || undefined,
-      alternates,
+      alternates: [],
+      ...(mode === 'fast' ? { completing: true } : {}),
       ...traceOf(input, tr),
+      ...(identityUnresolved ? { identityUnresolved: true } : {}),
     }
-    // THREE OUTCOMES, NOT TWO. `sourcesFailed` says every source we asked threw — which is not the
-    // same as an empty result and must not be recorded as one. Both flags are set only when nothing
-    // resolved: a partial record is genuinely useful and is reported as a success.
-    const allFailed = attempted > 0 && failed === attempted && !sourceList
+    // Partial provider failures never become a reusable completed cache entry.
+    if (sourceList && !failed && mode !== 'fast')
+      await tr.time('enrich.writeCache', () =>
+        writeCache(key, merged, { confidence, query: '', alternates: [] }),
+      )
     if (rateLimited && !sourceList) return json({ ...body, rateLimited: true })
-    if (allFailed) return json({ ...body, sourcesFailed: true, sourcesAttempted: attempted })
+    if (failed && !sourceList)
+      return json({ ...body, sourcesFailed: true, sourcesAttempted: attempted })
     return json(body)
   } catch (e) {
     captureEdgeError('enrich', e)
@@ -426,18 +427,11 @@ const traceOf = (input: EnrichInput, tr: Trace) =>
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { headers: { ...cors, 'Content-Type': 'application/json' } })
 
-function emptyMerged(input: EnrichInput): EnrichedRecord {
-  return mergeRecords([], {
-    title: input.title,
-    author: input.author,
-    isbn: cleanIsbn(input.isbn ?? ''),
-  } as unknown as Partial<EnrichedRecord>)
-}
-
 // Response shape is a SUPERSET of the legacy EnrichResult (so existing callers keep working) plus
 // genre, isbns, workId/editionId, and provenance.
 function toResponse(r: EnrichedRecord) {
   return {
+    admissionVersion: 2,
     title: r.title,
     authors: r.authors,
     author: r.author,
@@ -466,14 +460,14 @@ function toResponse(r: EnrichedRecord) {
 
 // ── enrichment_cache (global, service-role only) ──
 function cacheKeyFor(input: EnrichInput): string {
-  const isbn = cleanIsbn(input.isbn ?? '')
+  const isbn = normalizeIsbn(input.isbn ?? '')
   // Never reuse legacy mixed-source records: unioned authors/genres/ISBNs do not retain every
   // contributor's lineage. A provenance-field filter cannot prove those records ISBNdb-free.
   // A new namespace preserves the old rows for an owner-run retention audit, without serving or
   // overwriting them. This is not deletion or certification of already persisted corpus data.
   return enrichmentCacheKey(
     isbn.length >= 10
-      ? `isbn:${isbn}`
+      ? `isbn:${isbn}:${norm(input.title ?? '')}|${norm(input.author ?? '')}`
       : `ta:${norm(input.title ?? '')}|${norm(input.author ?? '')}`,
   )
 }
@@ -500,7 +494,7 @@ interface ResolveMeta {
 
 function isFresh(row: CacheRow): boolean {
   const age = Date.now() - Date.parse(row.fetched_at)
-  return age < (row.complete ? COMPLETE_DAYS : PARTIAL_DAYS) * DAY
+  return age >= 0 && age < (row.complete ? COMPLETE_DAYS : PARTIAL_DAYS) * DAY
 }
 
 const DB_URL = Deno.env.get('SUPABASE_URL') ?? ''
@@ -518,6 +512,7 @@ async function readCache(key: string): Promise<CacheRow | null> {
       `${DB_URL}/rest/v1/enrichment_cache?key=eq.${encodeURIComponent(key)}&select=record,complete,fetched_at,confidence,match_query,alternates`,
       { headers: dbHeaders },
     )
+    if (!r.ok) return null
     const rows = (await r.json()) as CacheRow[]
     return rows?.[0]?.record ? rows[0] : null
   } catch {

@@ -143,7 +143,7 @@ describe('runBackfill', () => {
         return [{ work_key: 'legacy', work_id: null, cover_url: null, isbns: [] }]
       },
       async fetchEnrichments(keys) {
-        expect(keys).toEqual(['durable-sources-v1:ta:legacy'])
+        expect(keys).toEqual(['identity-admitted-v2:ta:legacy'])
         return [
           { key: 'ta:legacy', work_id: 'old:1', record: { cover: 'https://old.invalid/a.jpg' } },
         ]
@@ -156,7 +156,7 @@ describe('runBackfill', () => {
     expect(writes).toBe(0)
   })
 
-  it('inspects an already-complete work and accumulates a later enrichment ISBN', async () => {
+  it('does not promote edition ISBNs from a work cache entry', async () => {
     const updates: { workKey: string; patch: BackfillPatch }[] = []
     const store: CorpusBackfillStore = {
       async fetchWorks() {
@@ -170,10 +170,10 @@ describe('runBackfill', () => {
         ]
       },
       async fetchEnrichments(keys) {
-        expect(keys).toEqual(['durable-sources-v1:ta:complete-work'])
+        expect(keys).toEqual(['identity-admitted-v2:ta:complete-work'])
         return [
           {
-            key: 'durable-sources-v1:ta:complete-work',
+            key: 'identity-admitted-v2:ta:complete-work',
             work_id: 'hc:work:1',
             record: { isbns: ['9780306406157', '9781649374042'] },
           },
@@ -184,28 +184,27 @@ describe('runBackfill', () => {
       },
     }
 
-    await expect(runBackfill(store)).resolves.toEqual({ examined: 1, cacheHits: 1, updated: 1 })
-    expect(updates).toEqual([
-      {
-        workKey: 'complete-work',
-        patch: { isbns: ['9780306406157', '9781649374042'] },
-      },
-    ])
+    await expect(runBackfill(store)).resolves.toEqual({ examined: 1, cacheHits: 1, updated: 0 })
+    expect(updates).toEqual([])
   })
 
-  it('checks all proposed ISBNs before performing any update', async () => {
+  it('still stops on existing cross-work ISBN collisions before any update', async () => {
     let writes = 0
     const store: CorpusBackfillStore = {
       async fetchWorks() {
         return [
-          { work_key: 'one', work_id: null, cover_url: null, isbns: [] },
-          { work_key: 'two', work_id: null, cover_url: null, isbns: [] },
+          { work_key: 'one', work_id: null, cover_url: null, isbns: ['9780306406157'] },
+          { work_key: 'two', work_id: null, cover_url: null, isbns: ['9780306406157'] },
         ]
       },
       async fetchEnrichments() {
         return [
-          { key: 'durable-sources-v1:ta:one', work_id: null, record: { isbn13: '9780306406157' } },
-          { key: 'durable-sources-v1:ta:two', work_id: null, record: { isbn10: '0306406152' } },
+          {
+            key: 'identity-admitted-v2:ta:one',
+            work_id: null,
+            record: { isbn13: '9780306406157' },
+          },
+          { key: 'identity-admitted-v2:ta:two', work_id: null, record: { isbn10: '0306406152' } },
         ]
       },
       async updateWork() {

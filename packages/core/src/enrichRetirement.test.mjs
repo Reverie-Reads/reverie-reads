@@ -75,6 +75,17 @@ beforeEach(() => {
           ],
         })
       }
+      if (u.hostname === 'openlibrary.org' && u.pathname.startsWith('/isbn/'))
+        return Response.json({
+          key: '/books/OL1M',
+          title: TITLE,
+          authors: [{ key: '/authors/OL1A' }],
+          isbn_13: [ISBN],
+          number_of_pages: 123,
+          covers: [321],
+        })
+      if (u.hostname === 'openlibrary.org' && u.pathname === '/authors/OL1A.json')
+        return Response.json({ key: '/authors/OL1A', name: AUTHOR })
       if (u.hostname === 'openlibrary.org')
         return Response.json({
           docs: [
@@ -194,12 +205,16 @@ describe('retired providers at the actual enrichment handler', () => {
     expect(first.source).not.toBe('cache')
     const writes = calls.filter(({ init }) => init.method === 'POST')
     expect(writes).toHaveLength(1)
-    expect(JSON.parse(writes[0].init.body).key).toBe(`durable-sources-v1:${oldKey}`)
+    expect(JSON.parse(writes[0].init.body).key).toBe(
+      `identity-admitted-v2:${oldKey}${input.isbn ? ':|' : ''}`,
+    )
     expect(cache.get(oldKey)).toBe(oldRow)
     const reads = calls.filter(
       ({ url, init }) => url.hostname === 'database.invalid' && !init.method,
     )
-    expect(reads[0].url.searchParams.get('key')).toBe(`eq.durable-sources-v1:${oldKey}`)
+    expect(reads[0].url.searchParams.get('key')).toBe(
+      `eq.identity-admitted-v2:${oldKey}${input.isbn ? ':|' : ''}`,
+    )
 
     calls.length = 0
     const second = await request(input)

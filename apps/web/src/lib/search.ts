@@ -1,4 +1,4 @@
-import { matchBook, type Book, type Incoming } from '@reverie/core'
+import { isStrong, matchBook, type Book, type Incoming } from '@reverie/core'
 import { supabase } from './supabase'
 
 // One search implementation, two surfaces (Discover field + the shelf picker's "search everywhere").
@@ -113,7 +113,7 @@ export function resultToIncoming(r: SearchIdentity): Incoming {
  *  result shows its shelf state (and links to it) instead of add actions (task §1). */
 export function libraryMatch(r: SearchIdentity, library: readonly Book[]): Book | null {
   const m = matchBook(resultToIncoming(r), library)
-  return m.strength === 'none' ? null : m.book
+  return isStrong(m.strength) ? m.book : null
 }
 
 /**

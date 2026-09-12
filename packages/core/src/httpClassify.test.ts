@@ -142,7 +142,7 @@ describe('the Deno runtime mirrors this policy exactly', () => {
       join(__dirname, '../../../supabase/functions/enrich/index.ts'),
       'utf8',
     )
-    expect(enrichSrc).toContain('dispositionOf(e)')
+    expect(enrichSrc).toMatch(/dispositionOf\(\w+\)/)
 
     // COMMENTS STRIPPED FIRST. The naive `not.toContain` fails on this file's own docstring, which
     // quotes `String(e).includes('429')` to explain what was wrong with it — so the assertion would

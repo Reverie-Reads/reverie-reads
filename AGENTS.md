@@ -485,11 +485,26 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   de-dupe flow that resolves all detected duplicate groups at once (run on import).
   Reuse the ported merge engine.
 
+## Book-data admission
+
+Every enrichment source must independently match the requested title/full contributor and, when
+provided, canonical valid ISBN. Only a bounded exact Open Library edition and its complete author
+lookups may supply selected-edition pages, binding, language and date. Work search summaries supply
+work fields only; never promote their median pages, first language, arbitrary ISBN or edition key.
+Source-declared subtitles may match the combined title; surname, alias, prefix and search-series
+agreement do not establish identity. Competing/capped matches remain unresolved. Fast/full and cache
+paths share the admission boundary; partial provider failures are not cacheable completion.
+The versioned cache includes requested identity; owner maintenance rechecks identity, confidence and
+freshness and cannot append edition ISBNs from title/author cache rows. Publication dates move as
+one valid tuple, preserving precision. Weak or competing personal duplicate matches never auto-merge; Add/import retain their review flow and explicit single-add may keep a separate copy;
+persisted reader verdict keys remain unchanged. Historical repair remains separate and owner-run.
+See `docs/tasks/book-data-correction-sequence.md` and `docs/tasks/book-source-admission.md`.
+
 ## ISBNdb retirement
 
 **ISBNdb retirement (owner, September 9).** Production enrichment no longer has an ISBNdb HTTP
 adapter; old keys/flags/CSV cannot reactivate it. Enrichment and the owner-run corpus backfill share
-the `durable-sources-v1:` cache namespace, with no fallback to historical mixed-source rows. Historical
+the current `identity-admitted-v2:` cache namespace (superseding `durable-sources-v1:`), with no fallback to historical mixed-source rows. Historical
 source types remain readable, not proof of a live provider. Do not delete old cache or catalog rows
 as part of this cutover: incomplete union/personal provenance prevents safe blanket cleanup.
 No further paid trial acquisition without new owner approval; consumed study locks stay intact.

@@ -35,8 +35,8 @@ const REGISTRY: Record<
   { fetches: number; dataOnly: { marker: string; reason: string }[] }
 > = {
   'enrich/index.ts': {
-    // adapterOpenLibrary (isbn + title/author variants share one fetchJson) and searchOpenLibrary.
-    fetches: 2,
+    // One olJson gateway for search, exact edition and every author lookup.
+    fetches: 1,
     dataOnly: [],
   },
   'enrich/merge.ts': {
@@ -135,18 +135,14 @@ describe('every openlibrary.org occurrence is registered — fetch site or decla
 
   it('enrich/index.ts: exactly the registered fetch sites, every one through olHeaders()', () => {
     const src = read('enrich/index.ts')
-    // Each OL request is built as a `const url = \`https://openlibrary.org/...\`` then fetched.
-    // Count the builds, then require the SAME count of `fetchJson(url, { headers: olHeaders() })`
-    // consumptions — a third OL call added without the header changes the first count but not the
-    // second, and this fails.
-    const builds = (src.match(/https:\/\/openlibrary\.org\/search\.json/g) ?? []).length
-    const covered = (src.match(/fetchJson\(url, \{ headers: olHeaders\(\) \}\)/g) ?? []).length
-    // The isbn/title variants of adapterOpenLibrary share one fetch — builds counts URL template
-    // literals (3: two in the adapter's ternary, one in search), covered counts fetch sites (2).
-    expect(builds).toBe(3)
-    expect(covered).toBe(REGISTRY['enrich/index.ts']!.fetches)
-    // And no OL fetch bypasses the helper: the only openlibrary fetches are the two above.
-    expect((src.match(/fetchJson\(url,/g) ?? []).length).toBe(covered)
+    // Search, edition and contributor requests share one identified gateway. Handler tests
+    // additionally inspect actual outbound headers so a source-pattern count is not the only check.
+    expect((src.match(/fetchJson\(`https:\/\/openlibrary\.org/g) ?? []).length).toBe(
+      REGISTRY['enrich/index.ts']!.fetches,
+    )
+    expect(src).toMatch(
+      /fetchJson\(`https:\/\/openlibrary\.org\$\{path\}`, \{ headers: olHeaders\(\) \}\)/,
+    )
   })
 
   it('covers/index.ts: the source-image fetch carries olHeaders (it can hit covers.openlibrary.org)', () => {
