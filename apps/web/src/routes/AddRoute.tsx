@@ -4,6 +4,7 @@ import {
   contributorsFromAuthors,
   formatAuthors,
   makeSeriesClaim,
+  normalizeIsbn,
   parseNumericField,
   PAGE_COUNT,
   parsePubDate,
@@ -1658,7 +1659,14 @@ export const validateAddSearch = (s: Record<string, unknown>): AddPrefill => {
     s.authors.every((a) => typeof a === 'string' && a.trim().length > 0 && a.length <= 200)
   )
     out.authors = s.authors as string[]
-  if (str(s.isbn)) out.isbn = str(s.isbn)
+  // The router JSON-parses unquoted numeric query values. ISBNs are identifiers, so turn a
+  // losslessly parsed, valid numeric ISBN back into text; never reconstruct missing digits.
+  // Explicitly clear invalid supplied values so the raw query cannot leak through route merging.
+  if ('isbn' in s)
+    out.isbn =
+      typeof s.isbn === 'number' && Number.isSafeInteger(s.isbn) && normalizeIsbn(String(s.isbn))
+        ? String(s.isbn)
+        : (str(s.isbn) ?? '')
   if (str(s.cover)) out.cover = str(s.cover)
   if (s.source === 'hardcover' || s.source === 'google') out.source = s.source
   const sourceUrl = str(s.sourceUrl)
