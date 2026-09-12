@@ -66,3 +66,63 @@ No Supabase writes, migrations, deployments, billing changes or qualification-st
 
 Only this methodology/results document is a tracked change. The docs-only branch is exempt
 from the full application e2e gate; the existing trial tests are run as a regression check.
+
+## Completed run and independent audit
+
+Acquisition: 2026-09-12 05:19:55.990–05:22:35.308 UTC, all nine targets completed in
+159.318 seconds. No provider errors or retries. Frozen methodology commit: `24cd691`.
+
+| Measure | Luna first pass | Luna plus conditional Exa |
+| --- | ---: | ---: |
+| Validator-safe resolved proposals | 5/9 | 6/9 |
+| Independently supported proposals as emitted | 4 | 4 |
+| Emitted proposals requiring rejection/correction | 1 | 2 |
+| Model abstentions | 4 | 3 |
+
+This is a selected development slice, not general accuracy or qualification. No standalone
+claim was emitted. Abstentions have not all been independently assigned reference truth.
+The four supported proposals still require explicit administrator review of identity, naming,
+order and current state; they are not automatically approved catalog updates.
+
+The two rejected/corrected proposals expose distinct source-cleaning gaps:
+
+1. A real publisher anniversary collection was accepted as a reader-series relationship.
+   The [publisher's reissue description](https://www.penguinrandomhouseretail.com/book/?isbn=9798217460106)
+   and cross-author roster establish the edition-collection context. A publisher URL containing
+   `/series/` does not establish the relationship type Reverie needs.
+2. An author page's series field reproduced a publishing label despite conflicting primary
+   evidence already present in the packet. [PRH's announcement](https://global.penguinrandomhouse.com/announcements/introducing-thousand-voices-x-rhpg-a-new-publishing-venture-from-the-random-house-publishing-group-jenna-bush-hagers-thousand-voices-media/)
+   explains the label's publishing role. Source authenticity and accurate quotation do not make
+   the source's field interpretation correct. Conflicting first-party labels must remain visible.
+
+The independent audit did not change the frozen proposals or rerun the model. The private
+`REVIEW-HANDOFF.md` links original sources and distinguishes four supported proposals, two
+rejections/corrections, and three unresolved cases. One rejected proposal has a separately
+supported manual correction, which is not counted as model success. No catalog save occurred.
+
+Actual usage: 13 model requests, 36 hosted web-search tools, 193,547 input tokens and 6,566
+output tokens. Four fallback attempts made 12 Exa requests with zero errors; one selected
+fallback added a validator-safe proposal but **no correct additional reader-series resolution**.
+Exa contributed 18.993 seconds of aggregate locator latency. No Exa result content was persisted.
+
+Using the September 7 report's historical rates ($0.20/M input, $1.20/M output, $0.01/hosted
+search, $0.007/Exa request), acquisition cost is approximately **$0.4906**: $0.4066 OpenAI and
+$0.0840 Exa. This is not current billing confirmation and excludes this Codex source-review
+session. Reviewer time was not measured; there is no demonstrated human-time-savings claim.
+
+Checks: existing trial suite **403 passed**; frozen input/runtime preflight passed; explicit
+duplicate execution refused by the Git-common-directory marker before any provider request.
+The lock remains unchanged and the attempt is consumed. Do not replay the live run.
+
+## Next decision
+
+Retain the existing Luna-low scout as a review-preparation tool; keep Exa conditional, not a
+blanket second pass. Do not promote this protocol to automatic classification. The smallest
+useful next implementation is trial-only protection against publisher/edition collections and
+conflicting first-party labels, tested offline on retained development evidence before any
+new independent live slice. Do not solve this by rejecting every publisher catalog or by
+trusting author fields unconditionally. Identity errors stay explicit review tasks.
+
+Reuse the existing human review controls rather than building a new database, API or queue.
+Any later in-app acquisition still needs the existing privacy, retention, budget, authorization
+and stale-evidence gates. This experiment changed no production or qualification runtime.
