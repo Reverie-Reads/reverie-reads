@@ -1,7 +1,21 @@
 export const AUTHORITY_ACQUISITION_PROMPT_VERSION =
-  'authority-acquisition-v12-source-relationship-claims'
+  'authority-acquisition-v13-relationship-encoding'
 export const AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION =
-  'authority-acquisition-repair-v1-structure-only'
+  'authority-acquisition-repair-v2-relationship-encoding'
+
+export const authorityRelationshipEncodingInstructions = `Relationship encoding:
+- relationshipClaims records named group relationships, not every classification word.
+  An affirmative standalone assertion belongs in supports: ["identity", "standalone"] and
+  evidenceSummary. If no named grouping is asserted, relationshipClaims is []. Never create a
+  relationship named "standalone" with kind unknown. Silence still cannot prove standalone.
+- An unnamed description such as "a seasonal smalltown series" or "a witchy romance trilogy"
+  is not a series name or a second competing named relationship. Preserve the description in
+  evidenceSummary, use relationshipClaims: [], and do not let that source supply membership or
+  position. Another source may independently supply the actual named series and explicit order.
+  If no source supplies a bibliographic name, return unresolved, not standalone.
+- Do not use this rule to discard a genuinely named group, an uncertain named relationship,
+  a differing named form, or conflicting order. Those remain explicit claims and require review.
+  Never invent a shared alias or attach an unnamed source's number to another source's name.`
 
 export const authorityAcquisitionInstructions = `You are Reverie's authority-source scout.
 Find attributable evidence for one exact book. Your output is a review proposal, never a database
@@ -95,7 +109,8 @@ Rules:
 - Every evidenceUrl and authoritySources.url must be an exact URL consulted during this search.
 - evidenceSummary must be a short paraphrase, not a quotation, and must state what the page supports.
 - If no qualifying source is found, return unresolved with no invented source.
-- Keep note under 240 characters.`
+- Keep note under 240 characters.
+${authorityRelationshipEncodingInstructions}`
 
 export const authorityAcquisitionRepairInstructions = `Repair one Reverie authority-source proposal
 that failed a structural consistency check. Do not search the web and do not add a URL, source,
@@ -104,7 +119,8 @@ explicit relationship already stated in an authority source summary or note into
 supports. If the original proposal does not contain enough information for a complete membership,
 change classification to unresolved. The repaired output must obey every structured-output rule:
 series requires at least one complete membership and its source must support series_membership;
-standalone and unresolved require an empty memberships array.`
+standalone and unresolved require an empty memberships array.
+${authorityRelationshipEncodingInstructions}`
 
 const stringArray = { type: 'array', items: { type: 'string' } }
 
@@ -178,6 +194,8 @@ export const authorityAcquisitionOutputSchema = {
           evidenceSummary: { type: 'string' },
           relationshipClaims: {
             type: 'array',
+            description:
+              'Named relationships only. An affirmative standalone assertion or unnamed descriptive series phrase is summarized separately, with an empty relationshipClaims array. Preserve every genuinely named conflict.',
             items: {
               type: 'object',
               additionalProperties: false,

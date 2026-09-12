@@ -1,11 +1,14 @@
 import { createHash } from 'node:crypto'
 import { performance } from 'node:perf_hooks'
 import { authorityAcquisitionCacheMaterial } from '../evidence.mjs'
-import { authorityAcquisitionOutputSchema } from '../schema.mjs'
+import {
+  authorityAcquisitionOutputSchema,
+  authorityRelationshipEncodingInstructions,
+} from '../schema.mjs'
 import { normalizeEvidenceCapabilities, REPEATED_NUMBERED_CATALOG_HEADINGS } from './profile.mjs'
 
 export const RETRIEVAL_INTERPRETATION_PROMPT_VERSION =
-  'authority-retrieval-interpretation-v3-source-claims'
+  'authority-retrieval-interpretation-v4-relationship-encoding'
 
 export const retrievalInterpretationInstructions = `You are Reverie's authority-evidence interpreter.
 Classify one exact book using only the supplied sanitized first-party evidence packet. Your output
@@ -40,7 +43,8 @@ Rules:
   book_series even when a catalog labels them Series. An unclear or conflicting claim means
   unresolved, not standalone. Only a direct book_series claim can support memberships.
 - evidenceSummary must be a short paraphrase of packet text, not a quotation.
-- Keep note under 240 characters.`
+- Keep note under 240 characters.
+${authorityRelationshipEncodingInstructions}`
 
 const outputContent = (response) => {
   const contents = []

@@ -267,7 +267,11 @@ const genericOnlySeriesName = (value) => {
   const words = normalize(value)
     .split(' ')
     .filter((word) => word && !['a', 'an', 'the'].includes(word))
-  return words.length > 0 && words.every((word) => genericSeriesTail.has(word))
+  const descriptiveWords = new Set(['seasonal', 'smalltown', 'small', 'town', 'witchy', 'romantic'])
+  return (
+    words.length > 0 &&
+    words.every((word) => genericSeriesTail.has(word) || descriptiveWords.has(word))
+  )
 }
 
 const authoritySeriesMatches = (membership, actualSeries) =>

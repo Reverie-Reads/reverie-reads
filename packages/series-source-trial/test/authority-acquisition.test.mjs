@@ -70,7 +70,7 @@ const seriesOutput = {
 test('instructs the scout to distinguish direct numbered sequences from lone numerals', () => {
   assert.equal(
     AUTHORITY_ACQUISITION_PROMPT_VERSION,
-    'authority-acquisition-v12-source-relationship-claims',
+    'authority-acquisition-v13-relationship-encoding',
   )
   assert.match(authorityAcquisitionInstructions, /directly compares the exact target/)
   assert.match(authorityAcquisitionInstructions, /lone numeral, a numbered edition/)
