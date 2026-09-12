@@ -185,6 +185,7 @@ function PlannerScreen() {
         eyebrow="Your reading life, ahead"
         title="Keep your reading life close."
         description="Make a loose plan, see the year and month as they happened, or watch for books coming into view."
+        descriptionIsTip
         showDescriptionOnMobile
       />
 

@@ -1,3 +1,4 @@
+import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { createRoute, useNavigate } from '@tanstack/react-router'
@@ -402,7 +403,9 @@ function MatchScreen() {
       <h1 className="text-3xl font-semibold text-ink" style={{ fontFamily: 'var(--font-display)' }}>
         Next read
       </h1>
-      <p className="mt-2 text-base text-muted">Find something you want to open.</p>
+      <ReadingTips>
+        <p className="mt-2 text-base text-muted">Find something you want to open.</p>
+      </ReadingTips>
       <fieldset className="mt-6">
         <legend className="mb-2 text-sm font-semibold text-ink">Choose from</legend>
         <select
@@ -439,7 +442,7 @@ function MatchScreen() {
         </p>
       </fieldset>
       <details className="mt-4 rounded-xl border border-line p-4">
-        <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-ink">
+        <summary className="min-h-11 cursor-pointer py-2 text-[13px] font-medium leading-5 text-ink">
           Refine choices
         </summary>
         <div className="mt-2 flex flex-wrap gap-x-5">

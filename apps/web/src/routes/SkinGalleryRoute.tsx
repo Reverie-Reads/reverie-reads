@@ -1,3 +1,4 @@
+import { ReadingTips } from '../components/ReadingTips'
 import { SkinAtmosphereCanvas } from '../components/SkinAtmosphereCanvas'
 import { useEffect, useMemo, type CSSProperties } from 'react'
 import { createRoute } from '@tanstack/react-router'
@@ -246,10 +247,11 @@ function AdaptiveSection({ mode }: { mode: ResolvedMode }) {
   return (
     <div className="mt-8">
       <h2 className="text-[16px] font-semibold text-ink">Adaptive skin</h2>
-      <p className="mt-1 text-[13px] text-muted">
-        A one-of-a-kind palette blended from the Tier-1 skins, weighted by what you actually read
-        and love. Regenerate it whenever your taste shifts.
-      </p>
+      <ReadingTips>
+        <p className="mt-1 text-[13px] text-muted">
+          A palette drawn from the books you read and love. Regenerate it when your taste changes.
+        </p>
+      </ReadingTips>
       <div className="mt-3 grid gap-4 sm:grid-cols-2">
         <AdaptiveCard bundle={preview} mode={mode} active={isActive} />
         <Surface tone="card" radius="card" pad={3} className="flex flex-col justify-center gap-2">
@@ -300,6 +302,7 @@ function SkinGalleryScreen() {
         eyebrow="Choose your atmosphere"
         title="Genre rooms"
         description="Each skin changes the objects, rhythm, typography, and voice of Reverie. Color is only the beginning."
+        descriptionIsTip
       />
 
       <div className="mt-5 flex flex-wrap items-center gap-2">

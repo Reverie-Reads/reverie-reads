@@ -1,3 +1,4 @@
+import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useState } from 'react'
 import { createRoute, Link } from '@tanstack/react-router'
 import {
@@ -341,11 +342,13 @@ export function SeriesIndexScreen() {
           >
             Series
           </h1>
-          <p className="mt-2 max-w-[60ch] text-[13.5px] leading-relaxed text-muted">
-            {scope === 'personal'
-              ? 'Browse your confirmed series, see what you have in hand, and arrange each reading order.'
-              : 'Browse reviewed series identities and reading-order slots shared across Reverie.'}
-          </p>
+          <ReadingTips>
+            <p className="mt-2 max-w-[60ch] text-[13.5px] leading-relaxed text-muted">
+              {scope === 'personal'
+                ? 'Browse your confirmed series, see what you have in hand, and arrange each reading order.'
+                : 'Browse reviewed series identities and reading-order slots shared across Reverie.'}
+            </p>
+          </ReadingTips>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex border border-line p-1" aria-label="Series catalog scope">

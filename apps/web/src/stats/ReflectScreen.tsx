@@ -1,3 +1,4 @@
+import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -248,9 +249,11 @@ export function ReflectView({
         <div>
           <p className="reflect-eyebrow">Reflect · your reading life is private</p>
           <h1>{periodTitle}</h1>
-          <p className="reflect-intro">
-            The stories you finished, the ones you returned to, and a little of what stayed.
-          </p>
+          <ReadingTips>
+            <p className="reflect-intro">
+              The stories you finished, the ones you returned to, and a little of what stayed.
+            </p>
+          </ReadingTips>
         </div>
         <label className="reflect-period">
           Reading period
@@ -350,7 +353,10 @@ export function ReflectView({
       )}
 
       <section className="reflect-summary" aria-label={`${periodLabel} summary`}>
-        <p className="reflect-eyebrow">{periodLabel} · open a number to see its record</p>
+        <p className="reflect-eyebrow">
+          {periodLabel}
+          <ReadingTips> · open a number to see its record</ReadingTips>
+        </p>
         <div className="reflect-metrics">
           <button
             type="button"
@@ -538,7 +544,9 @@ export function ReflectView({
             <p className="reflect-eyebrow">The ledger</p>
             <h2>Your record · {periodLabel}</h2>
           </div>
-          <p>Open a book to revisit its notes or add an earlier read.</p>
+          <ReadingTips>
+            <p>Open a book to revisit its notes or add an earlier read.</p>
+          </ReadingTips>
         </div>
         {summary.records.length ? (
           <ReadList key={period} records={summary.records} openBook={openBook} />

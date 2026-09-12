@@ -1,3 +1,4 @@
+import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useState } from 'react'
 import {
   authorOf,
@@ -123,9 +124,11 @@ export function ReadingPlan({
                 <h2 id="plan-queue-heading" className="plan-heading">
                   An open-ended plan.
                 </h2>
-                <p className="mt-2 max-w-[58ch] text-[14px] leading-relaxed text-muted">
-                  Soon, a month, or a particular day. Nothing here is a deadline.
-                </p>
+                <ReadingTips>
+                  <p className="mt-2 max-w-[58ch] text-[14px] leading-relaxed text-muted">
+                    Soon, a month, or a particular day. Nothing here is a deadline.
+                  </p>
+                </ReadingTips>
               </div>
               <Button onClick={() => setPickerDate(EMPTY_PLAN)}>Add to your plan</Button>
             </div>
@@ -591,9 +594,11 @@ function PlanCalendar({
               →
             </button>
           </div>
-          <p className="plan-calendar-instruction">
-            Choose a marked day to open it. An empty day leaves room for a book.
-          </p>
+          <ReadingTips>
+            <p className="plan-calendar-instruction">
+              Choose a marked day to open it. An empty day leaves room for a book.
+            </p>
+          </ReadingTips>
           <div className="plan-month-summary" aria-label="Month summary">
             <span>
               <strong>{plannedCount}</strong> planned

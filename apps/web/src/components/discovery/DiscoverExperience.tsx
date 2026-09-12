@@ -1,3 +1,4 @@
+import { ReadingTips } from '../ReadingTips'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -323,9 +324,11 @@ function Experience({ ownerId }: { ownerId: string }) {
         <div>
           <p className="discovery-eyebrow">Beyond your own shelves</p>
           <h1>Find a book to get lost in.</h1>
-          <p>
-            A familiar feeling, a passing mood, a door you haven’t opened. Where shall we begin?
-          </p>
+          <ReadingTips>
+            <p>
+              A familiar feeling, a passing mood, a door you haven’t opened. Where shall we begin?
+            </p>
+          </ReadingTips>
         </div>
         <Button variant="secondary" onClick={() => routeTo({ saved: true })}>
           Saved shortlists{saved.data?.length ? ` (${saved.data.length})` : ''}
@@ -645,7 +648,9 @@ function Experience({ ownerId }: { ownerId: string }) {
                   <span>0{index + 1}</span>
                 </span>
                 <h2>{item.title}</h2>
-                <p>{item.text}</p>
+                <ReadingTips>
+                  <p>{item.text}</p>
+                </ReadingTips>
                 <span className="discovery-direction-indicator">
                   {direction === item.id ? 'Your starting point' : 'Explore this way'}
                   <span aria-hidden="true">{direction === item.id ? '✓' : '→'}</span>

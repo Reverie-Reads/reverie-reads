@@ -1,3 +1,4 @@
+import { ReadingTips } from '../components/ReadingTips'
 import { Fragment, useEffect, useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
 import {
@@ -354,11 +355,16 @@ function HomeScreen() {
                     {all.length ? 'Choose a next read' : 'Start with a book you want to read.'}
                   </h2>
                   <p className="mt-2 max-w-[60ch] text-[16px] leading-relaxed text-ink">
-                    {available.length
-                      ? `${available.length} unread ${available.length === 1 ? 'book is' : 'books are'} marked owned or borrowed. Choose what fits now, or try a random pick.`
-                      : all.length
-                        ? 'No new unread books are marked owned or borrowed. Browse your library to check what you have, or explore other choices in Next read.'
-                        : 'Add one book or bring an existing file. You can choose a room and set a goal later.'}
+                    {available.length ? (
+                      <>
+                        {`${available.length} unread ${available.length === 1 ? 'book is' : 'books are'} marked owned or borrowed.`}
+                        <ReadingTips> Choose what fits now, or try a random pick.</ReadingTips>
+                      </>
+                    ) : all.length ? (
+                      'No new unread books are marked owned or borrowed. Browse your library to check what you have, or explore other choices in Next read.'
+                    ) : (
+                      'Add one book or bring an existing file. You can choose a room and set a goal later.'
+                    )}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
@@ -420,10 +426,12 @@ function HomeScreen() {
                       />
                     </button>
                     {shelfBooks.length > 0 && (
-                      <p className="mb-3 mt-1 text-[13px] leading-[1.5] text-muted">
-                        Your hand-picked next reads. Swipe the shelf and open one when it feels
-                        right.
-                      </p>
+                      <ReadingTips>
+                        <p className="mb-3 mt-1 text-[13px] leading-[1.5] text-muted">
+                          Your hand-picked next reads. Swipe the shelf and open one when it feels
+                          right.
+                        </p>
+                      </ReadingTips>
                     )}
                     <SpineShelf
                       books={shelfBooks}

@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
+import { ReadingTips } from './ReadingTips'
 
 /** Shared editorial heading for top-level routes. Keeps page identity quiet and skin-led. */
 export function PageHeader({
   eyebrow,
   title,
   description,
+  descriptionIsTip = false,
   actions,
   showDescriptionOnMobile = false,
   className = '',
@@ -12,10 +14,19 @@ export function PageHeader({
   eyebrow?: ReactNode
   title: ReactNode
   description?: ReactNode
+  /** Opt in only for introductions; scope, privacy and other essential explanations stay visible. */
+  descriptionIsTip?: boolean
   actions?: ReactNode
   showDescriptionOnMobile?: boolean
   className?: string
 }) {
+  const descriptionElement = description ? (
+    <p
+      className={`mt-2 max-w-[64ch] text-[14px] leading-relaxed text-muted ${showDescriptionOnMobile ? '' : 'hidden sm:block'}`}
+    >
+      {description}
+    </p>
+  ) : null
   return (
     <header
       className={`flex flex-wrap items-end justify-between gap-5 border-b border-line pb-5 ${className}`}
@@ -35,13 +46,7 @@ export function PageHeader({
         >
           {title}
         </h1>
-        {description ? (
-          <p
-            className={`mt-2 max-w-[64ch] text-[14px] leading-relaxed text-muted ${showDescriptionOnMobile ? '' : 'hidden sm:block'}`}
-          >
-            {description}
-          </p>
-        ) : null}
+        {descriptionIsTip ? <ReadingTips>{descriptionElement}</ReadingTips> : descriptionElement}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </header>

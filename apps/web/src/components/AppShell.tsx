@@ -15,6 +15,7 @@ import { NavigationGlyph } from './NavigationGlyph'
 import { ReverieMark } from './ReverieMark'
 import { navigationLabelForPath, type NavigationItem } from './navigation'
 import { useProfile } from '../data/profile'
+import { ReadingTipsProvider } from './ReadingTips'
 import { GuidanceObserver } from '../guidance/data'
 import { GuidanceTrail } from '../guidance/Guide'
 import { guidedNavigation } from '../guidance/navigation'
@@ -464,35 +465,37 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [pathname])
 
   return (
-    <div className="relative flex min-h-dvh">
-      <a
-        href="#main"
-        className="skin-control sr-only px-4 py-2 text-[13px] font-semibold focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50"
-        style={{ background: 'var(--accent-fill)', color: 'var(--on-primary)' }}
-      >
-        Skip to content
-      </a>
-
-      <Sidebar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
-      {guidance?.mode === 'gentle' && <GuidanceObserver key={profile?.id} />}
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <MobileBar pathname={pathname} />
-        <div className="relative z-[1] px-4 lg:px-5">
-          <SkinEvolveReveal />
-        </div>
-        <main
-          ref={mainRef}
-          id="main"
-          tabIndex={-1}
-          className="relative z-[1] flex flex-1 flex-col pb-[calc(72px+env(safe-area-inset-bottom))] outline-none lg:pb-0"
+    <ReadingTipsProvider show={profile?.showReadingTips !== false}>
+      <div className="relative flex min-h-dvh">
+        <a
+          href="#main"
+          className="skin-control sr-only px-4 py-2 text-[13px] font-semibold focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50"
+          style={{ background: 'var(--accent-fill)', color: 'var(--on-primary)' }}
         >
-          <GuidanceTrail />
-          {children}
-        </main>
-      </div>
+          Skip to content
+        </a>
 
-      <MobileTabBar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
-    </div>
+        <Sidebar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
+        {guidance?.mode === 'gentle' && <GuidanceObserver key={profile?.id} />}
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <MobileBar pathname={pathname} />
+          <div className="relative z-[1] px-4 lg:px-5">
+            <SkinEvolveReveal />
+          </div>
+          <main
+            ref={mainRef}
+            id="main"
+            tabIndex={-1}
+            className="relative z-[1] flex flex-1 flex-col pb-[calc(72px+env(safe-area-inset-bottom))] outline-none lg:pb-0"
+          >
+            <GuidanceTrail />
+            {children}
+          </main>
+        </div>
+
+        <MobileTabBar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
+      </div>
+    </ReadingTipsProvider>
   )
 }

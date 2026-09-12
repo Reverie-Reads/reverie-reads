@@ -477,6 +477,27 @@ function SettingsScreen() {
           >
             Open the library guide
           </Link>
+          <label className="mt-4 flex min-h-11 cursor-pointer items-start gap-3 py-2 text-[14px] text-ink">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={profile?.showReadingTips !== false}
+              disabled={!profile || updateProfile.isPending}
+              onChange={(e) => updateProfile.mutate({ showReadingTips: e.target.checked })}
+              aria-labelledby="reading-tips-label"
+              aria-describedby="reading-tips-description"
+            />
+            <span>
+              <span id="reading-tips-label">Show reading tips</span>
+              <span
+                id="reading-tips-description"
+                className="mt-1 block text-[13px] leading-relaxed text-muted"
+              >
+                Show short introductions and how-to tips around your library. The full library guide
+                is always here when you need it.
+              </span>
+            </span>
+          </label>
         </Section>
 
         <Section title="Profile & goal">

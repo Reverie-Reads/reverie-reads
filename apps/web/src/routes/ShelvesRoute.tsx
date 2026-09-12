@@ -1,3 +1,4 @@
+import { ReadingTips } from '../components/ReadingTips'
 import { useRef, useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
 import {
@@ -438,6 +439,7 @@ function ShelvesScreen() {
         eyebrow="My library"
         title="Shelves"
         description="Browse your books by reading state, format, or the lists you make."
+        descriptionIsTip
       />
       <LibraryNavigation current="shelves" className="mb-6 mt-4" />
 
@@ -550,7 +552,9 @@ function ShelvesScreen() {
                     </button>
                     <p className="text-[12px] text-muted">
                       {shelfBooks.length} book{shelfBooks.length !== 1 ? 's' : ''}
-                      {shelfBooks.length > 1 ? ' · scroll the shelf to flip a cover' : ''}
+                      <ReadingTips>
+                        {shelfBooks.length > 1 ? ' · scroll the shelf to flip a cover' : ''}
+                      </ReadingTips>
                     </p>
                   </div>
                   <div className="flex flex-none items-center gap-1.5">
