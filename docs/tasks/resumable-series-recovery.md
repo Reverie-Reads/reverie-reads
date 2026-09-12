@@ -134,3 +134,25 @@ production connections are not accepted by that test. Run against the migrated l
 Runtime code lives in `scripts/series-recovery-cli.mjs`, `scripts/series-recovery.mjs` and
 `scripts/series-recovery-lib.mjs`. Production execution remains a separate owner-run gate after
 merge, not a side effect of tests or PR creation.
+
+### Implementation verification — September 12 UTC
+
+- 98 offline recovery checks pass. Full ordinary tests on the merged #537 base pass: 403 trial,
+  2,805 core, 971 web and one compiled Workflow test. Full lint, formatting, typecheck and build
+  pass; the build's committed-local-Supabase warning is expected and is not a deployed build.
+- The generated reset passes exact read-back, rollback and stale-fingerprint tests. Five actual
+  RPC save/read-back paths pass: confirmed/review, missing position fill, preserved explicit
+  counts, and confirmed membership with unknown order. The fixtures contain eligible defaults,
+  a reader's explicit clear, an imported choice and real synthetic reading history. All roll back.
+  Fixture setup was corrected to use the schema's non-null metadata-provenance object and the
+  full author required by its existing book-identity trigger; no production data was involved.
+- Shared full browser verification: 279 passed, 10 expected skips, 28.9 minutes, fresh database,
+  one default worker, zero retries. The coordinated task tested
+  `5e0a0655b94d4e248d19fa4af85850416298e385`, whose full tree matches merged #537
+  (`48a5ff2292a805f0c1b3678e673fced57bc7ffbc`). After incorporating that base, this recovery branch
+  has byte-identical application, schema, browser tests/configuration, existing helpers and
+  dependency lockfile. This is explicitly shared full-suite evidence, not a second browser run
+  in this worktree. The recovery's new script path is independently exercised by the tests above.
+- Read-only hosted probes confirmed the Supabase CLI's multi-statement JSON response shape.
+  No production reset, relationship lookup, save, billing/configuration change or deployment was
+  performed. Hosted execution and its final inventory remain owner gates.

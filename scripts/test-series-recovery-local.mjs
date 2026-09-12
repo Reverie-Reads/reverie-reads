@@ -26,7 +26,7 @@ const work = {
 const baseSetup = `insert into auth.users(id,email) values (${quote(actor)},'recovery-only@example.invalid');
  insert into public.corpus_admins(user_id) values (${quote(actor)});
  insert into public.works(id,work_key,title,author_text,series,position,work_id,enrichment_confidence,series_check_state,series_checked_at,series_check_reason,series_check_evidence)
- values (${quote(id)},'recovery-fixture-runner',${quote(work.title)},${quote(work.author_text)},${quote(work.series)},1,${quote(work.work_id)},'high','no_series','2026-09-04T00:00:00Z',${quote(OUTAGE_REASON)},'[{"source":"hardcover","kind":"provider_unavailable"}]');`
+ values (${quote(id)},public.library_work_key(${quote(work.title)},${quote(work.author_text)}),${quote(work.title)},${quote(work.author_text)},${quote(work.series)},1,${quote(work.work_id)},'high','no_series','2026-09-04T00:00:00Z',${quote(OUTAGE_REASON)},'[{"source":"hardcover","kind":"provider_unavailable"}]');`
 const env = { ...process.env, PGHOSTADDR: '127.0.0.1' }
 delete env.PGSERVICE
 delete env.PGOPTIONS
@@ -94,11 +94,14 @@ for (const [review, oldPosition, oldCount, observedPosition] of [
   ).result
   const checkedAt = '2026-09-12T00:00:00Z'
   const setup = `${baseSetup}
-  update public.works set series_check_state='unresolved',series_checked_at=null,provenance=null,metadata_provenance='{}'::jsonb,
+  update public.works set series_check_state='unresolved',series_checked_at=null,metadata_provenance='{}'::jsonb,
     position=${oldPosition ?? 'null'},series_count=${oldCount ?? 'null'} where id=${quote(id)};
-  insert into public.books(id,owner_id,corpus_work_id,title,series,position,series_claim,series_user_chosen)
-  values ('ba300000-0000-4000-8000-000000000001',${quote(actor)},${quote(id)},'Recovery Fixture',${quote(work.series)},1,'{"origin":"unknown"}',false),
-   ('ba300000-0000-4000-8000-000000000002',${quote(actor)},${quote(id)},'Recovery Fixture',null,null,'{"origin":"reader"}',true);
+  insert into public.books(id,owner_id,corpus_work_id,title,authors_display,series,position,series_claim,series_user_chosen)
+  values ('ba300000-0000-4000-8000-000000000001',${quote(actor)},${quote(id)},'Recovery Fixture',${quote(work.author_text)},${quote(work.series)},1,'{"origin":"unknown"}',false),
+   ('ba300000-0000-4000-8000-000000000002',${quote(actor)},${quote(id)},'Recovery Fixture',${quote(work.author_text)},null,null,'{"origin":"reader"}',true),
+   ('ba300000-0000-4000-8000-000000000003',${quote(actor)},${quote(id)},'Recovery Fixture',${quote(work.author_text)},'Import Choice',8,'{"origin":"import"}',false);
+  insert into public.reads(id,book_id,owner_id,read_on,format,rating,notes)
+  values ('ba400000-0000-4000-8000-000000000001','ba300000-0000-4000-8000-000000000001',${quote(actor)},'2026-08-01','ebook',4,'Protected synthetic reading history');
   ${snapshot}`
   const sql = saveSql({ id, fingerprint: 'PLACEHOLDER' }, proposal, checkedAt, actor)
     .replace('begin;', () => `begin; ${setup}`)
