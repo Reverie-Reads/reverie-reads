@@ -155,6 +155,14 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   null; a null name with candidate/outage evidence is not a successful no-label observation.
   Historical outage repair is owner-run and fingerprint-scoped, separate from migration; see
   `docs/tasks/series-unavailable-recovery.md`.
+  The incident-specific `series:recovery` CLI freezes at most 1,000 historical outage works and
+  processes reset batches of at most 25 under one human approval. Production `run`/`resume` remain
+  owner-only. Its Git-common-directory journal and exclusive attempt markers are private, single-use
+  state across worktrees; never clear them or use another clone to repeat an attempt. Ambiguous,
+  capped, or identity-incomplete works defer; authentication, infrastructure, deployment drift and
+  uncertain writes stop. Resume advances only untouched work, never replays a lookup/save. It reuses
+  the existing classifier and RPC, verifies protected personal data, and does not run the general
+  cover/metadata sweep. See `docs/tasks/resumable-series-recovery.md`.
   Hardcover series and book-tag queries use exact `_eq`, never prohibited `_ilike` filters.
   Case-sensitive query keys must not share a normalized cache entry. Relationship observations
   are separate from unambiguous numbered shelf slots; translations/sets at one ordinal cannot
