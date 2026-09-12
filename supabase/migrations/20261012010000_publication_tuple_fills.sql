@@ -14,7 +14,8 @@ end;
 $$;
 revoke all on function public.publication_tuple_is_valid(integer, integer, integer) from public, anon, authenticated;
 
--- Patch the current definitions so subsequent series/cover/authentication guards are retained.
+-- Patch the current implementations so subsequent series/cover/authentication guards are retained.
+-- The completion entry point is a wrapper; its private implementation owns these fills.
 do $$
 declare
   def text;
@@ -26,17 +27,17 @@ declare
   target regprocedure;
 begin
   foreach target in array array[
-    'public.complete_corpus_work_metadata(uuid,jsonb,timestamp with time zone)'::regprocedure,
+    'public.complete_corpus_work_metadata_without_series_review(uuid,jsonb,timestamp with time zone)'::regprocedure,
     'public.preserve_personal_book_objective_metadata(uuid)'::regprocedure
   ] loop
     def := pg_get_functiondef(target);
-    if target = 'public.complete_corpus_work_metadata(uuid,jsonb,timestamp with time zone)'::regprocedure then
+    if target = 'public.complete_corpus_work_metadata_without_series_review(uuid,jsonb,timestamp with time zone)'::regprocedure then
       guard := $g$public.publication_tuple_is_valid(nullif(trim(p_patch ->> 'pubY'), '')::int, nullif(trim(p_patch ->> 'pubM'), '')::int, nullif(trim(p_patch ->> 'pubD'), '')::int)$g$;
     else
       guard := 'public.publication_tuple_is_valid(b.pub_y, b.pub_m, b.pub_d)';
     end if;
     foreach axis in array array['y', 'm', 'd'] loop
-      if target = 'public.complete_corpus_work_metadata(uuid,jsonb,timestamp with time zone)'::regprocedure then
+      if target = 'public.complete_corpus_work_metadata_without_series_review(uuid,jsonb,timestamp with time zone)'::regprocedure then
         source_axis := format('nullif(trim(p_patch ->> %L), '''')::int', 'pub' || upper(axis));
         old := format('when %L then before_value ->> %L is null and p_patch ? %L', 'pub' || upper(axis), 'pub_' || axis, 'pub' || upper(axis));
         replacement := format('when %L then before_value ->> ''pub_y'' is null and %s and %s is not null', 'pub' || upper(axis), guard, source_axis);
