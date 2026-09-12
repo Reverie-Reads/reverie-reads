@@ -201,7 +201,7 @@ export function RestoreBackupControl({
             {preview.restoresProfile && (
               <p className="text-[12.5px] leading-relaxed text-muted">
                 The saved reader name, room, appearance, reading goal, bookstore, and app
-                arrangement will replace those preferences on this account.
+                arrangement and library guide will replace those preferences on this account.
               </p>
             )}
 

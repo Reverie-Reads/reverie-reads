@@ -42,7 +42,13 @@ vi.mock('../data/importLibrary', () => ({ importDetectedExport: state.importFile
 vi.mock('../data/guestHandoff', () => ({ importGuestHandoff: state.guestImport }))
 vi.mock('../data/profile', () => ({
   profileKey: ['profile'],
+  useProfile: () => ({ data: { guidance: { mode: 'full', setupComplete: true } } }),
   useUpdateProfile: () => ({ mutateAsync: state.updateProfile }),
+}))
+vi.mock('../guidance/data', () => ({
+  useUpdateGuidance: () => ({
+    mutate: (_patch: unknown, options?: { onSuccess?: () => void }) => options?.onSuccess?.(),
+  }),
 }))
 vi.mock('../data/importEnrich', () => ({ enrichImported: vi.fn() }))
 vi.mock('../data/xlsxAdapter', () => ({ fileToCsvText: state.convert }))

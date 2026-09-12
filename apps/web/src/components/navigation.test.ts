@@ -7,10 +7,10 @@ import {
   MORE_NAVIGATION_ITEMS,
   NAVIGATION_GROUPS,
   NAVIGATION_ITEMS,
-  moreNavigationItems,
   navigationLabelForPath,
   priorityNavigationItems,
 } from './navigation'
+import { guidedNavigation } from '../guidance/navigation'
 
 describe('navigation contract', () => {
   it('uses one complete, duplicate-free destination model', () => {
@@ -66,7 +66,11 @@ describe('navigation contract', () => {
     const priority = priorityNavigationItems(['library', 'home', 'stats'])
     expect(priority.map((item) => item.label)).toEqual(['Library', 'Home', 'Stats'])
 
-    const more = moreNavigationItems(['library', 'home', 'stats'])
+    const more = guidedNavigation(
+      { destinations: ['library', 'home', 'stats'], homeModules: [] },
+      null,
+      '/',
+    ).other
     expect(more.map((item) => item.label)).toEqual([
       'Next read',
       'Shelves',
@@ -76,8 +80,7 @@ describe('navigation contract', () => {
       'Discover',
       'Clubs',
       'Bookshops',
-      'Appearance',
-      'Settings',
+      'Library guide',
     ])
   })
 })

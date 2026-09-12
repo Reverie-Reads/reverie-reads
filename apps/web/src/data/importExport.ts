@@ -649,7 +649,7 @@ export async function buildBackup(): Promise<string> {
       ),
       supabase
         .from('profiles')
-        .select('display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, arrangement')
+        .select('display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, arrangement, guidance')
         .eq('id', ownerId)
         .maybeSingle(),
     ])

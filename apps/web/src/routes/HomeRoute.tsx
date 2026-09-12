@@ -28,13 +28,17 @@ import {
   SignatureRing,
   StatusTag,
 } from '../components/Structure'
-import { hasOnboarded } from './OnboardingRoute'
 import { loadGuestHandoff } from '../auth/landing/guest/handoff'
 import { useVoice } from '../skin/labels'
 import { BookmarkGlyph } from '../components/BookmarkGlyph'
 import { Surface } from '../components/Surface'
 import { PageHeader } from '../components/PageHeader'
-import { DEFAULT_ARRANGEMENT_PRESET, type HomeModuleId } from '../design/arrangements'
+import {
+  arrangementsEqual,
+  DEFAULT_ARRANGEMENT_PRESET,
+  type HomeModuleId,
+} from '../design/arrangements'
+import { guidanceAllowsPath } from '../guidance/model'
 import { ReadingProgressDialog } from '../components/ReadingProgress'
 
 const YEAR = new Date().getFullYear()
@@ -65,16 +69,36 @@ function HomeScreen() {
   // A deliberately saved guest library always gets its review, including for a returning reader.
   // Otherwise, first-run onboarding remains limited to an empty, not-yet-onboarded account.
   useEffect(() => {
-    if (books && (loadGuestHandoff() || (books.length === 0 && !hasOnboarded()))) {
+    if (
+      books &&
+      profile &&
+      (loadGuestHandoff() ||
+        (profile.guidance === null && books.length === 0) ||
+        profile.guidance?.setupComplete === false)
+    ) {
       void navigate({ to: '/onboarding', replace: true })
     }
-  }, [books, navigate])
+  }, [books, profile, navigate])
 
   const yearReads = (reads ?? []).filter((r) => r.read_on?.slice(0, 4) === String(YEAR))
   const uniqueThisYear = new Set(yearReads.map((r) => r.book_id)).size
   const goalTarget = profile?.goalYear === YEAR ? (profile?.goalTarget ?? 0) : 0
-  const homeModules =
+  const modulePath: Record<HomeModuleId, string> = {
+    reading: '/',
+    'next-read': '/match',
+    priority: '/shelves',
+    releases: '/planner',
+    year: '/stats',
+  }
+  const homeModules = (
     profile?.arrangement?.homeModules ?? DEFAULT_ARRANGEMENT_PRESET.config.homeModules
+  ).filter(
+    (id) =>
+      (profile?.arrangement &&
+        !arrangementsEqual(profile.arrangement, DEFAULT_ARRANGEMENT_PRESET.config)) ||
+      guidanceAllowsPath(modulePath[id], profile?.guidance) ||
+      id === 'reading',
+  )
 
   // Reading Now: mid-read books minus the display-only hidden ones, in the reader's manual order.
   const reading = all

@@ -77,17 +77,6 @@ export function priorityNavigationItems(
     .filter((item): item is (typeof NAVIGATION_ITEMS)[number] => !!item)
 }
 
-export function moreNavigationItems(
-  destinations: readonly ArrangementDestinationId[],
-): NavigationItem[] {
-  const priorityPaths = new Set(priorityNavigationItems(destinations).map((item) => item.to))
-  return [
-    ...NAVIGATION_ITEMS.filter((item) => !priorityPaths.has(item.to)),
-    { label: 'Appearance', to: '/skins', icon: 'skins' as const },
-    { label: 'Settings', to: '/settings', icon: 'settings' as const },
-  ]
-}
-
 const DETAIL_DESTINATIONS = [
   ['/book/', 'Book record'],
   ['/shelf/', 'Shelf'],
@@ -99,6 +88,7 @@ const DETAIL_DESTINATIONS = [
   ['/review', 'Review books'],
   ['/covers', 'Cover Studio'],
   ['/add', 'Add a book'],
+  ['/guide', 'Library guide'],
 ] as const
 
 /** A compact, human label for mobile chrome. The persistent tabs communicate destination; the

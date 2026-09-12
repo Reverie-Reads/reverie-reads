@@ -466,6 +466,19 @@ function SettingsScreen() {
           </p>
         </Section>
 
+        <Section title="Your library guide">
+          <p className="text-[14px] leading-relaxed text-muted">
+            Change your starting pace, revisit a walkthrough, or explore tools you have not tried
+            yet.
+          </p>
+          <Link
+            to="/guide"
+            className="skin-control skin-btn-secondary mt-3 inline-flex min-h-11 items-center px-4 py-2 text-[14px]"
+          >
+            Open the library guide
+          </Link>
+        </Section>
+
         <Section title="Profile & goal">
           <label className="mb-3 block">
             <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">

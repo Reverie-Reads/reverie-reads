@@ -101,6 +101,13 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   tokens; the **e2e axe sweep** runs four (`tryst`, `grimoire`, `aphelion`, `marrow`) × both
   modes. A new component's contrast belongs in a registry-keyed core test — that is the layer
   that is exhaustive.
+- **Reader guidance controls presentation, never access.** New readers choose a gentle introduction,
+  the full walkthrough or independent exploration. Account-scoped `profiles.guidance` is authoritative;
+  a device-wide onboarding flag cannot skip another account's welcome. Milestones are bounded,
+  content-free and monotonic, updated through the row-locked `update_reader_guidance` RPC. Direct
+  routes, book controls, import/export, privacy and account exit remain reachable. Custom dock/Home
+  arrangements take precedence. A tour must never fabricate reading progress, books or plans, or
+  grant Pro. See `docs/tasks/reader-guidance.md`.
 - **First paint requires a complete appearance.** A valid local non-Adaptive room plus mode may
   open immediately and reconcile later. A missing or invalid axis, or Adaptive without its
   profile-only palette, stays in the neutral Reverie front-door material until profile hydration
