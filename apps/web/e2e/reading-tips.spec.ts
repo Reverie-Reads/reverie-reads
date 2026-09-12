@@ -83,12 +83,12 @@ test('reading tips save across sessions, preserve essential copy and the guide, 
         ? route.fulfill({ status: 503, json: { message: 'Test connection interrupted' } })
         : route.fallback(),
     )
-    await tips.uncheck()
+    await tips.click()
     await expect(page.getByRole('alert')).toContainText('Your profile didn’t save')
     await expect(tips).toBeChecked()
     expect(await account.preference()).toBe(true)
     await page.unroute('**/rest/v1/profiles?*')
-    await tips.uncheck()
+    await tips.click()
     await expect.poll(() => account.preference()).toBe(false)
     await expect(tips).not.toBeChecked()
 
@@ -239,7 +239,8 @@ test('reading tips and the smaller disclosure remain usable in all eighteen room
           await page.screenshot({ path: 'test-results/reading-tips-next-read-phone.png' })
         }
         await page.goto('/settings')
-        await tipsCheckbox(page).check()
+        await expect(tipsCheckbox(page)).not.toBeChecked()
+        await tipsCheckbox(page).click()
         await expect.poll(() => account.preference()).toBe(true)
         if (skin === 'folio' && mode === 'light') {
           await tipsCheckbox(page).scrollIntoViewIfNeeded()

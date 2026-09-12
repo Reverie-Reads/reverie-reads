@@ -62,3 +62,16 @@ the new field. There is no function deployment or data recovery job for this fea
 - Verify profile export/restore and invalid-value preflight, plus owner RLS/default behavior.
 - Run the ordinary code/database gates and one fresh-database full browser suite at one worker and
   zero local retries. Coordinate the shared local stack with the source-trial thread.
+
+## Recorded checks
+
+- Format, lint, typecheck and production build pass. Ordinary tests pass: 4,188 unit checks and
+  98 isolated recovery checks, without provider or production calls.
+- Fresh local migration and all SQL tests pass: 53 files, 1,652 assertions. Owner/default/RLS
+  coverage includes guide observations preserving the reader's explicit off choice.
+- Focused real-browser checks pass: two scenarios, all nine rooms in both modes at 320px, checked
+  and unchecked preference states, keyboard focus and contrast, 13px/500 disclosure type and at
+  least 44px target height. A second browser session retains the saved preference. Failed writes
+  preserve the last saved state and report an error; the complete guide remains available.
+- Phone screenshots were inspected for Next read in Aphelion/day and Settings in Marginalia/day.
+- The complete fresh-database regression suite is the remaining local check before review.
