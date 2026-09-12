@@ -63,8 +63,8 @@ export function SearchResults({
   layout?: 'grid' | 'list'
   /** Discover can open details; other search surfaces retain their plain result summary. */
   onPreview?: (result: SearchResult) => void
-  /** actions for a result NOT already in the library (in-library results show their shelf state) */
-  renderActions: (result: SearchResult) => ReactNode
+  /** Always mounted so a partial save cannot unmount its pending/error and retry controls. */
+  renderActions: (result: SearchResult, existing?: Book) => ReactNode
 }) {
   const Preview = onPreview ? 'button' : 'div'
   if (layout === 'list') {
@@ -94,7 +94,8 @@ export function SearchResults({
                 <ResultMeta result={r} />
               </span>
               <span className="flex-none">
-                {inLib ? <OnShelf book={inLib} /> : renderActions(r)}
+                {inLib && <OnShelf book={inLib} />}
+                {renderActions(r, inLib ?? undefined)}
               </span>
               <GoogleBooksResultLink result={r} />
             </Surface>
@@ -143,7 +144,8 @@ export function SearchResults({
                   Book details
                 </button>
               )}
-              {inLib ? <OnShelf book={inLib} /> : renderActions(r)}
+              {inLib && <OnShelf book={inLib} />}
+              {renderActions(r, inLib ?? undefined)}
               <GoogleBooksResultLink result={r} />
             </div>
           </div>

@@ -351,3 +351,142 @@ test('Shelf picker seam: "search everywhere" finds and adds an unowned book to t
     await reset(c)
   }
 })
+
+for (const surface of ['Discover', 'Shelf picker'] as const) {
+  for (const savedBeforeError of [false, true]) {
+    test(`${surface}: retry a failed shelf response without repeating the book save (${savedBeforeError ? 'saved response lost' : 'write rejected'})`, async ({
+      page,
+    }) => {
+      const c = await client()
+      await reset(c)
+      const list = await okData(
+        c.sb
+          .from('lists')
+          .insert({ owner_id: c.uid, name: 'Retry Shelf', kind: 'tbr' })
+          .select('id')
+          .single(),
+        'retry shelf',
+      )
+      await stubBackends(page)
+      let placements = 0
+      let bookWrites = 0
+      let enrichments = 0
+      page.on('request', (request) => {
+        if (request.method() === 'POST' && new URL(request.url()).pathname === '/rest/v1/books')
+          bookWrites++
+        if (request.url().includes('/functions/v1/enrich')) enrichments++
+      })
+      await page.route('**/rest/v1/list_items?*', async (route) => {
+        if (route.request().method() !== 'POST') return route.continue()
+        placements++
+        if (placements !== 1) return route.continue()
+        if (savedBeforeError) {
+          const response = await route.fetch()
+          expect(response.ok()).toBe(true)
+        }
+        await route.fulfill({
+          status: 502,
+          json: { message: 'An invalid response was received from the upstream server' },
+        })
+      })
+      try {
+        await signIn(page, c.session)
+        if (surface === 'Shelf picker') {
+          await page.goto(`/shelf/${list.id}`)
+          await page.getByRole('button', { name: '＋ Add books', exact: true }).click()
+          await page.getByRole('button', { name: /Search everywhere/i }).click()
+          await page.getByLabel('Search the wider catalog').fill('wildfire')
+          await page
+            .getByRole('dialog')
+            .getByRole('button', { name: '＋ Add', exact: true })
+            .first()
+            .click()
+        } else {
+          await page.goto('/discover?browse=true')
+          await page.getByLabel('Search the wider catalog').fill('wildfire')
+          await page.getByRole('button', { name: '＋ Shelf', exact: true }).first().click()
+          await page
+            .getByRole('dialog')
+            .getByRole('button', { name: /Retry Shelf/ })
+            .click()
+        }
+        await expect(
+          page.getByRole('alert').filter({ hasText: 'we couldn’t confirm' }),
+        ).toBeVisible()
+        if (!savedBeforeError)
+          await page.screenshot({ path: test.info().outputPath('shelf-retry.png'), fullPage: true })
+        await expect(page.getByText('Saving didn’t save', { exact: true })).toHaveCount(0)
+        expect(placements).toBe(1)
+        const saved = await bookByTitle(c.sb, c.uid, 'Wildfire Vow')
+        expect(saved).not.toBeNull()
+        const bookId = saved!.id
+        const originalItems = await okData(
+          c.sb
+            .from('list_items')
+            .select('position,added_at')
+            .eq('list_id', list.id)
+            .eq('book_id', bookId),
+          'read partial placement',
+        )
+        expect(originalItems).toHaveLength(savedBeforeError ? 1 : 0)
+        await ok(
+          c.sb
+            .from('books')
+            .update({ pages: 321, wishlist: false, borrowed: true })
+            .eq('id', bookId),
+          'edit saved book before retry',
+        )
+        const placementSaved = page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname === '/rest/v1/list_items' &&
+            response.request().method() === 'POST' &&
+            response.ok(),
+        )
+        await page.getByRole('button', { name: 'Retry adding to shelf' }).click()
+        await placementSaved
+        await expect
+          .poll(
+            async () =>
+              (
+                await okData(
+                  c.sb
+                    .from('list_items')
+                    .select('book_id,position,added_at')
+                    .eq('list_id', list.id),
+                  'read retried membership',
+                )
+              ).length,
+          )
+          .toBe(1)
+        await expect(page.getByRole('button', { name: 'Retry adding to shelf' })).toHaveCount(0)
+        expect(placements).toBe(2)
+        expect(bookWrites).toBe(1)
+        expect(enrichments).toBe(1)
+        const books = await okData(
+          c.sb.from('books').select('id,pages,borrowed,wishlist').eq('owner_id', c.uid),
+          'read books after retry',
+        )
+        expect(books).toEqual([{ id: bookId, pages: 321, borrowed: true, wishlist: false }])
+        if (savedBeforeError)
+          expect(
+            await okData(
+              c.sb
+                .from('list_items')
+                .select('position,added_at')
+                .eq('list_id', list.id)
+                .eq('book_id', bookId),
+              'unchanged original membership',
+            ),
+          ).toEqual(originalItems)
+        await page.reload()
+        expect(await bookByTitle(c.sb, c.uid, 'Wildfire Vow')).toMatchObject({
+          id: bookId,
+          borrowed: true,
+          wishlist: false,
+        })
+      } finally {
+        await reset(c)
+      }
+    })
+  }
+}

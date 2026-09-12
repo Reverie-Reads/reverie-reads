@@ -11,7 +11,7 @@ import { searchEverywhere, type SearchResult } from '../lib/search'
 import { enrichBook } from '../lib/enrich'
 import { useIntake, type IntakeResult } from './intake'
 import { booksKey } from './books'
-import { allListItemsKey, nextItemPositionFor } from './listItems'
+import { allListItemsKey, bookListsKey, nextItemPositionFor } from './listItems'
 import { listsKey } from './lists'
 
 // Data layer for Discover search — the query hook (shared by Discover + the shelf picker seam) and
@@ -75,11 +75,21 @@ export interface AddFromSearchInput {
   possession: PossessionState
   /** when set, the new book is placed on this shelf/TBR after adding (not-in-hand add-to-shelf) */
   listId?: string
+  /** Retry only placement of a book that intake already saved. Never repeat enrichment/intake. */
+  savedBookId?: string
 }
 
 export interface AddFromSearchResult {
   bookId: string | undefined
   outcome: IntakeResult['outcome']
+}
+
+/** A saved personal book survives a failed shelf write; retry only that membership. */
+export class ShelfPlacementError extends Error {
+  constructor(readonly bookId: string) {
+    super('Your book is in your library, but we couldn’t confirm it was added to this shelf.')
+    this.name = 'ShelfPlacementError'
+  }
 }
 
 /** Add a search result to the library (owned) or to a shelf/TBR (unowned + placed). Pulls full
@@ -89,29 +99,37 @@ export function useAddFromSearch() {
   const qc = useQueryClient()
   const intake = useIntake()
   return useMutation<AddFromSearchResult, Error, AddFromSearchInput>({
-    mutationFn: async ({ result, possession, listId }) => {
-      const incoming = await buildIncoming(result, possession)
-      const res = await intake(incoming, 'add')
+    meta: { errorPresentation: 'inline' },
+    mutationFn: async ({ result, possession, listId, savedBookId }) => {
+      const res = savedBookId && listId
+        ? { bookId: savedBookId, outcome: 'unchanged' as const }
+        : await intake(await buildIncoming(result, possession), 'add')
       if (listId && res.bookId) {
-        const { data: auth } = await supabase.auth.getUser()
-        const ownerId = auth.user?.id
-        if (ownerId) {
+        try {
+          const { data: auth, error: authError } = await supabase.auth.getUser()
+          const ownerId = auth.user?.id
+          if (authError || !ownerId) throw new Error('Not signed in')
           const after = await nextItemPositionFor(listId)
-          await supabase
+          const { error } = await supabase
             .from('list_items')
             .upsert([{ list_id: listId, book_id: res.bookId, owner_id: ownerId, position: after }], {
               onConflict: 'list_id,book_id',
               ignoreDuplicates: true,
             })
+          if (error) throw error
+        } catch {
+          throw new ShelfPlacementError(res.bookId)
         }
       }
       return { bookId: res.bookId, outcome: res.outcome }
     },
-    onSuccess: (_r, { listId }) => {
+    onSettled: (data, error, { listId }) => {
       void qc.invalidateQueries({ queryKey: booksKey })
       if (listId) {
         void qc.invalidateQueries({ queryKey: allListItemsKey })
         void qc.invalidateQueries({ queryKey: listsKey })
+        const bookId = data?.bookId ?? (error instanceof ShelfPlacementError ? error.bookId : undefined)
+        if (bookId) void qc.invalidateQueries({ queryKey: bookListsKey(bookId) })
       }
     },
   })
