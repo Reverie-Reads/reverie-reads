@@ -2,6 +2,7 @@ import {
   authorityPolicyForRetrievedSource,
   canonicalizeAuthorityAcquisition,
   validateAuthorityAcquisition,
+  reviewAuthorityPassTransition,
 } from '../evidence.mjs'
 import { normalize } from '../../normalize.mjs'
 import { retrieveAuthorityNavigation, redactRetrievalResult } from './gateway.mjs'
@@ -436,9 +437,18 @@ export async function augmentAuthorityAcquisition(
       retrieval,
       validateAuthorityAcquisition(target, output, [source.url], retrievalPolicy),
     )
-    const useRetrieval = validation.valid && validation.policySafe
+    const review = reviewAuthorityPassTransition(
+      firstPass,
+      {
+        output,
+        consultedUrls: [source.url],
+      },
+      retrievalPolicy,
+    )
+    const useRetrieval = validation.valid && validation.policySafe && !review.reasons.length
     return {
       ...firstPass,
+      authorityPassHistory: review.history,
       ...(useRetrieval ? { output, validation } : {}),
       selectedPass: useRetrieval ? 'retrieval' : 'first',
       selectedSourceManifest: useRetrieval
@@ -447,6 +457,7 @@ export async function augmentAuthorityAcquisition(
       retrieval: persistedRetrieval,
       retrievalInterpretation: {
         ...interpreted,
+        reviewReasons: review.reasons,
         sourceManifestUrls: [source.url],
         output,
         validation,

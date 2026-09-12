@@ -278,6 +278,78 @@ const authoritySeriesMatches = (membership, actualSeries) =>
       selfTitleKey(expectedSeries) === selfTitleKey(actualSeries),
   )
 
+// Search passes are observations, not replacement verdicts. Keep rejected grounded claims too:
+// otherwise focused search -> Exa -> retrieval can make an earlier disagreement disappear.
+export function reviewAuthorityPassTransition(firstPass, nextPass, policy = {}) {
+  const snapshot = (pass) => ({
+    output: pass.output,
+    consultedUrls: asArray(pass.consultedUrls),
+  })
+  const unique = (passes) => [
+    ...new Map(passes.map((pass) => [JSON.stringify(pass), pass])).values(),
+  ]
+  const previous = unique([
+    ...asArray(firstPass?.authorityPassHistory),
+    ...(isObject(firstPass?.output) ? [snapshot(firstPass)] : []),
+  ])
+  const history = unique([...previous, ...(isObject(nextPass?.output) ? [snapshot(nextPass)] : [])])
+  const reasons = new Set()
+  const next = nextPass?.output
+  if (!next || next.classification === 'unresolved') return { history, reasons: [] }
+  const blocked = new Set(asArray(policy.classificationBlockedUrls).map(comparableUrl))
+  for (const pass of previous) {
+    if (pass.output?.caseId && next.caseId && pass.output.caseId !== next.caseId) {
+      reasons.add('prior_case_identity_mismatch')
+      continue
+    }
+    const consulted = new Set(asArray(pass.consultedUrls).map(comparableUrl).filter(Boolean))
+    for (const source of asArray(pass.output?.authoritySources)) {
+      const url = comparableUrl(source?.url)
+      if (!url || !consulted.has(url) || blocked.has(url)) continue
+      const risk = knownClassificationRisk(source)
+      if (
+        [
+          'known_publisher_collection_not_book_series',
+          'known_imprint_series_label_conflict',
+        ].includes(risk)
+      ) {
+        reasons.add('prior_profiled_relationship_conflict')
+      }
+      if (risk) continue
+      for (const claim of asArray(source?.relationshipClaims)) {
+        if (!isObject(claim) || !relationshipKey(claim.name)) {
+          reasons.add('prior_relationship_claim_incomplete')
+          continue
+        }
+        const selected = asArray(next.memberships).filter(
+          (membership) => relationshipKey(membership?.series) === relationshipKey(claim.name),
+        )
+        if (claim.kind === 'unknown') reasons.add('prior_relationship_type_unresolved')
+        if (claim.kind === 'book_series' && !selected.length)
+          reasons.add('prior_series_claim_not_represented')
+        if (claim.kind !== 'book_series' && selected.length)
+          reasons.add('prior_non_book_relationship_selected')
+        if (
+          claim.kind === 'book_series' &&
+          Number.isFinite(claim.position) &&
+          selected.some(
+            (membership) =>
+              Number.isFinite(membership.position) && membership.position !== claim.position,
+          )
+        )
+          reasons.add('prior_position_conflict')
+      }
+      if (
+        next.classification === 'series' &&
+        sourceClassificationEligible(source, [], 'standalone')
+      ) {
+        reasons.add('prior_affirmative_standalone_conflict')
+      }
+    }
+  }
+  return { history, reasons: [...reasons] }
+}
+
 export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, policy = {}) {
   if (!isObject(output) || !Array.isArray(output.authoritySources)) return output
   const consulted = Array.isArray(consultedUrls)

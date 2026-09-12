@@ -101,6 +101,25 @@ const retrieval = {
   },
 }
 
+test('retrieval cannot erase a grounded conflicting claim from an earlier search pass', async () => {
+  const conflicting = structuredClone(firstPass)
+  conflicting.output.authoritySources[0].relationshipClaims = [
+    { name: 'Another Named Series', kind: 'book_series', position: null },
+  ]
+  const result = await augmentAuthorityAcquisition(target, conflicting, {
+    profiles: [profile],
+    now,
+    retrieve: async () => retrieval,
+    interpret: async () => ({ output: directOutput, cached: true }),
+  })
+  assert.equal(result.selectedPass, 'first')
+  assert.equal(result.output.classification, 'unresolved')
+  assert.ok(
+    result.retrievalInterpretation.reviewReasons.includes('prior_series_claim_not_represented'),
+  )
+  assert.equal(result.authorityPassHistory.length, 2)
+})
+
 test('selects an approved shallow author URL deterministically', () => {
   const selected = selectRetrievalParent(
     ['https://publisher.example/catalog/book', 'https://author.example/about', parentUrl],

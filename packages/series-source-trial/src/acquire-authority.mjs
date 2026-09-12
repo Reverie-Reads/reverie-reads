@@ -13,6 +13,7 @@ import {
   scoreAuthorityAcquisition,
   shouldRepairAuthorityAcquisition,
   validateAuthorityAcquisition,
+  reviewAuthorityPassTransition,
 } from './authority/evidence.mjs'
 import { acquireAuthorityEvidence, repairAuthorityEvidence } from './authority/openai.mjs'
 import { augmentWithExaAuthorityFallback } from './authority/exa-fallback.mjs'
@@ -520,10 +521,12 @@ const augmentWithFocusedSearch = async (target, firstPass, policy) => {
     cacheRoot: focusedSearchCacheRoot,
     searchStrategy: 'discovered-origin-focus',
   })
-  const selected = shouldSelectFocusedAuthoritySearch(firstPass, focusedPass)
+  const review = reviewAuthorityPassTransition(firstPass, focusedPass, policy)
+  const selected = shouldSelectFocusedAuthoritySearch(firstPass, focusedPass, policy)
   const billing = addBilling(firstPass.billing, focusedPass.billing)
   const combined = {
     ...firstPass,
+    authorityPassHistory: review.history,
     ...(selected ? { output: focusedPass.output, validation: focusedPass.validation } : {}),
     consultedUrls: [
       ...new Set([...(firstPass.consultedUrls ?? []), ...(focusedPass.consultedUrls ?? [])]),
@@ -540,6 +543,7 @@ const augmentWithFocusedSearch = async (target, firstPass, policy) => {
     cached: billing.modelCalls === 0,
     focusedSearch: {
       ...focusedPass,
+      reviewReasons: review.reasons,
       candidateDomains: domains,
       selected,
       baseline: {
@@ -564,6 +568,7 @@ const runOne = async (testCase) => {
       : firstPass
     if (options.exaFallback) {
       searched = await augmentWithExaAuthorityFallback(target, searched, {
+        policy,
         apiKey: process.env.EXA_API_KEY,
         locate: qualificationExaLocator,
         searchDomains: (restrictedTarget, domains) =>

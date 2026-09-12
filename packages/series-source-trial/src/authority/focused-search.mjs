@@ -1,4 +1,5 @@
 import { isIP } from 'node:net'
+import { reviewAuthorityPassTransition } from './evidence.mjs'
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
 
@@ -100,12 +101,13 @@ export function discoveredAuthorityDomains(firstPass, limit = 2) {
   return domains
 }
 
-export const shouldSelectFocusedAuthoritySearch = (firstPass, focusedPass) => {
+export const shouldSelectFocusedAuthoritySearch = (firstPass, focusedPass, policy = {}) => {
   if (
     focusedPass?.status !== 'completed' ||
     !focusedPass.validation?.valid ||
     !focusedPass.validation?.policySafe ||
-    focusedPass.output?.classification === 'unresolved'
+    focusedPass.output?.classification === 'unresolved' ||
+    reviewAuthorityPassTransition(firstPass, focusedPass, policy).reasons.length > 0
   ) {
     return false
   }
