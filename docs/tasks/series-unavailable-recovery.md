@@ -1,5 +1,9 @@
 # Series lookup outage recovery
 
+After the verified canaries and 25-work batch, the owner approved replacing repeated browser
+handoffs with the [one-approval resumable owner runner](resumable-series-recovery.md). That narrow
+runner reuses the reset and classification safeguards below; it does not invoke the general sweep.
+
 ## Scope and diagnosis
 
 September 10 read-only production diagnosis found 847 historical relationship-unavailable results
