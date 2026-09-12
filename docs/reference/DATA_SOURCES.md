@@ -323,6 +323,28 @@ fields; current acquisition requires them and uses a new prompt/cache version. A
 review-only. The narrow future correction contract and outstanding qualification requirements are
 in `docs/tasks/authority-automatic-correction-gates.md`.
 
+The v14 acquisition protocol additionally requires each source's `observedIdentity` (literal
+title, complete author list, and `single_work`/`omnibus`/`unknown` scope) and `originAssessment`
+(`claimed_first_party`/`unverified`). Conservative Unicode-aware formatting normalization is not
+spelling correction, a surname match, subtitle aliasing, or permission to drop a coauthor. An
+omnibus association remains a review case even with a null position. Unknown work scope or an
+observed identity discrepancy cannot become a resolved proposal. An unverified origin and an
+on-domain link hub cannot establish classification; independent direct evidence may still survive.
+The claimed-first-party value is model-reported observation, not origin qualification. Reviewed
+retrieval profiles still own source kind, and the interpreter now requires every full target author
+in the packet before a model call and checks observed identity against packet text afterwards.
+
+Search passes are cumulative observations, not replacement verdicts. Focused search, Exa fallback,
+structural repair and retrieval preserve rejected-pass observations and reject later resolutions
+that erase grounded named/type/order, identity or container conflicts. The same unverified site
+cannot become eligible merely by changing its path, www spelling or model label on a later pass. Only Luna proposals
+and Luna-consulted manifests enter this history; Exa locator output remains ephemeral.
+Standalone assertions use standalone support and a summary, not a fabricated relationship named
+standalone. Unnamed descriptions remain summary-only and cannot donate an order to another source's
+named series. Genuine named uncertainties and disagreements still require review.
+See `docs/tasks/authority-evidence-safety.md`. These are offline-tested safeguards, not new live
+accuracy evidence or clearance for automatic correction. Consumed frames must not be reacquired.
+
 Provider data is cleaned before it reaches that resolver. Google contributes identity only.
 Open Library, Wikidata, Inventaire, and BookBrainz contribute a membership only after the exact
 author-matched work appears in a structured relationship; mirrored Wikidata observations share one

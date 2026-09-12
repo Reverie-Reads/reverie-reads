@@ -3,6 +3,8 @@ import { normalize, seriesMatches } from '../normalize.mjs'
 const classifications = new Set(['series', 'standalone', 'unresolved'])
 const confidenceValues = new Set(['high', 'medium', 'low', 'none'])
 const roles = new Set(['primary', 'secondary', 'unknown'])
+const workKinds = new Set(['single_work', 'omnibus', 'unknown'])
+const originAssessments = new Set(['claimed_first_party', 'unverified'])
 const sourceKinds = new Set(['author', 'author_post', 'publisher', 'publisher_catalog'])
 const supportsValues = new Set(['identity', 'series_membership', 'position', 'standalone'])
 const relationshipKinds = new Set([
@@ -28,6 +30,30 @@ const discoveryOnlyHosts = new Set([
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
 const isObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+// Formatting equivalence only: never repair names, expand initials, or drop coauthors/subtitles.
+export const authorityIdentityKey = (value) =>
+  typeof value === 'string'
+    ? value
+        .normalize('NFKC')
+        .toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ')
+        .trim()
+    : ''
+const identityKey = authorityIdentityKey
+const authorKeys = (values) => [...new Set(asArray(values).map(identityKey))].sort()
+const sameObservedIdentity = (observed, expected) =>
+  Boolean(
+    identityKey(observed?.title) &&
+    identityKey(observed.title) === identityKey(expected?.title) &&
+    authorKeys(observed.authors).length &&
+    authorKeys(observed.authors).every(Boolean) &&
+    JSON.stringify(authorKeys(observed.authors)) === JSON.stringify(authorKeys(expected?.authors)),
+  )
+const observedContainerRisk = (source) =>
+  source?.observedIdentity?.workKind === 'omnibus' ||
+  /\bomnibus\b|\b(?:combines|collects|contains)\b.{0,60}\b(?:two|three|four|multiple|several|[2-9]) (?:novels|works)\b/i.test(
+    source?.evidenceSummary ?? '',
+  )
 const ratio = (numerator, denominator) => (denominator ? numerator / denominator : null)
 const genericSeriesTail = new Set([
   'book',
@@ -73,6 +99,8 @@ export const authorityPolicyForCase = (testCase, samplePlan = null) => {
     .filter(Boolean)
   return {
     requireRelationshipClaims: true,
+    requireSourceObservations: true,
+    targetIdentity: { title: testCase?.title, authors: [...asArray(testCase?.authors)] },
     classificationBlockedUrls: samplePlan
       ? [...new Set([...framedSources, ...directSelectionSources])]
       : asArray(testCase?.sampleSources)
@@ -97,6 +125,13 @@ const comparableUrl = (value) => {
   }
 }
 
+// Ownership uncertainty concerns the site, not one path. Moving from /about to /book (or its
+// ordinary www spelling) is not independent corroboration or a human ownership decision.
+const sourceControlSite = (value) => {
+  const comparable = comparableUrl(value)
+  return comparable ? new URL(comparable).hostname.replace(/^www\./, '') : null
+}
+
 const citedSource = (sources, url, support) => {
   const wanted = comparableUrl(url)
   return sources.find(
@@ -109,6 +144,12 @@ const knownClassificationRisk = (source) => {
   if (!comparable) return null
   const url = new URL(comparable)
   const rootHost = url.hostname.replace(/^www\./, '')
+  // The reviewed site did not establish author/estate control. This is an eligibility boundary,
+  // not a claim that its bibliographic facts are false or that its operator is illegitimate.
+  if (rootHost === 'stieglarsson.com') return 'unverified_author_origin'
+  if (/\/(?:all-the-links|links|link-in-bio|linktree)\/?$/i.test(url.pathname)) {
+    return 'discovery_only_link_hub'
+  }
   if (
     rootHost === 'penguinrandomhouse.com' &&
     /^\/series\/(?:RH8\/random-house-100|TV1\/thousand-voices)$/i.test(url.pathname)
@@ -159,6 +200,7 @@ const knownClassificationRisk = (source) => {
     // author-controlled biography explicitly calls the novels unrelated standalones.
     return 'known_catalog_relationship_conflict'
   }
+  if (source?.originAssessment === 'unverified') return 'unverified_source_control'
   return null
 }
 
@@ -267,7 +309,11 @@ const genericOnlySeriesName = (value) => {
   const words = normalize(value)
     .split(' ')
     .filter((word) => word && !['a', 'an', 'the'].includes(word))
-  return words.length > 0 && words.every((word) => genericSeriesTail.has(word))
+  const descriptiveWords = new Set(['seasonal', 'smalltown', 'small', 'town', 'witchy', 'romantic'])
+  return (
+    words.length > 0 &&
+    words.every((word) => genericSeriesTail.has(word) || descriptiveWords.has(word))
+  )
 }
 
 const authoritySeriesMatches = (membership, actualSeries) =>
@@ -277,6 +323,135 @@ const authoritySeriesMatches = (membership, actualSeries) =>
       genericSeriesKey(expectedSeries) === genericSeriesKey(actualSeries) ||
       selfTitleKey(expectedSeries) === selfTitleKey(actualSeries),
   )
+
+// Search passes are observations, not replacement verdicts. Keep rejected grounded claims too:
+// otherwise focused search -> Exa -> retrieval can make an earlier disagreement disappear.
+export function reviewAuthorityPassTransition(firstPass, nextPass, policy = {}) {
+  const snapshot = (pass) => ({
+    output: pass.output,
+    consultedUrls: asArray(pass.consultedUrls),
+  })
+  const unique = (passes) => [
+    ...new Map(passes.map((pass) => [JSON.stringify(pass), pass])).values(),
+  ]
+  const previous = unique([
+    ...asArray(firstPass?.authorityPassHistory),
+    ...(isObject(firstPass?.output) ? [snapshot(firstPass)] : []),
+  ])
+  const history = unique([...previous, ...(isObject(nextPass?.output) ? [snapshot(nextPass)] : [])])
+  const reasons = new Set()
+  const next = nextPass?.output
+  if (!next || next.classification === 'unresolved') return { history, reasons: [] }
+  const blocked = new Set(asArray(policy.classificationBlockedUrls).map(comparableUrl))
+  const nextConsulted = new Set(asArray(nextPass.consultedUrls).map(comparableUrl).filter(Boolean))
+  const nextSources = asArray(next.authoritySources).filter((candidate) => {
+    const url = comparableUrl(candidate?.url)
+    return url && nextConsulted.has(url) && !blocked.has(url) && !knownClassificationRisk(candidate)
+  })
+  for (const pass of previous) {
+    if (pass.output?.caseId && next.caseId && pass.output.caseId !== next.caseId) {
+      reasons.add('prior_case_identity_mismatch')
+      continue
+    }
+    const consulted = new Set(asArray(pass.consultedUrls).map(comparableUrl).filter(Boolean))
+    for (const source of asArray(pass.output?.authoritySources)) {
+      const url = comparableUrl(source?.url)
+      if (!url || !consulted.has(url) || blocked.has(url)) continue
+      const risk = knownClassificationRisk(source)
+      if (
+        risk === 'unverified_source_control' &&
+        nextSources.some(
+          (candidate) =>
+            sourceControlSite(candidate.url) === sourceControlSite(url) &&
+            asArray(candidate.supports).some((support) => support !== 'identity'),
+        )
+      )
+        reasons.add('prior_origin_control_unverified')
+      if (
+        [
+          'known_publisher_collection_not_book_series',
+          'known_imprint_series_label_conflict',
+        ].includes(risk)
+      ) {
+        reasons.add('prior_profiled_relationship_conflict')
+      }
+      if (risk) continue
+      if (observedContainerRisk(source)) reasons.add('prior_omnibus_requires_review')
+      const observed = source?.observedIdentity
+      if (isObject(observed)) {
+        if (
+          identityKey(observed.title) &&
+          authorKeys(observed.authors).length &&
+          ((identityKey(policy.targetIdentity?.title) &&
+            !sameObservedIdentity(observed, policy.targetIdentity)) ||
+            nextSources.some(
+              (candidate) =>
+                isObject(candidate.observedIdentity) &&
+                identityKey(candidate.observedIdentity.title) &&
+                authorKeys(candidate.observedIdentity.authors).length &&
+                !sameObservedIdentity(observed, candidate.observedIdentity),
+            ))
+        )
+          reasons.add('prior_observed_identity_discrepancy')
+      }
+      for (const claim of asArray(source?.relationshipClaims)) {
+        if (
+          !isObject(claim) ||
+          !relationshipKey(claim.name) ||
+          !relationshipKinds.has(claim.kind) ||
+          (claim.position !== null && !Number.isFinite(claim.position))
+        ) {
+          reasons.add('prior_relationship_claim_incomplete')
+          continue
+        }
+        const selected = asArray(next.memberships).filter(
+          (membership) => relationshipKey(membership?.series) === relationshipKey(claim.name),
+        )
+        if (claim.kind === 'unknown') reasons.add('prior_relationship_type_unresolved')
+        if (claim.kind === 'book_series' && !selected.length)
+          reasons.add('prior_series_claim_not_represented')
+        if (claim.kind !== 'book_series' && selected.length)
+          reasons.add('prior_non_book_relationship_selected')
+        if (
+          claim.kind === 'book_series' &&
+          Number.isFinite(claim.position) &&
+          selected.some(
+            (membership) =>
+              Number.isFinite(membership.position) && membership.position !== claim.position,
+          )
+        )
+          reasons.add('prior_position_conflict')
+      }
+      if (
+        next.classification === 'series' &&
+        sourceClassificationEligible(source, [], 'standalone')
+      ) {
+        reasons.add('prior_affirmative_standalone_conflict')
+      }
+    }
+  }
+  return { history, reasons: [...reasons] }
+}
+
+// The same history gate applies to a fresh structural repair and its later cached read.
+export function validateAuthorityPassHistory(validation, pass, policy = {}) {
+  const review = reviewAuthorityPassTransition(
+    { authorityPassHistory: pass.authorityPassHistory },
+    pass,
+    policy,
+  )
+  if (!review.reasons.length) return validation
+  return {
+    ...validation,
+    policySafe: false,
+    policyViolations: [
+      ...new Set([
+        ...asArray(validation.policyViolations),
+        ...review.reasons.map((reason) => `prior authority pass: ${reason}`),
+      ]),
+    ],
+  }
+}
 
 export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, policy = {}) {
   if (!isObject(output) || !Array.isArray(output.authoritySources)) return output
@@ -317,6 +492,10 @@ export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, p
       (source) =>
         !isObject(source) ||
         source.supports.length ||
+        // Keep observed discrepancies even when all claimed classification support was removed.
+        // Validation, not cleanup, owns whether an empty-support observation can be resolved.
+        source.observedIdentity !== undefined ||
+        source.originAssessment === 'unverified' ||
         (asArray(source.relationshipClaims).length &&
           !knownClassificationRisk(source) &&
           !classificationBlocked.has(comparableUrl(source.url))) ||
@@ -335,7 +514,16 @@ export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, p
           .filter((source) => asArray(source.supports).includes('identity'))
           .map((source) => source.url)
       : identityUrls
-  const hasAuthorityIdentity = canonicalIdentityUrls.length > 0
+  const hasAuthorityIdentity =
+    canonicalIdentityUrls.length > 0 &&
+    (!identityKey(policy.targetIdentity?.title) ||
+      canonicalIdentityUrls.every((url) => {
+        const observed = citedSource(sources, url, 'identity')?.observedIdentity
+        return (
+          (!policy.requireSourceObservations && observed === undefined) ||
+          sameObservedIdentity(observed, policy.targetIdentity)
+        )
+      }))
   return {
     ...output,
     authoritySources: sources,
@@ -345,7 +533,7 @@ export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, p
           matched: Boolean(output.identity.matched && hasAuthorityIdentity),
           confidence:
             output.identity.matched && hasAuthorityIdentity ? output.identity.confidence : 'none',
-          evidenceUrls: canonicalIdentityUrls,
+          evidenceUrls: hasAuthorityIdentity ? canonicalIdentityUrls : [],
         }
       : output.identity,
     memberships: asArray(output.memberships)
@@ -444,6 +632,43 @@ export function validateAuthorityAcquisition(target, output, consultedUrls, poli
       source.evidenceSummary.length > 320
     ) {
       errors.push(`authority source ${index} evidenceSummary must be 1 to 320 characters`)
+    }
+    if (policy.requireSourceObservations || source.observedIdentity !== undefined) {
+      const observed = source.observedIdentity
+      if (
+        !isObject(observed) ||
+        (observed.title !== null && typeof observed.title !== 'string') ||
+        !Array.isArray(observed.authors) ||
+        !observed.authors.every((author) => typeof author === 'string' && identityKey(author)) ||
+        !workKinds.has(observed.workKind)
+      ) {
+        errors.push(`authority source ${index} requires valid observedIdentity`)
+      } else if (
+        output.classification !== 'unresolved' &&
+        !knownClassificationRisk(source) &&
+        !asArray(policy.classificationBlockedUrls).map(comparableUrl).includes(comparable)
+      ) {
+        if (!sameObservedIdentity(observed, target.target)) {
+          policyViolations.push(`authority source ${index} observed identity requires review`)
+        }
+        if (observed.workKind === 'unknown') {
+          policyViolations.push(`authority source ${index} work scope requires review`)
+        }
+      }
+    }
+    if (
+      (policy.requireSourceObservations || source.originAssessment !== undefined) &&
+      !originAssessments.has(source.originAssessment)
+    ) {
+      errors.push(`authority source ${index} requires valid originAssessment`)
+    }
+    if (
+      output.classification !== 'unresolved' &&
+      observedContainerRisk(source) &&
+      !knownClassificationRisk(source) &&
+      !asArray(policy.classificationBlockedUrls).map(comparableUrl).includes(comparable)
+    ) {
+      policyViolations.push(`authority source ${index} omnibus requires review`)
     }
     // Old frozen proposals remain replayable without manufacturing new extracted facts. Current
     // acquisition policies require these fields; a present malformed field is never legacy data.

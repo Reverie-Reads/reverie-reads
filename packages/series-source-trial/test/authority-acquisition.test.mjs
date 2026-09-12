@@ -68,10 +68,7 @@ const seriesOutput = {
 }
 
 test('instructs the scout to distinguish direct numbered sequences from lone numerals', () => {
-  assert.equal(
-    AUTHORITY_ACQUISITION_PROMPT_VERSION,
-    'authority-acquisition-v12-source-relationship-claims',
-  )
+  assert.equal(AUTHORITY_ACQUISITION_PROMPT_VERSION, 'authority-acquisition-v14-observed-identity')
   assert.match(authorityAcquisitionInstructions, /directly compares the exact target/)
   assert.match(authorityAcquisitionInstructions, /lone numeral, a numbered edition/)
   assert.match(authorityAcquisitionInstructions, /establishes reading independence only/)
@@ -279,6 +276,14 @@ test('drops a demoted membership without discarding an independently supported c
     evidenceSummary: 'The selection-frame page proposes a conflicting series name.',
   })
   const policy = authorityPolicyForCase({ sampleSources: [{ url: blockedUrl }] })
+  for (const source of mixed.authoritySources) {
+    source.observedIdentity = {
+      title: 'Second Book',
+      authors: ['Ada Reader'],
+      workKind: 'single_work',
+    }
+    source.originAssessment = 'claimed_first_party'
+  }
   mixed.authoritySources[0].relationshipClaims = [
     { name: 'The Sequence', kind: 'book_series', position: 2 },
   ]
@@ -447,6 +452,12 @@ test('keeps selection frames and known marketing taxonomies out of truth evidenc
   output.authoritySources[0].supports = ['identity', 'standalone']
   output.authoritySources[0].evidenceSummary = 'The list calls this a standalone novel.'
   output.authoritySources[0].relationshipClaims = []
+  output.authoritySources[0].observedIdentity = {
+    title: 'Second Book',
+    authors: ['Ada Reader'],
+    workKind: 'single_work',
+  }
+  output.authoritySources[0].originAssessment = 'claimed_first_party'
   const policy = authorityPolicyForCase({ sampleSources: [{ url: publisherUrl }] })
 
   const selectionOnly = validateAuthorityAcquisition(
@@ -707,6 +718,12 @@ test('demotes blocked sources to identity without withholding independent member
   const policy = authorityPolicyForCase({ sampleSources: [{ url: publisherUrl }] })
   const cleaned = canonicalizeAuthorityAcquisition(output, [publisherUrl, authorUrl], policy)
   for (const source of cleaned.authoritySources) {
+    source.observedIdentity = {
+      title: 'Second Book',
+      authors: ['Ada Reader'],
+      workKind: 'single_work',
+    }
+    source.originAssessment = 'claimed_first_party'
     source.relationshipClaims = [{ name: 'The Sequence', kind: 'book_series', position: 2 }]
   }
 

@@ -7,6 +7,7 @@ import {
   shouldAttemptFocusedAuthoritySearch,
   shouldSelectFocusedAuthoritySearch,
 } from './focused-search.mjs'
+import { reviewAuthorityPassTransition } from './evidence.mjs'
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
 
@@ -62,7 +63,7 @@ const locatorSummary = (locator) => ({
 export async function augmentWithExaAuthorityFallback(
   target,
   firstPass,
-  { apiKey, locate = runExaAuthorityLocator, searchDomains } = {},
+  { apiKey, locate = runExaAuthorityLocator, searchDomains, policy = {} } = {},
 ) {
   if (!shouldAttemptFocusedAuthoritySearch(firstPass)) {
     return {
@@ -118,11 +119,13 @@ export async function augmentWithExaAuthorityFallback(
       usage: usageFor(),
     }
   }
-  const selected = shouldSelectFocusedAuthoritySearch(firstPass, restrictedPass)
+  const review = reviewAuthorityPassTransition(firstPass, restrictedPass, policy)
+  const selected = shouldSelectFocusedAuthoritySearch(firstPass, restrictedPass, policy)
   const billing = addBilling(firstPass.billing, restrictedPass.billing)
 
   return {
     ...firstPass,
+    authorityPassHistory: review.history,
     ...(selected ? { output: restrictedPass.output, validation: restrictedPass.validation } : {}),
     consultedUrls: [
       ...new Set([...(firstPass.consultedUrls ?? []), ...(restrictedPass.consultedUrls ?? [])]),
@@ -144,6 +147,7 @@ export async function augmentWithExaAuthorityFallback(
     cached: billing.modelCalls === 0,
     exaFallback: {
       status: restrictedPass.status ?? 'error',
+      reviewReasons: review.reasons,
       candidateDomainCount: candidateDomains.length,
       locator: summary,
       selected,

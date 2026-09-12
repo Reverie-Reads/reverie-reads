@@ -13,6 +13,8 @@ import {
   scoreAuthorityAcquisition,
   shouldRepairAuthorityAcquisition,
   validateAuthorityAcquisition,
+  reviewAuthorityPassTransition,
+  validateAuthorityPassHistory,
 } from './authority/evidence.mjs'
 import { acquireAuthorityEvidence, repairAuthorityEvidence } from './authority/openai.mjs'
 import { augmentWithExaAuthorityFallback } from './authority/exa-fallback.mjs'
@@ -458,7 +460,11 @@ const restrictedSearchWithCache = async (
         ...cached,
         rawOutput,
         output,
-        validation: validateAuthorityAcquisition(target, output, cached.consultedUrls, policy),
+        validation: validateAuthorityPassHistory(
+          validateAuthorityAcquisition(target, output, cached.consultedUrls, policy),
+          { ...cached, output },
+          policy,
+        ),
         cached: true,
         billing: emptyBilling(),
       }
@@ -520,10 +526,12 @@ const augmentWithFocusedSearch = async (target, firstPass, policy) => {
     cacheRoot: focusedSearchCacheRoot,
     searchStrategy: 'discovered-origin-focus',
   })
-  const selected = shouldSelectFocusedAuthoritySearch(firstPass, focusedPass)
+  const review = reviewAuthorityPassTransition(firstPass, focusedPass, policy)
+  const selected = shouldSelectFocusedAuthoritySearch(firstPass, focusedPass, policy)
   const billing = addBilling(firstPass.billing, focusedPass.billing)
   const combined = {
     ...firstPass,
+    authorityPassHistory: review.history,
     ...(selected ? { output: focusedPass.output, validation: focusedPass.validation } : {}),
     consultedUrls: [
       ...new Set([...(firstPass.consultedUrls ?? []), ...(focusedPass.consultedUrls ?? [])]),
@@ -540,6 +548,7 @@ const augmentWithFocusedSearch = async (target, firstPass, policy) => {
     cached: billing.modelCalls === 0,
     focusedSearch: {
       ...focusedPass,
+      reviewReasons: review.reasons,
       candidateDomains: domains,
       selected,
       baseline: {
@@ -564,6 +573,7 @@ const runOne = async (testCase) => {
       : firstPass
     if (options.exaFallback) {
       searched = await augmentWithExaAuthorityFallback(target, searched, {
+        policy,
         apiKey: process.env.EXA_API_KEY,
         locate: qualificationExaLocator,
         searchDomains: (restrictedTarget, domains) =>
@@ -598,7 +608,11 @@ const runOne = async (testCase) => {
         output,
         cached: true,
         billing: emptyBilling(),
-        validation: validateAuthorityAcquisition(target, output, cached.consultedUrls, policy),
+        validation: validateAuthorityPassHistory(
+          validateAuthorityAcquisition(target, output, cached.consultedUrls, policy),
+          { ...cached, output },
+          policy,
+        ),
       })
     } catch (error) {
       if (error?.code !== 'ENOENT') throw error
@@ -618,7 +632,9 @@ const runOne = async (testCase) => {
     let output = canonicalizeAuthorityAcquisition(rawOutput, acquired.consultedUrls, policy)
     let validation = validateAuthorityAcquisition(target, output, acquired.consultedUrls, policy)
     let repair = null
+    let authorityPassHistory = []
     if (shouldRepairAuthorityAcquisition(validation)) {
+      const beforeRepair = { output, consultedUrls: acquired.consultedUrls }
       repair = await repairAuthorityEvidence(target, output, validation.errors, {
         apiUrl: options.apiUrl,
         model,
@@ -627,6 +643,18 @@ const runOne = async (testCase) => {
       rawOutput = repair.output
       output = canonicalizeAuthorityAcquisition(rawOutput, acquired.consultedUrls, policy)
       validation = validateAuthorityAcquisition(target, output, acquired.consultedUrls, policy)
+      const review = reviewAuthorityPassTransition(
+        beforeRepair,
+        { output, consultedUrls: acquired.consultedUrls },
+        policy,
+      )
+      authorityPassHistory = review.history
+      repair = { ...repair, reviewReasons: review.reasons }
+      validation = validateAuthorityPassHistory(
+        validation,
+        { output, consultedUrls: acquired.consultedUrls, authorityPassHistory },
+        policy,
+      )
     }
     const usage = {
       input_tokens:
@@ -641,6 +669,7 @@ const runOne = async (testCase) => {
       usage,
       primaryUsage: acquired.usage,
       repair,
+      authorityPassHistory,
       modelCallCount: repair ? 2 : 1,
       rawOutput,
     }

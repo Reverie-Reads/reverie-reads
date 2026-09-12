@@ -1,7 +1,39 @@
-export const AUTHORITY_ACQUISITION_PROMPT_VERSION =
-  'authority-acquisition-v12-source-relationship-claims'
+export const AUTHORITY_ACQUISITION_PROMPT_VERSION = 'authority-acquisition-v14-observed-identity'
 export const AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION =
-  'authority-acquisition-repair-v1-structure-only'
+  'authority-acquisition-repair-v3-observed-identity'
+
+export const authorityIdentityObservationInstructions = `Identity and origin observations:
+- For each source, copy the exact target title and complete author names actually visible on that
+  source into observedIdentity. Do not copy the input by default, silently correct a spelling,
+  expand initials, substitute a surname match, or omit a coauthor. Missing title is null; missing
+  authors is []. A discrepancy or incomplete identity requires unresolved and human review.
+- observedIdentity.workKind is single_work only for the individual work, omnibus when the target
+  combines multiple works, and unknown when its scope is unclear. An omnibus may have a series
+  association but must remain unresolved here, without an ordinary installment position. Preserve
+  the association and container evidence in the source claims and summary for review.
+- originAssessment is claimed_first_party only when the consulted page identifies the author,
+  publisher, or authorized estate as controlling it; otherwise use unverified. An author's name
+  in a domain, an editor's biography, a contact page, or a professional-looking site is not proof
+  of ownership. Link hubs are discovery-only even on an author domain. An unverified origin cannot
+  establish classification, though another independently supported source may resolve it.
+- claimed_first_party is an observation, never source qualification or permission. Only a separate
+  human-reviewed policy can qualify an origin. Do not claim the model has verified ownership.
+- Repair must preserve these observations and discrepancies; it cannot manufacture missing names,
+  certify an origin, or reinterpret an omnibus as a single work.`
+
+export const authorityRelationshipEncodingInstructions = `Relationship encoding:
+- relationshipClaims records named group relationships, not every classification word.
+  An affirmative standalone assertion belongs in supports: ["identity", "standalone"] and
+  evidenceSummary. If no named grouping is asserted, relationshipClaims is []. Never create a
+  relationship named "standalone" with kind unknown. Silence still cannot prove standalone.
+- An unnamed description such as "a seasonal smalltown series" or "a witchy romance trilogy"
+  is not a series name or a second competing named relationship. Preserve the description in
+  evidenceSummary, use relationshipClaims: [], and do not let that source supply membership or
+  position. Another source may independently supply the actual named series and explicit order.
+  If no source supplies a bibliographic name, return unresolved, not standalone.
+- Do not use this rule to discard a genuinely named group, an uncertain named relationship,
+  a differing named form, or conflicting order. Those remain explicit claims and require review.
+  Never invent a shared alias or attach an unnamed source's number to another source's name.`
 
 export const authorityAcquisitionInstructions = `You are Reverie's authority-source scout.
 Find attributable evidence for one exact book. Your output is a review proposal, never a database
@@ -95,7 +127,9 @@ Rules:
 - Every evidenceUrl and authoritySources.url must be an exact URL consulted during this search.
 - evidenceSummary must be a short paraphrase, not a quotation, and must state what the page supports.
 - If no qualifying source is found, return unresolved with no invented source.
-- Keep note under 240 characters.`
+- Keep note under 240 characters.
+${authorityRelationshipEncodingInstructions}
+${authorityIdentityObservationInstructions}`
 
 export const authorityAcquisitionRepairInstructions = `Repair one Reverie authority-source proposal
 that failed a structural consistency check. Do not search the web and do not add a URL, source,
@@ -104,7 +138,9 @@ explicit relationship already stated in an authority source summary or note into
 supports. If the original proposal does not contain enough information for a complete membership,
 change classification to unresolved. The repaired output must obey every structured-output rule:
 series requires at least one complete membership and its source must support series_membership;
-standalone and unresolved require an empty memberships array.`
+standalone and unresolved require an empty memberships array.
+${authorityRelationshipEncodingInstructions}
+${authorityIdentityObservationInstructions}`
 
 const stringArray = { type: 'array', items: { type: 'string' } }
 
@@ -159,9 +195,32 @@ export const authorityAcquisitionOutputSchema = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['url', 'kind', 'supports', 'evidenceSummary', 'relationshipClaims'],
+        required: [
+          'url',
+          'kind',
+          'supports',
+          'evidenceSummary',
+          'relationshipClaims',
+          'observedIdentity',
+          'originAssessment',
+        ],
         properties: {
           url: { type: 'string' },
+          observedIdentity: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['title', 'authors', 'workKind'],
+            properties: {
+              title: { type: ['string', 'null'] },
+              authors: stringArray,
+              workKind: { type: 'string', enum: ['single_work', 'omnibus', 'unknown'] },
+            },
+          },
+          originAssessment: {
+            type: 'string',
+            enum: ['claimed_first_party', 'unverified'],
+            description: 'A reported observation, never model-issued source qualification.',
+          },
           kind: {
             type: 'string',
             enum: ['author', 'author_post', 'publisher', 'publisher_catalog'],
@@ -178,6 +237,8 @@ export const authorityAcquisitionOutputSchema = {
           evidenceSummary: { type: 'string' },
           relationshipClaims: {
             type: 'array',
+            description:
+              'Named relationships only. An affirmative standalone assertion or unnamed descriptive series phrase is summarized separately, with an empty relationshipClaims array. Preserve every genuinely named conflict.',
             items: {
               type: 'object',
               additionalProperties: false,

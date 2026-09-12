@@ -2,6 +2,8 @@ import {
   authorityPolicyForRetrievedSource,
   canonicalizeAuthorityAcquisition,
   validateAuthorityAcquisition,
+  reviewAuthorityPassTransition,
+  authorityIdentityKey,
 } from '../evidence.mjs'
 import { normalize } from '../../normalize.mjs'
 import { retrieveAuthorityNavigation, redactRetrievalResult } from './gateway.mjs'
@@ -54,12 +56,14 @@ const phraseOccurs = (text, value) => {
   return Boolean(needle) && haystack.includes(` ${needle} `)
 }
 
+const identityPhraseOccurs = (text, value) => {
+  const needle = authorityIdentityKey(value)
+  return Boolean(needle) && ` ${authorityIdentityKey(text)} `.includes(` ${needle} `)
+}
 const authorOccurs = (text, authors) =>
-  (authors ?? []).some((author) => {
-    if (phraseOccurs(text, author)) return true
-    const lastName = normalize(author).split(' ').filter(Boolean).at(-1)
-    return lastName?.length > 2 && phraseOccurs(text, lastName)
-  })
+  Array.isArray(authors) &&
+  authors.length > 0 &&
+  authors.every((author) => identityPhraseOccurs(text, author))
 
 const evidenceLines = (text) =>
   String(text ?? '')
@@ -200,7 +204,7 @@ const explicitPositionOccurs = (text, position) => {
 }
 
 export const evidencePacketContainsTargetTitle = (target, retrieval) =>
-  phraseOccurs(retrieval?.evidenceText, target?.target?.title)
+  identityPhraseOccurs(retrieval?.evidenceText, target?.target?.title)
 
 export const evidencePacketContainsTargetIdentity = (target, retrieval) =>
   evidencePacketContainsTargetTitle(target, retrieval) &&
@@ -257,7 +261,26 @@ export function validateRetrievedAuthoritySemantics(target, output, retrieval, v
     violations.push('retrieved packet does not contain the exact target title')
   }
   if (resolved && !authorOccurs(text, target.target.authors)) {
-    violations.push('retrieved packet does not contain a target author identity')
+    violations.push('retrieved packet does not contain every full target author identity')
+  }
+  for (const [index, source] of (output.authoritySources ?? []).entries()) {
+    const observed = source?.observedIdentity
+    if (
+      observed &&
+      (!identityPhraseOccurs(text, observed.title) || !authorOccurs(text, observed.authors))
+    ) {
+      violations.push(
+        `authority source ${index} observed identity is absent from the retrieved packet`,
+      )
+    }
+  }
+  if (
+    output.classification !== 'unresolved' &&
+    evidenceLines(text).some(
+      (line) => identityPhraseOccurs(line, target.target?.title) && /\bomnibus\b/i.test(line),
+    )
+  ) {
+    violations.push('retrieved target omnibus requires review')
   }
   const memberships = Array.isArray(output.memberships) ? output.memberships : []
   for (const [index, membership] of memberships.entries()) {
@@ -436,9 +459,18 @@ export async function augmentAuthorityAcquisition(
       retrieval,
       validateAuthorityAcquisition(target, output, [source.url], retrievalPolicy),
     )
-    const useRetrieval = validation.valid && validation.policySafe
+    const review = reviewAuthorityPassTransition(
+      firstPass,
+      {
+        output,
+        consultedUrls: [source.url],
+      },
+      retrievalPolicy,
+    )
+    const useRetrieval = validation.valid && validation.policySafe && !review.reasons.length
     return {
       ...firstPass,
+      authorityPassHistory: review.history,
       ...(useRetrieval ? { output, validation } : {}),
       selectedPass: useRetrieval ? 'retrieval' : 'first',
       selectedSourceManifest: useRetrieval
@@ -447,6 +479,7 @@ export async function augmentAuthorityAcquisition(
       retrieval: persistedRetrieval,
       retrievalInterpretation: {
         ...interpreted,
+        reviewReasons: review.reasons,
         sourceManifestUrls: [source.url],
         output,
         validation,

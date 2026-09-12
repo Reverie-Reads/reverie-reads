@@ -7,7 +7,13 @@ import {
   shouldRepairAuthorityAcquisition,
   validateAuthorityAcquisition,
 } from '../src/authority/evidence.mjs'
-import { authorityAcquisitionOutputSchema } from '../src/authority/schema.mjs'
+import {
+  authorityAcquisitionOutputSchema,
+  authorityAcquisitionInstructions,
+  authorityAcquisitionRepairInstructions,
+  authorityRelationshipEncodingInstructions,
+} from '../src/authority/schema.mjs'
+import { retrievalInterpretationInstructions } from '../src/authority/retrieval/interpret.mjs'
 
 const url = 'https://publisher.example/books/second-book'
 const target = buildAuthorityTarget({
@@ -25,6 +31,8 @@ const proposal = () => ({
     {
       url,
       kind: 'publisher',
+      observedIdentity: { title: 'Second Book', authors: ['Ada Reader'], workKind: 'single_work' },
+      originAssessment: 'claimed_first_party',
       supports: ['identity', 'series_membership', 'position'],
       evidenceSummary: 'The publisher places the exact title and author in The Sequence, book 2.',
       relationshipClaims: [{ name: 'The Sequence', kind: 'book_series', position: 2 }],
@@ -249,6 +257,7 @@ test('observed publisher-collection and imprint errors stay blocked even when mi
         evidenceUrls: [sourceUrl],
       }
       output.authoritySources[0] = {
+        ...output.authoritySources[0],
         url: sourceUrl,
         kind: 'publisher',
         supports: hasIdentity ? ['identity', 'series_membership'] : ['series_membership'],
@@ -268,4 +277,72 @@ test('scoped profiles do not block unrelated publisher series or corrected autho
   output.memberships[0].evidenceUrls = [output.authoritySources[0].url]
   output.identity.evidenceUrls = [output.authoritySources[0].url]
   assert.equal(validate(output).policySafe, true)
+})
+
+test('acquisition, structural repair and retrieval share the same bounded relationship encoding', () => {
+  for (const instructions of [
+    authorityAcquisitionInstructions,
+    authorityAcquisitionRepairInstructions,
+    retrievalInterpretationInstructions,
+  ]) {
+    assert.ok(instructions.includes(authorityRelationshipEncodingInstructions))
+  }
+})
+
+test('a descriptive identity-only source does not invent a competing named series', () => {
+  const output = proposal()
+  output.authoritySources.push({
+    url: 'https://author.example/book',
+    observedIdentity: { title: 'Second Book', authors: ['Ada Reader'], workKind: 'single_work' },
+    originAssessment: 'claimed_first_party',
+    kind: 'author',
+    supports: ['identity'],
+    evidenceSummary:
+      'The author describes the exact book as the first in a seasonal smalltown series, without naming the series.',
+    relationshipClaims: [],
+  })
+  assert.equal(validate(output).policySafe, true)
+  output.authoritySources[0].supports = ['identity']
+  output.authoritySources[0].relationshipClaims = []
+  assert.equal(
+    validate(output).policySafe,
+    false,
+    'the unnamed source cannot replace the named evidence',
+  )
+})
+
+test('generic descriptive labels cannot become a membership or an invented alias', () => {
+  for (const name of ['a seasonal smalltown series', 'a witchy romance trilogy']) {
+    const output = proposal()
+    output.memberships[0].series = name
+    output.authoritySources[0].relationshipClaims[0].name = name
+    assert.equal(validate(output).policySafe, false)
+  }
+  const output = proposal()
+  output.authoritySources[0].relationshipClaims.push({
+    name: 'A Distinct Named Trilogy',
+    kind: 'unknown',
+    position: null,
+  })
+  assert.equal(validate(output).policySafe, false)
+})
+
+test('standalone is affirmative support with no fabricated named relationship', () => {
+  const output = proposal()
+  output.classification = 'standalone'
+  output.memberships = []
+  output.authoritySources[0].supports = ['identity', 'standalone']
+  output.authoritySources[0].evidenceSummary =
+    'The publisher affirmatively calls the exact work a standalone novel.'
+  output.authoritySources[0].relationshipClaims = []
+  assert.equal(validate(output).policySafe, true)
+  output.authoritySources[0].relationshipClaims = [
+    { name: 'standalone', kind: 'unknown', position: null },
+  ]
+  assert.equal(
+    validate(output).policySafe,
+    false,
+    'cleanup must not silently discard malformed claims',
+  )
+  assert.equal(shouldRepairAuthorityAcquisition(validate(output)), false)
 })
