@@ -70,6 +70,14 @@ coverless search and incomplete contributor handoffs. That task owns the detaile
 reproduction artifacts and code verification; this receipt does not duplicate them or claim
 that the defects have already been fixed in production.
 
+The authoritative production audit and reproduction receipts are in
+[PR #545](https://github.com/Reverie-Reads/reverie-reads/pull/545). An additional offline
+actual-Edge-handler probe, with all HTTP intercepted, confirmed that an unrelated
+title/author/ISBN from a first provider hit can survive as high-confidence enrichment.
+It also reproduced HTTP-200 GraphQL errors returning an empty provider result without a
+failed-source indication. These are production-path admission and outage findings, not
+live provider acquisitions or measurements from the authority trial.
+
 ## Delivery order
 
 1. Preserve and publish the aggregate trial receipt; keep case identities/evidence private.
