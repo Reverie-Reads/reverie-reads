@@ -36,7 +36,7 @@ export const authorityIdentityKey = (value) =>
     ? value
         .normalize('NFKC')
         .toLowerCase()
-        .replace(/[^\p{L}\p{N}]+/gu, ' ')
+        .replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ')
         .trim()
     : ''
 const identityKey = authorityIdentityKey

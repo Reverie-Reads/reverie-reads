@@ -128,6 +128,16 @@ test('formatting equivalence keeps Unicode distinct and does not invent subtitle
   assert.equal(validate(punctuated).policySafe, false)
 })
 
+test('Unicode combining marks remain identity-bearing rather than disappearing', () => {
+  const wanted = buildAuthorityTarget({ ...book, authors: ['कवि'] })
+  const rules = authorityPolicyForCase({ ...book, ...wanted.target })
+  const output = proposal()
+  output.authoritySources[0].observedIdentity.authors = ['कवि']
+  assert.equal(validate(output, rules, wanted).policySafe, true)
+  output.authoritySources[0].observedIdentity.authors = ['कव']
+  assert.equal(validate(output, rules, wanted).policySafe, false)
+})
+
 test('an identity-only discrepancy stays visible beside an otherwise supported source', () => {
   const output = proposal()
   output.authoritySources.push({
