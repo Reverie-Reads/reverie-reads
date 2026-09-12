@@ -412,6 +412,8 @@ test('the Add cover rail — the other wide-max-content state — stays inside t
   await page.goto('/add')
   await page.getByRole('button', { name: /^Add manually$/i }).click()
   await page.getByPlaceholder('Title', { exact: true }).fill('Width Probe Enriched')
+  // Manual Add starts with no contributor rows; a reader creates the row before entering its name.
+  await page.getByRole('button', { name: '＋ Add contributor', exact: true }).click()
   await page.getByLabel('Contributor 1 name', { exact: true }).fill('Aster Writer')
   await page.getByRole('button', { name: /Fetch details/i }).click()
   await expect(page.getByText('Pick a cover')).toBeVisible({ timeout: 15_000 })
