@@ -31,6 +31,8 @@ const proposal = () => ({
     {
       url,
       kind: 'publisher',
+      observedIdentity: { title: 'Second Book', authors: ['Ada Reader'], workKind: 'single_work' },
+      originAssessment: 'claimed_first_party',
       supports: ['identity', 'series_membership', 'position'],
       evidenceSummary: 'The publisher places the exact title and author in The Sequence, book 2.',
       relationshipClaims: [{ name: 'The Sequence', kind: 'book_series', position: 2 }],
@@ -255,6 +257,7 @@ test('observed publisher-collection and imprint errors stay blocked even when mi
         evidenceUrls: [sourceUrl],
       }
       output.authoritySources[0] = {
+        ...output.authoritySources[0],
         url: sourceUrl,
         kind: 'publisher',
         supports: hasIdentity ? ['identity', 'series_membership'] : ['series_membership'],
@@ -290,6 +293,8 @@ test('a descriptive identity-only source does not invent a competing named serie
   const output = proposal()
   output.authoritySources.push({
     url: 'https://author.example/book',
+    observedIdentity: { title: 'Second Book', authors: ['Ada Reader'], workKind: 'single_work' },
+    originAssessment: 'claimed_first_party',
     kind: 'author',
     supports: ['identity'],
     evidenceSummary:

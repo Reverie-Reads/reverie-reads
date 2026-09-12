@@ -4,11 +4,12 @@ import { authorityAcquisitionCacheMaterial } from '../evidence.mjs'
 import {
   authorityAcquisitionOutputSchema,
   authorityRelationshipEncodingInstructions,
+  authorityIdentityObservationInstructions,
 } from '../schema.mjs'
 import { normalizeEvidenceCapabilities, REPEATED_NUMBERED_CATALOG_HEADINGS } from './profile.mjs'
 
 export const RETRIEVAL_INTERPRETATION_PROMPT_VERSION =
-  'authority-retrieval-interpretation-v4-relationship-encoding'
+  'authority-retrieval-interpretation-v5-observed-identity'
 
 export const retrievalInterpretationInstructions = `You are Reverie's authority-evidence interpreter.
 Classify one exact book using only the supplied sanitized first-party evidence packet. Your output
@@ -44,7 +45,8 @@ Rules:
   unresolved, not standalone. Only a direct book_series claim can support memberships.
 - evidenceSummary must be a short paraphrase of packet text, not a quotation.
 - Keep note under 240 characters.
-${authorityRelationshipEncodingInstructions}`
+${authorityRelationshipEncodingInstructions}
+${authorityIdentityObservationInstructions}`
 
 const outputContent = (response) => {
   const contents = []

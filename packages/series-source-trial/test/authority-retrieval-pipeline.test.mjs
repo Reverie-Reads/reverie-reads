@@ -233,6 +233,70 @@ test('does not spend a model call when the packet omits the target author', asyn
   assert.equal(interpreted, 0)
 })
 
+test('full contributor identity is required before retrieval interpretation, never surnames', async () => {
+  for (const text of [
+    'P: Another Landers-Letts lists Pyg in The Leamington Bloom Series.',
+    'P: Letts lists Pyg in The Leamington Bloom Series.',
+  ]) {
+    const packet = {
+      ...retrieval,
+      evidenceText: text,
+      manifest: {
+        ...retrieval.manifest,
+        sanitizedSha256: createHash('sha256').update(text).digest('hex'),
+      },
+    }
+    assert.equal(evidencePacketContainsTargetIdentity(target, packet), false)
+    const result = await augmentAuthorityAcquisition(target, firstPass, {
+      profiles: [profile],
+      now,
+      retrieve: async () => packet,
+      interpret: async () => {
+        throw new Error('Must not spend a model call')
+      },
+    })
+    assert.equal(result.retrievalInterpretation.reason, 'target_identity_absent')
+  }
+  const coauthored = {
+    ...target,
+    target: { ...target.target, authors: ['Pip Landers-Letts', 'Ada Reader'] },
+  }
+  assert.equal(evidencePacketContainsTargetIdentity(coauthored, retrieval), false)
+  assert.equal(
+    evidencePacketContainsTargetIdentity(coauthored, {
+      evidenceText: `${evidenceText} Written with Ada Reader.`,
+    }),
+    true,
+  )
+})
+
+test('retrieval cannot invent observed names or hide a target omnibus in packet text', () => {
+  const output = structuredClone(directOutput)
+  output.authoritySources[0].observedIdentity = {
+    title: 'Pyg',
+    authors: ['Pip Landers-Letts', 'Ada Reader'],
+    workKind: 'single_work',
+  }
+  const result = validateRetrievedAuthoritySemantics(target, output, retrieval, {
+    valid: true,
+    policySafe: true,
+    policyViolations: [],
+  })
+  assert.equal(result.policySafe, false)
+  assert.ok(
+    result.policyViolations.some((reason) => reason.includes('observed identity is absent')),
+  )
+  output.authoritySources[0].observedIdentity.authors = ['Pip Landers-Letts']
+  const omnibus = validateRetrievedAuthoritySemantics(
+    target,
+    output,
+    { ...retrieval, evidenceText: `${evidenceText}\nP: Pyg is an omnibus collecting two novels.` },
+    { valid: true, policySafe: true, policyViolations: [] },
+  )
+  assert.equal(omnibus.policySafe, false)
+  assert.ok(omnibus.policyViolations.includes('retrieved target omnibus requires review'))
+})
+
 test('quarantines a series or position invented outside the packet', () => {
   const invented = structuredClone(directOutput)
   invented.memberships[0].series = 'A Different Series'

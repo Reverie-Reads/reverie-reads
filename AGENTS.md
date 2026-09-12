@@ -244,6 +244,16 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   and cannot enter the structural repair lane. Legacy saved outputs may be replayed without new
   facts, but cannot satisfy the current required-claims policy. See
   `docs/tasks/authority-automatic-correction-gates.md`; automatic integration remains gated.
+  Current source observations also retain the page's exact title/full author list, individual-work
+  versus omnibus scope, and claimed-first-party versus unverified origin assessment. Exact
+  normalized identity is required; do not repair input spelling, match surnames, omit coauthors,
+  or assign an omnibus an ordinary slot. Claimed-first-party is not model-issued qualification.
+  Unverified origins and on-domain link hubs cannot establish classification. Retrieval requires
+  every full author name in the packet before interpretation. Standalone assertions and unnamed
+  generic descriptions are not named relationship claims; genuinely named conflicts remain claims.
+  Focused search, Exa fallback, structural repair and retrieval retain prior grounded observations,
+  including rejected passes, so a later answer cannot erase identity, membership or order conflicts.
+  See `docs/tasks/authority-evidence-safety.md`. Consumed frames and qualification locks stay intact.
 - **Production qualification is private, locked, and single-use.** Never append qualification
   identities or truth to the public development gold file. Build the reviewed oversample under
   ignored `private-results/` from complete identity frames whose population, eligible, and
