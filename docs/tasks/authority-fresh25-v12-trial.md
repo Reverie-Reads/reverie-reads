@@ -1,6 +1,6 @@
 # Fresh 25-work authority development trial
 
-Status: frozen for one owner-authorized no-write run, September 12, 2026.
+Status: completed and consumed, September 12, 2026. Review-only; not production-qualified.
 
 This tests the merged source-claims safeguards at public commit
 `d139d9a5cd8a6608103ec83fb1c8af2a98c2e136`, without changing prompts, production code,
@@ -85,3 +85,81 @@ The prior nine cases and consumed qualification/study state remain untouched.
 - This branch changes only documentation and the non-secret lock. It does not change app,
   package source, database or test infrastructure; a full application e2e run is not required
   for this documentation-only trial receipt.
+
+## Completed result
+
+The single run completed all 25 cases in 354.006 seconds with no provider or case-execution
+errors. The pre-call lock was committed in `e0a440b`. The identity frame is now consumed
+development material, not fresh qualification input. No prompts or source code were changed.
+
+| Measure                                                                | Result |
+| ---------------------------------------------------------------------- | -----: |
+| First-pass policy-passing resolved proposals                           |  18/25 |
+| Selected policy-passing resolved proposals                             |  20/25 |
+| Straightforward source-supported proposals after independent audit     |  17/25 |
+| Accepted proposals needing identity, source-control, or omnibus review |      3 |
+| Withheld results                                                       |      5 |
+| Selective fallback attempts / additional runtime resolutions           |  7 / 2 |
+| Additional straightforward supported resolution after fallback         |      1 |
+| Accepted standalone classifications                                    |      0 |
+
+The assistant-led audit examined every answer and abstention against first-party pages.
+Seventeen proposals have supported ordinary-work membership; three of those appropriately
+leave numeric order unknown. No contradictory membership or numeric order was found among
+those 17. Of the other accepted proposals, one silently tolerates an author spelling
+mismatch, one relies on an author-named domain without established author/estate control,
+and one correctly identifies an omnibus association that must not become an ordinary
+single-work slot. These are not interchangeable with three demonstrated wrong series facts.
+
+The five withheld cases include three missed available answers and two classifications
+that remain unverified. One of the three has independently supported membership but
+unverified order. Standalone encoding and generic descriptions represented as competing
+series caused avoidable abstentions. One selected packet remains structurally invalid;
+zero execution errors does not imply every proposal was valid. The private cited handoff
+preserves each case, both model passes and these distinctions; identities and case evidence
+are not published in this aggregate receipt.
+
+The 17/20 ordinary-proposal audit acceptance (85%) and 17/25 useful yield (68%) are
+descriptive, not blind accuracy estimates. This sample is small, app-derived and not balanced
+for standalone status. Zero accepted standalone answers cannot establish standalone precision.
+Two added fallback resolutions include only one straightforward supported answer; the other
+still needs source-control review. There was no matched extra-Luna-only control, so this run
+cannot isolate Exa's causal contribution from another search opportunity.
+
+### Usage and cost
+
+33 model requests comprised 32 hosted-search passes and one structural repair. Reported
+usage totals 483,938 input tokens (148,704 cached; 50,856 cache-write), 18,018 output tokens,
+65 hosted search calls and 21 Exa requests. At the official rates linked above:
+
+| Component                                        | Estimated USD |
+| ------------------------------------------------ | ------------: |
+| Luna input/output, including cache-write premium |    0.09418528 |
+| Hosted web search                                |    0.65000000 |
+| Exa locator                                      |    0.14700000 |
+| Total                                            |    0.89118528 |
+
+Approximately 3.6 cents per selected work; the conservative budget ledger settled at
+$0.93960610, below the $5 application budget. This is not an invoice or account-credit
+balance. Preparation, this Codex source audit, human review and production hosting are excluded.
+
+First-pass latency median was 10.695 seconds and nearest-rank p95 14.580 seconds. Per-case
+accumulated Luna latency, including additional passes/repair but excluding Exa and local
+overhead, had median 10.776 seconds and p95 22.911 seconds. Aggregate Exa time was 33.122
+seconds. Do not present those partial latency percentiles as end-to-end production latency.
+
+### Decision and integrity
+
+Keep Luna-low plus selective Exa for evidence-assisted review. **Do not enable automatic
+catalog correction or advance to production qualification yet.** The next narrow improvement
+is stronger observed-identity and source-control admission, preservation of cross-pass
+claims, and clarification of standalone/generic-descriptor encoding. Use offline development
+regressions first; do not weaken genuine conflict gates or silently normalize author typos.
+Omnibus relationships stay explicit review cases. Another model/provider, vector store,
+crawler, or autonomous writer is not justified by this result.
+
+After acquisition, all 77 runtime/private-input hashes and all 901 historical exclusion
+artifact hashes still matched. Both new single-use markers and the prior nine-case marker
+remain present. There were no catalog, personal-copy, Supabase or billing-setting changes.
+No trial output was added to human gold or qualification. Any later live evaluation needs
+a new approved frame; do not replay this set under a new name or checkout.
