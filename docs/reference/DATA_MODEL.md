@@ -211,7 +211,8 @@ profiles            (id pk = auth user, display_name, created_at,
                      adaptive_dismissed jsonb, adaptive_locked bool,
                      auto_merge_duplicates bool not null default true,
                      default_store_id, default_store_name, default_store_website,
-                     arrangement jsonb not null)          -- versioned priority nav + Home modules
+                     arrangement jsonb not null,          -- versioned priority nav + Home modules
+                     show_reading_tips bool not null default true)
 
 books               (id pk, owner_id fk→profiles, corpus_work_id fk→works not null, title,
                      author_first, author_last, authors_display,
@@ -759,3 +760,9 @@ explicitly introduced chapters and a resumable walkthrough stop travel in profil
 removed with the account. `update_reader_guidance` merges owner-scoped observations under a row
 lock. This field conveys no access rights and stores no reading-content identifiers or event log.
 See `docs/tasks/reader-guidance.md`.
+
+`profiles.show_reading_tips` independently controls selected introductions and workflow tips.
+It defaults to true, uses the existing owner-only profile update policy, and travels with profile
+backup. A backup without this optional field preserves the current preference. Turning it off
+never hides controls, essential information, or the explicitly opened library guide. See
+`../tasks/optional-reading-tips.md`.

@@ -429,6 +429,37 @@ beforeEach(() => {
   seedOldAccount()
 })
 
+describe('reading tips preference backup', () => {
+  it.each([false, true])('exports and restores the explicit %s preference', async (show) => {
+    db.profiles[0]!.show_reading_tips = show
+    const json = await buildBackup()
+    expect(JSON.parse(json).profile.show_reading_tips).toBe(show)
+    wipeToFreshAccount()
+    db.profiles[0]!.show_reading_tips = !show
+    await restoreBackup(json)
+    expect(db.profiles[0]!.show_reading_tips).toBe(show)
+  })
+
+  it('keeps the current choice when an older backup has no reading tips preference', async () => {
+    const json = await buildBackup()
+    expect(JSON.parse(json).profile).not.toHaveProperty('show_reading_tips')
+    wipeToFreshAccount()
+    db.profiles[0]!.show_reading_tips = false
+    await restoreBackup(json)
+    expect(db.profiles[0]!.show_reading_tips).toBe(false)
+  })
+
+  it.each(['false', null, 0, {}])('rejects an invalid preference before any restore request: %j', async (invalid) => {
+    const parsed = JSON.parse(await buildBackup())
+    parsed.profile.show_reading_tips = invalid
+    const json = handMade(parsed)
+    access = []
+    expect(() => inspectBackup(json)).toThrow(/unreadable reading tips preference/)
+    await expect(restoreBackup(json)).rejects.toThrow(/unreadable reading tips preference/)
+    expect(access).toEqual([])
+  })
+})
+
 describe('backup round trip — the data v4 dropped on the floor', () => {
   it('preserves the reader’s guidance choice, introductions and paused tour in a full restore', async () => {
     const json = await buildBackup()

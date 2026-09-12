@@ -110,6 +110,13 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   grant Pro. Optional chapter details keep the same tour order and prove their own availability.
   Before numbering a new migration, check the combined deployment history; public and private
   migrations share one version namespace. See `docs/tasks/reader-guidance.md`.
+- **Reading tips are optional; essential information is not.** Account-scoped
+  `profiles.show_reading_tips` defaults on and is independent of onboarding milestones. The signed-in
+  shell supplies this preference to explicitly selected `ReadingTips` passages. Never hide labels,
+  controls, counts, recommendation reasons, empty/error states, privacy, attribution, data-quality
+  qualifications or consequential-choice explanations. Keep the library guide complete and public
+  examples explanatory. Backups carry the preference; older backups preserve the current choice.
+  See `docs/tasks/optional-reading-tips.md`.
 - **First paint requires a complete appearance.** A valid local non-Adaptive room plus mode may
   open immediately and reconcile later. A missing or invalid axis, or Adaptive without its
   profile-only palette, stays in the neutral Reverie front-door material until profile hydration

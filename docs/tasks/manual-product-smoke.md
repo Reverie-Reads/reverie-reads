@@ -77,6 +77,12 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 ## P1 — return experience
 
+- [ ] **Reading tips:** turn off Show reading tips in Settings → Your library guide. Confirm
+      introductions and routine instructions disappear on Library, Next read, Discover, Planner
+      and Stats while counts, controls, empty states and private notes stay clear. Reload and
+      sign in on another device; the choice should follow this reader only. Reopen the complete
+      library guide, then turn tips back on. Check the smaller Refine choices label still opens
+      easily by touch and keyboard. Verify this preference in a disposable-account backup restore.
 - [ ] **Plan queue:** add Soon and dated items, write a future-self intention, reorder, edit date
       precision, remove/undo, and confirm reload preserves order and meaning.
 - [ ] **Release horizon:** inspect followed-author and manual releases; confirm source labels and

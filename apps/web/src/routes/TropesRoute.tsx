@@ -1,3 +1,4 @@
+import { ReadingTips } from '../components/ReadingTips'
 import { useEffect, useMemo, useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
 import { FACET_LABELS, TROPE_FACETS, tropeMatches } from '@reverie/core'
@@ -51,9 +52,11 @@ function TropesScreen() {
       >
         {labels.tags}
       </h1>
-      <p className="mt-0.5 text-[13px] text-muted">
-        Your vocabulary, loudest first — open one to see its shelf and sweep your library.
-      </p>
+      <ReadingTips>
+        <p className="mt-0.5 text-[13px] text-muted">
+          Your vocabulary, loudest first — open one to see its shelf and sweep your library.
+        </p>
+      </ReadingTips>
 
       <input
         value={q}

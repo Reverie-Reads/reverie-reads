@@ -649,7 +649,7 @@ export async function buildBackup(): Promise<string> {
       ),
       supabase
         .from('profiles')
-        .select('display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, arrangement, guidance')
+        .select('display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, arrangement, guidance, show_reading_tips')
         .eq('id', ownerId)
         .maybeSingle(),
     ])
@@ -847,6 +847,14 @@ function parseBackupFile(json: string): BackupShape {
     throw new Error('That file doesn’t look like a Reverie backup.')
   }
   const data = parsed as unknown as BackupShape
+
+  if (
+    isRecord(data.profile) &&
+    'show_reading_tips' in data.profile &&
+    typeof data.profile.show_reading_tips !== 'boolean'
+  ) {
+    throw new Error('That backup has an unreadable reading tips preference. Nothing was restored.')
+  }
 
   for (const section of arraySections) {
     const value = data[section]

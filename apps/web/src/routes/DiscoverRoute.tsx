@@ -1,3 +1,4 @@
+import { ReadingTips } from '../components/ReadingTips'
 import { useEffect, useMemo, useState } from 'react'
 import { createRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
@@ -422,10 +423,12 @@ function DiscoverCatalog() {
       >
         Discover
       </h1>
-      <p className="mb-6 mt-3 max-w-[65ch] text-base leading-relaxed text-muted">
-        Find a book you want to spend time with. Open a cover, read a little about it, then decide
-        whether to make room on your shelf.
-      </p>
+      <ReadingTips>
+        <p className="mb-6 mt-3 max-w-[65ch] text-base leading-relaxed text-muted">
+          Find a book you want to spend time with. Open a cover, read a little about it, then decide
+          whether to make room on your shelf.
+        </p>
+      </ReadingTips>
 
       {/* Search the wider catalog — title, author, or ISBN. An active query replaces the browse rail
           below; clearing it restores the rail intact (task §4). */}
@@ -506,10 +509,12 @@ function DiscoverCatalog() {
               size, opposite accumulation; both sit on this screen, so the difference is stated. */}
           <section aria-label="Browse the catalog" className="mb-8">
             <h2 className="mb-2 text-xl font-semibold leading-snug text-ink">The shared shelves</h2>
-            <p className="mb-4 text-sm leading-relaxed text-muted">
-              Browse what’s here, or search above for a particular book. Your own books are marked
-              so you can return to them.
-            </p>
+            <ReadingTips>
+              <p className="mb-4 text-sm leading-relaxed text-muted">
+                Browse what’s here, or search above for a particular book. Your own books are marked
+                so you can return to them.
+              </p>
+            </ReadingTips>
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <input
                 type="search"

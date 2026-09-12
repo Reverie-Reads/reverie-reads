@@ -38,6 +38,8 @@ export interface Profile {
   /** The reader's versioned navigation priorities and independently ordered Home modules. */
   arrangement: ArrangementConfig
   guidance?: Guidance | null
+  /** Optional introductions and workflow tips; absent older profile caches keep them visible. */
+  showReadingTips?: boolean
 }
 
 interface ProfileRow {
@@ -60,6 +62,7 @@ interface ProfileRow {
   shelf_breakdown_dnf: boolean | null
   arrangement: unknown
   guidance: unknown
+  show_reading_tips: boolean | null
 }
 
 export const profileKey = ['profile'] as const
@@ -86,6 +89,7 @@ const toProfile = (row: ProfileRow): Profile => ({
   shelfBreakdownDnf: row.shelf_breakdown_dnf ?? false,
   arrangement: arrangementFromUnknown(row.arrangement),
   guidance: guidanceFromUnknown(row.guidance),
+  showReadingTips: row.show_reading_tips !== false,
 })
 
 /** The signed-in user's own profile (RLS returns only their row). */
@@ -95,7 +99,7 @@ export function useProfile() {
     queryFn: async (): Promise<Profile | null> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, adaptive_pending, adaptive_dismissed, shelf_breakdown_format, shelf_breakdown_dnf, hide_intensity, arrangement, guidance')
+        .select('id, display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, adaptive_pending, adaptive_dismissed, shelf_breakdown_format, shelf_breakdown_dnf, hide_intensity, arrangement, guidance, show_reading_tips')
         .limit(1)
         .maybeSingle()
       if (error) throw error
@@ -124,6 +128,7 @@ export function useUpdateProfile() {
       hideIntensity?: boolean
       shelfBreakdownDnf?: boolean
       arrangement?: ArrangementConfig
+      showReadingTips?: boolean
     }): Promise<void> => {
       const { data: auth } = await supabase.auth.getUser()
       const id = auth.user?.id
@@ -144,6 +149,7 @@ export function useUpdateProfile() {
       if (patch.hideIntensity !== undefined) row.hide_intensity = patch.hideIntensity
       if (patch.shelfBreakdownDnf !== undefined) row.shelf_breakdown_dnf = patch.shelfBreakdownDnf
       if (patch.arrangement !== undefined) row.arrangement = arrangementDocument(patch.arrangement)
+      if (patch.showReadingTips !== undefined) row.show_reading_tips = patch.showReadingTips
       if (patch.defaultStore !== undefined) {
         row.default_store_id = patch.defaultStore?.id ?? null
         row.default_store_name = patch.defaultStore?.name ?? null

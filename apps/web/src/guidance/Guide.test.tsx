@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Guidance } from './model'
 import { GuideScreen } from './Guide'
+import { ReadingTipsProvider } from '../components/ReadingTips'
 import { registerGuideChapterDetails, type GuideChapterDetailsProps } from './chapterDetailsSlot'
 
 const state = vi.hoisted(() => ({
@@ -46,8 +47,12 @@ function ExtraDetails({ chapterId, expanded }: GuideChapterDetailsProps) {
 }
 
 describe('guide chapter extensions', () => {
-  it('keeps the complete core guide usable without an extension', () => {
-    render(<GuideScreen />)
+  it('keeps the complete core guide usable when routine reading tips are off', () => {
+    render(
+      <ReadingTipsProvider show={false}>
+        <GuideScreen />
+      </ReadingTipsProvider>,
+    )
     expect(screen.getByRole('heading', { name: 'Bring your books home' })).toBeTruthy()
     fireEvent.change(screen.getByRole('combobox', { name: 'Choose a stop' }), {
       target: { value: 'privacy' },

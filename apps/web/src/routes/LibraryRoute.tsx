@@ -411,6 +411,7 @@ export function LibraryHeader({
         className={className}
         eyebrow={readout}
         title={scope === 'household' ? 'Household library' : 'My library'}
+        descriptionIsTip={scope === 'personal'}
         description={
           scope === 'household'
             ? 'The books shared across your household, with every reader’s copy kept distinct.'

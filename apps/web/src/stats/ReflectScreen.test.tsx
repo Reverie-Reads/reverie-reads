@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { buildReadingHistory } from '@reverie/core'
 import { makeBook } from '../../../../packages/core/src/book.fixture'
 import { ReflectView } from './ReflectScreen'
+import { ReadingTipsProvider } from '../components/ReadingTips'
 
 vi.mock('../components/CoverImage', () => ({
   CoverImage: ({ book }: { book: { title: string } }) => <img alt={book.title} />,
@@ -46,6 +47,36 @@ const history = buildReadingHistory(books, [
 ])
 
 describe('Reflect uses the real reading record', () => {
+  it('quiets introductions without hiding records, qualifications, private notes or drilldowns', () => {
+    const openBook = vi.fn()
+    render(
+      <ReadingTipsProvider show={false}>
+        <ReflectView history={history} openBook={openBook} openPlan={() => {}} currentYear={2026} />
+      </ReadingTipsProvider>,
+    )
+    expect(
+      screen.queryByText(
+        'The stories you finished, the ones you returned to, and a little of what stayed.',
+      ),
+    ).toBeNull()
+    expect(
+      screen.queryByText('Open a book to revisit its notes or add an earlier read.'),
+    ).toBeNull()
+    expect(screen.getByText('Reflect · your reading life is private')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Genres on books finished in this period. A read may belong to more than one.',
+      ),
+    ).toBeTruthy()
+    expect(screen.getByRole('blockquote').textContent).toBe('A note that stayed with me')
+    expect(screen.getByRole('button', { name: /1 undated read/ })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Mar: 1 logged reads' }))
+    const dialog = screen.getByRole('dialog', { name: 'Mar · 2026' })
+    expect(within(dialog).getByText('Mar 4, 2026 · Audiobook')).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: /A familiar book.*Open book/ }))
+    expect(openBook).toHaveBeenCalledWith('a')
+  })
+
   it('changes charts, highlights and drilldowns together and opens the actual book', () => {
     const openBook = vi.fn()
     render(
