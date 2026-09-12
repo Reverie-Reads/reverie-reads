@@ -2,7 +2,7 @@
 export function LibraryStatus() {
   return (
     <span
-      className="inline-flex items-center gap-1.5 text-[12px] font-medium leading-5 text-ink"
+      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[12px] font-medium leading-5 text-ink"
       style={{ fontFamily: 'var(--font-body)', textTransform: 'none', letterSpacing: 'normal' }}
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0" fill="none">
