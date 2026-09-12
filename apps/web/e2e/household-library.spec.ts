@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { createClient } from '@supabase/supabase-js'
 import { expect, test, type Page } from './support/fixtures'
 import { authFailure } from './support/authError'
@@ -225,7 +226,7 @@ async function seedDuplicateBooks(): Promise<NonNullable<typeof seeded>> {
 
 async function signIn(page: Page, session: Session) {
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  await configureReturningReader(session.access_token)
   await page.goto(
     `/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

@@ -24,7 +24,9 @@ async function setup(page: Page) {
   const auth = await sb.auth.signInWithPassword({ email, password })
   if (auth.error || !auth.data.session) throw auth.error ?? new Error('No test session')
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  // This scenario edits an existing reader's layout after they have chosen their starting pace.
+  const configured = await sb.rpc('update_reader_guidance', { p_mode: 'full', p_complete: true })
+  if (configured.error) throw configured.error
   const { access_token, refresh_token } = auth.data.session
   await page.goto(
     `/#access_token=${access_token}&refresh_token=${refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,

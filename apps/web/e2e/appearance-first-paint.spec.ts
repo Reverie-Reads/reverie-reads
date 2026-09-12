@@ -40,11 +40,16 @@ test('a first sign-in reveals the application only after the saved room is appli
     if (auth.error || !auth.data.session)
       throw new Error(authFailure('appearance first paint', EMAIL, auth.error))
 
+    // This is a configured reader arriving on a new device, not a first-use welcome.
+    await ok(
+      reader.rpc('update_reader_guidance', { p_mode: 'full', p_complete: true }),
+      'appearance reader guidance',
+    )
+
     await keepOfflineCacheEmpty(page)
     await page.addInitScript(() => {
       localStorage.removeItem('reverie.skin')
       localStorage.removeItem('reverie.mode')
-      localStorage.setItem('reverie.onboarded', '1')
       Object.assign(window, { __wrongAppearanceReachedShell: false })
       new MutationObserver(() => {
         const shell = document.querySelector('nav[aria-label="Primary"]')

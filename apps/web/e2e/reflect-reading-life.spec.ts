@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { randomUUID } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { expect, test, type Page } from './support/fixtures'
@@ -12,9 +13,9 @@ const SERVICE =
 
 async function signIn(page: Page, session: { access_token: string; refresh_token: string }) {
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
   for (const name of ['search', 'embed', 'releases', 'series', 'covers', 'taste', 'geo'])
     await page.route(`**/functions/v1/${name}**`, (route) => route.fulfill({ json: {} }))
+  await configureReturningReader(session.access_token)
   await page.goto(
     `/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -95,7 +96,7 @@ async function signIn(page: Page): Promise<void> {
   })
   if (error || !data.session) throw new Error(authFailure('shelf-membership', DEV_EMAIL, error))
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  await configureReturningReader(data.session.access_token)
   await page.goto(
     `/#access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

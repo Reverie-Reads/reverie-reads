@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
@@ -107,8 +108,8 @@ test('every document boots from an empty offline cache, however much the last on
 
   await keepOfflineCacheEmpty(page)
   await probeCacheAtBoot(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
 
+  await configureReturningReader(c.session.access_token)
   await page.goto(
     `/#access_token=${c.session.access_token}&refresh_token=${c.session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

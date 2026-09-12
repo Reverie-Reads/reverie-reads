@@ -1,3 +1,4 @@
+import { configureReturningReader } from '../support/readerGuidance'
 import { expect, test, type Page } from '@playwright/test'
 import { authFailure } from '../support/authError'
 import { keepOfflineCacheEmpty } from '../support/offlineCache'
@@ -143,7 +144,7 @@ async function openPlanner(page: Page, pinned = PINNED) {
   await keepOfflineCacheEmpty(page)
   // Clock first: the app reads `new Date()` during render, so pinning after navigation is too late.
   await page.clock.setFixedTime(new Date(pinned))
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  await configureReturningReader(session.access_token)
   await page.goto(
     `/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

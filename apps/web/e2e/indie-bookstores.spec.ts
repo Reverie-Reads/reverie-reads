@@ -40,13 +40,17 @@ async function session() {
     password: PASSWORD,
   })
   if (error || !signedIn.session) throw new Error(authFailure('indie-bookstores', EMAIL, error))
+  // Bookshop tests begin with a configured reader, including when their personal library is empty.
+  await ok(
+    sb.rpc('update_reader_guidance', { p_mode: 'full', p_complete: true }),
+    'indie-bookstores reader guidance',
+  )
   return signedIn.session
 }
 
 async function signIn(page: Page) {
   const signedIn = await session()
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
   await page.goto(
     `/#access_token=${signedIn.access_token}&refresh_token=${signedIn.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

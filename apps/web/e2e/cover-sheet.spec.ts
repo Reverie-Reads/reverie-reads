@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import AxeBuilder from '@axe-core/playwright'
 import { expectResolvedMode } from './support/mode'
@@ -42,7 +43,7 @@ async function signIn(page: Page, session: { access_token: string; refresh_token
   // happen to be inserted before this runs today, but set the flag explicitly rather than let the
   // assertion below depend on that ordering.
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  await configureReturningReader(access_token)
   await page.goto(
     `/#access_token=${access_token}&refresh_token=${refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

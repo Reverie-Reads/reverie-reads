@@ -252,6 +252,10 @@ export default defineConfig({
       : []),
   ],
   webServer: {
+    // Local .env.local may enable live error reporting. Automated guest-library checks must
+    // exercise the no-write path and never publish their deliberate failure fixtures to Sentry.
+    // The monitoring unit tests still verify capture/scrubbing behavior independently.
+    env: { VITE_SENTRY_DSN: '' },
     // Runs from this config's dir (apps/web), so `pnpm dev` boots @reverie/web with its own env
     // files (the committed .env; .env.local overrides if present). The port/strictPort flags override vite.config's default 5173 for e2e only —
     // the normal `pnpm dev` workflow keeps 5173.

@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { randomUUID } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import AxeBuilder from '@axe-core/playwright'
@@ -63,8 +64,8 @@ async function setup(page: Page, isAdmin = true) {
   const auth = await sb.auth.signInWithPassword({ email, password })
   if (auth.error || !auth.data.session) throw auth.error ?? new Error('No local session')
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
   const { access_token, refresh_token } = auth.data.session
+  await configureReturningReader(access_token)
   await page.goto(
     `/#access_token=${access_token}&refresh_token=${refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

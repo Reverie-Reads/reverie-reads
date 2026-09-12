@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import AxeBuilder from '@axe-core/playwright'
 import { authFailure } from './support/authError'
@@ -79,7 +80,7 @@ async function seed(c: Client) {
 
 async function signIn(page: Page, session: Client['session']) {
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  await configureReturningReader(session.access_token)
   await page.goto(
     `/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )
