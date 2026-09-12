@@ -376,18 +376,26 @@ test('the Add cover rail — the other wide-max-content state — stays inside t
   // AddRoute:415's pick-a-cover rail was "conditionally harmful by inspection" in the blast-radius
   // report; this DRIVES the state instead of reasoning about it. Enrich is stubbed to return 14
   // alternates (14 × 48px thumbs + gaps ≈ 770px of max-content — comfortably wider than a phone),
-  // which is exactly the content that would have re-widened the page pre-fix.
+  // which is exactly the content that would have re-widened the page pre-fix. This is a synthetic
+  // admitted-response layout stress case, not provider acquisition coverage: live enrichment
+  // currently returns no alternates; restoring qualified alternate retrieval remains separate.
   const c = await client()
   await stub(page)
   await page.route('**/functions/v1/enrich**', (r) =>
     r.fulfill({
       json: {
+        admissionVersion: 2,
         title: 'Width Probe Enriched',
-        confidence: 'low',
+        authors: ['Aster Writer'],
+        author: 'Aster Writer',
+        source: 'openlibrary',
+        confidence: 'high',
         alternates: Array.from({ length: 14 }, (_, i) => ({
           cover: `https://covers.widthprobe.test/${i}.jpg`,
           source: 'openlibrary',
-          isbn13: `978000000${String(i).padStart(4, '0')}`,
+          isbn13: '',
+          title: 'Width Probe Enriched',
+          author: 'Aster Writer',
         })),
       },
     }),
@@ -404,6 +412,7 @@ test('the Add cover rail — the other wide-max-content state — stays inside t
   await page.goto('/add')
   await page.getByRole('button', { name: /^Add manually$/i }).click()
   await page.getByPlaceholder('Title', { exact: true }).fill('Width Probe Enriched')
+  await page.getByLabel('Contributor 1 name', { exact: true }).fill('Aster Writer')
   await page.getByRole('button', { name: /Fetch details/i }).click()
   await expect(page.getByText('Pick a cover')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('button', { name: /Use the openlibrary cover/i })).toHaveCount(14)
