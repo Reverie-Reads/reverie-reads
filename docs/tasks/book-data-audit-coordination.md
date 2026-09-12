@@ -60,6 +60,16 @@ local reproductions, fixes and verification receipts:
 These production items are reported findings, not additional observations from the frozen
 authority trial. This task has not independently certified their fixes or deployment.
 
+The production task subsequently supplied an executed synthetic reproduction receipt:
+same-title Jane Smith versus John Smith is scored high confidence; a year-only 2031 date
+becomes January 1; merging a 1990 year with another source's 2031-06-15 becomes 1990-06-15;
+and CSV `Number of Pages` is dropped. These strengthen the correction order: identity and
+work/edition admission first, coherent date precision next, then additional metadata plumbing.
+Its source-to-screen audit also covers invalid calendar dates, outage/negative-cache semantics,
+coverless search and incomplete contributor handoffs. That task owns the detailed audit,
+reproduction artifacts and code verification; this receipt does not duplicate them or claim
+that the defects have already been fixed in production.
+
 ## Delivery order
 
 1. Preserve and publish the aggregate trial receipt; keep case identities/evidence private.
