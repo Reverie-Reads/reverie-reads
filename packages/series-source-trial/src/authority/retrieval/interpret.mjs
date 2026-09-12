@@ -4,7 +4,8 @@ import { authorityAcquisitionCacheMaterial } from '../evidence.mjs'
 import { authorityAcquisitionOutputSchema } from '../schema.mjs'
 import { normalizeEvidenceCapabilities, REPEATED_NUMBERED_CATALOG_HEADINGS } from './profile.mjs'
 
-export const RETRIEVAL_INTERPRETATION_PROMPT_VERSION = 'authority-retrieval-interpretation-v2'
+export const RETRIEVAL_INTERPRETATION_PROMPT_VERSION =
+  'authority-retrieval-interpretation-v3-source-claims'
 
 export const retrievalInterpretationInstructions = `You are Reverie's authority-evidence interpreter.
 Classify one exact book using only the supplied sanitized first-party evidence packet. Your output
@@ -32,6 +33,12 @@ Rules:
 - Report a position only when the packet explicitly supplies it. Otherwise use null.
 - authoritySources must contain at most the one supplied source URL, with exactly the supplied
   source kind. Every evidence URL must be that URL.
+- Preserve the packet's exact relationship names, types, and explicit positions in that source's
+  relationshipClaims, including disagreements about this exact work, never other books' labels.
+  Use an empty array only when no relationship is
+  stated. Publisher collections, imprints, campaigns, universes and reading lists are not
+  book_series even when a catalog labels them Series. An unclear or conflicting claim means
+  unresolved, not standalone. Only a direct book_series claim can support memberships.
 - evidenceSummary must be a short paraphrase of packet text, not a quotation.
 - Keep note under 240 characters.`
 

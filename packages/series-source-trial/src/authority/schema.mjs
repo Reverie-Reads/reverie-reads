@@ -1,5 +1,5 @@
 export const AUTHORITY_ACQUISITION_PROMPT_VERSION =
-  'authority-acquisition-v11-preserve-series-label'
+  'authority-acquisition-v12-source-relationship-claims'
 export const AUTHORITY_ACQUISITION_REPAIR_PROMPT_VERSION =
   'authority-acquisition-repair-v1-structure-only'
 
@@ -75,6 +75,16 @@ Rules:
   universe context in uncertainties. If the relationship is unclear, return unresolved.
 - Preserve multiple memberships when first-party evidence explicitly supports them; do not guess a
   primary membership.
+- For every authority source, record relationshipClaims separately from your chosen memberships.
+  Include only claims about this exact work, never labels for other books on a catalog page.
+  Preserve each exact relationship name, its type, and any explicit position, including claims
+  that disagree with another source. Use an empty array only when the source makes no relationship
+  claim. Never hide a disagreeing label in prose or choose a winner merely because it is on an
+  author rather than publisher page. Disagreement or an unclear relationship type means unresolved.
+- A publisher's imprint, publishing venture, anniversary reissue collection, book-club list, or
+  marketing campaign is not a book_series, even if a catalog field or URL calls it a series.
+  Label those claims publisher_collection, imprint, reading_list, universe, or unknown as appropriate.
+  Only book_series claims can support memberships. Do not turn a rejected grouping into standalone.
 - The classification and structured fields must agree. If classification is series, memberships
   must contain at least one complete item with the exact series name, role, optional explicit
   position, and the supporting URL. Mark that authoritySource as supporting series_membership and,
@@ -149,7 +159,7 @@ export const authorityAcquisitionOutputSchema = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['url', 'kind', 'supports', 'evidenceSummary'],
+        required: ['url', 'kind', 'supports', 'evidenceSummary', 'relationshipClaims'],
         properties: {
           url: { type: 'string' },
           kind: {
@@ -166,6 +176,29 @@ export const authorityAcquisitionOutputSchema = {
             },
           },
           evidenceSummary: { type: 'string' },
+          relationshipClaims: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['name', 'kind', 'position'],
+              properties: {
+                name: { type: 'string' },
+                kind: {
+                  type: 'string',
+                  enum: [
+                    'book_series',
+                    'publisher_collection',
+                    'imprint',
+                    'reading_list',
+                    'universe',
+                    'unknown',
+                  ],
+                },
+                position: { type: ['number', 'null'] },
+              },
+            },
+          },
         },
       },
     },

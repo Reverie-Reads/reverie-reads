@@ -5,6 +5,16 @@ const confidenceValues = new Set(['high', 'medium', 'low', 'none'])
 const roles = new Set(['primary', 'secondary', 'unknown'])
 const sourceKinds = new Set(['author', 'author_post', 'publisher', 'publisher_catalog'])
 const supportsValues = new Set(['identity', 'series_membership', 'position', 'standalone'])
+const relationshipKinds = new Set([
+  'book_series',
+  'publisher_collection',
+  'imprint',
+  'reading_list',
+  'universe',
+  'unknown',
+])
+// Preserve articles and named forms. This is not the more permissive gold-scoring matcher.
+const relationshipKey = (value) => normalize(value).replace(/ (?:series|books)$/, '')
 const discoveryOnlyHosts = new Set([
   'amazon.com',
   'barnesandnoble.com',
@@ -62,6 +72,7 @@ export const authorityPolicyForCase = (testCase, samplePlan = null) => {
     .map((source) => source?.url)
     .filter(Boolean)
   return {
+    requireRelationshipClaims: true,
     classificationBlockedUrls: samplePlan
       ? [...new Set([...framedSources, ...directSelectionSources])]
       : asArray(testCase?.sampleSources)
@@ -98,6 +109,24 @@ const knownClassificationRisk = (source) => {
   if (!comparable) return null
   const url = new URL(comparable)
   const rootHost = url.hostname.replace(/^www\./, '')
+  if (
+    rootHost === 'penguinrandomhouse.com' &&
+    /^\/series\/(?:RH8\/random-house-100|TV1\/thousand-voices)$/i.test(url.pathname)
+  ) {
+    return 'known_publisher_collection_not_book_series'
+  }
+  if (
+    rootHost === 'arielsullivan.com' &&
+    url.pathname === '/books/conform' &&
+    /\bthousand voices\b/i.test(
+      [
+        source?.evidenceSummary,
+        ...asArray(source?.relationshipClaims).map((claim) => claim?.name),
+      ].join(' '),
+    )
+  ) {
+    return 'known_imprint_series_label_conflict'
+  }
   if (discoveryOnlyHosts.has(rootHost) || rootHost.endsWith('.fandom.com')) {
     return 'known_discovery_only_host'
   }
@@ -284,7 +313,18 @@ export function canonicalizeAuthorityAcquisition(output, consultedUrls = null, p
         supports: supports.filter((support) => support === 'identity'),
       }
     })
-    .filter((source) => !isObject(source) || source.supports.length)
+    .filter(
+      (source) =>
+        !isObject(source) ||
+        source.supports.length ||
+        (asArray(source.relationshipClaims).length &&
+          !knownClassificationRisk(source) &&
+          !classificationBlocked.has(comparableUrl(source.url))) ||
+        [
+          'known_publisher_collection_not_book_series',
+          'known_imprint_series_label_conflict',
+        ].includes(knownClassificationRisk(source)),
+    )
   const filterFor = (urls, support) => [
     ...new Set(asArray(urls).filter((url) => citedSource(sources, url, support))),
   ]
@@ -405,8 +445,77 @@ export function validateAuthorityAcquisition(target, output, consultedUrls, poli
     ) {
       errors.push(`authority source ${index} evidenceSummary must be 1 to 320 characters`)
     }
+    // Old frozen proposals remain replayable without manufacturing new extracted facts. Current
+    // acquisition policies require these fields; a present malformed field is never legacy data.
+    if (policy.requireRelationshipClaims || source.relationshipClaims !== undefined) {
+      if (!Array.isArray(source.relationshipClaims)) {
+        errors.push(`authority source ${index} requires relationshipClaims`)
+      }
+      if (
+        asArray(source.supports).includes('series_membership') &&
+        !asArray(source.relationshipClaims).length
+      ) {
+        policyViolations.push(
+          `authority source ${index} membership support lacks a relationship claim`,
+        )
+      }
+      for (const claim of asArray(source.relationshipClaims)) {
+        if (
+          !isObject(claim) ||
+          typeof claim.name !== 'string' ||
+          !relationshipKey(claim.name) ||
+          !relationshipKinds.has(claim.kind) ||
+          (claim.position !== null && !Number.isFinite(claim.position))
+        ) {
+          errors.push(`authority source ${index} has an invalid relationship claim`)
+          continue
+        }
+        if (
+          output.classification === 'unresolved' ||
+          knownClassificationRisk(source) ||
+          asArray(policy.classificationBlockedUrls).map(comparableUrl).includes(comparable)
+        )
+          continue
+        const selected = output.memberships.filter(
+          (membership) => relationshipKey(membership?.series) === relationshipKey(claim.name),
+        )
+        if (
+          claim.kind === 'book_series' &&
+          !selected.length &&
+          !(output.classification === 'series' && output.memberships.length === 0)
+        ) {
+          policyViolations.push(`authority source ${index} has an unrepresented series claim`)
+        }
+        if (claim.kind === 'unknown') {
+          policyViolations.push(`authority source ${index} has an unresolved relationship type`)
+        }
+        if (claim.kind !== 'book_series' && selected.length) {
+          policyViolations.push(`authority source ${index} has a non-bibliographic selected claim`)
+        }
+        if (
+          claim.kind === 'book_series' &&
+          claim.position !== null &&
+          selected.some(
+            (membership) => membership.position !== null && membership.position !== claim.position,
+          )
+        ) {
+          policyViolations.push(`authority source ${index} has a conflicting position claim`)
+        }
+      }
+    }
     const risk = knownClassificationRisk(source)
     if (risk && asArray(source.supports).some((support) => support !== 'identity')) {
+      policyViolations.push(`authority source ${index} has ${risk}`)
+    }
+    if (
+      output.classification !== 'unresolved' &&
+      [
+        'known_publisher_collection_not_book_series',
+        'known_imprint_series_label_conflict',
+      ].includes(risk)
+    ) {
+      // Keep these observed contradictions visible after canonicalization demotes supports.
+      // A structural repair must not launder a rejected label back into a membership.
       policyViolations.push(`authority source ${index} has ${risk}`)
     }
     const membershipRisk = knownMembershipEvidenceRisk(source)
@@ -435,6 +544,20 @@ export function validateAuthorityAcquisition(target, output, consultedUrls, poli
       policyViolations.push(
         `authority source ${index} does not summarize an affirmative standalone statement`,
       )
+    }
+  }
+
+  if (output.classification === 'series' && output.memberships.length === 0) {
+    const pendingClaims = sources
+      .filter((source) =>
+        sourceClassificationEligible(source, policy.classificationBlockedUrls, 'series_membership'),
+      )
+      .flatMap((source) => asArray(source.relationshipClaims))
+      .filter((claim) => claim?.kind === 'book_series')
+    const names = new Set(pendingClaims.map((claim) => relationshipKey(claim.name)))
+    const positions = new Set(pendingClaims.map((claim) => claim.position).filter(Number.isFinite))
+    if (names.size > 1 || positions.size > 1) {
+      policyViolations.push('empty membership proposal has competing source claims')
     }
   }
 
@@ -479,6 +602,24 @@ export function validateAuthorityAcquisition(target, output, consultedUrls, poli
       citedUrlCount += 1
       if (citedSource(sources, url, 'series_membership')) groundedUrlCount += 1
       else errors.push(`membership ${index} evidence URL is not a series authority source`)
+      const source = citedSource(sources, url, 'series_membership')
+      if (source && (policy.requireRelationshipClaims || source.relationshipClaims !== undefined)) {
+        const claims = asArray(source.relationshipClaims).filter(
+          (claim) =>
+            claim?.kind === 'book_series' &&
+            relationshipKey(claim.name) === relationshipKey(membership.series),
+        )
+        if (!claims.length) {
+          policyViolations.push(`membership ${index} lacks a matching source relationship claim`)
+        }
+        if (
+          membership.position !== null &&
+          asArray(source.supports).includes('position') &&
+          !claims.some((claim) => claim.position === membership.position)
+        ) {
+          policyViolations.push(`membership ${index} position differs from its cited source claim`)
+        }
+      }
     }
     if (
       !asArray(membership.evidenceUrls).some((url) =>

@@ -1,5 +1,9 @@
 # Reverie series-source trial
 
+Current authority-correction work: [source checks and gated integration plan](../../docs/tasks/authority-automatic-correction-gates.md).
+The scout now requires per-source relationship names/types/positions. Legacy proposals are only
+offline regression material; neither validation success nor an LLM label authorizes catalog writes.
+
 This package compares book-series data providers against the same cases and acceptance policy.
 It does not write to Supabase or modify Reverie's corpus.
 
