@@ -1,7 +1,8 @@
 # Authority evidence to safe corrections
 
-Status: implementation in progress, September 12, 2026. The owner approved working through four
-steps. This does not waive source-use, qualification, production deployment, or owner-write gates.
+Status: source safeguards implemented and correction contract defined, September 12, 2026.
+Fresh acquisition, qualification and production integration remain gated. The owner approved
+working through four steps, not waiving source-use, qualification, deployment or owner-write gates.
 
 ## 1. Fix source interpretation
 
@@ -104,3 +105,18 @@ changes require a private-repository sync PR before owner deployment; migrations
 Merge/CI is not hosted verification. No production adapter, migration, deployment, catalog mutation
 or automatic correction is included in this source-validation change. PR #521 stays draft and
 ISBNdb stays retired.
+
+## Verification
+
+- Trial regression suite: 421 tests pass, including malformed/missing claims, source conflicts,
+  position conflicts, non-book groupings, legacy replay and the narrow structural-repair boundary.
+- Lint, TypeScript checks, full unit suite, build and formatting pass locally.
+- Local database suite: 1,640 assertions pass on a freshly reset database.
+- Full browser suite: 279 pass, 10 platform-specific skips, default one worker, retries zero,
+  26.8 minutes. App, shared core, schema and lockfile inputs are unchanged from public main
+  `78ed236118d64f59a7fd92385050d790e5d1f8a1`.
+- The first SQL invocation mistakenly ran after demo seeding and failed empty-fixture preconditions
+  (extra rows and a duplicate work). Correcting the order to reset, SQL, seed, browser resolved the
+  setup error; no test assertion was weakened. The browser result is one full run, not a retry.
+
+These are local implementation checks, not hosted deployment proof or a qualification result.
