@@ -94,7 +94,7 @@ for (const [review, oldPosition, oldCount, observedPosition] of [
   ).result
   const checkedAt = '2026-09-12T00:00:00Z'
   const setup = `${baseSetup}
-  update public.works set series_check_state='unresolved',series_checked_at=null,metadata_provenance=null,
+  update public.works set series_check_state='unresolved',series_checked_at=null,provenance=null,metadata_provenance='{}'::jsonb,
     position=${oldPosition ?? 'null'},series_count=${oldCount ?? 'null'} where id=${quote(id)};
   insert into public.books(id,owner_id,corpus_work_id,title,series,position,series_claim,series_user_chosen)
   values ('ba300000-0000-4000-8000-000000000001',${quote(actor)},${quote(id)},'Recovery Fixture',${quote(work.series)},1,'{"origin":"unknown"}',false),
