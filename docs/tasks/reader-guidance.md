@@ -58,9 +58,18 @@ arrangement. Guide entry points are present on both desktop and phone.
 
 ## Release boundary
 
-Public feature PR, then private synchronization. Migration `20261009010000_reader_guidance.sql`
+Public feature PR, then private synchronization. Migration `20261010010000_reader_guidance.sql`
 must be applied from the private production checkout before publishing the updated web app. No
 Edge Function deployment, provider acquisition, billing change or beta grant is needed.
+
+The unreleased guidance migration was renumbered before production integration to avoid an
+existing deployment migration identifier. Its SQL is unchanged. Local databases that already
+applied the earlier filename must use the normal fresh test database workflow before verification;
+production migration history is not repaired or rewritten.
+
+The optional chapter-details registration gives an extension the current chapter and whether the
+reader chose the full walkthrough. Without a registration, the core guide renders unchanged. The
+extension checks its own availability; it cannot add stored milestones or change core tour order.
 
 During private synchronization, extend the relevant guide chapters with the entitled beta tools:
 Edition Lens and Connected Universes, Reading Table, Room Workshop and Reading Keepsake. Keep

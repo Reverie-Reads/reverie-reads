@@ -107,7 +107,9 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   content-free and monotonic, updated through the row-locked `update_reader_guidance` RPC. Direct
   routes, book controls, import/export, privacy and account exit remain reachable. Custom dock/Home
   arrangements take precedence. A tour must never fabricate reading progress, books or plans, or
-  grant Pro. See `docs/tasks/reader-guidance.md`.
+  grant Pro. Optional chapter details keep the same tour order and prove their own availability.
+  Before numbering a new migration, check the combined deployment history; public and private
+  migrations share one version namespace. See `docs/tasks/reader-guidance.md`.
 - **First paint requires a complete appearance.** A valid local non-Adaptive room plus mode may
   open immediately and reconcile later. A missing or invalid axis, or Adaptive without its
   profile-only palette, stays in the neutral Reverie front-door material until profile hydration
