@@ -558,6 +558,7 @@ for (const surface of ['Discover', 'Add form'] as const) {
         // A reader's edit wins over a later fetch.
         await page.getByLabel('Pages', { exact: true }).fill('543')
         await page.getByRole('button', { name: /Fetch details/ }).click()
+        await expect(page.getByRole('button', { name: /Fetch details/ })).toBeEnabled()
         await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('543')
         await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
       }
@@ -575,7 +576,9 @@ for (const surface of ['Discover', 'Add form'] as const) {
       await expect.poll(async () => (await saved())?.pages).toBe(surface === 'Discover' ? 321 : 543)
       const book = (await saved())!
       expect(book).toMatchObject({ isbn, pub_y: 2010, pub_m: 9, pub_d: 28 })
-      expect(JSON.stringify(book.book_authors)).toContain('Birch Writer')
+      expect(
+        book.book_authors.map((entry: { authors: { name: string } }) => entry.authors.name).sort(),
+      ).toEqual(['Aster Writer', 'Birch Writer'])
       await page.goto(`/book/${book.id}`)
       await page.reload()
       await expect(page.getByRole('heading', { name: title, exact: true }).first()).toBeVisible()
