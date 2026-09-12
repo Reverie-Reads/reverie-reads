@@ -538,7 +538,11 @@ for (const surface of ['Discover', 'Add form'] as const) {
       if (surface === 'Discover') {
         await page.goto('/discover?browse=true')
         await page.getByLabel('Search the wider catalog').fill('continuity')
-        await page.getByRole('button', { name: '＋ Add', exact: true }).click()
+        // Choose the named search result, not one of the catalog cards still present while search settles.
+        const card = page
+          .getByRole('button', { name: `View details for ${title}`, exact: true })
+          .locator('..')
+        await card.getByRole('button', { name: '＋ Add', exact: true }).click()
       } else {
         const query = new URLSearchParams({
           title,
