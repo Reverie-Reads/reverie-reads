@@ -72,12 +72,12 @@ from the full application e2e gate; the existing trial tests are run as a regres
 Acquisition: 2026-09-12 05:19:55.990–05:22:35.308 UTC, all nine targets completed in
 159.318 seconds. No provider errors or retries. Frozen methodology commit: `24cd691`.
 
-| Measure | Luna first pass | Luna plus conditional Exa |
-| --- | ---: | ---: |
-| Validator-safe resolved proposals | 5/9 | 6/9 |
-| Independently supported proposals as emitted | 4 | 4 |
-| Emitted proposals requiring rejection/correction | 1 | 2 |
-| Model abstentions | 4 | 3 |
+| Measure                                          | Luna first pass | Luna plus conditional Exa |
+| ------------------------------------------------ | --------------: | ------------------------: |
+| Validator-safe resolved proposals                |             5/9 |                       6/9 |
+| Independently supported proposals as emitted     |               4 |                         4 |
+| Emitted proposals requiring rejection/correction |               1 |                         2 |
+| Model abstentions                                |               4 |                         3 |
 
 This is a selected development slice, not general accuracy or qualification. No standalone
 claim was emitted. Abstentions have not all been independently assigned reference truth.
