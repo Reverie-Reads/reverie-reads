@@ -13,14 +13,12 @@ import { PlusGlyph } from './PlusGlyph'
 import { isHouseholdAddContext } from './appShellScope'
 import { NavigationGlyph } from './NavigationGlyph'
 import { ReverieMark } from './ReverieMark'
-import {
-  NAVIGATION_ITEMS,
-  moreNavigationItems,
-  navigationLabelForPath,
-  priorityNavigationItems,
-  type NavigationItem,
-} from './navigation'
+import { navigationLabelForPath, type NavigationItem } from './navigation'
 import { useProfile } from '../data/profile'
+import { GuidanceObserver } from '../guidance/data'
+import { GuidanceTrail } from '../guidance/Guide'
+import { guidedNavigation } from '../guidance/navigation'
+import { type Guidance } from '../guidance/model'
 import { DEFAULT_ARRANGEMENT_PRESET, type ArrangementConfig } from '../design/arrangements'
 
 const COLLAPSE_KEY = 'reverie.sidebar.collapsed'
@@ -46,17 +44,19 @@ const navBase =
 function NavLinks({
   collapsed,
   arrangement,
+  guidance,
 }: {
   collapsed: boolean
   arrangement: ArrangementConfig
+  guidance?: Guidance | null
 }) {
-  const priority = priorityNavigationItems(arrangement.destinations)
-  const priorityPaths = new Set(priority.map((item) => item.to))
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const { priority, other } = guidedNavigation(arrangement, guidance, pathname)
   const groups = [
     { label: 'Close at hand', items: priority },
     {
       label: 'Everything else',
-      items: NAVIGATION_ITEMS.filter((item) => !priorityPaths.has(item.to)),
+      items: other,
     },
   ]
   return (
@@ -104,9 +104,11 @@ function NavLinks({
 function Sidebar({
   householdAdd,
   arrangement,
+  guidance,
 }: {
   householdAdd: boolean
   arrangement: ArrangementConfig
+  guidance?: Guidance | null
 }) {
   const { signOut } = useAuth()
   const skinLabel = useSkinLabel()
@@ -180,7 +182,7 @@ function Sidebar({
         {!collapsed && <span>{householdAdd ? 'Add to household' : 'Add a book'}</span>}
       </Link>
 
-      <NavLinks collapsed={collapsed} arrangement={arrangement} />
+      <NavLinks collapsed={collapsed} arrangement={arrangement} guidance={guidance} />
 
       {/* Footer controls */}
       <div
@@ -305,15 +307,21 @@ function TabLink({ item }: { item: NavigationItem }) {
 function MobileTabBar({
   householdAdd,
   arrangement,
+  guidance,
 }: {
   householdAdd: boolean
   arrangement: ArrangementConfig
+  guidance?: Guidance | null
 }) {
   const { signOut } = useAuth()
   const [moreOpen, setMoreOpen] = useState(false)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const tabItems = priorityNavigationItems(arrangement.destinations)
-  const moreItems = moreNavigationItems(arrangement.destinations)
+  const { priority: tabItems, other } = guidedNavigation(arrangement, guidance, pathname)
+  const moreItems: NavigationItem[] = [
+    ...other,
+    { label: 'Appearance', to: '/skins', icon: 'skins' },
+    { label: 'Settings', to: '/settings', icon: 'settings' },
+  ]
 
   // navigating anywhere closes the sheet; Escape closes it too
   useEffect(() => setMoreOpen(false), [pathname])
@@ -442,7 +450,9 @@ function MobileTabBar({
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const arrangement = useProfile().data?.arrangement ?? DEFAULT_ARRANGEMENT_PRESET.config
+  const profile = useProfile().data
+  const arrangement = profile?.arrangement ?? DEFAULT_ARRANGEMENT_PRESET.config
+  const guidance = profile?.guidance
   const mainRef = useRef<HTMLElement>(null)
   const location = useRouterState({ select: (s) => s.location })
   const pathname = location.pathname
@@ -463,7 +473,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
 
-      <Sidebar householdAdd={householdAdd} arrangement={arrangement} />
+      <Sidebar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
+      {guidance?.mode === 'gentle' && <GuidanceObserver key={profile?.id} />}
 
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileBar pathname={pathname} />
@@ -476,11 +487,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           tabIndex={-1}
           className="relative z-[1] flex flex-1 flex-col pb-[calc(72px+env(safe-area-inset-bottom))] outline-none lg:pb-0"
         >
+          <GuidanceTrail />
           {children}
         </main>
       </div>
 
-      <MobileTabBar householdAdd={householdAdd} arrangement={arrangement} />
+      <MobileTabBar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
     </div>
   )
 }

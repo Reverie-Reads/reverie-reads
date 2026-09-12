@@ -24,7 +24,9 @@ async function setup(page: Page) {
   const auth = await sb.auth.signInWithPassword({ email, password })
   if (auth.error || !auth.data.session) throw auth.error ?? new Error('No test session')
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  // These scenarios begin with an existing reader who has already chosen the full interface.
+  const configured = await sb.rpc('update_reader_guidance', { p_mode: 'full', p_complete: true })
+  if (configured.error) throw configured.error
   for (const name of ['search', 'enrich', 'embed', 'releases', 'series', 'covers']) {
     await page.route(`**/functions/v1/${name}**`, (route) => route.fulfill({ json: {} }))
   }

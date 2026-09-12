@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { expect, test, type Page } from './support/fixtures'
 import { authFailure } from './support/authError'
@@ -102,7 +103,7 @@ function waitForLibrarySubscription(page: Page, uid: string): Promise<void> {
 
 async function signIn(page: Page, c: Client): Promise<void> {
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  await configureReturningReader(c.session.access_token)
   await page.goto(
     `/#access_token=${c.session.access_token}&refresh_token=${c.session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

@@ -79,6 +79,12 @@ const PAGE_CAP = 1000
 
 /** Embedded-select resolution, keyed by the exact select string the code under test uses. */
 function project(table: Table, columns: string, rows: Row[]): Row[] {
+  // Profile export uses an explicit column list, not '*'. Returning the entire fake row would
+  // invent an exported account id and let restore change the fake primary key across accounts.
+  if (table === 'profiles' && columns !== '*') {
+    const fields = columns.split(',').map((field) => field.trim())
+    return rows.map((row) => Object.fromEntries(fields.map((field) => [field, row[field]])))
+  }
   if (table === 'book_tropes' && columns.includes('tropes(')) {
     return rows.map((r) => ({
       book_id: r.book_id,
@@ -387,6 +393,7 @@ function seedOldAccount() {
       {
         id: OWNER,
         display_name: 'Reader',
+        guidance: { version: 1, mode: 'gentle', setupComplete: true, milestones: ['books'], revealed: ['share'], tour: 'plan' },
         skin: 'tryst',
         arrangement: {
           version: 1,
@@ -423,6 +430,15 @@ beforeEach(() => {
 })
 
 describe('backup round trip — the data v4 dropped on the floor', () => {
+  it('preserves the reader’s guidance choice, introductions and paused tour in a full restore', async () => {
+    const json = await buildBackup()
+    expect(JSON.parse(json).profile).not.toHaveProperty('id')
+    const before = structuredClone(db.profiles[0]?.guidance)
+    wipeToFreshAccount()
+    await restoreBackup(json)
+    expect(db.profiles.find((row) => row.id === NEW_OWNER)?.guidance).toEqual(before)
+  })
+
   it('preserves reading-plan membership, order, and intention with the book row', async () => {
     Object.assign(db.books[0]!, {
       plan_y: null,
@@ -769,6 +785,7 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
       author_follows: { author_name: string; state: string }[]
       profile: Record<string, unknown>
     }
+    expect(parsed.profile.guidance).toEqual({ version: 1, mode: 'gentle', setupComplete: true, milestones: ['books'], revealed: ['share'], tour: 'plan' })
     expect(parsed.v).toBe(9)
     expect((parsed.tropes['book-a'] ?? []).map((t) => t.name).sort()).toEqual(['Dragons With Opinions', 'Enemies to Lovers'])
     expect(parsed.moods['book-a']).toEqual([{ name: 'Devastating' }])

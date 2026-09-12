@@ -1,3 +1,4 @@
+import { configureReturningReader } from '../support/readerGuidance'
 import { expect, test, type Page } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { mkdirSync } from 'node:fs'
@@ -71,7 +72,7 @@ test.beforeAll(async () => {
 async function open(page: Page, skin: string, mode: string) {
   await admin.from('profiles').upsert({ id: uid, display_name: 'Levels', skin, mode })
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  await configureReturningReader(session.access_token)
   await page.goto(
     `/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

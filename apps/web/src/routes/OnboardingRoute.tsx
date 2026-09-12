@@ -18,7 +18,7 @@ import { ImportSummary } from '../components/ImportSummary'
 import { Surface } from '../components/Surface'
 import { useAuth } from '../auth/AuthProvider'
 import { useHouseholdLibraryAuthorization } from '../data/household'
-import { profileKey, useUpdateProfile, type Profile } from '../data/profile'
+import { profileKey, useProfile, useUpdateProfile, type Profile } from '../data/profile'
 import {
   clearGuestHandoff,
   guestDockArrangement,
@@ -29,23 +29,17 @@ import {
 import { importGuestHandoff, type GuestHandoffResult } from '../data/guestHandoff'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import type { AddDestination } from '../components/addDestination'
+import { GuidanceChoice } from '../guidance/Guide'
+import { useUpdateGuidance } from '../guidance/data'
 import { arrangementFromUnknown } from '../design/arrangements'
 
-// First-run flag — honor-based / client-side (the project's v1 default), so a finished or skipped
-// onboarding never reappears. The trigger that sends a brand-new reader here lives in HomeRoute.
-const ONBOARDED_KEY = 'reverie.onboarded'
-export function markOnboarded(): void {
+// Compatibility for an older cached build only. The current app uses profiles.guidance;
+// this device-wide marker never decides whether a new account sees its welcome.
+function markOnboarded(): void {
   try {
-    localStorage.setItem(ONBOARDED_KEY, '1')
+    localStorage.setItem('reverie.onboarded', '1')
   } catch {
     /* private mode */
-  }
-}
-export function hasOnboarded(): boolean {
-  try {
-    return localStorage.getItem(ONBOARDED_KEY) === '1'
-  } catch {
-    return true // can't tell → don't nag
   }
 }
 
@@ -75,13 +69,19 @@ function OnboardingFlow() {
   const household = useHouseholdLibraryAuthorization()
   const booksQuery = useReaderBooks()
   const updateProfile = useUpdateProfile()
+  const profile = useProfile()
+  const updateGuidance = useUpdateGuidance()
   const existing = booksQuery.data ?? []
   const currentRead = existing.find((book) => book.readStatus === 'Reading')
   const available = nextReadCandidates(existing)
   const csvRef = useRef<HTMLInputElement>(null)
   const [guestHandoff, setGuestHandoff] = useState<GuestHandoff | null>(() => loadGuestHandoff())
   const [step, setStep] = useState<'guest' | 'books' | 'appearance' | 'ready'>(() =>
-    loadGuestHandoff() ? 'guest' : 'books',
+    loadGuestHandoff()
+      ? 'guest'
+      : !profile.data?.guidance?.setupComplete && booksQuery.data?.length
+        ? 'ready'
+        : 'books',
   )
   const [picked, setPicked] = useState<SkinId | null>(null)
   const [imp, setImp] = useState<ImportState>(null)
@@ -164,7 +164,7 @@ function OnboardingFlow() {
         // Import has committed. A slow or retrying refresh must not keep reporting an active
         // write; the next-step view independently waits for the actual books and handles errors.
         void qc.invalidateQueries()
-        markOnboarded() // they've brought a library in — don't re-onboard
+        markOnboarded()
         setImp({ phase: 'done', r })
         // Cover handoff: backfill missing covers for the imported books in the background (§3).
         void enrichImported(qc, r.bookIds)
@@ -179,14 +179,81 @@ function OnboardingFlow() {
   }
 
   const leave = (to: '/library' | '/add' | '/match') => {
-    markOnboarded()
-    void navigate({ to, replace: true })
+    updateGuidance.mutate(
+      { complete: true },
+      {
+        onSuccess: () => {
+          markOnboarded()
+          void navigate({ to, replace: true })
+        },
+      },
+    )
   }
 
   const pickRoom = (id: SkinId) => {
     setPicked(id)
     setSkin(id) // dress the app live
   }
+
+  if (profile.isPending)
+    return (
+      <Stage>
+        <p role="status" className="text-muted">
+          Preparing your welcome…
+        </p>
+      </Stage>
+    )
+  if (profile.isError || !profile.data)
+    return (
+      <Stage>
+        <p role="alert" className="text-ink">
+          Your saved welcome could not be loaded.
+        </p>
+        <Button className="mt-4" onClick={() => void profile.refetch()}>
+          Try again
+        </Button>
+        <Button variant="ghost" onClick={() => void navigate({ to: '/library' })}>
+          Open my library
+        </Button>
+      </Stage>
+    )
+  if (!profile.data.guidance && step !== 'guest' && !guestImp && !imp)
+    return (
+      <Stage>
+        <Label className="block text-[12px] text-muted">Welcome to {APP_NAME}</Label>
+        <h1
+          className="mt-3 text-[34px] leading-[1.15] text-ink"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          Come in at your own pace.
+        </h1>
+        <p className="mb-6 mt-4 text-[16px] leading-relaxed text-muted">
+          A personal library should feel comfortable from the first book. Choose how much of Reverie
+          you would like to meet today. You can change this any time.
+        </p>
+        <GuidanceChoice
+          pending={updateGuidance.isPending}
+          onChoose={(mode, tour) =>
+            updateGuidance.mutate(
+              { mode, complete: mode === 'full', tour: tour ? 'books' : null },
+              {
+                onSuccess: () => {
+                  if (mode === 'full') {
+                    markOnboarded()
+                    void navigate({ to: tour ? '/guide' : '/library', replace: true })
+                  }
+                },
+              },
+            )
+          }
+        />
+        {updateGuidance.isError && (
+          <p role="alert" className="mt-4 text-[14px] text-ink">
+            Your choice could not be saved. Check your connection and try again.
+          </p>
+        )}
+      </Stage>
+    )
 
   // ── explicit guest handoff ────────────────────────────────────────────────────────────────
   if (guestImp?.phase === 'importing') {
@@ -525,6 +592,11 @@ function OnboardingFlow() {
           />
         </div>
         <div className="mt-5 flex flex-col gap-3">
+          {updateGuidance.isError && (
+            <p role="alert" className="text-[14px] text-ink">
+              Your welcome could not be saved. Check your connection and try again.
+            </p>
+          )}
           <Surface radius="panel" tone="card-solid" pad={4}>
             <h2 className="text-[20px] font-semibold text-ink">Import a file</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-ink">
@@ -564,7 +636,12 @@ function OnboardingFlow() {
               Search by title or ISBN, or enter the details yourself. Camera scanning is available
               in supported Chrome-based browsers.
             </p>
-            <Button variant="secondary" className="mt-4" onClick={() => leave('/add')}>
+            <Button
+              variant="secondary"
+              className="mt-4"
+              disabled={updateGuidance.isPending}
+              onClick={() => leave('/add')}
+            >
               Add a book
             </Button>
           </Surface>
@@ -589,7 +666,12 @@ function OnboardingFlow() {
             </p>
             <p className="mt-1 text-muted">{impErr.message}</p>
             {impErr.mayHaveSaved && (
-              <Button variant="secondary" className="mt-3" onClick={() => leave('/library')}>
+              <Button
+                variant="secondary"
+                className="mt-3"
+                disabled={updateGuidance.isPending}
+                onClick={() => leave('/library')}
+              >
                 Check your library
               </Button>
             )}
@@ -684,6 +766,11 @@ function OnboardingFlow() {
       <div className="text-center">
         <SkinDivider className="mb-4" />
         <Label className="block text-[12px] text-muted">Your next step</Label>
+        {updateGuidance.isError && (
+          <p role="alert" className="mt-3 text-[14px] text-ink">
+            Your welcome could not be saved. Your books are here; try your next step again.
+          </p>
+        )}
         <h2
           className="mt-3 text-[32px] leading-tight text-ink"
           style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
@@ -712,14 +799,22 @@ function OnboardingFlow() {
             <Button onClick={() => void booksQuery.refetch()}>Try again</Button>
           ) : !waitingForBooks ? (
             <Button
+              disabled={updateGuidance.isPending}
               onClick={() => {
                 if (currentRead) {
-                  markOnboarded()
-                  void navigate({
-                    to: '/book/$bookId',
-                    params: { bookId: currentRead.id },
-                    replace: true,
-                  })
+                  updateGuidance.mutate(
+                    { complete: true },
+                    {
+                      onSuccess: () => {
+                        markOnboarded()
+                        void navigate({
+                          to: '/book/$bookId',
+                          params: { bookId: currentRead.id },
+                          replace: true,
+                        })
+                      },
+                    },
+                  )
                 } else {
                   leave(available.length ? '/match' : existing.length ? '/library' : '/add')
                 }
@@ -734,7 +829,11 @@ function OnboardingFlow() {
                     : 'Add a book'}
             </Button>
           ) : null}
-          <Button variant="secondary" onClick={() => leave('/library')}>
+          <Button
+            variant="secondary"
+            disabled={updateGuidance.isPending}
+            onClick={() => leave('/library')}
+          >
             Open my library
           </Button>
         </div>

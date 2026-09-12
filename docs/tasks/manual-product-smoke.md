@@ -42,6 +42,12 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 ## P1 — core promise and activation
 
+- [ ] **Your library guide:** in a disposable new account, choose Start gently, Show me around,
+      or Explore on my own. Check the basic reading flow, pause/reload/resume, early exploration,
+      and Show all features. Adding/importing, recording a read, finishing, and saving a plan
+      introduce the expected tools without creating reading records themselves. Check a second
+      account in the same browser gets its own welcome; existing accounts keep their full layout.
+      Confirm a saved custom dock remains intact and the guide remains reachable on a phone.
 - [ ] **Landing guest library:** add/select a sample book, open its details, rate it, save a note,
       change the room, and arrange the dock without the demo jumping down the page or losing state.
 - [ ] **Guest handoff:** choose books, note, room, and arrangement; begin signup; verify explicit

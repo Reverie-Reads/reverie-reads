@@ -1,0 +1,33 @@
+begin;
+select no_plan();
+select ok(not has_function_privilege('anon','public.update_reader_guidance(text,boolean,text[],text[],boolean,text)','EXECUTE'), 'anonymous guidance writes denied at grant boundary');
+select ok(has_function_privilege('authenticated','public.update_reader_guidance(text,boolean,text[],text[],boolean,text)','EXECUTE'), 'readers may save their own guide');
+insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at) values
+('f9300000-0000-4000-8000-000000000001','authenticated','authenticated','guide-owner@example.com','{}','{}',now(),now()),
+('f9300000-0000-4000-8000-000000000002','authenticated','authenticated','guide-other@example.com','{}','{}',now(),now());
+select is((select guidance from public.profiles where id='f9300000-0000-4000-8000-000000000001'), null::jsonb, 'new reader has no chosen path');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"f9300000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is(public.update_reader_guidance(p_mode=>'gentle',p_set_tour=>true,p_tour=>'books')->>'mode','gentle','reader chooses gentle mode');
+select lives_ok($$select public.update_reader_guidance(p_complete=>true,p_milestones=>array['books','reading'],p_reveal=>array['share'])$$,'save introduction and observations');
+select lives_ok($$select public.update_reader_guidance(p_mode=>'full',p_set_tour=>true,p_tour=>'plan')$$,'explicit full tour keeps observations');
+select lives_ok($$select public.update_reader_guidance(p_milestones=>array['finished','books'])$$,'later observation merges instead of replacing preference');
+select is((select guidance->>'mode' from public.profiles), 'full', 'observation does not replace mode');
+select is((select guidance->>'tour' from public.profiles), 'plan', 'observation does not replace tour');
+select is((select guidance->'milestones' from public.profiles),'["books","finished","reading"]'::jsonb,'observations are a deduplicated union');
+select is((select guidance->'revealed' from public.profiles),'["share"]'::jsonb,'early exploration persists');
+select is((select count(*) from public.books),0::bigint,'guidance creates no book');
+select lives_ok($$select public.update_reader_guidance(p_set_tour=>true)$$,'reader pauses the tour');
+select lives_ok($$select public.update_reader_guidance(p_milestones=>array['planned'])$$,'observation after pause succeeds');
+select is((select guidance->>'resume' from public.profiles),'plan','a later milestone preserves the paused stop');
+select throws_ok($$select public.update_reader_guidance(p_milestones=>array['private-title'])$$,'22023',null,'unknown observations rejected');
+select throws_ok($$select public.update_reader_guidance(p_mode=>'pro')$$,'22023',null,'guide never grants Pro');
+select set_config('request.jwt.claims','{"sub":"f9300000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select is((select guidance from public.profiles),null::jsonb,'another reader has no inherited guide');
+with changed as (update public.profiles set guidance=null where id='f9300000-0000-4000-8000-000000000001' returning id) select is((select count(*) from changed),0::bigint,'another reader cannot erase guide');
+reset role;
+select set_config('request.jwt.claims','{}',true);
+delete from auth.users where id='f9300000-0000-4000-8000-000000000001';
+select is((select count(*) from public.profiles where id='f9300000-0000-4000-8000-000000000001'),0::bigint,'account deletion removes guide');
+select * from finish();
+rollback;

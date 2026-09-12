@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import { createClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
@@ -92,7 +93,7 @@ async function signIn(page: Page): Promise<void> {
   if (error || !data.session) throw new Error(authFailure('cover-card-touch', EMAIL, error))
   const { access_token, refresh_token } = data.session
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  await configureReturningReader(access_token)
   await page.goto(
     `/#access_token=${access_token}&refresh_token=${refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

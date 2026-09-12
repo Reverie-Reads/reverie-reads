@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import type { Route } from '@playwright/test'
 import { TRYST_LABELS } from '@reverie/core'
@@ -195,7 +196,7 @@ async function stub(page: Page) {
 
 async function signIn(page: Page, session: { access_token: string; refresh_token: string }) {
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
+  await configureReturningReader(session.access_token)
   await page.goto(
     `/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import { createClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
@@ -133,7 +134,6 @@ async function setup(): Promise<Ctx> {
 async function signInOnce(page: Page) {
   const c = await setup()
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
     'base64',
@@ -143,6 +143,7 @@ async function signInOnce(page: Page) {
   )
   for (const p of ['search', 'enrich', 'embed', 'releases', 'series', 'covers'])
     await page.route(`**/functions/v1/${p}**`, (r) => r.fulfill({ json: {} }))
+  await configureReturningReader(c.session.access_token)
   await page.goto(
     `/#access_token=${c.session.access_token}&refresh_token=${c.session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )
@@ -1003,12 +1004,12 @@ async function readRingRgb(page: Page, skin: string, mode: string) {
     'base64',
   )
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
   await page.route('**covers.reach.test**', (r) =>
     r.fulfill({ body: png, contentType: 'image/png' }),
   )
   for (const p of ['search', 'enrich', 'embed', 'releases', 'series', 'covers'])
     await page.route(`**/functions/v1/${p}**`, (r) => r.fulfill({ json: {} }))
+  await configureReturningReader(s.session.access_token)
   await page.goto(
     `/#access_token=${s.session.access_token}&refresh_token=${s.session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )

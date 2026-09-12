@@ -21,7 +21,6 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => state.navigate,
 }))
 vi.mock('./RootRoute', () => ({ rootRoute: {} }))
-vi.mock('./OnboardingRoute', () => ({ hasOnboarded: () => true }))
 vi.mock('../data/readerBooks', async () => {
   const { useSyncExternalStore } = await import('react')
   return {

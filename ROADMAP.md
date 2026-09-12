@@ -39,6 +39,13 @@ The owner approved this sequence on 2026-09-09 while reader recruitment is unava
    and verification contract live in
    [task-calendar-cluster-scope.md](docs/tasks/task-calendar-cluster-scope.md).
 
+## Current first-use improvement: reader guidance
+
+Before inviting the cohort, the owner requested a choice of gradual introductions or a full app
+walkthrough. The implementation is in review: account-scoped guidance, a short basic reading flow,
+usage-based introductions, replay/pause/resume and an always-available Library guide. Existing
+readers keep their interface. See [reader-guidance.md](docs/tasks/reader-guidance.md).
+
 ## Current program: Free Pro beta before billing
 
 The owner chose an evidence-first Pro beta on 2026-09-10. A bounded cohort receives Pro access

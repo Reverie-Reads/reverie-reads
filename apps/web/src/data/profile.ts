@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isActiveSkin, isMode, type ActiveSkin, type AdaptiveBundle, type AdaptivePending, type Mode } from '@reverie/core'
+import { guidanceFromUnknown, type Guidance } from '../guidance/model'
 import { supabase } from '../lib/supabase'
 import {
   arrangementDocument,
@@ -36,6 +37,7 @@ export interface Profile {
   shelfBreakdownDnf: boolean
   /** The reader's versioned navigation priorities and independently ordered Home modules. */
   arrangement: ArrangementConfig
+  guidance?: Guidance | null
 }
 
 interface ProfileRow {
@@ -57,6 +59,7 @@ interface ProfileRow {
   hide_intensity: boolean | null
   shelf_breakdown_dnf: boolean | null
   arrangement: unknown
+  guidance: unknown
 }
 
 export const profileKey = ['profile'] as const
@@ -82,6 +85,7 @@ const toProfile = (row: ProfileRow): Profile => ({
   hideIntensity: row.hide_intensity ?? false,
   shelfBreakdownDnf: row.shelf_breakdown_dnf ?? false,
   arrangement: arrangementFromUnknown(row.arrangement),
+  guidance: guidanceFromUnknown(row.guidance),
 })
 
 /** The signed-in user's own profile (RLS returns only their row). */
@@ -91,7 +95,7 @@ export function useProfile() {
     queryFn: async (): Promise<Profile | null> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, adaptive_pending, adaptive_dismissed, shelf_breakdown_format, shelf_breakdown_dnf, hide_intensity, arrangement')
+        .select('id, display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, adaptive_pending, adaptive_dismissed, shelf_breakdown_format, shelf_breakdown_dnf, hide_intensity, arrangement, guidance')
         .limit(1)
         .maybeSingle()
       if (error) throw error

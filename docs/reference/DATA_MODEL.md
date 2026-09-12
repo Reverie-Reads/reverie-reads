@@ -750,3 +750,12 @@ confirmation, source link, and note; it also appends `work_metadata_edits`. It n
 the broad editor's manual-series intent. Assessments are not identity corrections or merge rulings.
 Changed work or related-record evidence reopens old assessments. Notes and history stay admin-only;
 personal copies and shared memberships are untouched. See `../tasks/catalog-metadata-review.md`.
+
+## Reader guidance
+
+`profiles.guidance` is a nullable, versioned presentation document. New accounts begin without a
+choice; existing accounts retain the full interface. Mode, setup completion, coarse milestones,
+explicitly introduced chapters and a resumable walkthrough stop travel in profile backup and are
+removed with the account. `update_reader_guidance` merges owner-scoped observations under a row
+lock. This field conveys no access rights and stores no reading-content identifiers or event log.
+See `docs/tasks/reader-guidance.md`.

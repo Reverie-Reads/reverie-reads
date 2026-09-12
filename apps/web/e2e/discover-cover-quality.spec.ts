@@ -1,3 +1,4 @@
+import { configureReturningReader } from './support/readerGuidance'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -88,7 +89,6 @@ async function setup() {
 async function openDiscover(page: Page) {
   const session = await setup()
   await keepOfflineCacheEmpty(page)
-  await page.addInitScript(() => localStorage.setItem('reverie.onboarded', '1'))
 
   // Serve the fixture image the audit's asset classes dictate, by volume id + zoom.
   await page.route('**books.google.com/books/content**', (route) => {
@@ -151,6 +151,7 @@ async function openDiscover(page: Page) {
   for (const p of ['enrich', 'embed', 'series', 'covers'])
     await page.route(`**/functions/v1/${p}**`, (r) => r.fulfill({ json: {} }))
 
+  await configureReturningReader(session.access_token)
   await page.goto(
     `/#access_token=${session.access_token}&refresh_token=${session.refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )
