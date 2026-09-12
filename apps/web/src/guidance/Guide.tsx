@@ -6,6 +6,7 @@ import { Surface } from '../components/Surface'
 import { PageHeader } from '../components/PageHeader'
 import { useUpdateGuidance } from './data'
 import { GUIDE_CHAPTERS, chapterAvailable, type GuidanceMode, type GuideId } from './model'
+import { getGuideChapterDetails } from './chapterDetailsSlot'
 
 const linkClass =
   'skin-control skin-btn-secondary inline-flex min-h-11 items-center justify-center px-4 py-2 text-[14px] leading-relaxed'
@@ -64,6 +65,7 @@ export function GuidanceChoice({
 }
 
 export function GuideScreen() {
+  const ChapterDetails = getGuideChapterDetails()
   const profile = useProfile()
   const update = useUpdateGuidance()
   const guidance = profile.data?.guidance
@@ -249,6 +251,13 @@ export function GuideScreen() {
               <p className="mt-3 text-[13px] leading-relaxed text-muted">
                 Try a step in your own library, then return here whenever you want.
               </p>
+              {ChapterDetails && (
+                <ChapterDetails
+                  key={chapter.id}
+                  chapterId={chapter.id}
+                  expanded={guidance?.mode === 'full' && !!guidance.tour}
+                />
+              )}
               <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
                 <Button
                   variant="secondary"
