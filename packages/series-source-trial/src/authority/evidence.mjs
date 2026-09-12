@@ -125,6 +125,13 @@ const comparableUrl = (value) => {
   }
 }
 
+// Ownership uncertainty concerns the site, not one path. Moving from /about to /book (or its
+// ordinary www spelling) is not independent corroboration or a human ownership decision.
+const sourceControlSite = (value) => {
+  const comparable = comparableUrl(value)
+  return comparable ? new URL(comparable).hostname.replace(/^www\./, '') : null
+}
+
 const citedSource = (sources, url, support) => {
   const wanted = comparableUrl(url)
   return sources.find(
@@ -336,6 +343,11 @@ export function reviewAuthorityPassTransition(firstPass, nextPass, policy = {}) 
   const next = nextPass?.output
   if (!next || next.classification === 'unresolved') return { history, reasons: [] }
   const blocked = new Set(asArray(policy.classificationBlockedUrls).map(comparableUrl))
+  const nextConsulted = new Set(asArray(nextPass.consultedUrls).map(comparableUrl).filter(Boolean))
+  const nextSources = asArray(next.authoritySources).filter((candidate) => {
+    const url = comparableUrl(candidate?.url)
+    return url && nextConsulted.has(url) && !blocked.has(url) && !knownClassificationRisk(candidate)
+  })
   for (const pass of previous) {
     if (pass.output?.caseId && next.caseId && pass.output.caseId !== next.caseId) {
       reasons.add('prior_case_identity_mismatch')
@@ -346,14 +358,11 @@ export function reviewAuthorityPassTransition(firstPass, nextPass, policy = {}) 
       const url = comparableUrl(source?.url)
       if (!url || !consulted.has(url) || blocked.has(url)) continue
       const risk = knownClassificationRisk(source)
-      const nextSources = asArray(next.authoritySources).filter((candidate) =>
-        asArray(nextPass.consultedUrls).map(comparableUrl).includes(comparableUrl(candidate?.url)),
-      )
       if (
         risk === 'unverified_source_control' &&
         nextSources.some(
           (candidate) =>
-            comparableUrl(candidate.url) === url &&
+            sourceControlSite(candidate.url) === sourceControlSite(url) &&
             asArray(candidate.supports).some((support) => support !== 'identity'),
         )
       )

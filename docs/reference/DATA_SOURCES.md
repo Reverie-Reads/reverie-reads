@@ -336,8 +336,8 @@ in the packet before a model call and checks observed identity against packet te
 
 Search passes are cumulative observations, not replacement verdicts. Focused search, Exa fallback,
 structural repair and retrieval preserve rejected-pass observations and reject later resolutions
-that erase grounded named/type/order, identity or container conflicts. The same unverified URL
-cannot become eligible merely by changing its model label on a later pass. Only Luna proposals
+that erase grounded named/type/order, identity or container conflicts. The same unverified site
+cannot become eligible merely by changing its path, www spelling or model label on a later pass. Only Luna proposals
 and Luna-consulted manifests enter this history; Exa locator output remains ephemeral.
 Standalone assertions use standalone support and a summary, not a fabricated relationship named
 standalone. Unnamed descriptions remain summary-only and cannot donate an order to another source's

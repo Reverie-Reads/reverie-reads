@@ -22,7 +22,7 @@ database, graph/vector store, production writer or acquisition run.
    Deterministic comparison preserves the target instead of fixing its spelling. Omnibus and
    unknown scope remain unresolved, even when a series association is plausible. Unverified
    origins and link hubs cannot establish classification; another independent eligible source can.
-   Rejected identity/container observations and same-URL ownership uncertainty survive later passes.
+   Rejected identity/container observations and same-site ownership uncertainty survive later passes.
    Retrieval requires all full author names before interpretation, not one matching surname.
 
 Current prompt/cache versions are `authority-acquisition-v14-observed-identity`,

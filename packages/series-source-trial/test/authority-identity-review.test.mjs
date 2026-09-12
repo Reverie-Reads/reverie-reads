@@ -270,3 +270,43 @@ test('fresh and serialized repair history prevent origin relabelling on cached r
     true,
   )
 })
+
+test('moving an unverified site claim to another path or www spelling is not independent evidence', () => {
+  const first = proposal()
+  first.classification = 'unresolved'
+  first.memberships = []
+  first.authoritySources[0].originAssessment = 'unverified'
+  for (const nextUrl of [
+    'https://publisher.example/another-book-page',
+    'https://www.publisher.example/books/second-book',
+  ]) {
+    const next = proposal()
+    next.authoritySources[0].url = nextUrl
+    next.identity.evidenceUrls = [nextUrl]
+    next.memberships[0].evidenceUrls = [nextUrl]
+    assert.ok(
+      reviewAuthorityPassTransition(snapshot(first), snapshot(next), policy).reasons.includes(
+        'prior_origin_control_unverified',
+      ),
+    )
+  }
+})
+
+test('later discovery-only observations cannot poison a consistent independent identity', () => {
+  const first = proposal()
+  first.classification = 'unresolved'
+  first.memberships = []
+  const next = proposal()
+  next.authoritySources.push({
+    ...structuredClone(next.authoritySources[0]),
+    url: 'https://goodreads.com/book/other',
+    supports: ['identity'],
+    relationshipClaims: [],
+    observedIdentity: { title: book.title, authors: ['Another Reader'], workKind: 'single_work' },
+  })
+  assert.equal(validate(next).policySafe, true)
+  assert.deepEqual(
+    reviewAuthorityPassTransition(snapshot(first), snapshot(next), policy).reasons,
+    [],
+  )
+})
