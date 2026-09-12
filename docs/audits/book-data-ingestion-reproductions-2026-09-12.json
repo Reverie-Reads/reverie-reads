@@ -1,0 +1,79 @@
+{
+  "scope": "offline synthetic fixtures, no provider requests or database writes",
+  "workSearchAsEdition": {
+    "pages": 321,
+    "canonicalIsbn": "9780140328721",
+    "edition": "OL111M",
+    "language": "fre",
+    "year": 1990
+  },
+  "inventedDate": {
+    "year": 2031,
+    "month": 1,
+    "day": 1
+  },
+  "mixedDate": {
+    "year": 1990,
+    "month": 6,
+    "day": 15,
+    "provenance": {
+      "pubY": {
+        "source": "openlibrary",
+        "at": "2026-09-12T12:00:00Z"
+      },
+      "pubM": {
+        "source": "hardcover",
+        "at": "2026-09-12T12:00:00Z"
+      },
+      "pubD": {
+        "source": "hardcover",
+        "at": "2026-09-12T12:00:00Z"
+      }
+    }
+  },
+  "invalidDate": {
+    "pubY": 2031,
+    "pubM": 2,
+    "pubD": 31
+  },
+  "droppedImportPages": {
+    "supplied": 256,
+    "parsed": null
+  },
+  "sameSurnameDifferentPerson": {
+    "confidence": "high",
+    "authorMatch": true
+  },
+  "actualHandlerWrongSource": {
+    "requestedTitle": "Intended Synthetic Title",
+    "requestedAuthor": "Jane Smith",
+    "returnedTitle": "Unrelated Synthetic Title",
+    "returnedAuthor": "Another Person",
+    "returnedDifferentIsbn": true,
+    "confidence": "high"
+  },
+  "actualHandlerGraphQLError": {
+    "httpStatus": 200,
+    "providerErrorsPresent": true,
+    "source": null,
+    "markedFailed": false,
+    "confidence": "high"
+  },
+  "cacheBackfillUnqualifiedRecord": {
+    "suppliedConfidence": "none",
+    "mismatchedIdentity": true,
+    "proposedWorkId": "different-provider-work",
+    "proposedCover": true,
+    "proposedIsbns": ["9780140328721"]
+  },
+  "personalIntakeFalseStrongMatches": {
+    "sameSurnameDifferentPerson": {
+      "strength": "title-author",
+      "decision": "merge"
+    },
+    "sameSeriesUnknownPositionDifferentAuthor": {
+      "strength": "title-series-pos",
+      "decision": "merge"
+    }
+  }
+}
