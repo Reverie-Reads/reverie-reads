@@ -75,10 +75,19 @@ The resolver also treats matching surnames as confirmed authors. The offline fix
 review; it must not become automatic bibliographic identity. Series-label agreement must not
 upgrade uncertain identity, because generic search labels are not relational evidence.
 
+The personal intake matcher has a separate related defect. In `packages/core/src/match.ts`,
+same-title Jane Smith versus John Smith also returns the strong `title-author` match. Same title
+and series label with both positions unknown can return strong `title-series-pos` despite different
+authors. Executing `decideIntake` on those actual results with automatic strong-match merging enabled
+returns `merge` for both. `apps/web/src/data/intake.ts` defaults that option on when the profile does
+not override it. This is a duplicate-routing finding; no personal rows were merged in the audit.
+
 **Required correction:** validate every actual source result independently; normalize valid
 equivalent ISBNs, exact supported title variants and complete contributor identity; keep uncertainty
 explicit; never let a second unvalidated fetch override a resolved candidate. Separate candidate
-ranking from automatic acceptance. Retire reusable old enrichment cache entries at the cutover.
+ranking from automatic acceptance, including personal duplicate routing. Uncertain surname/series
+matches belong in review. Preserve stored duplicate-verdict keys while changing comparison rules.
+Retire reusable old enrichment cache entries at the cutover.
 
 ### D2 — Work/edition boundaries fabricate precision and block real missing details
 
@@ -212,6 +221,8 @@ acceptance and dropped CSV page count. A separate actual-handler probe confirms 
 admission and failure-to-empty conversion with all HTTP requests intercepted; no live credentials
 or provider requests were used. It contains no personal library data or provider payload.
 The pure backfill patch builder was also executed with synthetic cached data and no store/writer.
+The personal duplicate matcher and intake decision were executed on two conflicting-author
+fixtures; both returned automatic merge under the existing strong-match option.
 The remaining findings are source-to-writer/display call-path evidence in the files cited above.
 
 One owner-supplied ISBN was checked read-only against the two free public edition endpoints and the
@@ -227,7 +238,8 @@ reviewed coordination receipt. Trial outputs remain no-write and cannot repair p
 ## Completion gates for the corrective pipeline
 
 1. D1/D2: source-by-source admission plus exact edition scope; handler tests cover wrong-first-hit,
-   same-surname authors, returned-ISBN conflict, subtitles, anthologies and missing authors.
+   same-surname authors, returned-ISBN conflict, subtitles, anthologies and missing authors. Intake
+   tests must also show uncertain duplicates reach review rather than a personal merge.
 2. D3: date tuple/precision guard in normalizers, merges and the authoritative corpus write path.
 3. D4: intake/CSV/read-only detail completeness; tests assert saved and reloaded values, including
    an existing reader value that must survive conflicting provider data.

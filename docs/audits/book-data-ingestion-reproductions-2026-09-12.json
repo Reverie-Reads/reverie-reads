@@ -65,5 +65,15 @@
     "proposedWorkId": "different-provider-work",
     "proposedCover": true,
     "proposedIsbns": ["9780140328721"]
+  },
+  "personalIntakeFalseStrongMatches": {
+    "sameSurnameDifferentPerson": {
+      "strength": "title-author",
+      "decision": "merge"
+    },
+    "sameSeriesUnknownPositionDifferentAuthor": {
+      "strength": "title-series-pos",
+      "decision": "merge"
+    }
   }
 }
