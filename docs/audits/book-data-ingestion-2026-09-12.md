@@ -108,6 +108,15 @@ scope and source. Do not auto-choose an arbitrary ISBN when only the work is kno
 binding, language, publisher and edition date require edition evidence. Missing source fields must
 stay missing; gathering more work search fields cannot repair this boundary.
 
+This scope distinction is also explicit in the provider's
+[Search API documentation](https://openlibrary.org/dev/docs/api/search): search defaults to works;
+edition records are a separate nested selection. Its preferred edition ranking is not an identity
+certificate. For future contributor admission, Google's
+[Volume schema](https://developers.google.com/books/docs/v1/reference/volumes) also matters:
+`authors` can contain authors **or editors**. Preserve uncertain roles rather than treating that
+array's name as a guarantee that each person wrote the work. These documentation checks do not
+broaden the existing production Google-use boundary.
+
 ### D3 — Publication dates can be invented or assembled from different sources
 
 **Priority: P1; reproducible without provider calls.**
