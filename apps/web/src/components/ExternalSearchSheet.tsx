@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Book } from '@reverie/core'
 import { Modal } from './Modal'
+import { SearchSaveNotice } from './SearchSaveNotice'
 import { SearchResults } from './SearchResults'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useSearchEverywhere, useAddFromSearch } from '../data/search'
@@ -42,6 +43,12 @@ export function ExternalSearchSheet({
         style={{ background: 'var(--field)' }}
       />
 
+      <SearchSaveNotice add={add} />
+      {add.isSuccess && add.variables?.listId && add.data.bookId && (
+        <p role="status" className="mt-2 text-sm text-ink">
+          Added to {listName}.
+        </p>
+      )}
       <div className="mt-3 max-h-[52vh] overflow-y-auto">
         {!searching && (
           <p className="px-1 py-3 text-[13px] text-muted">
@@ -67,17 +74,19 @@ export function ExternalSearchSheet({
             results={q.data}
             books={books}
             layout="list"
-            renderActions={(r: SearchResult) => (
-              <button
-                type="button"
-                disabled={add.isPending}
-                onClick={() => add.mutate({ result: r, possession: 'wishlist', listId })}
-                className="skin-control border border-line px-3 py-1 text-[12px] font-semibold text-ink disabled:opacity-50"
-                style={{ background: 'var(--chip)' }}
-              >
-                ＋ Add
-              </button>
-            )}
+            renderActions={(r: SearchResult, existing) =>
+              existing ? null : (
+                <button
+                  type="button"
+                  disabled={add.isPending}
+                  onClick={() => add.mutate({ result: r, possession: 'wishlist', listId })}
+                  className="skin-control border border-line px-3 py-1 text-[12px] font-semibold text-ink disabled:opacity-50"
+                  style={{ background: 'var(--chip)' }}
+                >
+                  ＋ Add
+                </button>
+              )
+            }
           />
         )}
       </div>

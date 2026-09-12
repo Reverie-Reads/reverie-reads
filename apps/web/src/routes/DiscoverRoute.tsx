@@ -1,3 +1,4 @@
+import { SearchSaveNotice } from '../components/SearchSaveNotice'
 import { ReadingTips } from '../components/ReadingTips'
 import { useEffect, useMemo, useState } from 'react'
 import { createRoute, Link, useNavigate } from '@tanstack/react-router'
@@ -203,15 +204,17 @@ function ShelfChooser({
 
 /** The two add actions on a Discover search result: to the library (owned) or to a shelf (unowned).
  *  A book already shelved renders its state instead (handled by SearchResults), never these. */
-function ResultActions({ result }: { result: SearchResult }) {
+function ResultActions({ result, existing }: { result: SearchResult; existing?: boolean }) {
   const add = useAddFromSearch()
   const [chooseShelf, setChooseShelf] = useState(false)
   const busy = add.isPending
+  if (existing && !add.isPending && !add.isError) return null
   return (
     <>
+      <SearchSaveNotice add={add} />
       <button
         type="button"
-        disabled={busy}
+        disabled={busy || existing}
         onClick={() => add.mutate({ result, possession: 'owned' })}
         className="skin-control border border-line px-3 py-1 text-[12px] font-semibold text-ink disabled:opacity-50"
         style={{ background: 'var(--chip)' }}
@@ -220,7 +223,7 @@ function ResultActions({ result }: { result: SearchResult }) {
       </button>
       <button
         type="button"
-        disabled={busy}
+        disabled={busy || existing}
         onClick={() => setChooseShelf(true)}
         className="skin-control border border-line px-3 py-1 text-[12px] font-semibold text-ink disabled:opacity-50"
         style={{ background: 'var(--field)' }}
@@ -297,7 +300,7 @@ function SearchSection({
                 }
                 results={sections.catalog}
                 books={books}
-                renderActions={(r) => <ResultActions result={r} />}
+                renderActions={(r, existing) => <ResultActions result={r} existing={!!existing} />}
               />
             </section>
           )}
@@ -315,7 +318,7 @@ function SearchSection({
                 }
                 results={sections.google}
                 books={books}
-                renderActions={(r) => <ResultActions result={r} />}
+                renderActions={(r, existing) => <ResultActions result={r} existing={!!existing} />}
               />
             </section>
           )}
