@@ -43,5 +43,20 @@
   "sameSurnameDifferentPerson": {
     "confidence": "high",
     "authorMatch": true
+  },
+  "actualHandlerWrongSource": {
+    "requestedTitle": "Intended Synthetic Title",
+    "requestedAuthor": "Jane Smith",
+    "returnedTitle": "Unrelated Synthetic Title",
+    "returnedAuthor": "Another Person",
+    "returnedDifferentIsbn": true,
+    "confidence": "high"
+  },
+  "actualHandlerGraphQLError": {
+    "httpStatus": 200,
+    "providerErrorsPresent": true,
+    "source": null,
+    "markedFailed": false,
+    "confidence": "high"
   }
 }
