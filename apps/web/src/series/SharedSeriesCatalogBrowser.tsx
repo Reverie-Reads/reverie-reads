@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { SERIES_STATUS_LABELS } from '@reverie/core'
 import { Surface } from '../components/Surface'
 import { useCorpusSeriesCatalog } from '../data/corpusSeriesCatalog'
@@ -85,7 +86,14 @@ export function SharedSeriesCatalogBrowser() {
                       className="break-words text-[18px] italic leading-tight text-ink"
                       style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
                     >
-                      {row.name}
+                      <Link
+                        to="/catalog/series/$seriesId"
+                        params={{ seriesId: row.id }}
+                        className="underline decoration-transparent underline-offset-4 hover:decoration-current focus-visible:decoration-current"
+                        aria-label={`Open the ${row.name} shared series`}
+                      >
+                        {row.name}
+                      </Link>
                     </h3>
                     <p className="mt-1 text-[11.5px] text-muted">
                       {linked.length} linked {linked.length === 1 ? 'work' : 'works'}
@@ -142,6 +150,14 @@ export function SharedSeriesCatalogBrowser() {
                     +{row.entries.length - 6} more slots
                   </p>
                 ) : null}
+                <Link
+                  to="/catalog/series/$seriesId"
+                  params={{ seriesId: row.id }}
+                  className="skin-control mt-4 inline-flex min-h-11 items-center border border-line px-3 text-[12px] font-semibold text-ink"
+                  aria-label={`View all books in ${row.name}`}
+                >
+                  Open series
+                </Link>
               </Surface>
             )
           })}

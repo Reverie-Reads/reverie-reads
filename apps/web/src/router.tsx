@@ -17,6 +17,7 @@ import { indieRoute } from './routes/IndieRoute'
 import { skinsRoute } from './routes/SkinGalleryRoute'
 import { seriesRoute } from './routes/SeriesRoute'
 import { seriesIndexRoute } from './routes/SeriesIndexRoute'
+import { sharedSeriesRoute } from './routes/SharedSeriesRoute'
 import { tropesRoute } from './routes/TropesRoute'
 import { tropeRoute } from './routes/TropeRoute'
 import { moodRoute } from './routes/MoodRoute'
@@ -50,6 +51,7 @@ const routeTree = rootRoute.addChildren([
   indieRoute,
   skinsRoute,
   seriesIndexRoute,
+  sharedSeriesRoute,
   seriesRoute,
   tropesRoute,
   tropeRoute,

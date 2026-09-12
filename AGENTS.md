@@ -399,6 +399,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   until explicit review—opening a series page is always read-only and never creates, revives,
   orders, merges, or promotes anything. Removing a secondary leaves the primary intact; removing
   the primary clears the compatibility tuple and never guesses a replacement.
+- **Shared series open by catalog ID, not a personal series name.** The reader-facing Reverie
+  catalog links to `/catalog/series/$seriesId`, which shows all active shared slots without
+  creating a personal series or exposing anyone's reading progress. Unknown positions and total
+  length stay unknown; returning to `/series?scope=shared` preserves the catalog context.
 - **Missing series metadata is unknown, never evidence of a one-book series.** Shared corpus series
   discovery has its own state and recheck clock (`works.series_check_*`): a matched catalog record
   that returns no series becomes `no_series`, not a standalone assertion. Only high-confidence
