@@ -16,7 +16,7 @@ Implemented in the metadata-continuity patch; release verification remains requi
 
 ## 4. Targeted existing-data review
 
-After safeguards. Prepare a bounded review of records supported by existing provenance and the existing administrator review controls. Missing or mixed provenance is uncertainty, not permission for a blanket correction. Identify concrete records and suggested changes for owner review; historical repair is separate from migration. No production write is part of the automatic verification flow.
+Read-only review completed; see `targeted-catalog-data-review.md` and the private handoff. Prepare a bounded review of records supported by existing provenance and the existing administrator review controls. Missing or mixed provenance is uncertainty, not permission for a blanket correction. Identify concrete records and suggested changes for owner review; historical repair is separate from migration. No production write is part of the automatic verification flow.
 
 ## Delivery
 

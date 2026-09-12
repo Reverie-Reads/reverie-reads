@@ -36,6 +36,20 @@ writes, migrations, function deployment, and deletion remain owner-run operation
       choices, moods, tropes, follows, plans, and arrangements without exposing another reader.
 - [ ] **Failed-write honesty:** interrupt one safe local write path and confirm Reverie reports the
       failure instead of showing success or discarding the draft.
+- [ ] **Shelf-save recovery:** in local or preview test data, fail the shelf write after the book
+      saves, then retry from Discover and the shelf picker. The book remains in the library, the
+      shelf failure stays visible, and retry creates one membership without repeating intake,
+      undoing later edits, or changing shelf order when a saved response was lost.
+- [ ] **Edition facts survive saving:** select an exact ISBN with supported pages and a partial or
+      full publication date. Save through Discover and Add, then reopen; all contributors, pages,
+      and the original date precision remain. Edit Pages before fetching details again and confirm
+      the reader value wins. Import a small CSV with pages and edition year; original-publication
+      year and a different ISBN must not silently replace selected-edition facts.
+- [ ] **Source uncertainty stays honest:** try an exact edition, a work-only result, and a
+      deliberately mismatched/competing local source response. Only the admitted edition supplies
+      edition facts; missing or conflicting evidence remains unresolved without inventing a date,
+      series membership, or automatic duplicate merge. Check real-provider behavior after the
+      separately required function deployment.
 - [ ] **Accessibility blocker sweep:** keyboard-only sign-in and core navigation, visible focus,
       labels announced once, dialogs trap/restore focus, and no unreadable control in the selected
       room and mode.
@@ -98,6 +112,9 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 - [ ] **Nine rooms:** review Tryst, Grimoire, Aphelion, Marrow, Umbra, Folio, Hearth, Almanac, and
       Bloom in day and night; each should feel distinct while every label and control remains clear.
+- [ ] **Library membership label:** inspect the compact checkmark and “In your library” text in
+      Discover and the shelf picker across narrow cards and room styles. The status stays on one
+      line, the book link is reachable, and the wording does not claim a failed shelf save succeeded.
 - [ ] **Scene consistency:** compare Landing examples, signed-in Home, Library, Discover, Plan, and
       Reflect in one room; background, typography, materials, and controls should feel related.
 - [ ] **Responsive layouts:** run 320px, 390px, tablet, and 1440px; no sideways page scroll,
