@@ -19,7 +19,8 @@ vi.mock('../series/SeriesManagement', () => ({
 }))
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
 
-const { SeriesCard, buildStructuredSeriesSections } = await import('./SeriesIndexRoute')
+const { SeriesCard, buildStructuredSeriesSections, validateSeriesIndexSearch } =
+  await import('./SeriesIndexRoute')
 
 const member = (id: string, seriesCount: number, ownership: Book['ownership'] = 'owned'): Book => ({
   id,
@@ -131,6 +132,13 @@ function renderedMeta(books: Book[], entries: SeriesEntry[], length: number | nu
 }
 
 describe('the canonical series browser', () => {
+  it('accepts only the shared scope and defaults every other URL value to personal', () => {
+    expect(validateSeriesIndexSearch({ scope: 'shared' })).toEqual({ scope: 'shared' })
+    for (const scope of [undefined, null, 'personal', 'admin', ['shared'], true]) {
+      expect(validateSeriesIndexSearch({ scope })).toEqual({ scope: undefined })
+    }
+  })
+
   it('uses the maximum explicit series length and actual possession, regardless of fetch order', () => {
     const books = [member('b1', 6), member('b2', 7, 'unowned'), member('b3', 6)]
     const entries = [entry('e1', 'b1', 1), entry('e2', 'b2', 2), entry('e3', 'b3', 3)]

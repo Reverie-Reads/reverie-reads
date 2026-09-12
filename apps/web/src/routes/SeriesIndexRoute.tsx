@@ -256,6 +256,9 @@ export function SeriesCard({
 }
 
 export function SeriesIndexScreen() {
+  const { scope: selectedScope } = seriesIndexRoute.useSearch()
+  const scope = selectedScope ?? 'personal'
+  const navigate = seriesIndexRoute.useNavigate()
   const { data: books } = useBooks()
   const { data: seriesList } = useSeriesList()
   const { data: lists } = useLists()
@@ -264,7 +267,6 @@ export function SeriesIndexScreen() {
   const [renaming, setRenaming] = useState<SeriesManagementRow | null>(null)
   const [deleting, setDeleting] = useState<SeriesManagementRow | null>(null)
   const [merging, setMerging] = useState(false)
-  const [scope, setScope] = useState<'personal' | 'shared'>('personal')
 
   const byId = useMemo(() => new Map((books ?? []).map((book) => [book.id, book])), [books])
 
@@ -362,7 +364,9 @@ export function SeriesIndexScreen() {
                 key={value}
                 type="button"
                 aria-pressed={scope === value}
-                onClick={() => setScope(value)}
+                onClick={() =>
+                  void navigate({ search: { scope: value === 'shared' ? 'shared' : undefined } })
+                }
                 className="skin-control min-h-11 px-3 text-[13px] font-semibold text-ink"
                 style={{
                   background: scope === value ? 'var(--accent-fill)' : 'transparent',
@@ -478,8 +482,13 @@ export function SeriesIndexScreen() {
   )
 }
 
+export function validateSeriesIndexSearch(search: Record<string, unknown>): { scope?: 'shared' } {
+  return { scope: search.scope === 'shared' ? 'shared' : undefined }
+}
+
 export const seriesIndexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'series',
+  validateSearch: validateSeriesIndexSearch,
   component: SeriesIndexScreen,
 })

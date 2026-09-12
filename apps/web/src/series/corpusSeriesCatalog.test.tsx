@@ -2,6 +2,22 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CorpusSeriesCatalogRow } from '../data/corpusSeriesCatalog'
 
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({
+    to,
+    params,
+    children,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    to: string
+    params: { seriesId: string }
+  }) => (
+    <a href={to.replace('$seriesId', params.seriesId)} {...props}>
+      {children}
+    </a>
+  ),
+}))
+
 const mocks = vi.hoisted(() => ({
   save: vi.fn(),
   remove: vi.fn(),
@@ -78,6 +94,12 @@ describe('canonical shared-series catalog interfaces', () => {
     render(<SharedSeriesCatalogBrowser />)
 
     expect(screen.getByText('The Lantern Sequence')).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Open the The Lantern Sequence shared series' }),
+    ).toHaveAttribute('href', '/catalog/series/series-1')
+    expect(
+      screen.getByRole('link', { name: 'View all books in The Lantern Sequence' }),
+    ).toHaveAttribute('href', '/catalog/series/series-1')
     expect(screen.getByText('#1 · A Map of Quiet Stars')).toBeInTheDocument()
     expect(document.querySelector('img[src="https://example.com/map.jpg"]')).toHaveClass(
       'object-contain',
