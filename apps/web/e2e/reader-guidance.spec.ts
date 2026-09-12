@@ -167,7 +167,8 @@ test('independent exploration creates no books and its guide fits every room on 
   const account = await freshReader(page)
   try {
     await page.getByRole('button', { name: 'Explore on my own', exact: true }).click()
-    await expect.poll(async () => (await account.guidance()).setupComplete).toBe(true)
+    await expect(page).toHaveURL(/\/library$/)
+    await expect.poll(async () => (await account.guidance())?.setupComplete).toBe(true)
     expect(await account.guidance()).toMatchObject({ mode: 'full', tour: null })
     const books = await account.reader.from('books').select('id', { count: 'exact', head: true })
     if (books.error) throw books.error
