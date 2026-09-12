@@ -99,6 +99,7 @@ export function useAddFromSearch() {
   const qc = useQueryClient()
   const intake = useIntake()
   return useMutation<AddFromSearchResult, Error, AddFromSearchInput>({
+    meta: { errorPresentation: 'inline' },
     mutationFn: async ({ result, possession, listId, savedBookId }) => {
       const res = savedBookId && listId
         ? { bookId: savedBookId, outcome: 'unchanged' as const }

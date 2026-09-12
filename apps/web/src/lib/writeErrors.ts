@@ -23,6 +23,8 @@ export interface WriteError {
 /** Mutations name themselves through `meta` so the toast can say what failed. */
 export interface MutationMeta {
   action?: string
+  /** The calling surface owns an accessible error and retry; avoid a contradictory toast. */
+  errorPresentation?: 'inline'
 }
 
 // Register the shape app-wide, so `meta: { action: … }` is type-checked at every call site and
@@ -108,6 +110,7 @@ export function readableWriteError(error: unknown): string {
 }
 
 export function reportWriteError(error: unknown, meta?: MutationMeta): void {
+  if (meta?.errorPresentation === 'inline') return
   const entry: WriteError = {
     id: nextId++,
     action: meta?.action ?? 'Saving',

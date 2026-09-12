@@ -415,6 +415,7 @@ for (const surface of ['Discover', 'Shelf picker'] as const) {
         ).toBeVisible()
         if (!savedBeforeError)
           await page.screenshot({ path: test.info().outputPath('shelf-retry.png'), fullPage: true })
+        await expect(page.getByText('Saving didn’t save', { exact: true })).toHaveCount(0)
         expect(placements).toBe(1)
         const saved = await bookByTitle(c.sb, c.uid, 'Wildfire Vow')
         expect(saved).not.toBeNull()
