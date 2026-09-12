@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useProfile } from '../data/profile'
 import { Button } from '../components/Button'
@@ -71,6 +71,7 @@ export function GuideScreen() {
   const guidance = profile.data?.guidance
   const [selected, setSelected] = useState<GuideId | null>(null)
   const [changing, setChanging] = useState(false)
+  const navigationStatus = useRef<HTMLParagraphElement>(null)
   const chapter =
     GUIDE_CHAPTERS.find(
       (item) => item.id === (guidance?.tour ?? selected ?? guidance?.resume ?? 'books'),
@@ -109,24 +110,49 @@ export function GuideScreen() {
       ) : (
         <>
           <div className="my-6 flex flex-wrap items-center gap-2">
-            <p className="mr-auto text-[14px] leading-relaxed text-muted">
-              {guidance?.mode === 'gentle'
-                ? 'Your library is opening a little at a time.'
-                : 'Every destination is available in your navigation.'}
-            </p>
+            <div className="mr-auto min-w-0 flex-1 basis-full sm:basis-auto">
+              <p
+                ref={navigationStatus}
+                role="status"
+                aria-atomic="true"
+                tabIndex={-1}
+                className="text-[14px] font-medium leading-relaxed text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                {guidance?.mode === 'gentle'
+                  ? 'Navigation opens a little at a time.'
+                  : 'Full navigation is on.'}
+              </p>
+              <p
+                id="guide-navigation-description"
+                className="mt-1 text-[13px] leading-relaxed text-muted"
+              >
+                {guidance?.mode === 'gentle'
+                  ? 'Reveal every section now, keeping your dock and your place in the walkthrough.'
+                  : 'Every section is available in the sidebar or More menu. Your saved dock stays the same.'}
+              </p>
+            </div>
+            {guidance?.mode === 'gentle' && (
+              <Button
+                variant="secondary"
+                disabled={update.isPending}
+                aria-describedby="guide-navigation-description"
+                onClick={() =>
+                  update.mutate(
+                    { mode: 'full', complete: true },
+                    { onSuccess: () => navigationStatus.current?.focus({ preventScroll: true }) },
+                  )
+                }
+              >
+                {update.isPending ? 'Saving…' : 'Show full navigation'}
+              </Button>
+            )}
             <Button
               variant="secondary"
+              disabled={update.isPending}
               onClick={() => setChanging(!changing)}
               aria-expanded={changing}
             >
               Change my pace
-            </Button>
-            <Button
-              variant="ghost"
-              disabled={update.isPending}
-              onClick={() => update.mutate({ mode: 'full', complete: true, tour: null })}
-            >
-              Show all features
             </Button>
           </div>
           {changing && (

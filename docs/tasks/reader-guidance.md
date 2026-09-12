@@ -17,6 +17,13 @@ Every choice is reversible from Library guide. Tours use a small note in the pag
 chapter guide, never a blocking spotlight or a modal over the reader's current task. Readers can
 pause, resume after refresh, replay a stop, open a destination directly, or reveal everything.
 
+The guide's **Show full navigation** action is offered only in gentle mode. It reveals every
+section in the sidebar or More menu while preserving the saved dock and current walkthrough
+stop. A pending label prevents repeated saves; a successful save replaces the action with
+**Full navigation is on**, announces the status and moves keyboard focus to it. Readers already
+using full navigation see that status instead of a redundant button. Pausing the walkthrough
+remains a separate action. This UI refinement needs no additional migration.
+
 Gentle introductions follow existing personal-library facts:
 
 | Existing evidence                                             | Tools introduced                                  |
