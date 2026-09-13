@@ -350,3 +350,45 @@ test('a changed reading status cannot turn a demonstrated dialog opener into an 
     await account.cleanup()
   }
 })
+
+test('a finish target below the fold keeps the guide reachable before demonstrating navigation', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 600 })
+  const account = await setup(page, 'Reading', 20)
+  try {
+    await start(page)
+    await show(page)
+    const progress = page.getByRole('dialog', { name: 'Update progress', exact: true })
+    await progress.getByRole('spinbutton', { name: 'Progress (%)', exact: true }).fill('32')
+    await progress.getByRole('button', { name: 'Save progress', exact: true }).click()
+    const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
+    await expect(guide.getByRole('status')).toHaveText('Your place is saved')
+    const finishButton = page.getByRole('button', { name: 'Finish this read', exact: true })
+    expect((await finishButton.boundingBox())!.y).toBeGreaterThanOrEqual(600)
+    await guide.getByRole('button', { name: 'When I finish', exact: true }).click()
+    await expect(guide.getByRole('status')).toHaveText('When you reach the end')
+    // Checking visibility alone would accept a fixed panel below the viewport; the reader must
+    // be able to reach the action without scripted scrolls or a forced click.
+    await expect
+      .poll(async () => {
+        const box = await guide.boundingBox()
+        return (
+          !!box &&
+          box.x >= 0 &&
+          box.y >= 0 &&
+          box.x + box.width <= 1280 &&
+          box.y + box.height <= 600
+        )
+      })
+      .toBe(true)
+    await show(page)
+    const finish = page.getByRole('dialog', { name: 'Finish this read', exact: true })
+    await expect(finish).toBeVisible()
+    await finish.getByRole('button', { name: 'Close', exact: true }).click()
+    expect((await account.book()).progress).toBe(32)
+    expect(await account.reads()).toHaveLength(0)
+  } finally {
+    await account.cleanup()
+  }
+})

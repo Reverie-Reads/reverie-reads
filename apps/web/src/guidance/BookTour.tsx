@@ -261,7 +261,9 @@ export function BookTour() {
         middleware: [
           offset(18),
           flip({ fallbackPlacements: ['right-start', 'bottom-start', 'top-start'] }),
-          shift({ padding: 16 }),
+          // A step can point below the fold. Keep its navigation reachable so the reader
+          // can ask the demonstration to bring that target into view.
+          shift({ padding: 16, crossAxis: true }),
         ],
       }).then(({ x, y }) => {
         if (!disposed)
