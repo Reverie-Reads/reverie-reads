@@ -51,8 +51,8 @@ select lives_ok($$select public.add_corpus_work_to_member_library('75000000-0000
 reset role;
 select is((select jsonb_build_array(isbn,pages,pub_y,pub_m,pub_d,ownership,borrowed,wishlist,read_status) from public.books
  where owner_id='75222222-2222-4222-8222-222222222222' and corpus_work_id='75000000-0000-4000-8000-000000000002'),
- '["9780306406157",null,2024,2,null,"unowned",false,false,"unset"]'::jsonb,
- 'delegated first ISBN receives matching date but not another edition page count; no possession implied');
+ '["9780140449136",789,null,null,null,"unowned",false,false,"unset"]'::jsonb,
+ 'delegated canonical first ISBN receives matching pages but not another edition date; no possession implied');
 select is((select to_jsonb(w) from public.works w where id='75000000-0000-4000-8000-000000000002'),
  (select value from reference_shared_before),'consumer actions do not rewrite shared evidence');
 -- Another writer can change a scalar without replacing its historical provenance.
@@ -62,15 +62,16 @@ select lives_ok($$select public.adopt_corpus_work_metadata('75000000-0000-4000-8
 reset role;
 select is((select jsonb_build_array(pub_y,pub_m,pub_d) from public.books where id='75000000-0000-4000-8000-000000000003'),
  '[2024,2,null]'::jsonb,'stale same-ISBN provenance cannot authorize copying the changed date');
--- A fresh copy of the other selected edition reverses the independently eligible fields.
+-- ISBNs are canonically sorted, not insertion-ordered. Limit this fixture to the other
+-- edition and restore the exact reviewed date to exercise the opposite eligibility result.
 update public.books set removed_at=now() where owner_id='75222222-2222-4222-8222-222222222222'
  and corpus_work_id='75000000-0000-4000-8000-000000000002';
-update public.works set isbns='{9780140449136,9780306406157}' where id='75000000-0000-4000-8000-000000000002';
+update public.works set isbns='{9780306406157}', pub_y=2024 where id='75000000-0000-4000-8000-000000000002';
 set local role authenticated;
 select lives_ok($$select public.add_corpus_work_to_member_library('75000000-0000-4000-8000-000000000002','75222222-2222-4222-8222-222222222222')$$,'fresh delegated copy can use the other edition');
 reset role;
 select is((select jsonb_build_array(isbn,pages,pub_y,pub_m,pub_d) from public.books
  where owner_id='75222222-2222-4222-8222-222222222222' and corpus_work_id='75000000-0000-4000-8000-000000000002' and removed_at is null),
- '["9780140449136",789,null,null,null]'::jsonb,'matching pages survive a mismatched date reference without mixing fields');
+ '["9780306406157",null,2024,2,null]'::jsonb,'matching date survives a mismatched page reference without mixing fields');
 select * from finish();
 rollback;
