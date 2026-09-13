@@ -1,5 +1,5 @@
 import { configureReturningReader } from './support/readerGuidance'
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import AxeBuilder from '@axe-core/playwright'
 import { SKIN_LIST } from '@reverie/core'
@@ -12,6 +12,17 @@ const ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 const SERVICE =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
+
+// Shared works outlive personal fixtures in other specs. Never borrow their real ISBNs:
+// the canonical-ISBN constraint correctly refuses assigning those editions to this work.
+function fixtureIsbn() {
+  const base = `978${String(randomInt(1_000_000_000)).padStart(9, '0')}`
+  const sum = [...base].reduce(
+    (total, digit, index) => total + Number(digit) * (index % 2 ? 3 : 1),
+    0,
+  )
+  return `${base}${(10 - (sum % 10)) % 10}`
+}
 async function setup(page: Page, isAdmin = true) {
   const admin = createClient(URL, SERVICE, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -78,6 +89,7 @@ async function setup(page: Page, isAdmin = true) {
     peerId,
     bookId,
     title,
+    isbn: fixtureIsbn(),
     cleanup: async () => {
       await ok(
         admin.from('corpus_metadata_review_events').delete().in('work_id', [workId, peerId]),
@@ -211,10 +223,11 @@ test('ordinary readers cannot open metadata review', async ({ page }) => {
 async function editionDraft(
   page: Page,
   title: string,
+  isbn: string,
   field: 'pages' | 'publication',
   value: string,
 ) {
-  await page.getByLabel('Reference edition ISBN').selectOption('9780306406157')
+  await page.getByLabel('Reference edition ISBN').selectOption(isbn)
   await page.getByLabel('Title shown by the edition source', { exact: true }).fill(title)
   await page.getByLabel('Full contributor names shown by the edition source').fill('Test Writer')
   await page.getByLabel('Field to correct').selectOption(field)
@@ -236,7 +249,7 @@ test('edition correction previews a whole date, persists after refresh and prote
     await ok(
       c.admin
         .from('works')
-        .update({ isbns: ['9780306406157'], pages: 321, pub_y: 2025, pub_m: 2, pub_d: 29 })
+        .update({ isbns: [c.isbn], pages: 321, pub_y: 2025, pub_m: 2, pub_d: 29 })
         .eq('id', c.workId),
       'edition baseline',
     )
@@ -245,7 +258,7 @@ test('edition correction previews a whole date, persists after refresh and prote
       'personal baseline',
     )
     await page.goto(`/catalog/metadata?work=${c.workId}`)
-    await editionDraft(page, c.title, 'publication', '2025-02-29')
+    await editionDraft(page, c.title, c.isbn, 'publication', '2025-02-29')
     await expect(
       page.getByRole('region', { name: 'Edition correction' }).getByRole('alert'),
     ).toContainText('Use a valid')
@@ -271,9 +284,9 @@ test('edition correction previews a whole date, persists after refresh and prote
       'saved date',
     )
     expect(afterDate).toMatchObject({ pages: 321, pub_y: 2024, pub_m: 2, pub_d: null })
-    expect(afterDate.metadata_provenance.pubM.referenceIsbn).toBe('9780306406157')
+    expect(afterDate.metadata_provenance.pubM.referenceIsbn).toBe(c.isbn)
     expect(afterDate.metadata_provenance.pubD).toBeUndefined()
-    await editionDraft(page, c.title, 'pages', '456')
+    await editionDraft(page, c.title, c.isbn, 'pages', '456')
     await page.getByRole('checkbox', { name: /I checked this edition/ }).check()
     let requests = 0
     await page.route('**/rest/v1/rpc/admin_correct_corpus_edition_details', async (route) => {
@@ -315,12 +328,12 @@ test('stale edition correction keeps the draft and requires reload rather than r
     await ok(
       c.admin
         .from('works')
-        .update({ isbns: ['9780306406157'], pages: 321, pub_y: 2025, pub_m: 2, pub_d: 2 })
+        .update({ isbns: [c.isbn], pages: 321, pub_y: 2025, pub_m: 2, pub_d: 2 })
         .eq('id', c.workId),
       'edition baseline',
     )
     await page.goto(`/catalog/metadata?work=${c.workId}`)
-    await editionDraft(page, c.title, 'pages', '456')
+    await editionDraft(page, c.title, c.isbn, 'pages', '456')
     await page.getByRole('checkbox', { name: /I checked this edition/ }).check()
     await ok(
       c.admin.from('works').update({ pub_d: 3 }).eq('id', c.workId),
@@ -356,12 +369,12 @@ test('an uncertain edition correction response never triggers an automatic or se
     await ok(
       c.admin
         .from('works')
-        .update({ isbns: ['9780306406157'], pages: 321 })
+        .update({ isbns: [c.isbn], pages: 321 })
         .eq('id', c.workId),
       'edition baseline',
     )
     await page.goto(`/catalog/metadata?work=${c.workId}`)
-    await editionDraft(page, c.title, 'pages', '456')
+    await editionDraft(page, c.title, c.isbn, 'pages', '456')
     await page.getByRole('checkbox', { name: /I checked this edition/ }).check()
     let requests = 0
     await page.route('**/rest/v1/rpc/admin_correct_corpus_edition_details', async (route) => {
@@ -392,13 +405,13 @@ test('metadata comparison and text entry fit a phone in every reading room', asy
     await ok(
       c.admin
         .from('works')
-        .update({ isbns: ['9780306406157'], pages: 321, pub_y: 2024 })
+        .update({ isbns: [c.isbn], pages: 321, pub_y: 2024 })
         .eq('id', c.workId),
       'phone edition baseline',
     )
     await page.goto(`/catalog/metadata?work=${c.workId}`)
     await expect(page.getByLabel('Catalog description')).toBeVisible()
-    await editionDraft(page, c.title, 'pages', '456')
+    await editionDraft(page, c.title, c.isbn, 'pages', '456')
     await expect(page.getByText('Pages: 321 → 456', { exact: true })).toBeVisible()
     for (const skin of SKIN_LIST)
       for (const mode of ['light', 'dark']) {

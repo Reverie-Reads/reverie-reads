@@ -86,8 +86,10 @@ test('a new phone reader starts gently, imports history and keeps introductions 
     await expect(menu.getByRole('link', { name: 'Series', exact: true })).toBeVisible()
     await expect(menu.getByRole('link', { name: 'Stats', exact: true })).toHaveCount(0)
     await expect(menu.getByRole('link', { name: 'Clubs', exact: true })).toHaveCount(0)
-    await menu.getByRole('link', { name: 'Library guide', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Your library guide' })).toBeVisible()
+    await expect(menu.getByRole('link', { name: 'Library guide', exact: true })).toHaveCount(0)
+    await menu.getByRole('link', { name: 'Settings', exact: true }).click()
+    await page.getByRole('link', { name: 'Change pace or explore walkthroughs' }).click()
+    await expect(page.getByRole('heading', { name: 'Walkthroughs and guidance' })).toBeVisible()
     await page.getByRole('combobox', { name: 'Choose a stop', exact: true }).selectOption('plan')
     await expect(
       page.getByRole('heading', { name: 'Leave a place for what comes next' }),
@@ -131,7 +133,12 @@ test('showing full navigation gives saved feedback, reveals destinations and pre
     await page.getByRole('button', { name: 'Continue without importing', exact: true }).click()
     await page.getByRole('button', { name: 'Open my library', exact: true }).click()
     await expect(page).toHaveURL(/\/library$/)
-    await page.goto('/guide')
+    const dock = page.getByRole('navigation', { name: 'Primary', exact: true })
+    await expect(dock.getByRole('link')).toHaveCount(3)
+    for (const name of ['Home', 'Library', 'Add a book'])
+      await expect(dock.getByRole('link', { name, exact: true })).toBeVisible()
+    await expect(dock.getByRole('button', { name: 'More', exact: true })).toBeVisible()
+    await page.goto('/settings/guidance')
     await page.getByRole('combobox', { name: 'Choose a stop' }).selectOption('plan')
     await expect.poll(async () => (await account.guidance()).tour).toBe('plan')
     await page.getByRole('button', { name: 'More', exact: true }).click()
@@ -205,7 +212,7 @@ test('the full walkthrough keeps its place and failed saves stay put', async ({ 
     expect(await account.guidance()).toBeNull()
     await page.unroute('**/rest/v1/rpc/update_reader_guidance')
     await page.getByRole('button', { name: 'Show me around', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Your library guide' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Walkthroughs and guidance' })).toBeVisible()
     await expect(page.getByRole('main')).toContainText('Stop 1 of 10')
     await page.getByRole('main').getByRole('button', { name: 'Next stop', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Settle into a book' })).toBeVisible()
@@ -244,7 +251,7 @@ test('independent exploration creates no books and its guide fits every room on 
     const books = await account.reader.from('books').select('id', { count: 'exact', head: true })
     if (books.error) throw books.error
     expect(books.count).toBe(0)
-    await page.goto('/guide')
+    await page.goto('/settings/guidance')
     for (const skin of SKIN_ORDER)
       for (const mode of ['light', 'dark'] as const) {
         const saved = await account.reader

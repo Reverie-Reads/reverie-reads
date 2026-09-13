@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link, createRoute, useNavigate } from '@tanstack/react-router'
+import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 import {
   authorOf,
   beginReadingPatch,
@@ -295,6 +296,8 @@ export function BookDetailScreen() {
   }
 
   const book = books?.find((b) => b.id === bookId)
+  const { state: bookTour } = useBookTour()
+  useBookTourObservation(book ? 'opened' : null, book?.id)
   const { data: isCorpusAdmin = false } = useCorpusAdminStatus()
   const coverReview = usePersonalCoverCorpusReview({
     bookId: book?.id ?? '',
@@ -405,6 +408,8 @@ export function BookDetailScreen() {
           </span>
           <div className="flex items-start justify-between gap-3">
             <h1
+              data-book-tour={book.id === bookTour.bookId ? 'tour-opened-book' : undefined}
+              tabIndex={-1}
               className="mt-2 max-w-[18ch] text-balance text-[27px] font-semibold leading-[1.02] text-ink sm:text-[42px]"
               style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
             >

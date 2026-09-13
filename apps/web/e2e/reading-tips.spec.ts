@@ -149,7 +149,7 @@ test('reading tips save across sessions, preserve essential copy and the guide, 
     ).toHaveCount(0)
     await expect(page.getByLabel('Stats year')).toBeVisible()
 
-    await page.goto('/guide')
+    await page.goto('/settings/guidance')
     await page.getByRole('combobox', { name: 'Choose a stop', exact: true }).selectOption('plan')
     await expect(
       page.getByRole('heading', { name: 'Leave a place for what comes next' }),

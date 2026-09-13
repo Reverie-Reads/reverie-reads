@@ -88,7 +88,7 @@ const DETAIL_DESTINATIONS = [
   ['/review', 'Review books'],
   ['/covers', 'Cover Studio'],
   ['/add', 'Add a book'],
-  ['/guide', 'Library guide'],
+  ['/settings/guidance', 'Walkthroughs and guidance'],
 ] as const
 
 /** A compact, human label for mobile chrome. The persistent tabs communicate destination; the

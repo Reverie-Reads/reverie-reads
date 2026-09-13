@@ -66,6 +66,7 @@ import { LevelPicker } from '../components/LevelPicker'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import { delegatedMemberId, type AddDestination } from '../components/addDestination'
 import { GoogleBooksAttribution, GoogleBooksResultLink } from '../components/GoogleBooksAttribution'
+import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 
 interface BarcodeDetectorLike {
   detect(source: CanvasImageSource): Promise<{ rawValue: string }[]>
@@ -182,6 +183,7 @@ function RefineAdded({
   const labels = useLabels()
   const { data: books } = useBooks()
   const book = books?.find((b) => b.id === bookId)
+  useBookTourObservation(book ? 'saved' : null, book?.id)
   const [dialog, setDialog] = useState<'cover' | 'trope' | null>(null)
 
   if (!book) {
@@ -202,7 +204,7 @@ function RefineAdded({
   const tropeCount = book.tropes.length
 
   return (
-    <Surface radius="panel" tone="card" pad={3} className="mt-4">
+    <Surface radius="panel" tone="card" pad={3} className="mt-4" data-book-tour-region>
       {householdWarning ? (
         <p role="status" className="mb-3 text-[12.5px] text-accent-ink">
           {householdWarning}
@@ -248,6 +250,7 @@ function RefineAdded({
       <button
         type="button"
         onClick={onDone}
+        data-book-tour="book-done"
         className="mt-4 h-11 w-full skin-control text-[14px] font-semibold"
         style={{
           background: 'linear-gradient(135deg, var(--primary), var(--gold))',
@@ -291,6 +294,7 @@ function AddForm({
   const [dup, setDup] = useState<ReviewCandidate | null>(null)
   // Once the record is created we hand off to the refine step (cover + tropes) instead of leaving.
   const [addedId, setAddedId] = useState<string | null>(null)
+  useBookTourObservation(addedId ? null : 'details')
   const [householdWarning, setHouseholdWarning] = useState<string | null>(null)
   const [contribs, setContribs] = useState<Contributor[]>(
     contributorsFromAuthors(hit.authors ?? []),
@@ -895,6 +899,7 @@ function AddForm({
       <button
         type="button"
         onClick={() => void save()}
+        data-book-tour="book-save"
         className="mt-4 h-11 w-full skin-control text-[14px] font-semibold"
         style={{
           background: 'linear-gradient(135deg, var(--primary), var(--gold))',
@@ -1311,6 +1316,7 @@ function HouseholdAddForm({
 }
 
 function AddScreen() {
+  const { state: bookTour } = useBookTour()
   const voice = useVoice()
   const navigate = useNavigate()
   // Deep-link prefill (?title=…&author=…): Discover — and anything else that finds a book
@@ -1341,6 +1347,7 @@ function AddScreen() {
   // every character and labels the visible results against a term nobody asked for.
   const [searched, setSearched] = useState('')
   const [picked, setPicked] = useState<Picked | null>(() => pickedFromAddPrefill(prefill))
+  useBookTourObservation(picked ? null : !busy && results?.length ? 'choose' : 'search')
   const [scanStatus, setScanStatus] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -1455,6 +1462,7 @@ function AddScreen() {
           }}
           placeholder="Title, author, or ISBN"
           aria-label="Search for a book"
+          data-book-tour="book-search"
           className="h-11 min-w-[200px] flex-1 skin-field border border-line px-4 text-[14px] text-ink outline-none"
           style={{ background: 'var(--field)' }}
         />
@@ -1508,7 +1516,12 @@ function AddScreen() {
       {results && !picked && (
         <div className="mt-4 flex flex-col gap-2">
           {results.length ? (
-            <div className="space-y-6" data-testid="add-results">
+            <div
+              className="space-y-6"
+              data-testid="add-results"
+              data-book-tour="book-results"
+              tabIndex={-1}
+            >
               {catalogTriaged.length > 0 && (
                 <section aria-labelledby="add-catalog-results">
                   <h2 id="add-catalog-results" className="mb-2 text-base font-semibold text-ink">
@@ -1590,12 +1603,14 @@ function AddScreen() {
             defaultUnowned={!!prefill.want}
             addToHousehold={destination === 'both'}
             onAdded={() =>
-              prefill.discoverSession
-                ? void navigate({ to: '/discover', search: { session: prefill.discoverSession } })
-                : void navigate({
-                    to: '/library',
-                    search: destination === 'both' ? { scope: 'household' } : {},
-                  })
+              bookTour.status !== 'off' && bookTour.bookId
+                ? void navigate({ to: '/library', search: {} })
+                : prefill.discoverSession
+                  ? void navigate({ to: '/discover', search: { session: prefill.discoverSession } })
+                  : void navigate({
+                      to: '/library',
+                      search: destination === 'both' ? { scope: 'household' } : {},
+                    })
             }
           />
         ))}
