@@ -565,7 +565,10 @@ for (const surface of ['Discover', 'Add form'] as const) {
         await expect(page.getByRole('button', { name: /Fetch details/ })).toBeEnabled()
         await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('543')
         await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
-        await expect(page).toHaveURL(/\/library(?:\?|$)/)
+        // Add deliberately stays on its post-save refinement screen until the reader is done.
+        await expect(
+          page.getByRole('heading', { name: 'Added — finish the details', exact: true }),
+        ).toBeVisible()
       }
       const saved = async () =>
         (
