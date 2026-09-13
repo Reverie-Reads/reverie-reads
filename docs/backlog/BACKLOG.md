@@ -1119,6 +1119,18 @@ aspect` at 9.1s. `e2e` failed exactly once in the surrounding 60 runs.
   spine-reveal branch and #271 was not; (3) `E2E_WORKERS` and runner contention, since
   `playwright.config.ts` records this same spec as one of the two that starve under `workers=2`.
 
+  **2026-09-13 — cover-aspect selection failure recurred during integration verification.**
+  The trace shows the requested book 19 briefly selected, then book 09 selected without another
+  pointer movement: this is not an adjacent-spine mismatch. The shelf source was unchanged and the
+  run used one worker. A retry passed, which does not close the defect. Investigation reproduced
+  one concrete dismissal race: the final frame of a shelf-controlled smooth scroll cleared its
+  ownership marker before checking whether to dismiss an established hover selection. The repair
+  preserves that frame's ownership while releasing the marker for subsequent scrolling. A
+  controlled delayed-arrival component test fails before the repair and passes after it; wheel,
+  touch and pointer interruption retain their existing dismissal behavior. The trace does not
+  record internal event timing, so this reproduction alone does not establish that it accounts
+  for every historical selection failure. Keep the browser assertion and retry visibility intact.
+
   **Occurrence 3 — same FILE, different test: `:581` "containment: the revealed box stays inside
   the track" (2026-08-20, local, `ci/layout-sweep-390` verification run 3).** A `toHaveCount`
   failure at 39.3s, with the file's 5 remaining serial tests blocked behind it. What makes this one

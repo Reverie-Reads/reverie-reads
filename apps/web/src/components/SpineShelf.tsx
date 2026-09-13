@@ -393,13 +393,16 @@ export function SpineShelf({
         }
       })
       setActiveId(best)
-      if (settlingRef.current && Math.abs(el.scrollLeft - settleTargetRef.current) < 2)
+      // The arrival frame still belongs to our glide. Release its marker for the NEXT
+      // scroll event, without treating this last frame as a new reader gesture.
+      const shelfControlledScroll = settlingRef.current
+      if (shelfControlledScroll && Math.abs(el.scrollLeft - settleTargetRef.current) < 2)
         settlingRef.current = false
       // A real USER scroll dismisses a pointer pin (the window takes over) — but not the
       // settle-glide's own writes (settlingRef), and not within the grace period after a pin
       // (the browser's own focus-scroll for that pin).
       if (
-        !settlingRef.current &&
+        !shelfControlledScroll &&
         pointerIdRef.current != null &&
         performance.now() - pinnedAtRef.current > 400
       )
