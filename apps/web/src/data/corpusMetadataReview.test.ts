@@ -65,7 +65,7 @@ it('never persists administrator metadata assessments into the offline reader ca
 })
 it('sends one selected edition field to the narrow RPC, never the broad editor', async () => {
   await saveCatalogEditionCorrection({
-    work: { ...work, editionCorrectionVersion: 1 },
+    work: { ...work, editionCorrectionVersion: 1, editionFingerprint: 'frozen-edition' },
     isbn: '0306406152',
     evidenceTitle: ' Exact Title ',
     evidenceAuthor: ' Full Writer; Other Writer ',
@@ -76,7 +76,7 @@ it('sends one selected edition field to the narrow RPC, never the broad editor',
   })
   expect(rpc).toHaveBeenCalledExactlyOnceWith('admin_correct_corpus_edition_details', {
     p_work: 'work',
-    p_expected_fingerprint: 'reviewed-snapshot',
+    p_expected_fingerprint: 'frozen-edition',
     p_expected_revision: 4,
     p_isbn: '0306406152',
     p_evidence_title: 'Exact Title',
@@ -107,7 +107,7 @@ it('does not retry an uncertain edition write', async () => {
   rpc.mockResolvedValue({ data: null, error: new Error('Connection lost') })
   await expect(
     saveCatalogEditionCorrection({
-      work: { ...work, editionCorrectionVersion: 1 },
+      work: { ...work, editionCorrectionVersion: 1, editionFingerprint: 'frozen-edition' },
       isbn: '0306406152',
       evidenceTitle: 'Exact Title',
       evidenceAuthor: 'Full Writer',

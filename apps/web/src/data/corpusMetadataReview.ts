@@ -44,6 +44,7 @@ export interface CatalogMetadataWork {
   sourceUrl: string
   /** Missing on an older server: keep correction controls unavailable until migration lands. */
   editionCorrectionVersion?: number
+  editionFingerprint?: string
   pages?: number | null
   publication?: { y: number | null; m: number | null; d: number | null }
   editionProvenance?: Record<string, { referenceIsbn?: string; sourceRef?: string } | null>
@@ -131,13 +132,13 @@ export interface EditionCorrectionInput {
   identityConfirmed: boolean
 }
 export async function saveCatalogEditionCorrection(input: EditionCorrectionInput): Promise<string> {
-  if (input.work.editionCorrectionVersion !== 1)
+  if (input.work.editionCorrectionVersion !== 1 || !input.work.editionFingerprint)
     throw new Error(
       'Edition corrections are not available from this server. Reload after deployment.',
     )
   const { data, error } = await supabase.rpc('admin_correct_corpus_edition_details', {
     p_work: input.work.id,
-    p_expected_fingerprint: input.work.fingerprint,
+    p_expected_fingerprint: input.work.editionFingerprint,
     p_expected_revision: input.work.revision,
     p_isbn: input.isbn,
     p_evidence_title: input.evidenceTitle.trim(),

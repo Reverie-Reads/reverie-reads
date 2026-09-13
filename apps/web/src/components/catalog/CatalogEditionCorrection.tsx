@@ -35,7 +35,7 @@ export function CatalogEditionCorrection({
   const [attempted, setAttempted] = useState(false)
   const inflight = useRef(false)
   const save = useSaveCatalogEditionCorrection()
-  if (work.editionCorrectionVersion !== 1)
+  if (work.editionCorrectionVersion !== 1 || !work.editionFingerprint)
     return (
       <p className="my-4 text-sm text-muted">
         Page and date corrections need the updated server. Reload after deployment.

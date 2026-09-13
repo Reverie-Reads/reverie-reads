@@ -29,6 +29,11 @@ create temp table edition_graph_before as select jsonb_build_object(
  'sources',(select jsonb_agg(to_jsonb(s) order by id) from public.corpus_series_sources s),
  'edits',(select jsonb_agg(to_jsonb(e) order by id) from public.corpus_series_edits e)) value;
 select is((select count(*)::int from public.corpus_series_entries where work_id='74000000-0000-4000-8000-000000000001' and removed_at is null),1,'populated shared graph makes no-write assertion non-vacuous');
+select is((select public.catalog_metadata_review_record(w)->>'fingerprint' from public.works w
+ where id='74000000-0000-4000-8000-000000000001'),
+ (select md5(jsonb_build_array(title,author_text,contributors,isbns,description,metadata_provenance->'description',
+ pub_y,publisher,language,'[]'::jsonb)::text) from public.works where id='74000000-0000-4000-8000-000000000001'),
+ 'existing assessment fingerprint is unchanged by new edition capability');
 
 create function pg_temp.edition_attempt(field text, value jsonb, isbn text default '0306406152',
  title text default 'Edition Correction Fixture', author text default 'Test Writer', confirmed boolean default true,
@@ -37,7 +42,7 @@ returns uuid language plpgsql as $$
 declare item jsonb;
 begin
  item := public.admin_list_corpus_metadata_reviews('all','all','',0,1,'74000000-0000-4000-8000-000000000001')->'items'->0;
- return public.admin_correct_corpus_edition_details('74000000-0000-4000-8000-000000000001',item->>'fingerprint',
+ return public.admin_correct_corpus_edition_details('74000000-0000-4000-8000-000000000001',item->>'editionFingerprint',
    (item->>'revision')::int,isbn,title,author,field,value,source,note,confirmed);
 end;
 $$;
@@ -89,7 +94,7 @@ select is(jsonb_build_object(
  'edits',(select jsonb_agg(to_jsonb(e) order by id) from public.corpus_series_edits e)),
  (select value from edition_graph_before),'edition provenance does not refresh any series graph or audit');
 select is((select state from public.corpus_metadata_reviews where work_id='74000000-0000-4000-8000-000000000001'),'open','correction does not certify remaining concerns');
-create temp table edition_stale as select public.catalog_metadata_review_record(w)->>'fingerprint' fingerprint from public.works w where id='74000000-0000-4000-8000-000000000001';
+create temp table edition_stale as select public.catalog_metadata_review_record(w)->>'editionFingerprint' fingerprint from public.works w where id='74000000-0000-4000-8000-000000000001';
 grant select on edition_stale to authenticated;
 set local role authenticated;
 select lives_ok($$select pg_temp.edition_attempt('pages','{"pages":456}')$$,'pages correction succeeds separately');
@@ -102,7 +107,7 @@ select lives_ok($$select pg_temp.edition_attempt('publication','{"y":2024,"m":nu
 reset role;
 select is((select jsonb_build_array(pub_y,pub_m,pub_d,pages) from public.works where id='74000000-0000-4000-8000-000000000001'),'[2024,null,null,456]'::jsonb,'year-only date never keeps former month/day; pages retained');
 select is((select metadata_provenance->'pageCount'->>'referenceIsbn' from public.works where id='74000000-0000-4000-8000-000000000001'),'9780306406157','page reference retained after date action');
-update edition_stale set fingerprint=(select public.catalog_metadata_review_record(w)->>'fingerprint' from public.works w where id='74000000-0000-4000-8000-000000000001');
+update edition_stale set fingerprint=(select public.catalog_metadata_review_record(w)->>'editionFingerprint' from public.works w where id='74000000-0000-4000-8000-000000000001');
 update public.works set pub_m=5 where id='74000000-0000-4000-8000-000000000001';
 set local role authenticated;
 select throws_ok($$select public.admin_correct_corpus_edition_details('74000000-0000-4000-8000-000000000001',(select fingerprint from edition_stale),4,'0306406152','Edition Correction Fixture','Test Writer','pages','{"pages":800}','https://publisher.example/edition','Checked',true)$$,'P0001',null,'concurrent month-only change invalidates page proposal');

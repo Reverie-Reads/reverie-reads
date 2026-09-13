@@ -42,9 +42,10 @@ explanations are not copied into the general metadata edit audit. Review notes/h
 administrator-only. Readers, anonymous clients and service-role RPC callers cannot use the action.
 
 The snapshot's `editionCorrectionVersion: 1` makes a new client fail closed against an older server.
-Pages, full date precision and provenance enter the versioned fingerprint. Existing assessments
-appear open under the new fingerprint without erasing their original history or updating catalog
-rows. There is no backfill or approved historical repair in this migration.
+Pages, full date precision and provenance enter a separate `editionFingerprint`. The original
+assessment fingerprint is unchanged: adding the capability does not reopen completed assessments
+or erase history. An actual correction leaves that work's assessment open. There is no backfill or
+approved historical repair in this migration.
 
 An existing trigger listens to all metadata provenance updates, which could refresh the shared
 series graph during an unrelated correction. The action reuses the existing transaction-local graph
@@ -71,3 +72,9 @@ Function deployment or secret change is needed. The owner then confirms one prop
 edition and performs one correction/reload with protected personal copies verified separately.
 Do not apply the historical shortlist as a batch, bypass unresolved contributor/edition conflicts,
 or treat local fixture tests as authorization to write production.
+
+Before the first live correction, reader prefill/copy/adoption paths must honor the new reference
+ISBN: a corrected edition date/page count must not silently become another edition's default.
+The editor/RPC tests establish no immediate personal writes, not that downstream inheritance is
+edition-safe. That consuming-path guard is a separate release dependency; keep live repairs off
+until it is verified and synchronized as well.

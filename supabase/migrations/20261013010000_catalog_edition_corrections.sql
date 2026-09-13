@@ -41,7 +41,10 @@ returns jsonb language sql stable security definer set search_path = '' as $$
     ],null)),
     'related', coalesce((select jsonb_agg(to_jsonb(r) order by r.id) from (select * from related order by id limit 10) r),'[]'),
     'relatedTotal', (select count(*) from related),
-    'fingerprint', md5(jsonb_build_array('edition-review-v1',p_work.title,p_work.author_text,p_work.contributors,p_work.isbns,
+    -- Preserve assessment fingerprints: adding a control must not reopen completed reviews.
+    'fingerprint', md5(jsonb_build_array(p_work.title,p_work.author_text,p_work.contributors,p_work.isbns,
+      p_work.description,p_work.metadata_provenance->'description',p_work.pub_y,p_work.publisher,p_work.language,peers)::text),
+    'editionFingerprint', md5(jsonb_build_array('edition-review-v1',p_work.title,p_work.author_text,p_work.contributors,p_work.isbns,
       p_work.description,p_work.metadata_provenance,p_work.pages,p_work.pub_y,p_work.pub_m,p_work.pub_d,
       p_work.publisher,p_work.language,peers)::text)
   ) from evidence;
@@ -87,7 +90,7 @@ begin
   if not found then raise exception 'corpus work not found' using errcode='P0002'; end if;
   before_record := public.catalog_metadata_review_record(work_row);
   select * into previous_review from public.corpus_metadata_reviews where work_id=p_work for update;
-  if p_expected_fingerprint is distinct from before_record->>'fingerprint'
+  if p_expected_fingerprint is distinct from before_record->>'editionFingerprint'
     or p_expected_revision is distinct from coalesce(previous_review.revision,0) then
     raise exception 'This catalog record or review changed. Refresh before deciding.' using errcode='P0001';
   end if;

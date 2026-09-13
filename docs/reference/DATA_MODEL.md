@@ -764,9 +764,9 @@ not every ISBN attached to a work. Successful decisions append `work_metadata_ed
 private. No existing row is repaired by migration.
 
 The metadata snapshot advertises `editionCorrectionVersion: 1` and includes pages, complete date
-precision and per-field provenance. Its versioned fingerprint includes those fields plus existing
-identity/peer evidence. Older assessments therefore appear open until reviewed against the new
-fingerprint; history is retained. The edition action scopes and restores the existing transaction-local
+precision and per-field provenance. Its separate `editionFingerprint` includes those fields plus
+existing identity/peer evidence. The original assessment fingerprint is unchanged, so introducing
+this capability does not reopen completed assessments. The edition action scopes and restores the existing transaction-local
 series graph preservation guard around its update. Series triggers are unchanged; explicit series
 writes (including same-value re-confirmation) retain reconciliation outside this narrow action.
 See `../tasks/catalog-edition-corrections.md`.

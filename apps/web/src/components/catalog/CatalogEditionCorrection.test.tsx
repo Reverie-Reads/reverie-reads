@@ -29,6 +29,7 @@ const work: CatalogMetadataWork = {
   note: '',
   sourceUrl: '',
   editionCorrectionVersion: 1,
+  editionFingerprint: 'frozen-edition',
   pages: 123,
   publication: { y: 2024, m: null, d: null },
 }
