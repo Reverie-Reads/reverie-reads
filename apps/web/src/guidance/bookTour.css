@@ -1,0 +1,141 @@
+.book-tour-panel {
+  position: fixed;
+  z-index: 80;
+  visibility: hidden;
+  width: min(320px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--card-solid);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.book-tour-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.book-tour-eyebrow {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.book-tour-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -12px -8px -4px 0;
+  font-size: 23px;
+}
+.book-tour-title {
+  font-family: var(--font-display);
+  font-size: 21px;
+  line-height: 1.25;
+  margin-top: 8px;
+}
+.book-tour-text {
+  font-size: 14px;
+  line-height: 1.55;
+  margin-top: 10px;
+}
+.book-tour-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.book-tour-actions > * {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.book-tour-guide-link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+}
+.book-tour-handoff {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.book-tour-panel :focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+[data-book-tour-active] {
+  outline: 2px solid var(--ink);
+  outline-offset: 5px;
+  scroll-margin-block: 100px;
+}
+.book-tour-cue {
+  position: fixed;
+  z-index: 81;
+  pointer-events: none;
+  visibility: hidden;
+  color: var(--ink);
+}
+.book-tour-cue[data-shown='true'] {
+  visibility: visible;
+}
+.book-tour-cue svg {
+  display: block;
+  fill: var(--card-solid);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.book-tour-dot {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid var(--card-solid);
+  transform: translate(-50%, -50%);
+}
+.book-tour-ripple {
+  position: absolute;
+  inset: -12px auto auto -12px;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  opacity: 0;
+}
+.book-tour-panel[data-compact] .book-tour-text,
+.book-tour-panel[data-compact] .book-tour-handoff {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+@media (max-width: 699px) {
+  .book-tour-panel {
+    width: calc(100vw - 24px);
+    padding: 12px 14px;
+  }
+  .book-tour-title {
+    font-size: 19px;
+    margin-top: 4px;
+  }
+  .book-tour-text {
+    margin-top: 6px;
+  }
+  .book-tour-actions {
+    margin-top: 8px;
+  }
+  .book-tour-handoff {
+    margin-top: 5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .book-tour-ripple {
+    animation: none !important;
+  }
+}

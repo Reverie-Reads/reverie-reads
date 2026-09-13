@@ -62,6 +62,13 @@ writes, migrations, function deployment, and deletion remain owner-run operation
       introduce the expected tools without creating reading records themselves. Check a second
       account in the same browser gets its own welcome; existing accounts keep their full layout.
       Confirm a saved custom dock remains intact and the guide remains reachable on a phone.
+- [ ] **Live first-book walkthrough:** from the Books chapter, choose Guide me in the app. Check
+      the animated cursor on desktop and dot on a physical phone, including the on-screen keyboard.
+      Search, choose and deliberately save a disposable book; the guide must wait on a rejected
+      save and then open that exact saved book, including when filters exclude it. Check the native
+      book drawer, pause/end, switching apps, reduced motion and a second account. No demonstration
+      may save a book, change possession or invent reading history. Refresh ends the live session;
+      the saved chapter guide remains available. Automatic practice playback is a later feature.
 - [ ] **Landing guest library:** add/select a sample book, open its details, rate it, save a note,
       change the room, and arrange the dock without the demo jumping down the page or losing state.
 - [ ] **Guest handoff:** choose books, note, room, and arrangement; begin signup; verify explicit

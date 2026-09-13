@@ -4,7 +4,8 @@ import { SKINS, type SkinId } from './skins'
 import { SKIN_TOKENS } from './skinTokens.fixture'
 
 // Welcome choices and guide instructions use ink/muted on the page and opaque cards;
-// their primary actions use onPrimary/accentFill. Check every room and both modes.
+// their primary actions use onPrimary/accentFill. The live guide and two-tone pointer use
+// these same opaque card/ink pairs. Check every room and both modes.
 describe('Reader guidance remains readable in every room', () => {
   for (const skin of Object.keys(SKINS) as SkinId[])
     for (const mode of ['light', 'dark'] as const) {

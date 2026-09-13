@@ -110,6 +110,13 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   grant Pro. Optional chapter details keep the same tour order and prove their own availability.
   Before numbering a new migration, check the combined deployment history; public and private
   migrations share one version namespace. See `docs/tasks/reader-guidance.md`.
+- **Live walkthroughs observe the real screens.** The first-book guide is account-keyed, session-only
+  state. Its pointer may demonstrate allowlisted navigation, but must never choose a result, fill
+  reader data or press Save. Advance from observed successful intake and the matching personal book;
+  preserve drafts and filters, and cancel pending animation when the reader intervenes. Native
+  dialogs keep their existing focus boundary. Automatic practice playback requires isolated data
+  adapters; query-cache seeding over live Supabase hooks is not a practice library. See
+  `docs/tasks/reader-guidance.md`.
 - **Reading tips are optional; essential information is not.** Account-scoped
   `profiles.show_reading_tips` defaults on and is independent of onboarding milestones. The signed-in
   shell supplies this preference to explicitly selected `ReadingTips` passages. Never hide labels,

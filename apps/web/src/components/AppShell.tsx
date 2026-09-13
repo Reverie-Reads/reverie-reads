@@ -172,6 +172,7 @@ function Sidebar({
       <Link
         to="/add"
         data-testid="persistent-add"
+        data-book-tour="add-book"
         search={householdAdd ? { scope: 'household' } : {}}
         title={collapsed ? (householdAdd ? 'Add to household' : 'Add a book') : undefined}
         aria-label={householdAdd ? 'Add to household' : 'Add a book'}
@@ -417,6 +418,7 @@ function MobileTabBar({
             <Link
               to="/add"
               data-testid="persistent-add"
+              data-book-tour="add-book"
               search={householdAdd ? { scope: 'household' } : {}}
               aria-label={householdAdd ? 'Add to household' : 'Add a book'}
               className="rv-mobile-add skin-control skin-btn-primary grid h-12 w-12 -translate-y-3 place-items-center text-[20px]"

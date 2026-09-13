@@ -19,6 +19,8 @@ vi.mock('./data', () => ({
   useUpdateGuidance: () => ({ mutate: state.mutate, isPending: state.isPending }),
 }))
 vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => vi.fn(),
+  useRouterState: () => '/guide',
   Link: ({ to, children }: { to: string; children: ReactNode }) => <a href={to}>{children}</a>,
 }))
 

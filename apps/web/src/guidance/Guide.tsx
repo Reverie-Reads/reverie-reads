@@ -7,6 +7,8 @@ import { PageHeader } from '../components/PageHeader'
 import { useUpdateGuidance } from './data'
 import { GUIDE_CHAPTERS, chapterAvailable, type GuidanceMode, type GuideId } from './model'
 import { getGuideChapterDetails } from './chapterDetailsSlot'
+import { StartBookTour } from './BookTour'
+import { useBookTour } from './BookTourContext'
 
 const linkClass =
   'skin-control skin-btn-secondary inline-flex min-h-11 items-center justify-center px-4 py-2 text-[14px] leading-relaxed'
@@ -239,6 +241,15 @@ export function GuideScreen() {
                 {chapter.title}
               </h2>
               <p className="mt-3 text-[16px] leading-relaxed text-muted">{chapter.summary}</p>
+              {chapter.id === 'books' && (
+                <div className="mt-5 border-b border-line pb-5">
+                  <StartBookTour />
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                    Follow a cursor or tap dot through the real Add and Library screens. You choose
+                    your book and save it yourself. Pause whenever you like.
+                  </p>
+                </div>
+              )}
               <ol className="mt-6 list-decimal space-y-4 pl-5 text-[15px] leading-relaxed text-ink">
                 {chapter.steps.map((step) => (
                   <li key={step} className="pl-1">
@@ -342,12 +353,13 @@ export function GuideScreen() {
 
 /** An in-flow note, never a modal, spotlight, focus trap or fixed overlay over a reader's work. */
 export function GuidanceTrail() {
+  const { state: bookTour } = useBookTour()
   const { data: profile } = useProfile()
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const update = useUpdateGuidance()
   const guidance = profile?.guidance
-  if (!guidance?.setupComplete || pathname === '/guide') return null
+  if (!guidance?.setupComplete || pathname === '/guide' || bookTour.status !== 'off') return null
   const chapter = GUIDE_CHAPTERS.find((item) => item.id === guidance.tour)
   if (!chapter && (guidance.mode !== 'gentle' || pathname !== '/')) return null
   const following =
@@ -378,6 +390,7 @@ export function GuidanceTrail() {
             {chapter ? next.title : introduction}
           </p>
         </div>
+        {chapter?.id === 'books' && <StartBookTour />}
         <Link to="/guide" className={linkClass}>
           {chapter ? 'Continue walkthrough' : 'Explore the guide'}
         </Link>

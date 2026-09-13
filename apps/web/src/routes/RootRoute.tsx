@@ -12,6 +12,8 @@ import { ReadingRoomGate } from '../auth/ReadingRoomGate'
 import { authCallback } from '../lib/authCallback'
 import { useVoice } from '../skin/labels'
 import { PersonalLibrarySync } from '../components/PersonalLibrarySync'
+import { BookTourProvider } from '../guidance/BookTourProvider'
+import { BookTour } from '../guidance/BookTour'
 
 function RootLayout() {
   const { session, loading } = useAuth()
@@ -83,9 +85,12 @@ function RootLayout() {
       ) : onboarding ? (
         <Outlet />
       ) : (
-        <AppShell>
-          <Outlet />
-        </AppShell>
+        <BookTourProvider key={session.user.id}>
+          <AppShell>
+            <Outlet />
+            <BookTour />
+          </AppShell>
+        </BookTourProvider>
       )}
       <UpdateToast />
       <WriteErrorToast />
