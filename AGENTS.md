@@ -384,6 +384,8 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   unidentified edition. Any scoped date component requires every present component to match the
   selected checksum-valid ISBN, including valid ISBN-10/13 equivalence. A mismatch preserves an
   existing personal date and leaves a new copy's field unknown; pages and dates are independent.
+  Scoped provenance must also retain the exact `referenceValue`; a later scalar edit or missing
+  reviewed-value snapshot cannot reuse the old citation as current evidence.
   Keep existing behavior for unscoped historical values without calling it certification. Do not
   change personal ISBNs, assign possession, retry a write or fetch another provider to fill the gap.
   See `docs/tasks/edition-reference-consumers.md`.

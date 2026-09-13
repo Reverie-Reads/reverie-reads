@@ -71,8 +71,8 @@ describe('catalog to a stable discovery decision', () => {
         pub_m: 2,
         pub_d: null,
         metadata_provenance: {
-          pubY: { referenceIsbn: '9780306406157' },
-          pubM: { referenceIsbn: '9780306406157' },
+          pubY: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: 2, d: null } },
+          pubM: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: 2, d: null } },
         },
       }),
     ]

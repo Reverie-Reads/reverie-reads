@@ -124,33 +124,35 @@ describe('workToHit — a corpus row IS an Add prefill', () => {
       pub_y: 2024,
       pub_m: 2,
       metadata_provenance: {
-        pubY: { referenceIsbn: '9780306406157' },
-        pubM: { referenceIsbn: '9780306406157' },
+        pubY: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: 2, d: null } },
+        pubM: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: 2, d: null } },
       },
     })
     expect(workToHit(work).pub).toBe('')
     expect(workToHit(work, '0306406152').pub).toBe('2024-02')
     expect(workToHit({ ...work, isbns: [] }).pub).toBe('')
     expect(workToHit(work, '9780140449136').pub).toBe('')
+    expect(workToHit({ ...work, pub_y: 2025 }, '0306406152').pub).toBe('')
+    expect(workToHit({ ...work, metadata_provenance: { pubY: { referenceIsbn: '9780306406157' } } }, '0306406152').pub).toBe('')
   })
   it('does not splice an unscoped, conflicting or invalid date component into a reviewed tuple', () => {
     const work = row({
       isbns: ['9780306406157'],
       pub_y: 2024,
       pub_m: 2,
-      metadata_provenance: { pubY: { referenceIsbn: '9780306406157' } },
+      metadata_provenance: { pubY: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: 2, d: null } } },
     })
     for (const pubM of [
       null,
-      { referenceIsbn: '9780140449136' },
-      { referenceIsbn: 'bad' },
-      { referenceIsbn: null },
+      { referenceIsbn: '9780140449136', referenceValue: { y: 2024, m: 2, d: null } },
+      { referenceIsbn: 'bad', referenceValue: { y: 2024, m: 2, d: null } },
+      { referenceIsbn: null, referenceValue: { y: 2024, m: 2, d: null } },
     ]) {
       expect(
         workToHit({ ...work, metadata_provenance: { ...work.metadata_provenance, pubM } }).pub,
       ).toBe('')
     }
-    expect(workToHit({ ...work, pub_m: null }).pub).toBe('2024')
+    expect(workToHit({ ...work, pub_m: null, metadata_provenance: { pubY: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: null, d: null } } } }).pub).toBe('2024')
   })
   it('maps authors from contributors and keeps the DiscoverHit contract', () => {
     const h = workToHit(row())

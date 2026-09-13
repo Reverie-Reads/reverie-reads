@@ -36,7 +36,7 @@ export interface WorkRow {
   pub_y: number | null
   pub_m: number | null
   pub_d: number | null
-  metadata_provenance?: Record<string, { referenceIsbn?: unknown } | null>
+  metadata_provenance?: Record<string, { referenceIsbn?: unknown; referenceValue?: unknown } | null>
 }
 
 // Ordinary reads ask for `isbns` so post-migration corpus picks keep edition metadata. If the web
@@ -98,6 +98,14 @@ export function workToHit(w: WorkRow, preferredIsbn = ''): DiscoverHit {
   ]
   const references = fields.map((field) => w.metadata_provenance?.[field])
   const hasReference = references.some((source) => source && Object.hasOwn(source, 'referenceIsbn'))
+  const currentValue = (value: unknown) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+    const date = value as Record<string, unknown>
+    return (
+      Object.keys(date).length === 3 &&
+      date.y === w.pub_y && date.m === w.pub_m && date.d === w.pub_d
+    )
+  }
   // Legacy, unscoped dates retain their existing behavior; that is not new edition certification.
   // Once any component is edition-scoped, every present component must agree on this exact ISBN.
   const matchesReference =
@@ -106,7 +114,8 @@ export function workToHit(w: WorkRow, preferredIsbn = ''): DiscoverHit {
       references.every(
         (source) =>
           typeof source?.referenceIsbn === 'string' &&
-          normalizeIsbn(source.referenceIsbn) === normalizeIsbn(isbn),
+          normalizeIsbn(source.referenceIsbn) === normalizeIsbn(isbn) &&
+          currentValue(source.referenceValue),
       ))
   const pub = (matchesReference ? [w.pub_y, w.pub_m, w.pub_d] : [])
     .filter((x): x is number => x != null)

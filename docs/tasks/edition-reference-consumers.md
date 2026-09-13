@@ -7,6 +7,10 @@ copied the shared date to whichever ISBN a reader selected. The shared-adoption 
 RPCs likewise copied scalar values without checking reference provenance. No immediate personal
 write during a correction did not establish safe future inheritance.
 
+The correction also records `referenceValue`: the exact reviewed page payload or complete date
+tuple. A later edit through another existing writer cannot reuse a retained citation to certify a
+changed value. A scoped reference lacking this snapshot is withheld, never reclassified as unscoped.
+
 This change protects that specific boundary. It adds no provider, table, graph/vector store, paid
 feature or automatic historical repair.
 
@@ -16,6 +20,7 @@ feature or automatic historical repair.
   If any present date component is reference-bound, every present component must name the selected
   checksum-valid ISBN. ISBN-10/13 equivalents agree. A conflicting, missing or invalid reference
   blocks the whole date rather than mixing components. Other displayed metadata stays available.
+  Every scoped component must also match the current whole date against its reviewed value.
 - Guided discovery clears a multi-ISBN work's locator before mapping, so it cannot retain one
   edition's reviewed date after dropping that edition's ISBN.
 - “Use shared details” keeps the reader's existing date when the shared reference does not match
@@ -30,7 +35,8 @@ feature or automatic historical repair.
 ## Implementation and checks
 
 The client guard is in the existing `workToHit` mapper; all three work-read paths supply provenance.
-Migration `20261014010000_edition_reference_consumers.sql` adds one internal pure SQL helper and
+Migration `20261014010000_edition_reference_consumers.sql` binds new correction provenance to the
+reviewed value, adds one internal pure SQL helper and
 patches only the current copy expressions in `adopt_corpus_work_metadata` and
 `add_corpus_work_to_member_library`. Exact expression-count checks fail migration on definition
 drift. Existing permission, household consent, row locks, series and cover behavior are retained.

@@ -134,7 +134,15 @@ async function seed(c: Client, referenceIsbn?: string): Promise<string> {
         tags: ['triage probe only'],
         cover_url: null,
         pub_y: 2021,
-        metadata_provenance: referenceIsbn ? { pubY: { source: 'manual', referenceIsbn } } : {},
+        metadata_provenance: referenceIsbn
+          ? {
+              pubY: {
+                source: 'manual',
+                referenceIsbn,
+                referenceValue: { y: 2021, m: null, d: null },
+              },
+            }
+          : {},
       },
     ]),
     'add-triage works seed',

@@ -777,7 +777,10 @@ selected edition omits a reference-bound date. Shared adoption preserves an exis
 on mismatch. Delegated additions independently omit mismatched pages or the whole date while keeping
 their existing selected ISBN and neutral possession flags. Internal `corpus_edition_fields_match`
 is used only by the existing checked copy/adoption RPCs; their authorization and consent remain
-unchanged. Unscoped historical values retain legacy behavior, not new certification. See
+unchanged. New corrections also retain the exact `referenceValue` payload. Consumers require it to
+equal the current field/whole-date tuple, so an old citation cannot certify a subsequent scalar
+edit. A scoped reference without a value snapshot is withheld. Unscoped historical values retain
+legacy behavior, not new certification. See
 `../tasks/edition-reference-consumers.md`.
 
 ## Reader guidance
