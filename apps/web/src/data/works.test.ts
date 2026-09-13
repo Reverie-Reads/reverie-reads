@@ -90,7 +90,9 @@ describe('applyWorksFilters', () => {
   it('strips % and , from the term — commas are PostgREST or() separators', () => {
     const r = new Recorder()
     applyWorksFilters(r, filters({ q: '100%, guaranteed' }))
-    expect(r.calls).toEqual([['or', 'title.ilike.%100 guaranteed%,author_text.ilike.%100 guaranteed%']])
+    expect(r.calls).toEqual([
+      ['or', 'title.ilike.%100 guaranteed%,author_text.ilike.%100 guaranteed%'],
+    ])
   })
 
   it('a whitespace-only term is no filter at all', () => {
@@ -116,6 +118,42 @@ describe('worksPageRange', () => {
 })
 
 describe('workToHit — a corpus row IS an Add prefill', () => {
+  it('keeps a reviewed date only for its reference edition, including equivalent ISBN-10', () => {
+    const work = row({
+      isbns: ['9780140449136', '9780306406157'],
+      pub_y: 2024,
+      pub_m: 2,
+      metadata_provenance: {
+        pubY: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: 2, d: null } },
+        pubM: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: 2, d: null } },
+      },
+    })
+    expect(workToHit(work).pub).toBe('')
+    expect(workToHit(work, '0306406152').pub).toBe('2024-02')
+    expect(workToHit({ ...work, isbns: [] }).pub).toBe('')
+    expect(workToHit(work, '9780140449136').pub).toBe('')
+    expect(workToHit({ ...work, pub_y: 2025 }, '0306406152').pub).toBe('')
+    expect(workToHit({ ...work, metadata_provenance: { pubY: { referenceIsbn: '9780306406157' } } }, '0306406152').pub).toBe('')
+  })
+  it('does not splice an unscoped, conflicting or invalid date component into a reviewed tuple', () => {
+    const work = row({
+      isbns: ['9780306406157'],
+      pub_y: 2024,
+      pub_m: 2,
+      metadata_provenance: { pubY: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: 2, d: null } } },
+    })
+    for (const pubM of [
+      null,
+      { referenceIsbn: '9780140449136', referenceValue: { y: 2024, m: 2, d: null } },
+      { referenceIsbn: 'bad', referenceValue: { y: 2024, m: 2, d: null } },
+      { referenceIsbn: null, referenceValue: { y: 2024, m: 2, d: null } },
+    ]) {
+      expect(
+        workToHit({ ...work, metadata_provenance: { ...work.metadata_provenance, pubM } }).pub,
+      ).toBe('')
+    }
+    expect(workToHit({ ...work, pub_m: null, metadata_provenance: { pubY: { referenceIsbn: '9780306406157', referenceValue: { y: 2024, m: null, d: null } } } }).pub).toBe('2024')
+  })
   it('maps authors from contributors and keeps the DiscoverHit contract', () => {
     const h = workToHit(row())
     expect(h.title).toBe('Ash Crown')
@@ -124,17 +162,12 @@ describe('workToHit — a corpus row IS an Add prefill', () => {
   })
 
   it('prefills the first canonical ISBN when the corpus knows an edition', () => {
-    expect(workToHit(row({ isbns: ['9780306406157', '9781649374042'] })).isbn).toBe(
-      '9780306406157',
-    )
+    expect(workToHit(row({ isbns: ['9780306406157', '9781649374042'] })).isbn).toBe('9780306406157')
   })
 
   it('preserves the catalog edition when it matched a later corpus ISBN', () => {
     expect(
-      workToHit(
-        row({ isbns: ['9780306406157', '9781649374042'] }),
-        '978-1-64937-404-2',
-      ).isbn,
+      workToHit(row({ isbns: ['9780306406157', '9781649374042'] }), '978-1-64937-404-2').isbn,
     ).toBe('9781649374042')
   })
 
@@ -169,12 +202,17 @@ describe('edition lookup planning and rollout', () => {
   })
 
   it('recognizes only the missing-column errors that the staged client may ignore', () => {
-    expect(isMissingWorksIsbns({ code: '42703', message: 'column works.isbns does not exist' })).toBe(
-      true,
-    )
     expect(
-      isMissingWorksIsbns({ code: 'PGRST204', message: "Could not find the 'isbns' column in the schema cache" }),
+      isMissingWorksIsbns({ code: '42703', message: 'column works.isbns does not exist' }),
     ).toBe(true)
-    expect(isMissingWorksIsbns({ code: '42501', message: 'permission denied for works' })).toBe(false)
+    expect(
+      isMissingWorksIsbns({
+        code: 'PGRST204',
+        message: "Could not find the 'isbns' column in the schema cache",
+      }),
+    ).toBe(true)
+    expect(isMissingWorksIsbns({ code: '42501', message: 'permission denied for works' })).toBe(
+      false,
+    )
   })
 })

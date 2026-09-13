@@ -101,7 +101,7 @@ async function client(): Promise<Client> {
 }
 
 /** The reader owns one of the three, the corpus describes another, nothing describes the third. */
-async function seed(c: Client): Promise<string> {
+async function seed(c: Client, referenceIsbn?: string): Promise<string> {
   await ok(c.admin.from('books').delete().eq('owner_id', c.uid), 'add-triage books cleanup')
   await ok(
     c.admin
@@ -134,6 +134,15 @@ async function seed(c: Client): Promise<string> {
         tags: ['triage probe only'],
         cover_url: null,
         pub_y: 2021,
+        metadata_provenance: referenceIsbn
+          ? {
+              pubY: {
+                source: 'manual',
+                referenceIsbn,
+                referenceValue: { y: 2021, m: null, d: null },
+              },
+            }
+          : {},
       },
     ]),
     'add-triage works seed',
@@ -220,9 +229,9 @@ const labelOf = (page: Page, title: string) =>
     .getByTestId('triage-label')
     .evaluate((el) => (el as HTMLElement).innerText.trim())
 
-async function search(page: Page): Promise<string> {
+async function search(page: Page, referenceIsbn?: string): Promise<string> {
   const c = await client()
-  const bookId = await seed(c)
+  const bookId = await seed(c, referenceIsbn)
   await stub(page)
   await signIn(page, c.session)
   await page.goto('/add')
@@ -303,6 +312,40 @@ test('an exact edition lookup preserves corpus details and the matched ISBN', as
     })
     .toBe(CORPUS_RESULT_ISBN)
 })
+
+for (const referenceIsbn of [CORPUS_FIRST_ISBN, CORPUS_RESULT_ISBN])
+  test(`Add persists only edition-compatible reviewed date (${referenceIsbn})`, async ({
+    page,
+  }) => {
+    const c = await client()
+    await search(page, referenceIsbn)
+    await expect.poll(() => labelOf(page, CORPUS), { timeout: 15000 }).toBe('In the corpus')
+    await row(page, CORPUS).locator('button').click()
+    const sameEdition = referenceIsbn === CORPUS_RESULT_ISBN
+    await expect(page.getByLabel('Publication date', { exact: true })).toHaveValue(
+      sameEdition ? '2021' : '',
+    )
+    await page.getByRole('button', { name: /^Add to my library$/ }).click()
+    const read = async () => {
+      const { data, error } = await c.admin
+        .from('books')
+        .select('id,isbn,pub_y,pub_m,pub_d')
+        .eq('owner_id', c.uid)
+        .eq('title', CORPUS_CANONICAL)
+        .maybeSingle()
+      if (error) throw error
+      return data
+    }
+    await expect.poll(read).toMatchObject({
+      isbn: CORPUS_RESULT_ISBN,
+      pub_y: sameEdition ? 2021 : null,
+      pub_m: null,
+      pub_d: null,
+    })
+    const saved = await read()
+    await page.reload()
+    expect(await read()).toEqual(saved)
+  })
 
 test('a conflicting ISBN result never replaces its identity with corpus details', async ({
   page,

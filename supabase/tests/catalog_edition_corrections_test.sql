@@ -82,6 +82,7 @@ reset role;
 select is((select jsonb_build_array(pub_y,pub_m,pub_d,pages) from public.works where id='74000000-0000-4000-8000-000000000001'),
  '[2024,2,29,321]'::jsonb,'whole date changes and pages stay exact');
 select is((select metadata_provenance->'pubD'->>'referenceIsbn' from public.works where id='74000000-0000-4000-8000-000000000001'),'9780306406157','ISBN-10 becomes canonical reference ISBN');
+select is((select metadata_provenance->'pubD'->'referenceValue' from public.works where id='74000000-0000-4000-8000-000000000001'),'{"y":2024,"m":2,"d":29}'::jsonb,'real correction binds the whole reviewed date value');
 select is((select jsonb_array_length(value) from edition_personal_before),2,'both personal copies exist in baseline');
 select is((select jsonb_agg(to_jsonb(b) order by id) from public.books b where corpus_work_id='74000000-0000-4000-8000-000000000001'),
  (select value from edition_personal_before),'all personal columns unchanged, including other edition copy');
@@ -107,6 +108,7 @@ select lives_ok($$select pg_temp.edition_attempt('publication','{"y":2024,"m":nu
 reset role;
 select is((select jsonb_build_array(pub_y,pub_m,pub_d,pages) from public.works where id='74000000-0000-4000-8000-000000000001'),'[2024,null,null,456]'::jsonb,'year-only date never keeps former month/day; pages retained');
 select is((select metadata_provenance->'pageCount'->>'referenceIsbn' from public.works where id='74000000-0000-4000-8000-000000000001'),'9780306406157','page reference retained after date action');
+select is((select metadata_provenance->'pageCount'->'referenceValue' from public.works where id='74000000-0000-4000-8000-000000000001'),'{"pages":456}'::jsonb,'real correction binds the reviewed page count independently');
 update edition_stale set fingerprint=(select public.catalog_metadata_review_record(w)->>'editionFingerprint' from public.works w where id='74000000-0000-4000-8000-000000000001');
 update public.works set pub_m=5 where id='74000000-0000-4000-8000-000000000001';
 set local role authenticated;

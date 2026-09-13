@@ -36,13 +36,14 @@ export interface WorkRow {
   pub_y: number | null
   pub_m: number | null
   pub_d: number | null
+  metadata_provenance?: Record<string, { referenceIsbn?: unknown; referenceValue?: unknown } | null>
 }
 
 // Ordinary reads ask for `isbns` so post-migration corpus picks keep edition metadata. If the web
 // deploy precedes the owner-run migration, text reads retry with BASE_COLS and remain functional;
 // ISBN-specific reads safely return no matches until the column exists.
 const BASE_COLS =
-  'id, work_key, title, contributors, series, position, cover_url, genre, tags, pub_y, pub_m, pub_d'
+  'id, work_key, title, contributors, series, position, cover_url, genre, tags, pub_y, pub_m, pub_d, metadata_provenance'
 const ISBN_COLS = `${BASE_COLS}, isbns`
 
 /** Page N's inclusive row range — pure, so the paging arithmetic is testable without a client. */
@@ -89,14 +90,44 @@ export function applyWorksFilters<
  *  card's year renders. cover may be '' for months; CoverPlaceholder is the designed common case
  *  at launch, not an error state. */
 export function workToHit(w: WorkRow, preferredIsbn = ''): DiscoverHit {
-  const pub = [w.pub_y, w.pub_m, w.pub_d]
+  const isbn = normalizeIsbn(preferredIsbn) || w.isbns[0] || ''
+  const fields = [
+    'pubY',
+    ...(w.pub_m == null ? [] : ['pubM']),
+    ...(w.pub_d == null ? [] : ['pubD']),
+  ]
+  const references = fields.map((field) => w.metadata_provenance?.[field])
+  const hasReference = references.some((source) => source && Object.hasOwn(source, 'referenceIsbn'))
+  const currentValue = (value: unknown) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+    const date = value as Record<string, unknown>
+    return (
+      Object.keys(date).length === 3 &&
+      date.y === w.pub_y && date.m === w.pub_m && date.d === w.pub_d
+    )
+  }
+  // Legacy, unscoped dates retain their existing behavior; that is not new edition certification.
+  // Once any component is edition-scoped, every present component must agree on this exact ISBN.
+  const matchesReference =
+    !hasReference ||
+    (!!normalizeIsbn(isbn) &&
+      references.every(
+        (source) =>
+          typeof source?.referenceIsbn === 'string' &&
+          normalizeIsbn(source.referenceIsbn) === normalizeIsbn(isbn) &&
+          currentValue(source.referenceValue),
+      ))
+  const pub = (matchesReference ? [w.pub_y, w.pub_m, w.pub_d] : [])
     .filter((x): x is number => x != null)
     .map((x, i) => (i === 0 ? String(x) : String(x).padStart(2, '0')))
     .join('-')
   return {
     corpusWorkId: w.id,
     title: w.title,
-    authors: (w.contributors ?? []).filter(c => c.role === 'author' || c.role === 'co_author').map((c) => c.name).filter(Boolean),
+    authors: (w.contributors ?? [])
+      .filter((c) => c.role === 'author' || c.role === 'co_author')
+      .map((c) => c.name)
+      .filter(Boolean),
     cover: w.cover_url ?? '',
     genre: w.genre ?? '',
     tags: w.tags ?? [],
@@ -104,7 +135,7 @@ export function workToHit(w: WorkRow, preferredIsbn = ''): DiscoverHit {
     catalogSource: 'corpus',
     // A work may describe several editions. When this pick began as a catalog result, preserve
     // that result's edition instead of silently replacing it with the work array's first member.
-    isbn: normalizeIsbn(preferredIsbn) || w.isbns[0] || '',
+    isbn,
     pub,
   }
 }
@@ -123,7 +154,9 @@ export function isMissingWorksIsbns(error: unknown): boolean {
   const e = error as QueryError
   if (e.code === '42703') return true
   const text = [e.message, e.details, e.hint].filter(Boolean).join(' ').toLowerCase()
-  return text.includes('isbns') && (text.includes('does not exist') || text.includes('schema cache'))
+  return (
+    text.includes('isbns') && (text.includes('does not exist') || text.includes('schema cache'))
+  )
 }
 
 const workRows = (data: unknown[] | null): WorkRow[] =>
@@ -168,7 +201,10 @@ export function mergeWorkRows(...groups: readonly (readonly WorkRow[] | undefine
   for (const rows of groups) {
     for (const row of rows ?? []) {
       const prior = byKey.get(row.work_key)
-      byKey.set(row.work_key, prior ? { ...prior, ...row, isbns: row.isbns.length ? row.isbns : prior.isbns } : row)
+      byKey.set(
+        row.work_key,
+        prior ? { ...prior, ...row, isbns: row.isbns.length ? row.isbns : prior.isbns } : row,
+      )
     }
   }
   return [...byKey.values()]
@@ -268,6 +304,7 @@ export function useWorksLookup(term: string, catalogIsbns: readonly string[] = [
     isPending: byTerm.isPending || (editions.length > 0 && byEdition.isPending),
     error: byTerm.error ?? byEdition.error,
     isFetching: byTerm.isFetching || byEdition.isFetching,
-    refetch: () => Promise.all([byTerm.refetch(), ...(editions.length ? [byEdition.refetch()] : [])]),
+    refetch: () =>
+      Promise.all([byTerm.refetch(), ...(editions.length ? [byEdition.refetch()] : [])]),
   }
 }
