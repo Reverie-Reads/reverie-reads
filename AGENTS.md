@@ -371,6 +371,14 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   per field; private explanations remain in administrator history. Failed or uncertain browser
   submissions require an explicit reload/history check, not automatic replay. A missing server
   capability keeps the control unavailable. See `docs/tasks/catalog-edition-corrections.md`.
+- **A reviewed edition reference follows the selected ISBN.** Add/Discover prefill and shared-copy
+  adoption must not transfer a reference-bound publication date or page count into a different or
+  unidentified edition. Any scoped date component requires every present component to match the
+  selected checksum-valid ISBN, including valid ISBN-10/13 equivalence. A mismatch preserves an
+  existing personal date and leaves a new copy's field unknown; pages and dates are independent.
+  Keep existing behavior for unscoped historical values without calling it certification. Do not
+  change personal ISBNs, assign possession, retry a write or fetch another provider to fill the gap.
+  See `docs/tasks/edition-reference-consumers.md`.
 - **Corpus cover recovery is bounded, resumable, and independent of classification.** The
   administrator completion pipeline never walks the whole household library in one RPC. It calls
   `admin_recover_corpus_cover_batch` in groups of at most 25, records a source fingerprint after

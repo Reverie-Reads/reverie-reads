@@ -125,7 +125,7 @@ async function fetchInvitation(
     const { data: work, error: workError } = await supabase
       .from('works')
       .select(
-        'id,work_key,title,contributors,isbns,series,position,cover_url,genre,tags,pub_y,pub_m,pub_d,description',
+        'id,work_key,title,contributors,isbns,series,position,cover_url,genre,tags,pub_y,pub_m,pub_d,description,metadata_provenance',
       )
       .eq('id', next.work_id)
       .abortSignal(signal)

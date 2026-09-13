@@ -19,7 +19,7 @@ import { fetchDiscoveryDetails, plainDescription } from '../lib/discoveryDetails
 import { workToHit, type WorkRow } from './works'
 
 const columns =
-  'id,work_key,title,contributors,isbns,series,position,cover_url,genre,tags,pub_y,pub_m,pub_d,description'
+  'id,work_key,title,contributors,isbns,series,position,cover_url,genre,tags,pub_y,pub_m,pub_d,description,metadata_provenance'
 const clean = (book: DiscoveryBook): DiscoveryBook => ({
   ...book,
   genre: genreKey(book.genre ?? ''),
@@ -28,7 +28,10 @@ const clean = (book: DiscoveryBook): DiscoveryBook => ({
 })
 
 /** Each query is capped. Mood terms are a fixed vocabulary, never interpolated reader input. */
-async function catalogPool(intent: DiscoveryIntent, signal: AbortSignal): Promise<DiscoveryBook[][]> {
+async function catalogPool(
+  intent: DiscoveryIntent,
+  signal: AbortSignal,
+): Promise<DiscoveryBook[][]> {
   const base = () =>
     supabase
       .from('works')
@@ -63,11 +66,13 @@ async function catalogPool(intent: DiscoveryIntent, signal: AbortSignal): Promis
     queries.map(async (query) => {
       const { data, error } = await query
       if (error) throw error
-      return ((data as unknown as WorkRow[]) ?? []).map((row) => clean({
-        ...workToHit(row),
-        // A shared work can describe many editions. No reader has chosen one on this path.
-        isbn: row.isbns.length === 1 ? row.isbns[0]! : '',
-      }))
+      return ((data as unknown as WorkRow[]) ?? []).map((row) =>
+        clean({
+          // No edition has been chosen for a multi-ISBN work. Clear the locator BEFORE mapping so
+          // a reference-edition date cannot leak into a work-only discovery candidate.
+          ...workToHit({ ...row, isbns: row.isbns.length === 1 ? row.isbns : [] }),
+        }),
+      )
     }),
   )
   return results.map(dedupeDiscoveryBooks)

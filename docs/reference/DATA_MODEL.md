@@ -771,6 +771,15 @@ series graph preservation guard around its update. Series triggers are unchanged
 writes (including same-value re-confirmation) retain reconciliation outside this narrow action.
 See `../tasks/catalog-edition-corrections.md`.
 
+For reference-bound shared values, Add/Discover maps publication only when each present date
+component names the selected valid ISBN (ISBN-10/13 equivalents match). Guided discovery with no
+selected edition omits a reference-bound date. Shared adoption preserves an existing personal date
+on mismatch. Delegated additions independently omit mismatched pages or the whole date while keeping
+their existing selected ISBN and neutral possession flags. Internal `corpus_edition_fields_match`
+is used only by the existing checked copy/adoption RPCs; their authorization and consent remain
+unchanged. Unscoped historical values retain legacy behavior, not new certification. See
+`../tasks/edition-reference-consumers.md`.
+
 ## Reader guidance
 
 `profiles.guidance` is a nullable, versioned presentation document. New accounts begin without a

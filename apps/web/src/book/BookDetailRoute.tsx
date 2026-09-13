@@ -864,6 +864,7 @@ export function BookDetailScreen() {
             <p>
               Shared catalog edits do not change your personal copy automatically. Ownership,
               reading history, rating, ISBN, and private notes are never part of this merge.
+              Publication details tied to a different edition stay unchanged.
             </p>
             {sharedDetailsDiffer ? (
               <button
@@ -872,7 +873,7 @@ export function BookDetailScreen() {
                 onClick={() => {
                   if (
                     !window.confirm(
-                      'Use the shared catalog’s series, genre, cover, and publication details for your personal copy? Your ownership, reading history, rating, ISBN, and private notes stay unchanged.',
+                      'Use the shared catalog’s series, genre, cover, and compatible publication details for your personal copy? Publication details tied to a different edition stay unchanged. Your ownership, reading history, rating, ISBN, and private notes stay unchanged.',
                     )
                   )
                     return
