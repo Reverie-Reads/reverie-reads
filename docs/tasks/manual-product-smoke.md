@@ -58,11 +58,12 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 - [ ] **Your library guide:** in a disposable new account, choose Start gently, Show me around,
       or Explore on my own. Check the basic reading flow, pause/reload/resume, early exploration,
-      and Show all features. Adding/importing, recording a read, finishing, and saving a plan
+      and Show full navigation. Adding/importing, recording a read, finishing, and saving a plan
       introduce the expected tools without creating reading records themselves. Check a second
       account in the same browser gets its own welcome; existing accounts keep their full layout.
-      Confirm a saved custom dock remains intact and the guide remains reachable on a phone.
-- [ ] **Live first-book walkthrough:** from the Books chapter, choose Guide me in the app. Check
+      Confirm a saved custom dock remains intact. Replay lives in Settings; the public written guide
+      opens from the website footer without an account and never occupies an app navigation slot.
+- [ ] **Live first-book walkthrough:** from Settings or the first-use prompt, choose Guide me in the app. Check
       the animated cursor on desktop and dot on a physical phone, including the on-screen keyboard.
       Search, choose and deliberately save a disposable book; the guide must wait on a rejected
       save and then open that exact saved book, including when filters exclude it. Check the native

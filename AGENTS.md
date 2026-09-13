@@ -106,7 +106,8 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   a device-wide onboarding flag cannot skip another account's welcome. Milestones are bounded,
   content-free and monotonic, updated through the row-locked `update_reader_guidance` RPC. Direct
   routes, book controls, import/export, privacy and account exit remain reachable. Custom dock/Home
-  arrangements take precedence. A tour must never fabricate reading progress, books or plans, or
+  arrangements take precedence. Keep the written guide public at `/guide`, outside the app shell;
+  walkthrough replay and pace controls belong in Settings, never a permanent navigation item. A tour must never fabricate reading progress, books or plans, or
   grant Pro. Optional chapter details keep the same tour order and prove their own availability.
   Before numbering a new migration, check the combined deployment history; public and private
   migrations share one version namespace. See `docs/tasks/reader-guidance.md`.

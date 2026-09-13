@@ -53,12 +53,16 @@ data boundary. Practice playback and the later animated chapters are not part of
 The first welcome offers three explicit choices:
 
 - **Start gently:** four practical stops through adding books, reading, choosing a next read and
-  planning. The main navigation begins with Home, Library, Add and the Library guide.
+  planning. The main navigation begins with Home, Library and Add; More keeps Settings and Appearance reachable.
 - **Show me around:** every destination is visible, with a walkthrough through the full reading
   flow, organization, reflection, discovery, sharing, appearance and account/privacy controls.
 - **Explore on my own:** the full interface, with no active walkthrough.
 
-Every choice is reversible from Library guide. The saved chapter guide uses a small note in the
+Every choice is reversible from **Settings → Walkthroughs and guidance** (`/settings/guidance`).
+The written reference lives on the public website at `/guide`, linked from the landing footer
+and Settings. It loads without a session or profile and is never a persistent app navigation item.
+A gentle dock omits unintroduced destinations without substituting help links or leaving empty slots.
+Custom arrangements retain their selected destinations. The saved chapter guide uses a small note in the
 page flow; the optional live walkthrough uses a nonmodal anchored callout. Readers can
 pause, resume after refresh, replay a stop, open a destination directly, or reveal everything.
 

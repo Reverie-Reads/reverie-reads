@@ -51,6 +51,7 @@ import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import type { AddDestination } from '../components/addDestination'
 import { ArrangementEditor } from '../components/ArrangementEditor'
 import { RestoreBackupControl } from '../components/RestoreBackupControl'
+import { StartBookTour } from '../guidance/BookTour'
 import { UtilityGlyph } from '../components/UtilityGlyph'
 
 const YEAR = new Date().getFullYear()
@@ -466,17 +467,31 @@ function SettingsScreen() {
           </p>
         </Section>
 
-        <Section title="Your library guide">
+        <Section title="Walkthroughs and guidance">
           <p className="text-[14px] leading-relaxed text-muted">
             Change your starting pace, revisit a walkthrough, or explore tools you have not tried
             yet.
           </p>
-          <Link
-            to="/guide"
-            className="skin-control skin-btn-secondary mt-3 inline-flex min-h-11 items-center px-4 py-2 text-[14px]"
-          >
-            Open the library guide
-          </Link>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <StartBookTour />
+            <Link
+              to="/settings/guidance"
+              className="skin-control skin-btn-secondary inline-flex min-h-11 items-center px-4 py-2 text-[14px]"
+            >
+              Change pace or explore walkthroughs
+            </Link>
+          </div>
+          <p className="mt-3 text-[13px] leading-relaxed text-muted">
+            Prefer a written reference?{' '}
+            <a
+              href="/guide"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-4"
+            >
+              Read the website guide (opens a new tab)
+            </a>
+          </p>
           <label className="mt-4 flex min-h-11 cursor-pointer items-start gap-3 py-2 text-[14px] text-ink">
             <input
               type="checkbox"
@@ -493,8 +508,8 @@ function SettingsScreen() {
                 id="reading-tips-description"
                 className="mt-1 block text-[13px] leading-relaxed text-muted"
               >
-                Show short introductions and how-to tips around your library. The full library guide
-                is always here when you need it.
+                Show short introductions and how-to tips around your library. Walkthroughs remain
+                available here when tips are off.
               </span>
             </span>
           </label>

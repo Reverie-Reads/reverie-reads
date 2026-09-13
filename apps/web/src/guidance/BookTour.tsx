@@ -394,14 +394,14 @@ export function BookTour() {
           )}
           {state.step === 'opened' && (
             <Link
-              to="/guide"
+              to="/settings/guidance"
               onClick={() => {
                 stop()
                 send({ type: 'end' })
               }}
               className="book-tour-guide-link"
             >
-              Back to the guide
+              More walkthroughs
             </Link>
           )}
           {state.status === 'paused' && (

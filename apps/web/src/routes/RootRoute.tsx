@@ -45,6 +45,15 @@ function RootLayout() {
   if (pathname === '/welcome' || callbackPending) {
     return <div className="gold-brand">{callbackPending ? null : <Outlet />}</div>
   }
+  // The written reference is public even when a reader is signed in. It uses the brand,
+  // not the app shell or account guidance, and never waits for profile hydration.
+  if (pathname === '/guide')
+    return (
+      <div className="gold-brand">
+        <Outlet />
+      </div>
+    )
+
   // A session whose email isn't confirmed is gated out of the app (H3, defense in depth). Password
   // sign-up with confirmation on creates NO session until the link is opened, so that flow stays on
   // the unauthenticated shell (the auth screen shows "check your inbox"); this gate catches the

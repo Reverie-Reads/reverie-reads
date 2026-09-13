@@ -92,9 +92,9 @@ export function GuideScreen() {
     <section className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:py-10">
       <PageHeader
         eyebrow="Make yourself at home"
-        title="Your library guide"
+        title="Walkthroughs and guidance"
         showDescriptionOnMobile
-        description="A place to begin, and a place to come back to. Walk through the reading flow or open just the part you need."
+        description="Start a guided task, change your pace, or explore a part of your library."
       />
       {profile.isPending ? (
         <p role="status" className="mt-6 text-muted">
@@ -359,7 +359,13 @@ export function GuidanceTrail() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const update = useUpdateGuidance()
   const guidance = profile?.guidance
-  if (!guidance?.setupComplete || pathname === '/guide' || bookTour.status !== 'off') return null
+  if (
+    !guidance?.setupComplete ||
+    pathname === '/settings/guidance' ||
+    pathname === '/settings' ||
+    bookTour.status !== 'off'
+  )
+    return null
   const chapter = GUIDE_CHAPTERS.find((item) => item.id === guidance.tour)
   if (!chapter && (guidance.mode !== 'gentle' || pathname !== '/')) return null
   const following =
@@ -391,8 +397,8 @@ export function GuidanceTrail() {
           </p>
         </div>
         {chapter?.id === 'books' && <StartBookTour />}
-        <Link to="/guide" className={linkClass}>
-          {chapter ? 'Continue walkthrough' : 'Explore the guide'}
+        <Link to="/settings/guidance" className={linkClass}>
+          {chapter ? 'Continue walkthrough' : 'Guidance settings'}
         </Link>
         {chapter && (
           <Button
