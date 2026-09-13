@@ -81,10 +81,12 @@ export function LogReadForm({
   book,
   onClose,
   mode = 'finish',
+  onSaved,
 }: {
   book: Book
   onClose: () => void
   mode?: 'finish' | 'past'
+  onSaved?: () => void
 }) {
   const addRead = useAddRead(book.id)
   const { data: books } = useBooks()
@@ -114,6 +116,7 @@ export function LogReadForm({
       if (mode === 'finish') {
         await updateBook.mutateAsync({ id: book.id, patch: { readStatus: 'Read', progress: 100 } })
       }
+      onSaved?.()
       onClose()
       if (mode === 'finish') void maybeChainPrompt(book, books ?? [])
     } catch {
@@ -139,7 +142,7 @@ export function LogReadForm({
           ? `Record an earlier read of ${book.title}. Your current reading status and progress stay as they are.`
           : `${book.title} — save this finish to your reading journal.`}
       </p>
-      <div className="flex flex-col gap-3">
+      <div data-reading-tour-book={book.id} className="flex flex-col gap-3">
         <fieldset disabled={saving || savedRead} className="flex min-w-0 flex-col gap-3">
           <Field label="Date finished">
             <input
@@ -189,6 +192,7 @@ export function LogReadForm({
         <button
           type="button"
           disabled={saving}
+          data-book-tour={mode === 'finish' ? 'reading-finish-save' : undefined}
           onClick={() => void save()}
           className="mt-1 h-11 skin-control skin-btn-primary text-[14px] font-semibold"
         >

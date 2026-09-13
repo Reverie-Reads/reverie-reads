@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, createRoute, useNavigate } from '@tanstack/react-router'
 import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 import {
@@ -201,12 +201,16 @@ export function BookReadingActions({
   onLogPastRead,
   startUnavailable,
   onRetryHistory,
+  onStarted,
+  guided,
 }: {
   book: Book
   onUpdateProgress: () => void
   onLogPastRead: () => void
   startUnavailable?: 'loading' | 'error'
   onRetryHistory?: () => void
+  onStarted?: () => void
+  guided?: boolean
 }) {
   const updateBook = useUpdateBook(book.id)
   const reading = book.readStatus === 'Reading'
@@ -221,12 +225,16 @@ export function BookReadingActions({
     <div className="mt-5 flex flex-wrap gap-2">
       <button
         type="button"
+        data-book-tour={guided ? (reading ? 'reading-progress' : 'reading-start') : undefined}
         disabled={updateBook.isPending || !!startUnavailable}
-        onClick={() =>
-          reading
-            ? onUpdateProgress()
-            : updateBook.mutate({ id: book.id, patch: beginReadingPatch(book) })
-        }
+        onClick={() => {
+          if (reading) onUpdateProgress()
+          else {
+            const change = { id: book.id, patch: beginReadingPatch(book) }
+            if (onStarted) updateBook.mutate(change, { onSuccess: onStarted })
+            else updateBook.mutate(change)
+          }
+        }}
         className="skin-control skin-btn-primary min-h-11 px-4 text-[14px] disabled:opacity-50"
       >
         {startUnavailable === 'loading'
@@ -296,8 +304,25 @@ export function BookDetailScreen() {
   }
 
   const book = books?.find((b) => b.id === bookId)
-  const { state: bookTour } = useBookTour()
+  const { state: bookTour, send: sendTour } = useBookTour()
   useBookTourObservation(book ? 'opened' : null, book?.id)
+  const readingTour = bookTour.journey === 'reading' && bookTour.status !== 'off'
+  const readingTarget = readingTour && bookTour.bookId === book?.id
+  useEffect(() => {
+    if (readingTour && book && reads && !readsError)
+      sendTour({ type: 'reading-open', bookId: book.id, reading: book.readStatus === 'Reading' })
+  }, [readingTour, book, reads, readsError, sendTour])
+  useEffect(() => {
+    if (!readingTarget || !book) return
+    if (dialog === 'progress')
+      sendTour({ type: 'reading', run: bookTour.run, action: 'progress-open', bookId: book.id })
+    else if (dialog === 'finish')
+      sendTour({ type: 'reading', run: bookTour.run, action: 'finish-open', bookId: book.id })
+    else {
+      sendTour({ type: 'reading', run: bookTour.run, action: 'progress-close', bookId: book.id })
+      sendTour({ type: 'reading', run: bookTour.run, action: 'finish-close', bookId: book.id })
+    }
+  }, [readingTarget, book, dialog, bookTour.run, sendTour])
   const { data: isCorpusAdmin = false } = useCorpusAdminStatus()
   const coverReview = usePersonalCoverCorpusReview({
     bookId: book?.id ?? '',
@@ -527,6 +552,18 @@ export function BookDetailScreen() {
           )}
           <BookReadingActions
             book={{ ...book, reads: reads ?? book.reads }}
+            guided={readingTarget}
+            onStarted={
+              readingTarget
+                ? () =>
+                    sendTour({
+                      type: 'reading',
+                      run: bookTour.run,
+                      action: 'started',
+                      bookId: book.id,
+                    })
+                : undefined
+            }
             startUnavailable={startUnavailable}
             onRetryHistory={() => void retryReads()}
             onUpdateProgress={() => {
@@ -680,6 +717,7 @@ export function BookDetailScreen() {
           <button
             type="button"
             onClick={() => setDialog('finish')}
+            data-book-tour={readingTarget ? 'reading-finish' : undefined}
             className="skin-control skin-btn-secondary mt-5 min-h-11 px-4 text-[14px] font-semibold"
           >
             Finish this read
@@ -742,47 +780,52 @@ export function BookDetailScreen() {
         )}
 
         {/* read log */}
-        <div id="personal-read-log" className="scroll-mt-24" />
-        <Label
-          action={
-            <button
-              type="button"
-              onClick={() => setDialog('log')}
-              className="text-[12px] text-primary"
-            >
-              Log a past read
-            </button>
-          }
+        <div
+          id="personal-read-log"
+          className="scroll-mt-24"
+          data-book-tour={readingTarget ? 'reading-history' : undefined}
         >
-          Read log
-        </Label>
-        <div className="mb-2 text-[13px] text-muted">
-          {reads && reads.length
-            ? `Read ${reads.length} time${reads.length > 1 ? 's' : ''}`
-            : book.readStatus === 'Read'
-              ? 'Marked read — log a date to see it on your calendar'
-              : 'Not logged yet'}
-        </div>
-        <div className="flex flex-col gap-2">
-          {(reads ?? []).map((r) => (
-            <Surface key={r.id} tone="field" radius="card" pad={2}>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[13.5px] font-semibold text-ink">{fmtDate(r.date)}</span>
-                <button
-                  type="button"
-                  onClick={() => deleteRead.mutate(r.id)}
-                  className="text-[12px] text-muted hover:text-primary"
-                >
-                  remove
-                </button>
-              </div>
-              <div className="mt-0.5 flex items-center gap-2 text-[12.5px] text-muted">
-                {r.format}
-                {r.rating ? <Stars value={r.rating} size={12} /> : null}
-              </div>
-              {r.notes && <div className="mt-1 text-[13px] text-ink">{r.notes}</div>}
-            </Surface>
-          ))}
+          <Label
+            action={
+              <button
+                type="button"
+                onClick={() => setDialog('log')}
+                className="text-[12px] text-primary"
+              >
+                Log a past read
+              </button>
+            }
+          >
+            Read log
+          </Label>
+          <div className="mb-2 text-[13px] text-muted">
+            {reads && reads.length
+              ? `Read ${reads.length} time${reads.length > 1 ? 's' : ''}`
+              : book.readStatus === 'Read'
+                ? 'Marked read — log a date to see it on your calendar'
+                : 'Not logged yet'}
+          </div>
+          <div className="flex flex-col gap-2">
+            {(reads ?? []).map((r) => (
+              <Surface key={r.id} tone="field" radius="card" pad={2}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13.5px] font-semibold text-ink">{fmtDate(r.date)}</span>
+                  <button
+                    type="button"
+                    onClick={() => deleteRead.mutate(r.id)}
+                    className="text-[12px] text-muted hover:text-primary"
+                  >
+                    remove
+                  </button>
+                </div>
+                <div className="mt-0.5 flex items-center gap-2 text-[12.5px] text-muted">
+                  {r.format}
+                  {r.rating ? <Stars value={r.rating} size={12} /> : null}
+                </div>
+                {r.notes && <div className="mt-1 text-[13px] text-ink">{r.notes}</div>}
+              </Surface>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -1043,6 +1086,10 @@ export function BookDetailScreen() {
         <LogReadForm
           book={book}
           mode={dialog === 'log' ? 'past' : 'finish'}
+          onSaved={() => {
+            if (dialog === 'finish')
+              sendTour({ type: 'reading', run: bookTour.run, action: 'finished', bookId: book.id })
+          }}
           onClose={() => setDialog(null)}
         />
       )}
@@ -1058,9 +1105,15 @@ export function BookDetailScreen() {
         <ReadingProgressDialog
           book={book}
           onClose={() => setDialog(null)}
-          onSaved={(progress) =>
+          onSaved={(progress) => {
             setProgressNotice({ bookId: book.id, text: `Progress saved at ${progress}%.` })
-          }
+            sendTour({
+              type: 'reading',
+              run: bookTour.run,
+              action: 'progress-saved',
+              bookId: book.id,
+            })
+          }}
         />
       )}
       {dialog === 'merge' && (

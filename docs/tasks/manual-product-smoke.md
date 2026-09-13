@@ -56,6 +56,16 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 ## P1 — core promise and activation
 
+- [ ] **Live reading walkthrough on a physical phone:** in Settings → Walkthroughs and guidance →
+      Settle into a book, choose Guide my reading. Pick your own book, start/resume deliberately,
+      open Update progress and type with the actual keyboard. Guidance must not cover the field or
+      Save. Save a real percentage, then Continue reading without creating a finish. Replay and
+      inspect Finish this read; cancelling must leave history unchanged. For a genuine finished
+      read, save once, dismiss optional moods with Done, and reopen the saved history. Check reduced
+      motion, Pause/Resume, and changing accounts. Record the build and device above. Local browser
+      tests cover transport failures and partial-finish retries; do not manufacture those failures
+      in a personal production library.
+
 - [ ] **Your library guide:** in a disposable new account, choose Start gently, Show me around,
       or Explore on my own. Check the basic reading flow, pause/reload/resume, early exploration,
       and Show full navigation. Adding/importing, recording a read, finishing, and saving a plan

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Button } from '../components/Button'
+import { useJustFinishedStore } from '../lib/chainPrompt'
 import { useBookTour } from './BookTourContext'
 import { BOOK_TOUR_STEPS } from './bookTourModel'
 import './bookTour.css'
@@ -17,7 +18,13 @@ function findBookTourTarget(name: string): HTMLElement | null {
   )
 }
 
-export function StartBookTour({ className = '' }: { className?: string }) {
+export function StartBookTour({
+  className = '',
+  label = 'Guide me in the app',
+}: {
+  className?: string
+  label?: string
+}) {
   const { send } = useBookTour()
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
@@ -29,13 +36,35 @@ export function StartBookTour({ className = '' }: { className?: string }) {
         else void navigate({ to: '/library', search: {} }).then(() => send({ type: 'start' }))
       }}
     >
-      Guide me in the app
+      {label}
+    </Button>
+  )
+}
+
+export function StartReadingTour() {
+  const { send } = useBookTour()
+  const navigate = useNavigate()
+  return (
+    <Button
+      onClick={() =>
+        void navigate({ to: '/library', search: {} }).then(() => send({ type: 'start-reading' }))
+      }
+    >
+      Guide my reading
     </Button>
   )
 }
 
 export function BookTour() {
   const { state, send } = useBookTour()
+  const finishedBookId = useJustFinishedStore((s) => s.target?.book.id)
+  useEffect(() => {
+    if (state.journey !== 'reading' || !state.bookId) return
+    if (finishedBookId === state.bookId)
+      send({ type: 'reading', run: state.run, action: 'reflect-open', bookId: state.bookId })
+    else if (!finishedBookId)
+      send({ type: 'reading', run: state.run, action: 'reflect-close', bookId: state.bookId })
+  }, [finishedBookId, state.journey, state.bookId, state.run, send])
   const location = useRouterState({ select: (s) => s.location })
   const navigate = useNavigate()
   const step = BOOK_TOUR_STEPS[state.step]
@@ -109,11 +138,12 @@ export function BookTour() {
     stop()
     if (!running) return
     const allowed =
-      location.pathname === '/library' ||
+      (location.pathname === '/library' && (state.journey !== 'reading' || !state.bookId)) ||
+      (state.journey === 'reading' && !state.bookId && location.pathname.startsWith('/book/')) ||
       location.pathname === '/add' ||
       (state.bookId && location.pathname === `/book/${state.bookId}`)
     if (!allowed) send({ type: 'pause' })
-  }, [location.pathname, running, state.bookId, send, stop])
+  }, [location.pathname, running, state.bookId, state.journey, send, stop])
 
   useEffect(() => {
     stop()
@@ -136,7 +166,15 @@ export function BookTour() {
       } else if (!timeout) timeout = setTimeout(() => setMissing(true), 4000)
       // The rail mounts its target before its observation reaches this provider.
       // Let that real book-open transition settle without treating it as an unrelated dialog.
-      if (openModal && !usable && !openModal.querySelector('[data-book-tour="tour-opened-book"]')) {
+      if (
+        openModal &&
+        !usable &&
+        !openModal.querySelector('[data-book-tour="tour-opened-book"]') &&
+        !(
+          state.journey === 'reading' &&
+          openModal.querySelector(`[data-reading-tour-book="${state.bookId}"]`)
+        )
+      ) {
         stop()
         send({ type: 'pause' })
       }
@@ -155,7 +193,7 @@ export function BookTour() {
       clearTimeout(timeout)
       window.removeEventListener('resize', locate)
     }
-  }, [running, step.target, stop, send])
+  }, [running, step.target, state.journey, state.bookId, stop, send])
 
   useEffect(() => stop(), [target, stop])
 
@@ -177,10 +215,16 @@ export function BookTour() {
     }
   }, [target, active])
 
+  const modalOutlet = modal?.querySelector<HTMLElement>('[data-book-tour-outlet]') ?? null
   const blockedByModal = !!modal && (!target || !modal.contains(target))
   useEffect(() => {
     const floating = panel.current
     if (!running || !floating || blockedByModal) return
+    if (modalOutlet) {
+      floating.removeAttribute('style')
+      floating.removeAttribute('data-compact')
+      return
+    }
     let disposed = false
     const update = () => {
       const viewport = window.visualViewport
@@ -239,7 +283,7 @@ export function BookTour() {
       window.visualViewport?.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
     }
-  }, [target, running, state.status, blockedByModal])
+  }, [target, running, state.status, blockedByModal, modalOutlet])
 
   useEffect(
     () => () => {
@@ -314,7 +358,13 @@ export function BookTour() {
       return
     }
     // The allowlist contains navigation only. No save, result choice, field value or mutation.
-    if (step.demonstration === 'click' && ['add', 'saved', 'library'].includes(state.step))
+    if (
+      step.demonstration === 'click' &&
+      ['add', 'saved', 'library', 'read-progress', 'read-finish', 'read-reflect'].includes(
+        state.step,
+      ) &&
+      !original.matches(':disabled')
+    )
       original.click()
     else if (step.demonstration === 'focus' && original instanceof HTMLInputElement)
       original.focus({ preventScroll: true })
@@ -341,10 +391,15 @@ export function BookTour() {
         className="book-tour-panel"
         aria-label="Live walkthrough"
         data-book-tour-panel
+        data-inline={!!modalOutlet}
       >
         <div className="book-tour-heading">
           <p className="book-tour-eyebrow">
-            {state.status === 'paused' ? 'Walkthrough paused' : 'Your first book'}
+            {state.status === 'paused'
+              ? 'Walkthrough paused'
+              : state.journey === 'reading'
+                ? 'Your reading life'
+                : 'Your first book'}
           </p>
           <button
             type="button"
@@ -375,12 +430,44 @@ export function BookTour() {
               Resume
             </Button>
           ) : state.step === 'opened' ? (
-            <Button onClick={finish}>Keep exploring</Button>
+            <>
+              <Button onClick={finish}>Keep exploring</Button>
+              <StartReadingTour />
+            </>
           ) : (
-            <Button disabled={!target || playing} onClick={() => void demonstrate()}>
-              {playing ? 'Showing you…' : shown ? 'Show me again' : 'Show me this step'}
+            <Button
+              disabled={!target || playing}
+              aria-busy={playing}
+              aria-description={step.action}
+              onClick={() => void demonstrate()}
+            >
+              Show me this step
             </Button>
           )}
+          {active &&
+            ['read-saved', 'read-finished', 'read-finish', 'read-finish-editor'].includes(
+              state.step,
+            ) && (
+              <Button variant="secondary" onClick={finish}>
+                Continue reading
+              </Button>
+            )}
+          {active && ['read-progress', 'read-saved'].includes(state.step) && state.bookId && (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                send({
+                  type: 'reading',
+                  run: state.run,
+                  action: 'offer-finish',
+                  bookId: state.bookId!,
+                })
+              }
+            >
+              When I finish
+            </Button>
+          )}
+          {active && state.step === 'read-choose' && <StartBookTour label="Start with a book" />}
           {active && state.step !== 'opened' && (
             <Button
               variant="ghost"
@@ -409,7 +496,11 @@ export function BookTour() {
               variant="ghost"
               onClick={() => {
                 void navigate(
-                  state.bookId ? { to: '/library', search: {} } : { to: '/add', search: {} },
+                  state.journey === 'reading' && state.bookId
+                    ? { to: '/book/$bookId', params: { bookId: state.bookId } }
+                    : state.bookId || state.journey === 'reading'
+                      ? { to: '/library', search: {} }
+                      : { to: '/add', search: {} },
                 ).then(() => send({ type: 'resume' }))
               }}
             >
@@ -418,9 +509,7 @@ export function BookTour() {
           )}
         </div>
         {active && state.step !== 'opened' && (
-          <p className="book-tour-handoff">
-            {playing ? step.action : 'Your turn whenever you are ready.'}
-          </p>
+          <p className="book-tour-handoff">Your turn whenever you are ready.</p>
         )}
       </aside>
       <div
@@ -441,6 +530,6 @@ export function BookTour() {
         <span className="book-tour-ripple" />
       </div>
     </>,
-    modal ?? document.body,
+    modalOutlet ?? modal ?? document.body,
   )
 }

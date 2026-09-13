@@ -147,6 +147,7 @@ export function ReadingProgressDialog({
   return (
     <Modal title="Update progress" onClose={close}>
       <form
+        data-reading-tour-book={book.id}
         noValidate
         onSubmit={(event) => {
           event.preventDefault()
@@ -165,6 +166,7 @@ export function ReadingProgressDialog({
             Cancel
           </Button>
           <Button
+            data-book-tour="reading-progress-save"
             type="submit"
             disabled={updateBook.isPending || (parsed != null && parsed === book.progress)}
           >

@@ -209,7 +209,9 @@ function PersonalLibraryScreen() {
     return (
       <div className="flex min-h-full flex-col px-4 py-6 sm:px-6">
         <LibraryHeader scope="personal" readout="0 books · 0 faves" />
-        <EmptyState />
+        <div data-book-tour="reading-library">
+          <EmptyState />
+        </div>
       </div>
     )
   }
@@ -218,7 +220,7 @@ function PersonalLibraryScreen() {
     updateBook.mutate({ id, patch: { fave: !fave } })
 
   const activate = (id: string) => {
-    if (isDesktop) setSelectedId(id)
+    if (isDesktop && bookTour.journey !== 'reading') setSelectedId(id)
     else void navigate({ to: '/book/$bookId', params: { bookId: id } })
   }
 
@@ -229,7 +231,10 @@ function PersonalLibraryScreen() {
   const selected = (selectedId && visible.find((b) => b.id === selectedId)) || null
   const coverSheetBook = (coverSheetId && books.find((b) => b.id === coverSheetId)) || null
   const center = (
-    <div className="mx-auto min-w-0 w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <div
+      data-book-tour="reading-library"
+      className="mx-auto min-w-0 w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    >
       <LibraryHeader
         scope="personal"
         readout={`${libraryBooks.length} books · ${libraryBooks.filter((b) => b.fave).length} faves`}

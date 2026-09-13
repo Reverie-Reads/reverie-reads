@@ -95,6 +95,7 @@ export function Modal({
               ✕
             </button>
           </div>
+          <div data-book-tour-outlet />
           {children}
         </Surface>
       </div>

@@ -1,24 +1,109 @@
-export type BookTourStep = 'add' | 'search' | 'choose' | 'details' | 'saved' | 'library' | 'opened'
+export type ReadingTourStep =
+  | 'read-choose'
+  | 'read-start'
+  | 'read-progress'
+  | 'read-editor'
+  | 'read-saved'
+  | 'read-finish'
+  | 'read-finish-editor'
+  | 'read-reflect'
+  | 'read-finished'
+export type BookTourStep =
+  | 'add'
+  | 'search'
+  | 'choose'
+  | 'details'
+  | 'saved'
+  | 'library'
+  | 'opened'
+  | ReadingTourStep
 export interface BookTourState {
   status: 'off' | 'active' | 'paused'
+  run: number
+  journey: 'first-book' | 'reading'
   step: BookTourStep
   /** Session-only; never written to the profile, storage or analytics. */
   bookId: string | null
 }
-export const INITIAL_BOOK_TOUR: BookTourState = { status: 'off', step: 'add', bookId: null }
+export const INITIAL_BOOK_TOUR: BookTourState = {
+  status: 'off',
+  run: 0,
+  journey: 'first-book',
+  step: 'add',
+  bookId: null,
+}
 export type BookTourEvent =
   | { type: 'start' | 'end' | 'pause' | 'resume' }
+  | { type: 'start-reading' }
+  | { type: 'reading-open'; bookId: string; reading: boolean }
+  | {
+      type: 'reading'
+      run: number
+      action:
+        | 'started'
+        | 'progress-open'
+        | 'progress-close'
+        | 'progress-saved'
+        | 'offer-finish'
+        | 'finish-open'
+        | 'finish-close'
+        | 'reflect-open'
+        | 'reflect-close'
+        | 'finished'
+      bookId: string
+    }
   | { type: 'observe'; step: BookTourStep; bookId?: string }
 
 export function bookTourReducer(state: BookTourState, event: BookTourEvent): BookTourState {
-  if (event.type === 'start') return { ...INITIAL_BOOK_TOUR, status: 'active' }
-  if (event.type === 'end') return INITIAL_BOOK_TOUR
+  if (event.type === 'start') return { ...INITIAL_BOOK_TOUR, status: 'active', run: state.run + 1 }
+  if (event.type === 'start-reading')
+    return {
+      ...INITIAL_BOOK_TOUR,
+      status: 'active',
+      run: state.run + 1,
+      journey: 'reading',
+      step: 'read-choose',
+    }
+  if (event.type === 'end') return { ...INITIAL_BOOK_TOUR, run: state.run }
   if (state.status === 'off') return state
   if (event.type === 'pause')
     return state.status === 'paused' ? state : { ...state, status: 'paused' }
   if (event.type === 'resume')
     return state.status === 'active' ? state : { ...state, status: 'active' }
-  if (event.type !== 'observe') return state
+  if (state.journey === 'reading') {
+    if (event.type === 'reading-open') {
+      // Only the reader's initial choice selects a book. Optimistic updates and other books
+      // cannot turn a started/finished operation into a confirmed success.
+      if (state.step !== 'read-choose') return state
+      return {
+        ...state,
+        bookId: event.bookId,
+        step: event.reading ? 'read-progress' : 'read-start',
+      }
+    }
+    if (event.type !== 'reading' || event.bookId !== state.bookId || event.run !== state.run)
+      return state
+    const transitions: Record<
+      Extract<BookTourEvent, { type: 'reading' }>['action'],
+      [ReadingTourStep[], ReadingTourStep]
+    > = {
+      started: [['read-start'], 'read-progress'],
+      'progress-open': [['read-progress', 'read-saved'], 'read-editor'],
+      'progress-close': [['read-editor'], 'read-progress'],
+      'progress-saved': [['read-editor'], 'read-saved'],
+      'offer-finish': [['read-saved', 'read-progress'], 'read-finish'],
+      'finish-open': [['read-finish', 'read-progress', 'read-saved'], 'read-finish-editor'],
+      'finish-close': [['read-finish-editor'], 'read-finish'],
+      finished: [['read-finish-editor'], 'read-finished'],
+      'reflect-open': [['read-finished'], 'read-reflect'],
+      'reflect-close': [['read-reflect'], 'read-finished'],
+    }
+    const transition = transitions[event.action]
+    return transition?.[0].includes(state.step as ReadingTourStep)
+      ? { ...state, step: transition[1] }
+      : state
+  }
+  if (event.type !== 'observe' || event.step.startsWith('read-')) return state
   if (event.step === 'saved' && !event.bookId) return state
   if (['library', 'opened'].includes(event.step) && event.bookId !== state.bookId) return state
   const bookId = ['search', 'choose', 'details'].includes(event.step)
@@ -71,9 +156,72 @@ export const BOOK_TOUR_STEPS = {
     action: 'Open your book',
     demonstration: 'click',
   },
+  'read-choose': {
+    title: 'Choose a book to spend time with',
+    text: 'Open one of your books. Your current library filters stay in place; use search or change the view if you need to. No books yet? Begin with Add a book.',
+    target: 'reading-library',
+    action: 'Show your library',
+    demonstration: 'point',
+  },
+  'read-start': {
+    title: 'Begin where you are',
+    text: 'Choose Start reading, Resume reading or Read again when you are ready. Resume keeps your place; a new read keeps earlier finishes in your history.',
+    target: 'reading-start',
+    action: 'Show the reading control',
+    demonstration: 'point',
+  },
+  'read-progress': {
+    title: 'Keep your place',
+    text: 'Open Update progress to record how far you have read. You choose the percentage and save it yourself.',
+    target: 'reading-progress',
+    action: 'Open Update progress',
+    demonstration: 'click',
+  },
+  'read-editor': {
+    title: 'Your place, in your own time',
+    text: 'Enter your actual whole percentage, then Save progress. Cancel leaves your place unchanged. Even 100% does not create a finished read.',
+    target: 'reading-progress-save',
+    action: 'Show where to save progress',
+    demonstration: 'point',
+  },
+  'read-saved': {
+    title: 'Your place is saved',
+    text: 'That is enough for today. Continue reading, or see where to record a finish when you reach the end.',
+    target: 'reading-progress',
+    action: 'Show your reading control',
+    demonstration: 'point',
+  },
+  'read-finish': {
+    title: 'When you reach the end',
+    text: 'Finish this read opens a record for this time through the book. You can look and cancel; only save a finish you actually made.',
+    target: 'reading-finish',
+    action: 'Open Finish this read',
+    demonstration: 'click',
+  },
+  'read-finish-editor': {
+    title: 'Keep what this read leaves with you',
+    text: 'Choose the date and format. Your rating and thoughts are optional. Save only when you have finished; cancel whenever you like.',
+    target: 'reading-finish-save',
+    action: 'Show where to save the finished read',
+    demonstration: 'point',
+  },
+  'read-reflect': {
+    title: 'A moment before your next book',
+    text: 'Your finish is saved. This optional sheet lets you keep a mood or consider the next book. Make any choices yourself, or choose Done to return to your reading history.',
+    target: 'reading-reflect-done',
+    action: 'Return to reading history',
+    demonstration: 'click',
+  },
+  'read-finished': {
+    title: 'A read to return to',
+    text: 'Your finished read is saved in this book’s history. Each time through has its own date, format and thoughts.',
+    target: 'reading-history',
+    action: 'Show the saved reading history',
+    demonstration: 'point',
+  },
   opened: {
     title: 'You have found your way',
-    text: 'This is your book: its details, copies and reading history stay together. Keep exploring, or return to the guide for the next part.',
+    text: 'This is your book: its details, copies and reading history stay together. Keep exploring, or follow the reading walkthrough with a book of your choice.',
     target: 'tour-opened-book',
     action: 'Show the book details',
     demonstration: 'point',
