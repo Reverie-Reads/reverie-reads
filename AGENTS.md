@@ -368,6 +368,17 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   editor's manual-series intent. Assessments and deferrals keep administrator-only history, guarded
   by work/evidence fingerprint plus review revision. Never infer a safe shared-work merge or ISBN
   reassignment from a duplicate candidate. See `docs/tasks/catalog-metadata-review.md`.
+- **Edition corrections are explicit, field-specific, and shared-only.** The existing metadata
+  workspace previews either pages or the whole publication date for one already-associated,
+  checksum-valid reference ISBN. The administrator must confirm exact title/full recorded
+  contributors, an HTTPS source and an explanation against the frozen fingerprint/review revision.
+  Contributor/display inconsistencies and ISBN collisions block correction. This is not edition
+  certification for every ISBN on a work. Date precision is replaced together; a year-only date
+  clears month/day and their obsolete provenance. Never invoke enrichment, general editing, series
+  reconciliation, or a personal-copy writer from this action. Source and reference ISBN are stored
+  per field; private explanations remain in administrator history. Failed or uncertain browser
+  submissions require an explicit reload/history check, not automatic replay. A missing server
+  capability keeps the control unavailable. See `docs/tasks/catalog-edition-corrections.md`.
 - **Corpus cover recovery is bounded, resumable, and independent of classification.** The
   administrator completion pipeline never walks the whole household library in one RPC. It calls
   `admin_recover_corpus_cover_batch` in groups of at most 25, records a source fingerprint after

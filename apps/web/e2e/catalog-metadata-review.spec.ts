@@ -1,5 +1,5 @@
 import { configureReturningReader } from './support/readerGuidance'
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import AxeBuilder from '@axe-core/playwright'
 import { SKIN_LIST } from '@reverie/core'
@@ -12,6 +12,17 @@ const ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
 const SERVICE =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
+
+// Shared works outlive personal fixtures in other specs. Never borrow their real ISBNs:
+// the canonical-ISBN constraint correctly refuses assigning those editions to this work.
+function fixtureIsbn() {
+  const base = `978${String(randomInt(1_000_000_000)).padStart(9, '0')}`
+  const sum = [...base].reduce(
+    (total, digit, index) => total + Number(digit) * (index % 2 ? 3 : 1),
+    0,
+  )
+  return `${base}${(10 - (sum % 10)) % 10}`
+}
 async function setup(page: Page, isAdmin = true) {
   const admin = createClient(URL, SERVICE, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -78,6 +89,7 @@ async function setup(page: Page, isAdmin = true) {
     peerId,
     bookId,
     title,
+    isbn: fixtureIsbn(),
     cleanup: async () => {
       await ok(
         admin.from('corpus_metadata_review_events').delete().in('work_id', [workId, peerId]),
@@ -208,13 +220,199 @@ test('ordinary readers cannot open metadata review', async ({ page }) => {
   }
 })
 
+async function editionDraft(
+  page: Page,
+  title: string,
+  isbn: string,
+  field: 'pages' | 'publication',
+  value: string,
+) {
+  await page.getByLabel('Reference edition ISBN').selectOption(isbn)
+  await page.getByLabel('Title shown by the edition source', { exact: true }).fill(title)
+  await page.getByLabel('Full contributor names shown by the edition source').fill('Test Writer')
+  await page.getByLabel('Field to correct').selectOption(field)
+  await page
+    .getByLabel(field === 'pages' ? 'Proposed page count' : 'Proposed publication date')
+    .fill(value)
+  await page.getByLabel('Edition evidence link').fill('https://publisher.example/exact-edition')
+  await page
+    .getByLabel('Edition correction explanation')
+    .fill('Checked this reference edition; keep all other fields unchanged.')
+  await page.getByRole('button', { name: 'Preview edition correction' }).click()
+}
+
+test('edition correction previews a whole date, persists after refresh and protects personal copies', async ({
+  page,
+}) => {
+  const c = await setup(page)
+  try {
+    await ok(
+      c.admin
+        .from('works')
+        .update({ isbns: [c.isbn], pages: 321, pub_y: 2025, pub_m: 2, pub_d: 29 })
+        .eq('id', c.workId),
+      'edition baseline',
+    )
+    const before = await ok(
+      c.admin.from('books').select('*').eq('id', c.bookId).single(),
+      'personal baseline',
+    )
+    await page.goto(`/catalog/metadata?work=${c.workId}`)
+    await editionDraft(page, c.title, c.isbn, 'publication', '2025-02-29')
+    await expect(
+      page.getByRole('region', { name: 'Edition correction' }).getByRole('alert'),
+    ).toContainText('Use a valid')
+    await page.getByLabel('Proposed publication date').fill('2024-02')
+    await page.getByRole('button', { name: 'Preview edition correction' }).click()
+    await expect(page.getByText('Publication: 2025-02-29 → 2024-02', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Apply edition correction' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Set aside for later' })).toBeDisabled()
+    await page.getByRole('checkbox', { name: /I checked this edition/ }).check()
+    await page.getByRole('button', { name: 'Apply edition correction' }).click()
+    await expect(page.getByRole('status')).toContainText('Edition details corrected')
+    await page.reload()
+    await expect(
+      page.getByText('Current pages: 321 · Publication: 2024-02', { exact: true }),
+    ).toBeVisible()
+    await expect(page.getByText(/Publication at review: 2024-02/)).toBeVisible()
+    const afterDate = await ok(
+      c.admin
+        .from('works')
+        .select('pages,pub_y,pub_m,pub_d,metadata_provenance')
+        .eq('id', c.workId)
+        .single(),
+      'saved date',
+    )
+    expect(afterDate).toMatchObject({ pages: 321, pub_y: 2024, pub_m: 2, pub_d: null })
+    expect(afterDate.metadata_provenance.pubM.referenceIsbn).toBe(c.isbn)
+    expect(afterDate.metadata_provenance.pubD).toBeUndefined()
+    await editionDraft(page, c.title, c.isbn, 'pages', '456')
+    await page.getByRole('checkbox', { name: /I checked this edition/ }).check()
+    let requests = 0
+    await page.route('**/rest/v1/rpc/admin_correct_corpus_edition_details', async (route) => {
+      requests++
+      await route.continue()
+    })
+    await page.getByRole('button', { name: 'Apply edition correction' }).dblclick()
+    await expect(page.getByRole('status')).toContainText('Edition details corrected')
+    await page.reload()
+    await expect(
+      page.getByText('Current pages: 456 · Publication: 2024-02', { exact: true }),
+    ).toBeVisible()
+    expect(requests).toBe(1)
+    expect(
+      await ok(
+        c.admin.from('books').select('*').eq('id', c.bookId).single(),
+        'personal after both corrections',
+      ),
+    ).toEqual(before)
+    const events = await ok(
+      c.admin.from('corpus_metadata_review_events').select('action').eq('work_id', c.workId),
+      'saved history',
+    )
+    expect(events).toEqual([{ action: 'edition_details' }, { action: 'edition_details' }])
+    await page.screenshot({
+      path: test.info().outputPath('edition-correction.png'),
+      fullPage: true,
+    })
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('stale edition correction keeps the draft and requires reload rather than retry', async ({
+  page,
+}) => {
+  const c = await setup(page)
+  try {
+    await ok(
+      c.admin
+        .from('works')
+        .update({ isbns: [c.isbn], pages: 321, pub_y: 2025, pub_m: 2, pub_d: 2 })
+        .eq('id', c.workId),
+      'edition baseline',
+    )
+    await page.goto(`/catalog/metadata?work=${c.workId}`)
+    await editionDraft(page, c.title, c.isbn, 'pages', '456')
+    await page.getByRole('checkbox', { name: /I checked this edition/ }).check()
+    await ok(
+      c.admin.from('works').update({ pub_d: 3 }).eq('id', c.workId),
+      'concurrent date-only edit',
+    )
+    await page.getByRole('button', { name: 'Apply edition correction' }).click()
+    await expect(
+      page.getByRole('region', { name: 'Edition correction' }).getByRole('alert'),
+    ).toContainText('This catalog record or review changed.')
+    await expect(page.getByLabel('Proposed page count')).toHaveValue('456')
+    await expect(page.getByRole('button', { name: 'Apply edition correction' })).toBeDisabled()
+    expect(
+      await ok(
+        c.admin.from('corpus_metadata_review_events').select('id').eq('work_id', c.workId),
+        'failed history',
+      ),
+    ).toEqual([])
+    await page.getByRole('button', { name: 'Reload current record' }).click()
+    await expect(
+      page.getByText('Current pages: 321 · Publication: 2025-02-03', { exact: true }),
+    ).toBeVisible()
+    await expect(page.getByLabel('Proposed page count')).toHaveValue('')
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('an uncertain edition correction response never triggers an automatic or second submission', async ({
+  page,
+}) => {
+  const c = await setup(page)
+  try {
+    await ok(
+      c.admin
+        .from('works')
+        .update({ isbns: [c.isbn], pages: 321 })
+        .eq('id', c.workId),
+      'edition baseline',
+    )
+    await page.goto(`/catalog/metadata?work=${c.workId}`)
+    await editionDraft(page, c.title, c.isbn, 'pages', '456')
+    await page.getByRole('checkbox', { name: /I checked this edition/ }).check()
+    let requests = 0
+    await page.route('**/rest/v1/rpc/admin_correct_corpus_edition_details', async (route) => {
+      requests++
+      await route.abort('failed')
+    })
+    await page.getByRole('button', { name: 'Apply edition correction' }).click()
+    await expect(page.getByText('Do not repeat an uncertain save.', { exact: false })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Apply edition correction' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Discard edition draft' })).toBeDisabled()
+    expect(requests).toBe(1)
+    expect(
+      await ok(
+        c.admin.from('corpus_metadata_review_events').select('id').eq('work_id', c.workId),
+        'aborted history',
+      ),
+    ).toEqual([])
+  } finally {
+    await c.cleanup()
+  }
+})
+
 test('metadata comparison and text entry fit a phone in every reading room', async ({ page }) => {
   test.setTimeout(180000)
   await page.setViewportSize({ width: 390, height: 844 })
   const c = await setup(page)
   try {
+    await ok(
+      c.admin
+        .from('works')
+        .update({ isbns: [c.isbn], pages: 321, pub_y: 2024 })
+        .eq('id', c.workId),
+      'phone edition baseline',
+    )
     await page.goto(`/catalog/metadata?work=${c.workId}`)
     await expect(page.getByLabel('Catalog description')).toBeVisible()
+    await editionDraft(page, c.title, c.isbn, 'pages', '456')
+    await expect(page.getByText('Pages: 321 → 456', { exact: true })).toBeVisible()
     for (const skin of SKIN_LIST)
       for (const mode of ['light', 'dark']) {
         await page.evaluate(
@@ -243,6 +441,9 @@ test('metadata comparison and text entry fit a phone in every reading room', asy
             .evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
         ).toBeGreaterThanOrEqual(16)
       }
+    await page
+      .getByRole('region', { name: 'Edition correction' })
+      .screenshot({ path: test.info().outputPath('edition-correction-mobile.png') })
   } finally {
     await c.cleanup()
   }

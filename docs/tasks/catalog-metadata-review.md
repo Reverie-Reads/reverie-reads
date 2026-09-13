@@ -65,6 +65,10 @@ owner-operated description correction and reload, with a personal copy checked f
 
 ## Next boundary
 
+Page/date correction now has its own narrow, manual action described in
+[`catalog-edition-corrections.md`](catalog-edition-corrections.md). It requires a selected reference
+ISBN and a separate preview/approval; the existing assessment RPC still only changes descriptions.
+
 An ISBN conflict or duplicate assessment still needs a separately reviewed identity-repair operation.
 Do not merge shared works from a title match. That operation must explicitly select the surviving
 identity and reconcile personal bindings, household memberships, series entries, covers, provider

@@ -752,6 +752,25 @@ the broad editor's manual-series intent. Assessments are not identity correction
 Changed work or related-record evidence reopens old assessments. Notes and history stay admin-only;
 personal copies and shared memberships are untouched. See `../tasks/catalog-metadata-review.md`.
 
+`admin_correct_corpus_edition_details` is a separate, administrator-only action for either `pages`
+or the complete `pub_y/pub_m/pub_d` tuple. The referenced ISBN must already belong to the work and
+have no competing work assignment. Exact normalized title and complete recorded contributor names,
+explicit confirmation, source URL, note, fingerprint and review revision are required. It cannot
+repair identities, assign ISBNs, clear pages/the entire date, or change personal rows. Reduced date
+precision clears the unsupported components and their provenance. The selected field's manual
+provenance retains `referenceIsbn`, `sourceRef` and `observedAt`; it describes one reference edition,
+not every ISBN attached to a work. Successful decisions append `work_metadata_edits` and the private
+`edition_details` review event, increment the revision, and leave review state open. Notes remain
+private. No existing row is repaired by migration.
+
+The metadata snapshot advertises `editionCorrectionVersion: 1` and includes pages, complete date
+precision and per-field provenance. Its separate `editionFingerprint` includes those fields plus
+existing identity/peer evidence. The original assessment fingerprint is unchanged, so introducing
+this capability does not reopen completed assessments. The edition action scopes and restores the existing transaction-local
+series graph preservation guard around its update. Series triggers are unchanged; explicit series
+writes (including same-value re-confirmation) retain reconciliation outside this narrow action.
+See `../tasks/catalog-edition-corrections.md`.
+
 ## Reader guidance
 
 `profiles.guidance` is a nullable, versioned presentation document. New accounts begin without a
