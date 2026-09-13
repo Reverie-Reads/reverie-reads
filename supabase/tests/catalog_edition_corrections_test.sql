@@ -29,11 +29,11 @@ create temp table edition_graph_before as select jsonb_build_object(
  'sources',(select jsonb_agg(to_jsonb(s) order by id) from public.corpus_series_sources s),
  'edits',(select jsonb_agg(to_jsonb(e) order by id) from public.corpus_series_edits e)) value;
 select is((select count(*)::int from public.corpus_series_entries where work_id='74000000-0000-4000-8000-000000000001' and removed_at is null),1,'populated shared graph makes no-write assertion non-vacuous');
-select is((select public.catalog_metadata_review_record(w)->>'fingerprint' from public.works w
+select isnt((select public.catalog_metadata_review_record(w)->>'fingerprint' from public.works w
  where id='74000000-0000-4000-8000-000000000001'),
  (select md5(jsonb_build_array(title,author_text,contributors,isbns,description,metadata_provenance->'description',
  pub_y,publisher,language,'[]'::jsonb)::text) from public.works where id='74000000-0000-4000-8000-000000000001'),
- 'existing assessment fingerprint is unchanged by new edition capability');
+ 'invalid-date detection supersedes the old assessment fingerprint for this impossible date');
 
 create function pg_temp.edition_attempt(field text, value jsonb, isbn text default '0306406152',
  title text default 'Edition Correction Fixture', author text default 'Test Writer', confirmed boolean default true,

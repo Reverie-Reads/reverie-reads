@@ -6,6 +6,7 @@ export const METADATA_ISSUES = {
   isbn_conflict: 'ISBN shared by several records',
   duplicate_identity: 'Same title and author',
   invalid_isbn: 'ISBN needs checking',
+  invalid_publication: 'Invalid publication date',
   description: 'Missing description',
 } as const
 export type MetadataIssue = keyof typeof METADATA_ISSUES

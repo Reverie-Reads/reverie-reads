@@ -257,7 +257,17 @@ test('edition correction previews a whole date, persists after refresh and prote
       c.admin.from('books').select('*').eq('id', c.bookId).single(),
       'personal baseline',
     )
-    await page.goto(`/catalog/metadata?work=${c.workId}`)
+    await page.goto(
+      `/catalog/metadata?state=attention&issue=invalid_publication&q=${encodeURIComponent(c.title)}`,
+    )
+    await expect(page.getByLabel('Metadata concern')).toHaveValue('invalid_publication')
+    const queue = page.getByRole('list', { name: 'Catalog metadata review queue' })
+    await expect(queue.getByRole('link')).toHaveCount(1)
+    await expect(queue).toContainText('Invalid publication date')
+    await queue.getByRole('link').click()
+    await expect(page.getByRole('list', { name: 'Metadata concerns' })).toContainText(
+      'Invalid publication date',
+    )
     await editionDraft(page, c.title, c.isbn, 'publication', '2025-02-29')
     await expect(
       page.getByRole('region', { name: 'Edition correction' }).getByRole('alert'),
@@ -286,6 +296,9 @@ test('edition correction previews a whole date, persists after refresh and prote
     expect(afterDate).toMatchObject({ pages: 321, pub_y: 2024, pub_m: 2, pub_d: null })
     expect(afterDate.metadata_provenance.pubM.referenceIsbn).toBe(c.isbn)
     expect(afterDate.metadata_provenance.pubD).toBeUndefined()
+    await expect(page.getByRole('list', { name: 'Metadata concerns' })).not.toContainText(
+      'Invalid publication date',
+    )
     await editionDraft(page, c.title, c.isbn, 'pages', '456')
     await page.getByRole('checkbox', { name: /I checked this edition/ }).check()
     let requests = 0

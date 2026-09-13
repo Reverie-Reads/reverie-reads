@@ -198,7 +198,7 @@ function CatalogMetadataReviewPage() {
                       </span>
                       <span className="mt-2 block text-xs">
                         {item.issues.map((issue) => METADATA_ISSUES[issue]).join(' · ') ||
-                          'No detected gaps'}
+                          'No concerns detected by these checks'}
                       </span>
                     </Link>
                   </li>

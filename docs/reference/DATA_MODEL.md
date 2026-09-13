@@ -744,6 +744,10 @@ history, possession, or the reader's chosen edition. No pre-existing work is bac
 
 The administrator metadata workspace compares exact normalized title/full-author candidates and
 checksum-valid ISBN-10/13 equivalents, with separate invalid-ISBN and missing-description queues.
+It also flags invalid publication tuples through the existing calendar validator. Unknown dates
+and valid partial precision are not errors. Invalid tuples extend legacy assessment fingerprints
+with their exact axes, reopening only affected older reviews; valid/unknown assessments retain
+their prior fingerprint. This read-time concern never repairs stored dates automatically.
 `admin_list_corpus_metadata_reviews` returns at most 25 works (the UI requests 20) and ten related
 records per work. `admin_review_corpus_metadata` checks the opened evidence fingerprint and review
 revision. Only its description action changes bibliographic metadata, with explicit identity
