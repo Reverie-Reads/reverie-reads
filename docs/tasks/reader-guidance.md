@@ -132,6 +132,34 @@ Edition Lens and Connected Universes, Reading Table, Room Workshop and Reading K
 those explanations alongside their existing reading, organization, appearance and reflection flows;
 the public build introduces the complete Free app. Preserve the private entitlement checks.
 
+## Live reading chapter
+
+Settings → Walkthroughs and guidance → Settle into a book offers **Guide my reading**.
+The first-book walkthrough also offers that continuation. This reuses the account-keyed,
+session-only tour provider and cursor/touch dot; it adds no navigation item or stored milestone.
+Readers choose their own personal book from Library, with their filters preserved. An empty library
+can enter the existing Add walkthrough instead. Shared catalog records never imply a personal copy.
+
+The chapter points at the existing Start reading / Resume reading / Read again control. Its
+transition waits for that mutation's success callback, not the optimistic Reading flag. Update
+progress may be demonstrated by opening its existing dialog; the reader enters their own whole
+percentage and explicitly saves. The success callback offers **Continue reading** as a natural
+stopping point. **When I finish** is optional: opening or cancelling the existing finish dialog
+never creates a read. Only the successful log and status update together advance to saved history.
+The existing retry-after-partial-finish behavior keeps the already-saved log and retries status.
+The real Just finished sheet remains available for optional moods and the next book; the pointer
+can demonstrate Done to return to history without selecting any mood or next read.
+
+Confirmed callbacks carry the selected book and walkthrough run number, so a late result from a
+previous run cannot complete a replay. Paused guides observe successful reader actions without
+restarting animation. Ending or changing accounts removes the session state. Other routes pause the
+chapter; returning opens the chosen personal book. No provider acquisition, schema change, Pro
+entitlement, reader-data entry, fabricated finish, or automatic saving is part of the tour.
+
+In native dialogs the coaching card occupies a normal layout slot above the form. It does not cover
+fields or Save, including short phone viewports. The pointer remains inside the native focus boundary
+and respects reduced motion. Physical phone keyboard verification remains an owner smoke check.
+
 ## Verification
 
 - Core guidance/navigation tests: real-history milestones, DNF, undated plans, early exploration,

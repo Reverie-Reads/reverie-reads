@@ -309,6 +309,8 @@ export function JustFinishedSheet() {
       <button
         type="button"
         onClick={close}
+        data-reading-tour-book={book.id}
+        data-book-tour="reading-reflect-done"
         className="skin-control h-11 w-full text-[14px] font-semibold"
         style={{
           background: 'linear-gradient(135deg, var(--primary), var(--gold))',

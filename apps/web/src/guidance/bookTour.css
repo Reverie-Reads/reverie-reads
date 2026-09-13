@@ -139,3 +139,14 @@
     animation: none !important;
   }
 }
+
+/* Dialog guidance participates in layout, keeping both fields and Save unobscured even
+   when the phone keyboard leaves no safe space for a floating card. */
+.book-tour-panel[data-inline='true'] {
+  position: relative;
+  visibility: visible;
+  width: 100%;
+  margin-bottom: 20px;
+  box-shadow: none;
+  background: var(--card-solid);
+}

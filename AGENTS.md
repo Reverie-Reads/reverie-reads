@@ -114,7 +114,9 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
 - **Live walkthroughs observe the real screens.** The first-book guide is account-keyed, session-only
   state. Its pointer may demonstrate allowlisted navigation, but must never choose a result, fill
   reader data or press Save. Advance from observed successful intake and the matching personal book;
-  preserve drafts and filters, and cancel pending animation when the reader intervenes. Native
+  the reading chapter waits for successful start/progress/finish callbacks scoped to the selected
+  book and tour run, never optimistic values. Finishing stays optional and retains the existing
+  partial-save retry. Preserve drafts and filters, and cancel pending animation when the reader intervenes. Native
   dialogs keep their existing focus boundary. Automatic practice playback requires isolated data
   adapters; query-cache seeding over live Supabase hooks is not a practice library. See
   `docs/tasks/reader-guidance.md`.
