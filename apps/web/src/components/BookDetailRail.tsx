@@ -12,6 +12,7 @@ import { useHideIntensity } from '../data/profile'
 import { Chip } from './Chip'
 import { CoverImage } from './CoverImage'
 import { Nameplate } from './Nameplate'
+import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 
 const FORMAT_ICON = { physical: '📖', ebook: '📱', audiobook: '🎧' } as const
 const FORMAT_LABEL = { physical: 'Physical', ebook: 'Ebook', audiobook: 'Audiobook' } as const
@@ -29,6 +30,8 @@ export function BookDetailRail({
   const voice = useVoice()
   // Above the `if (!book)` early return below — rules-of-hooks.
   const hideIntensity = useHideIntensity()
+  const { state: bookTour } = useBookTour()
+  useBookTourObservation(book ? 'opened' : null, book?.id)
 
   if (!book) {
     return (
@@ -51,7 +54,11 @@ export function BookDetailRail({
   const borrowed = possession === 'borrowed'
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto px-4 py-5">
+    <div
+      className="flex h-full flex-col overflow-y-auto px-4 py-5"
+      data-book-tour={book.id === bookTour.bookId ? 'tour-opened-book' : undefined}
+      tabIndex={-1}
+    >
       <div
         className="mx-auto aspect-[2/3] w-36 overflow-hidden rounded-xl border border-line"
         style={{ background: `linear-gradient(150deg, ${g0}, ${g1})` }}

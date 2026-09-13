@@ -27,7 +27,7 @@ import { catalogCoverReviewRoute } from './routes/CatalogCoverReviewRoute'
 import { coverStudioRoute } from './routes/CoverStudioRoute'
 import { authRoute } from './routes/AuthRoute'
 import { welcomeRoute } from './routes/WelcomeRoute'
-import { guideRoute } from './routes/GuideRoute'
+import { guideRoute, guidanceSettingsRoute } from './routes/GuideRoute'
 import { onboardingRoute } from './routes/OnboardingRoute'
 import { labRoute } from './routes/LabRoute'
 import { labStructureRoute } from './routes/LabStructureRoute'
@@ -64,6 +64,7 @@ const routeTree = rootRoute.addChildren([
   welcomeRoute,
   onboardingRoute,
   guideRoute,
+  guidanceSettingsRoute,
   labRoute,
   labStructureRoute,
   labArrangementsRoute,

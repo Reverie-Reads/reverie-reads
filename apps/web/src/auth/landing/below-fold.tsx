@@ -374,6 +374,7 @@ export default function LandingBelowFold({
               ['How it works', '#how-it-works'],
               ['Your library', '#features'],
               ['Privacy', '#privacy'],
+              ['Library guide', '/guide'],
             ].map(([label, href]) => (
               <a key={href} href={href} className="text-muted hover:text-ink">
                 {label}

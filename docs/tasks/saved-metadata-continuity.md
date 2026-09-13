@@ -37,6 +37,10 @@ The unused legacy `importCsv` core helper is not the app's intake path; the ship
 
 ## Verification
 
+The production owner-run check and private receipt template are in
+[book-data-save-smoke.md](../operations/book-data-save-smoke.md). Deployment and read-only
+navigation verification do not replace the save/reopen receipt.
+
 Run core edition-gate/CSV/date and client response-boundary tests; verify actual Discover and Add
 saves, reader edits, all contributors and reopening against local persistence. SQL tests exercise
 whole-tuple completion and provenance. Verify the library-status presentation in the retry

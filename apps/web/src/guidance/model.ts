@@ -199,7 +199,7 @@ export const GUIDE_CHAPTERS: readonly GuideChapter[] = [
     steps: [
       'Preview the nine rooms in Appearance and choose Day, Night or System. A room never restricts the genres you can read.',
       'Use Arrange Reverie in Settings to choose your dock and Home modules. Your saved priorities stay close even in the gentle path.',
-      'Return to this guide to change pace, replay a walkthrough or show every destination.',
+      'Open Walkthroughs and guidance in Settings to change pace, replay a walkthrough or show every destination.',
     ],
     links: [
       { label: 'Open Appearance', to: '/skins' },

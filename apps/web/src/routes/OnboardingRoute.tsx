@@ -240,7 +240,7 @@ function OnboardingFlow() {
                 onSuccess: () => {
                   if (mode === 'full') {
                     markOnboarded()
-                    void navigate({ to: tour ? '/guide' : '/library', replace: true })
+                    void navigate({ to: tour ? '/settings/guidance' : '/library', replace: true })
                   }
                 },
               },

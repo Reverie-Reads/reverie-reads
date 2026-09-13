@@ -80,7 +80,6 @@ describe('navigation contract', () => {
       'Discover',
       'Clubs',
       'Bookshops',
-      'Library guide',
     ])
   })
 })

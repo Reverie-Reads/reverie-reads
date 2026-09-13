@@ -14,13 +14,30 @@ const gentle: Guidance = {
 }
 describe('a library that opens at the reader’s pace', () => {
   it('starts small while keeping essential controls and direct book routes reachable', () => {
-    for (const path of ['/', '/library', '/add', '/settings', '/skins', '/guide', '/book/example'])
+    for (const path of [
+      '/',
+      '/library',
+      '/add',
+      '/settings',
+      '/skins',
+      '/settings/guidance',
+      '/book/example',
+    ])
       expect(guidanceAllowsPath(path, gentle)).toBe(true)
     for (const path of ['/planner', '/stats', '/discover', '/clubs'])
       expect(guidanceAllowsPath(path, gentle)).toBe(false)
     const nav = guidedNavigation(DEFAULT_ARRANGEMENT_PRESET.config, gentle, '/')
-    expect(nav.priority.map((item) => item.to)).toEqual(['/', '/guide', '/library'])
+    expect(nav.priority.map((item) => item.to)).toEqual(['/', '/library'])
     expect(nav.other).toEqual([])
+  })
+  it('never inserts help into the app navigation in any guidance mode', () => {
+    for (const guidance of [null, gentle, { ...gentle, mode: 'full' as const }]) {
+      const nav = guidedNavigation(DEFAULT_ARRANGEMENT_PRESET.config, guidance, '/')
+      const paths = [...nav.priority, ...nav.other].map((item) => item.to)
+      expect(paths).not.toContain('/guide')
+      expect(paths).not.toContain('/settings/guidance')
+      expect(new Set(paths).size).toBe(paths.length)
+    }
   })
   it('counts imported history and undated Soon plans without inventing a finish from DNF', () => {
     expect(
@@ -62,7 +79,7 @@ describe('a library that opens at the reader’s pace', () => {
     )
     expect(nav.priority.map((item) => item.to)).toEqual(['/library', '/stats', '/planner'])
     expect(nav.other.map((item) => item.to)).toContain('/series')
-    expect(nav.other.map((item) => item.to)).toContain('/guide')
+    expect([...nav.priority, ...nav.other].map((item) => item.to)).not.toContain('/guide')
   })
   it('keeps older readers full and reads future documents without overwriting them', () => {
     expect(guidanceAllowsPath('/clubs', undefined)).toBe(true)

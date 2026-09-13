@@ -5,11 +5,11 @@ of the existing product. It does not add another Pro candidate family.
 
 ## Reader experience
 
-### Next iteration: animated guided walkthrough
+### Animated guided walkthrough
 
 Owner requested September 12, 2026, after the approved book-data correction sequence.
-The shipped guide is a reference, but does not yet deliver the requested first-use experience.
-Build an optional animated walkthrough in the real app: highlight the relevant control, show the
+The written guide remains a reference. The animated walkthrough should highlight the relevant
+control in the real app, show the
 action and its result, then guide the reader to the next step in adding a book, opening it,
 recording a read and choosing or planning what comes next. Offer the gentle and full flows at
 welcome; keep independent exploration, pause, skip, resume and replay available.
@@ -22,16 +22,48 @@ never fabricate or save reading progress, books, plans or Pro access. Tour movem
 an unfinished form or create a confusing page jump. Verify actual first-use flows, including empty
 libraries, saved arrangements and interruptions, before shipping.
 
+The first implementation covers **Add → search/choose → deliberate save → Library → open the
+saved book**. The Books chapter and its in-app trail offer **Guide me in the app**. Each **Show me
+this step** moves a desktop cursor or a touch dot to a real control. The guide can open Add,
+return through Done and open the saved book; it points to search/results/save without choosing
+book data or saving for the reader. Validation failures remain on the details step. A successful
+personal save identifies the book for this session only. If current Library filters exclude it,
+a temporary “Your added book” section exposes that real record without changing the filters or
+possession. The normal cover card still opens the native drawer on compact desktop layouts.
+
+The controller is account-keyed and memory-only: no migration, new milestone, content telemetry,
+provider request or tour-owned book writer. Navigation away, Escape, window blur and a different
+modal pause it; pointer/key input cancels pending demonstrations. Resume follows the current
+screen, and End removes the guide without changing the form. Refresh ends the live session; the
+existing saved chapter guide remains available for restarting. Reduced motion points directly
+without cursor travel or a ripple. Floating UI positions the token-styled callout; the guide joins
+an open book drawer's native dialog layer rather than opening another focus trap.
+
+Next, in order:
+
+1. A clearly labelled practice library with automatic playback through the same application
+   screens. Isolate all read/write adapters before demonstrating saves; do not fake this with
+   query-cache seeding over live Supabase hooks.
+2. Actual-screen reading, Next read and Planner chapters using their confirmed success events.
+3. Full-flow/replay selection at welcome, then evaluate the shortest useful beta introduction.
+
+The earlier separate illustrated demo is a design study, not this implementation or a practice
+data boundary. Practice playback and the later animated chapters are not part of the first slice.
+
 The first welcome offers three explicit choices:
 
 - **Start gently:** four practical stops through adding books, reading, choosing a next read and
-  planning. The main navigation begins with Home, Library, Add and the Library guide.
+  planning. The main navigation begins with Home, Library and Add; More keeps Settings and Appearance reachable.
 - **Show me around:** every destination is visible, with a walkthrough through the full reading
   flow, organization, reflection, discovery, sharing, appearance and account/privacy controls.
 - **Explore on my own:** the full interface, with no active walkthrough.
 
-Every choice is reversible from Library guide. Tours use a small note in the page flow and a
-chapter guide, never a blocking spotlight or a modal over the reader's current task. Readers can
+Every choice is reversible from **Settings → Walkthroughs and guidance** (`/settings/guidance`).
+The written reference lives on the public website at `/guide`, linked from the landing footer
+and Settings. It loads without a session or profile and is never a persistent app navigation item.
+A gentle dock omits unintroduced destinations without substituting help links or leaving empty slots.
+Custom arrangements retain their selected destinations. The saved chapter guide uses a small note in the
+page flow; the optional live walkthrough uses a nonmodal anchored callout. Readers can
 pause, resume after refresh, replay a stop, open a destination directly, or reveal everything.
 
 The guide's **Show full navigation** action is offered only in gentle mode. It reveals every
