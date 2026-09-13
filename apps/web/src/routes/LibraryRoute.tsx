@@ -12,6 +12,7 @@ import {
 } from '@reverie/core'
 import { rootRoute } from './RootRoute'
 import { useBooks, useUpdateBook } from '../data/books'
+import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 import { useHideIntensity } from '../data/profile'
 import { useFilters } from '../library/filterStore'
 import { Toolbar } from '../library/Toolbar'
@@ -115,6 +116,9 @@ function DetailDrawer({
 
 function PersonalLibraryScreen() {
   const { data: books, isLoading, isError, error } = useBooks()
+  const { state: bookTour } = useBookTour()
+  const tourBook = bookTour.bookId ? books?.find((book) => book.id === bookTour.bookId) : undefined
+  useBookTourObservation(tourBook && !isError && !isLoading ? 'library' : null, tourBook?.id)
   const hideIntensity = useHideIntensity()
   /*
    * The EFFECTIVE filter state for a hidden-spice reader. Derived once, here, so every consumer
@@ -234,6 +238,25 @@ function PersonalLibraryScreen() {
 
       <Toolbar />
 
+      {tourBook && !visible.some((book) => book.id === tourBook.id) && (
+        <section className="my-5 border-b border-line pb-5" aria-label="Your added book">
+          <p className="mb-2 text-[14px] font-semibold text-ink">Your book is here</p>
+          <p className="mb-3 text-[13px] leading-relaxed text-muted">
+            This book is outside your current library filters. You can open it here without changing
+            your view or its ownership and reading status.
+          </p>
+          <div className="w-[150px]">
+            <CoverCard
+              book={tourBook}
+              hideIntensity={hideIntensity}
+              bookTourTarget="tour-saved-book"
+              onOpen={() => void navigate({ to: '/book/$bookId', params: { bookId: tourBook.id } })}
+              onToggleFave={() => toggleFave(tourBook.id, tourBook.fave)}
+            />
+          </div>
+        </section>
+      )}
+
       {hiddenCount > 0 && (
         <p
           role="status"
@@ -303,6 +326,7 @@ function PersonalLibraryScreen() {
               hideIntensity={hideIntensity}
               key={b.id}
               book={b}
+              bookTourTarget={tourBook && b.id === tourBook.id ? 'tour-saved-book' : undefined}
               selected={isDesktop && b.id === selectedId}
               onOpen={() => activate(b.id)}
               onToggleFave={() => toggleFave(b.id, b.fave)}

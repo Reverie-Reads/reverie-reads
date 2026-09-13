@@ -65,38 +65,40 @@ function NavLinks({
       className="rv-primary-nav flex flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden"
       aria-label="Primary"
     >
-      {groups.map((group) => (
-        <div key={group.label} className="rv-nav-group flex flex-col gap-0.5">
-          {!collapsed ? (
-            <div className="rv-nav-group-label skin-label px-3 pb-1 text-[12px] leading-[1.35] text-muted">
-              {group.label}
-            </div>
-          ) : null}
-          {group.items.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              activeOptions={{ exact: item.to === '/' }}
-              title={collapsed ? item.label : undefined}
-              aria-label={collapsed ? item.label : undefined}
-              className={`${navBase} ${collapsed ? 'justify-center' : ''}`}
-              style={{ color: 'var(--muted)' }}
-              activeProps={{
-                className: 'rv-nav-item-active',
-                style: {
-                  color: 'var(--ink)',
-                  fontWeight: 650,
-                },
-              }}
-            >
-              <span className="rv-nav-glyph grid w-5 shrink-0 place-items-center" aria-hidden>
-                <NavigationGlyph name={item.icon} className="h-[18px] w-[18px]" />
-              </span>
-              {!collapsed ? <span className="break-words">{item.label}</span> : null}
-            </Link>
-          ))}
-        </div>
-      ))}
+      {groups
+        .filter((group) => group.items.length > 0)
+        .map((group) => (
+          <div key={group.label} className="rv-nav-group flex flex-col gap-0.5">
+            {!collapsed ? (
+              <div className="rv-nav-group-label skin-label px-3 pb-1 text-[12px] leading-[1.35] text-muted">
+                {group.label}
+              </div>
+            ) : null}
+            {group.items.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                activeOptions={{ exact: item.to === '/' }}
+                title={collapsed ? item.label : undefined}
+                aria-label={collapsed ? item.label : undefined}
+                className={`${navBase} ${collapsed ? 'justify-center' : ''}`}
+                style={{ color: 'var(--muted)' }}
+                activeProps={{
+                  className: 'rv-nav-item-active',
+                  style: {
+                    color: 'var(--ink)',
+                    fontWeight: 650,
+                  },
+                }}
+              >
+                <span className="rv-nav-glyph grid w-5 shrink-0 place-items-center" aria-hidden>
+                  <NavigationGlyph name={item.icon} className="h-[18px] w-[18px]" />
+                </span>
+                {!collapsed ? <span className="break-words">{item.label}</span> : null}
+              </Link>
+            ))}
+          </div>
+        ))}
     </nav>
   )
 }
@@ -172,6 +174,7 @@ function Sidebar({
       <Link
         to="/add"
         data-testid="persistent-add"
+        data-book-tour="add-book"
         search={householdAdd ? { scope: 'household' } : {}}
         title={collapsed ? (householdAdd ? 'Add to household' : 'Add a book') : undefined}
         aria-label={householdAdd ? 'Add to household' : 'Add a book'}
@@ -410,13 +413,18 @@ function MobileTabBar({
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
-        <div className="rv-mobile-dock-grid grid grid-cols-5">
-          <TabLink item={tabItems[0]!} />
-          <TabLink item={tabItems[1]!} />
+        <div
+          className="rv-mobile-dock-grid grid"
+          style={{ gridTemplateColumns: `repeat(${tabItems.length + 2}, minmax(0, 1fr))` }}
+        >
+          {tabItems.slice(0, Math.ceil(tabItems.length / 2)).map((item) => (
+            <TabLink key={item.to} item={item} />
+          ))}
           <div className="relative flex min-h-[58px] items-start justify-center">
             <Link
               to="/add"
               data-testid="persistent-add"
+              data-book-tour="add-book"
               search={householdAdd ? { scope: 'household' } : {}}
               aria-label={householdAdd ? 'Add to household' : 'Add a book'}
               className="rv-mobile-add skin-control skin-btn-primary grid h-12 w-12 -translate-y-3 place-items-center text-[20px]"
@@ -430,7 +438,9 @@ function MobileTabBar({
               Add
             </span>
           </div>
-          <TabLink item={tabItems[2]!} />
+          {tabItems.slice(Math.ceil(tabItems.length / 2)).map((item) => (
+            <TabLink key={item.to} item={item} />
+          ))}
           <button
             type="button"
             onClick={() => setMoreOpen((v) => !v)}

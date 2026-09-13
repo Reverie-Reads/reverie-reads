@@ -1,16 +1,10 @@
-import {
-  NAVIGATION_ITEMS,
-  priorityNavigationItems,
-  type NavigationItem,
-} from '../components/navigation'
+import { NAVIGATION_ITEMS, priorityNavigationItems } from '../components/navigation'
 import {
   arrangementsEqual,
   DEFAULT_ARRANGEMENT_PRESET,
   type ArrangementConfig,
 } from '../design/arrangements'
 import { guidanceAllowsPath, type Guidance } from './model'
-
-const guideItem: NavigationItem = { label: 'Library guide', to: '/guide', icon: 'library' }
 
 /** Filtering is a view. A custom priority trio wins; no arrangement is saved or replaced here. */
 export function guidedNavigation(
@@ -19,8 +13,8 @@ export function guidedNavigation(
   pathname: string,
 ) {
   const customized = !arrangementsEqual(arrangement, DEFAULT_ARRANGEMENT_PRESET.config)
-  const priority = priorityNavigationItems(arrangement.destinations).map((item) =>
-    customized || guidanceAllowsPath(item.to, guidance) ? item : guideItem,
+  const priority = priorityNavigationItems(arrangement.destinations).filter(
+    (item) => customized || guidanceAllowsPath(item.to, guidance),
   )
   const priorityPaths = new Set(priority.map((item) => item.to))
   const other = NAVIGATION_ITEMS.filter(
@@ -30,5 +24,5 @@ export function guidedNavigation(
         pathname === item.to ||
         (item.to !== '/' && pathname.startsWith(`${item.to}/`))),
   )
-  return { priority, other: [...other, ...(priorityPaths.has('/guide') ? [] : [guideItem])] }
+  return { priority, other }
 }

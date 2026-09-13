@@ -25,6 +25,7 @@ export function CoverCard({
   selected = false,
   hideIntensity = false,
   coverSize = 'thumb',
+  bookTourTarget,
 }: {
   book: Book
   reportCoverErrors?: boolean
@@ -38,6 +39,8 @@ export function CoverCard({
   hideIntensity?: boolean
   /** Prominent previews can ask for the provider's largest image; library grids stay economical. */
   coverSize?: 'thumb' | 'full'
+  /** Stable target for an explicitly started guide; does not change card behavior. */
+  bookTourTarget?: string
 }) {
   const author =
     formatAuthors(book.contributors) || [book.first, book.last].filter(Boolean).join(' ')
@@ -88,6 +91,7 @@ export function CoverCard({
         <button
           type="button"
           onClick={onOpen}
+          data-book-tour={bookTourTarget}
           // State reaches the SCREEN READER here, not only the eye. Before this the marks were
           // sibling static text and mouse-only `title` tooltips — reachable by accident at best,
           // and a grep found zero aria hits for borrowed or DNF anywhere in the app.

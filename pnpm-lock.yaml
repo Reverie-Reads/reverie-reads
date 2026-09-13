@@ -56,6 +56,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.7)
+      '@floating-ui/dom':
+        specifier: 1.7.4
+        version: 1.7.4
       '@reverie/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -137,7 +140,7 @@ importers:
         version: 5.2.0(supports-color@8.1.1)(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))
       '@workflow/vitest':
         specifier: 4.0.21
-        version: 4.0.21(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))(vitest@4.1.11(@types/node@26.1.0)(jsdom@25.0.1)(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)))(ws@8.21.0)
+        version: 4.0.21(supports-color@8.1.1)(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))(vitest@4.1.11(@types/node@26.1.0)(jsdom@25.0.1(supports-color@8.1.1))(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)))(ws@8.21.0)
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
@@ -146,7 +149,7 @@ importers:
         version: 6.2.5
       jsdom:
         specifier: ^25.0.1
-        version: 25.0.1
+        version: 25.0.1(supports-color@8.1.1)
       pngjs:
         specifier: ^7.0.0
         version: 7.0.0
@@ -161,7 +164,7 @@ importers:
         version: 7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@26.1.0)(jsdom@25.0.1)(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))
+        version: 4.1.11(@types/node@26.1.0)(jsdom@25.0.1(supports-color@8.1.1))(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))
 
   packages/core:
     devDependencies:
@@ -726,6 +729,15 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@floating-ui/core@1.8.0':
+    resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
+
+  '@floating-ui/dom@1.7.4':
+    resolution: {integrity: sha512-OOchDgh4F2CchOX94cRVqhvy7b3AFb+/rQXyswmzmGakRfkMgoWVjfnLWkRirfLEfuD4ysVW16eXzwt3jHIzKA==}
+
+  '@floating-ui/utils@0.2.12':
+    resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -4443,7 +4455,7 @@ snapshots:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.7
       '@babel/helper-compilation-targets': 7.29.7
-      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7)
+      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7(supports-color@8.1.1))
       '@babel/helpers': 7.29.7
       '@babel/parser': 7.29.7
       '@babel/template': 7.29.7
@@ -4483,7 +4495,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7)':
+  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7(supports-color@8.1.1))':
     dependencies:
       '@babel/core': 7.29.7(supports-color@8.1.1)
       '@babel/helper-module-imports': 7.29.7
@@ -4808,6 +4820,17 @@ snapshots:
     dependencies:
       '@eslint/core': 0.17.0
       levn: 0.4.1
+
+  '@floating-ui/core@1.8.0':
+    dependencies:
+      '@floating-ui/utils': 0.2.12
+
+  '@floating-ui/dom@1.7.4':
+    dependencies:
+      '@floating-ui/core': 1.8.0
+      '@floating-ui/utils': 0.2.12
+
+  '@floating-ui/utils@0.2.12': {}
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -5755,7 +5778,7 @@ snapshots:
   '@workflow/builders@4.1.10(ws@8.21.0)':
     dependencies:
       '@swc/core': 1.15.3
-      '@workflow/core': 4.8.5(ws@8.21.0)
+      '@workflow/core': 4.8.5(supports-color@8.1.1)(ws@8.21.0)
       '@workflow/errors': 4.2.1
       '@workflow/swc-plugin': 4.1.2(@swc/core@1.15.3)
       '@workflow/utils': 4.1.4
@@ -5779,7 +5802,7 @@ snapshots:
       '@swc/core': 1.15.3
       '@vercel/cli-auth': 0.0.1
       '@workflow/builders': 4.1.10(ws@8.21.0)
-      '@workflow/core': 4.8.5(ws@8.21.0)
+      '@workflow/core': 4.8.5(supports-color@8.1.1)(ws@8.21.0)
       '@workflow/errors': 4.2.1
       '@workflow/swc-plugin': 4.1.2(@swc/core@1.15.3)
       '@workflow/utils': 4.1.4
@@ -5810,7 +5833,7 @@ snapshots:
       - supports-color
       - ws
 
-  '@workflow/core@4.8.5(ws@8.21.0)':
+  '@workflow/core@4.8.5(supports-color@8.1.1)(ws@8.21.0)':
     dependencies:
       '@aws-sdk/credential-provider-web-identity': 3.972.49
       '@jridgewell/trace-mapping': 0.3.31
@@ -5859,7 +5882,7 @@ snapshots:
     dependencies:
       '@swc/core': 1.15.3
       '@workflow/builders': 4.1.10(ws@8.21.0)
-      '@workflow/core': 4.8.5(ws@8.21.0)
+      '@workflow/core': 4.8.5(supports-color@8.1.1)(ws@8.21.0)
       '@workflow/swc-plugin': 4.1.2(@swc/core@1.15.3)
       semver: 7.7.4
       watchpack: 2.5.1
@@ -5873,7 +5896,7 @@ snapshots:
     dependencies:
       '@swc/core': 1.15.3
       '@workflow/builders': 4.1.10(ws@8.21.0)
-      '@workflow/core': 4.8.5(ws@8.21.0)
+      '@workflow/core': 4.8.5(supports-color@8.1.1)(ws@8.21.0)
       '@workflow/rollup': 4.0.20(ws@8.21.0)
       '@workflow/swc-plugin': 4.1.2(@swc/core@1.15.3)
       '@workflow/vite': 4.0.20(ws@8.21.0)
@@ -5949,14 +5972,14 @@ snapshots:
       - supports-color
       - ws
 
-  '@workflow/vitest@4.0.21(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))(vitest@4.1.11(@types/node@26.1.0)(jsdom@25.0.1)(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)))(ws@8.21.0)':
+  '@workflow/vitest@4.0.21(supports-color@8.1.1)(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))(vitest@4.1.11(@types/node@26.1.0)(jsdom@25.0.1(supports-color@8.1.1))(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)))(ws@8.21.0)':
     dependencies:
       '@workflow/builders': 4.1.10(ws@8.21.0)
-      '@workflow/core': 4.8.5(ws@8.21.0)
+      '@workflow/core': 4.8.5(supports-color@8.1.1)(ws@8.21.0)
       '@workflow/rollup': 4.0.20(ws@8.21.0)
       '@workflow/world': 4.5.0
       '@workflow/world-local': 4.4.0
-      vitest: 4.1.11(@types/node@26.1.0)(jsdom@25.0.1)(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))
+      vitest: 4.1.11(@types/node@26.1.0)(jsdom@25.0.1(supports-color@8.1.1))(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))
     optionalDependencies:
       vite: 7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)
     transitivePeerDependencies:
@@ -6998,7 +7021,7 @@ snapshots:
       statuses: 2.0.2
       toidentifier: 1.0.1
 
-  http-proxy-agent@7.0.2:
+  http-proxy-agent@7.0.2(supports-color@8.1.1):
     dependencies:
       agent-base: 7.1.4
       debug: 4.4.3(supports-color@8.1.1)
@@ -7010,7 +7033,7 @@ snapshots:
       quick-lru: 5.1.1
       resolve-alpn: 1.2.1
 
-  https-proxy-agent@7.0.6:
+  https-proxy-agent@7.0.6(supports-color@8.1.1):
     dependencies:
       agent-base: 7.1.4
       debug: 4.4.3(supports-color@8.1.1)
@@ -7126,15 +7149,15 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  jsdom@25.0.1:
+  jsdom@25.0.1(supports-color@8.1.1):
     dependencies:
       cssstyle: 4.6.0
       data-urls: 5.0.0
       decimal.js: 10.6.0
       form-data: 4.0.6
       html-encoding-sniffer: 4.0.0
-      http-proxy-agent: 7.0.2
-      https-proxy-agent: 7.0.6
+      http-proxy-agent: 7.0.2(supports-color@8.1.1)
+      https-proxy-agent: 7.0.6(supports-color@8.1.1)
       is-potential-custom-element-name: 1.0.1
       nwsapi: 2.2.24
       parse5: 7.3.0
@@ -8190,7 +8213,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.1.0
-      jsdom: 25.0.1
+      jsdom: 25.0.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - less
       - lightningcss
@@ -8202,7 +8225,7 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@4.1.11(@types/node@26.1.0)(jsdom@25.0.1)(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)):
+  vitest@4.1.11(@types/node@26.1.0)(jsdom@25.0.1(supports-color@8.1.1))(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0)):
     dependencies:
       '@vitest/expect': 4.1.11
       '@vitest/mocker': 4.1.11(vite@7.3.6(@types/node@26.1.0)(jiti@2.7.0)(lightningcss@1.32.0))
@@ -8226,7 +8249,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.1.0
-      jsdom: 25.0.1
+      jsdom: 25.0.1(supports-color@8.1.1)
     transitivePeerDependencies:
       - msw
 
@@ -8286,7 +8309,7 @@ snapshots:
     dependencies:
       '@workflow/astro': 4.0.20(ws@8.21.0)
       '@workflow/cli': 4.3.9(supports-color@8.1.1)(ws@8.21.0)
-      '@workflow/core': 4.8.5(ws@8.21.0)
+      '@workflow/core': 4.8.5(supports-color@8.1.1)(ws@8.21.0)
       '@workflow/errors': 4.2.1
       '@workflow/nest': 4.0.21(@nestjs/common@12.0.1(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@12.0.1(@nestjs/common@12.0.1(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@swc/cli@0.8.1(@swc/core@1.15.3)(chokidar@5.0.0))(@swc/core@1.15.3)(ws@8.21.0)
       '@workflow/next': 4.1.9(ws@8.21.0)
