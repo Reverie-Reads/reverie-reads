@@ -26,6 +26,7 @@ export interface CatalogMetadataWork {
   id: string
   title: string
   author: string
+  contributors?: { name: string; role?: string }[]
   isbns: string[]
   description: string
   descriptionSource: string | null
@@ -41,6 +42,11 @@ export interface CatalogMetadataWork {
   state: 'open' | 'deferred' | 'reviewed'
   note: string
   sourceUrl: string
+  /** Missing on an older server: keep correction controls unavailable until migration lands. */
+  editionCorrectionVersion?: number
+  pages?: number | null
+  publication?: { y: number | null; m: number | null; d: number | null }
+  editionProvenance?: Record<string, { referenceIsbn?: string; sourceRef?: string } | null>
 }
 export interface MetadataQueueInput {
   state: MetadataState
@@ -48,6 +54,14 @@ export interface MetadataQueueInput {
   query: string
   offset: number
   workId?: string
+}
+export function editionPublicationLabel(pub: CatalogMetadataWork['publication']) {
+  if (!pub || pub.y == null) return 'Unknown'
+  return [
+    String(pub.y),
+    ...(pub.m == null ? [] : [String(pub.m).padStart(2, '0')]),
+    ...(pub.d == null ? [] : [String(pub.d).padStart(2, '0')]),
+  ].join('-')
 }
 export const METADATA_PAGE_SIZE = 20
 export const catalogMetadataReviewKey = ['catalog-metadata-review'] as const
@@ -71,16 +85,17 @@ export function useCatalogMetadataQueue(input: MetadataQueueInput, enabled: bool
     staleTime: 0,
   })
 }
-export type MetadataAction = 'description' | 'reviewed' | 'defer' | 'reopen'
+export type MetadataAction = 'description' | 'reviewed' | 'defer' | 'reopen' | 'edition_details'
 export const METADATA_ACTIONS: Record<MetadataAction, string> = {
   description: 'Description corrected',
   reviewed: 'Assessment recorded',
   defer: 'Set aside for later',
   reopen: 'Review reopened',
+  edition_details: 'Edition details corrected',
 }
 export interface MetadataReviewInput {
   work: CatalogMetadataWork
-  action: MetadataAction
+  action: Exclude<MetadataAction, 'edition_details'>
   note: string
   sourceUrl: string
   description?: string
@@ -100,10 +115,46 @@ export async function saveCatalogMetadataReview(input: MetadataReviewInput): Pro
   if (error) throw error
   return data as string
 }
-export function useSaveCatalogMetadataReview() {
+export interface EditionCorrectionInput {
+  work: CatalogMetadataWork
+  isbn: string
+  evidenceTitle: string
+  evidenceAuthor: string
+  correction:
+    | { field: 'pages'; value: { pages: number } }
+    | {
+        field: 'publication'
+        value: { y: number; m: number | null; d: number | null }
+      }
+  sourceUrl: string
+  note: string
+  identityConfirmed: boolean
+}
+export async function saveCatalogEditionCorrection(input: EditionCorrectionInput): Promise<string> {
+  if (input.work.editionCorrectionVersion !== 1)
+    throw new Error(
+      'Edition corrections are not available from this server. Reload after deployment.',
+    )
+  const { data, error } = await supabase.rpc('admin_correct_corpus_edition_details', {
+    p_work: input.work.id,
+    p_expected_fingerprint: input.work.fingerprint,
+    p_expected_revision: input.work.revision,
+    p_isbn: input.isbn,
+    p_evidence_title: input.evidenceTitle.trim(),
+    p_evidence_author: input.evidenceAuthor.trim(),
+    p_field: input.correction.field,
+    p_value: input.correction.value,
+    p_source_url: input.sourceUrl.trim(),
+    p_note: input.note.trim(),
+    p_identity_confirmed: input.identityConfirmed,
+  })
+  if (error) throw error
+  return data as string
+}
+function useMetadataMutation<T>(mutationFn: (input: T) => Promise<string>) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: saveCatalogMetadataReview,
+    mutationFn,
     networkMode: 'always',
     retry: false,
     meta: { action: 'The catalog metadata review' },
@@ -122,11 +173,26 @@ export function useSaveCatalogMetadataReview() {
     },
   })
 }
+export function useSaveCatalogMetadataReview() {
+  return useMetadataMutation(saveCatalogMetadataReview)
+}
+export function useSaveCatalogEditionCorrection() {
+  return useMetadataMutation(saveCatalogEditionCorrection)
+}
 export interface MetadataEvent {
   id: string
   action: MetadataAction
   created_at: string
-  next_value: { review: { note: string; source_url: string }; record: { description: string } }
+  next_value: {
+    review: { note: string; source_url: string }
+    record: {
+      description: string
+      pages?: number | null
+      publication?: CatalogMetadataWork['publication']
+    }
+    field?: 'pages' | 'publication'
+    referenceIsbn?: string
+  }
 }
 export function useCatalogMetadataHistory(workId: string) {
   const { session } = useAuth()
