@@ -328,14 +328,12 @@ for (const referenceIsbn of [CORPUS_FIRST_ISBN, CORPUS_RESULT_ISBN])
       if (error) throw error
       return data
     }
-    await expect
-      .poll(read)
-      .toMatchObject({
-        isbn: CORPUS_RESULT_ISBN,
-        pub_y: sameEdition ? 2021 : null,
-        pub_m: null,
-        pub_d: null,
-      })
+    await expect.poll(read).toMatchObject({
+      isbn: CORPUS_RESULT_ISBN,
+      pub_y: sameEdition ? 2021 : null,
+      pub_m: null,
+      pub_d: null,
+    })
     const saved = await read()
     await page.reload()
     expect(await read()).toEqual(saved)
