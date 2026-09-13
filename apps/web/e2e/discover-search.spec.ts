@@ -543,6 +543,10 @@ for (const surface of ['Discover', 'Add form'] as const) {
           .getByRole('button', { name: `View details for ${title}`, exact: true })
           .locator('..')
         await card.getByRole('button', { name: '＋ Add', exact: true }).click()
+        // A reader waits for the completed save, not the first visible database row. The book
+        // insert precedes the awaited contributor RPC; polling pages alone can race that RPC.
+        await expect(card.getByRole('link', { name: 'In your library', exact: true })).toBeVisible()
+        await expect(card.getByRole('button', { name: '＋ Add', exact: true })).toHaveCount(0)
       } else {
         const query = new URLSearchParams({
           title,
@@ -561,6 +565,7 @@ for (const surface of ['Discover', 'Add form'] as const) {
         await expect(page.getByRole('button', { name: /Fetch details/ })).toBeEnabled()
         await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('543')
         await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
+        await expect(page).toHaveURL(/\/library(?:\?|$)/)
       }
       const saved = async () =>
         (
