@@ -56,6 +56,15 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 ## P1 — core promise and activation
 
+- [ ] **Live Next read walkthrough:** start on an existing scope and typed mood, then from Settings.
+      Move through selection, optional mood and picks without submitting or clearing the draft.
+      Open your chosen book and confirm the reading guide follows that exact record. Save a choice
+      to TBR deliberately; it must not start reading or set a deadline. In a disposable local
+      account, fail membership after list creation, then retry without another shelf. On a physical
+      phone, check the keyboard and in-page coach leave the input and book actions usable. Pause,
+      replay and reduced motion must retain the current task. Check the private comparison after
+      its separate integration; its open state and plan draft should remain intact.
+
 - [ ] **Contextual walkthrough:** from a filtered Library, an open personal book, and a populated
       Add form, start the local guide. Keep the current view, book, and typed draft. Pause and
       restart on the same screen; the guide should recognize the current step immediately. Leave

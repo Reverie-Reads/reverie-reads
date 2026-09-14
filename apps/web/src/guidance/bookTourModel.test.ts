@@ -150,3 +150,67 @@ describe('resuming in the right place', () => {
     expect(isBookTourLocation(state, '/library')).toBe(false)
   })
 })
+
+describe('Next read follows deliberate choices', () => {
+  const start = () => reduce(initial, { type: 'start-next-read' })
+  it('keeps the selected URL and ignores old chapter observations', () => {
+    const current = start()
+    const located = reduce(current, {
+      type: 'location',
+      run: current.run,
+      href: '/match?scope=wishlist&vibeQ=quiet',
+    })
+    expect(bookTourReturnHref(located)).toBe('/match?scope=wishlist&vibeQ=quiet')
+    expect(isBookTourLocation(located, '/add')).toBe(false)
+    expect(
+      reduce(located, { type: 'observe', run: current.run, step: 'opened', bookId: 'unselected' }),
+    ).toBe(located)
+    expect(
+      reduce(located, {
+        type: 'reading-open',
+        run: current.run,
+        bookId: 'unselected',
+        reading: true,
+      }),
+    ).toBe(located)
+  })
+  it('continues only into the chosen loaded book, retaining an intentional pause', () => {
+    const selected = reduce(start(), {
+      type: 'next-read',
+      run: 1,
+      action: 'select',
+      bookId: 'mine',
+    })
+    expect(isBookTourLocation(selected, '/match')).toBe(true)
+    expect(isBookTourLocation(selected, '/book/mine')).toBe(true)
+    expect(isBookTourLocation(selected, '/book/other')).toBe(false)
+    expect(reduce(selected, { type: 'reading-open', run: 1, bookId: 'other', reading: true })).toBe(
+      selected,
+    )
+    expect(reduce(selected, { type: 'next-read', run: 1, action: 'saved' })).toBe(selected)
+    const paused = reduce(selected, { type: 'pause' })
+    expect(
+      reduce(paused, { type: 'reading-open', run: 1, bookId: 'mine', reading: true }),
+    ).toMatchObject({ journey: 'reading', bookId: 'mine', step: 'read-progress', status: 'paused' })
+  })
+  it('does not credit late TBR/start results to a replay or another guide', () => {
+    const previous = start()
+    const current = reduce(previous, { type: 'start-next-read' })
+    expect(reduce(current, { type: 'next-read', run: previous.run, action: 'saved' })).toBe(current)
+    expect(
+      reduce(current, { type: 'next-read', run: previous.run, action: 'select', bookId: 'old' }),
+    ).toBe(current)
+    const reading = reduce(current, { type: 'start-reading' })
+    expect(reduce(reading, { type: 'next-read', run: current.run, action: 'saved' })).toBe(reading)
+    expect(
+      reduce(reduce(current, { type: 'end' }), {
+        type: 'next-read',
+        run: current.run,
+        action: 'saved',
+      }),
+    ).toMatchObject({ status: 'off' })
+    expect(reduce(current, { type: 'next-read', run: current.run, action: 'saved' })).toMatchObject(
+      { step: 'next-saved', bookId: null },
+    )
+  })
+})

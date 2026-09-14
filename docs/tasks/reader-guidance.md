@@ -198,3 +198,31 @@ on an unchanged loaded screen re-observes its data; delayed observations from ea
 select a book or complete the new task. The last usable URL is kept only in the account-keyed
 provider's memory. No guide data is written to browser storage, analytics or the profile. This
 continuation does not restore form drafts after navigation or reload. No migration is needed.
+
+### Live Next read chapter
+
+Next read offers **Guide my next read** on the page and in Settings → Walkthroughs and guidance →
+Find your next read. Entry keeps the current scope, saved mood, unsent text, quiz and shortlist.
+The short path is selection, optional mood, then actual choices. **Go to my picks** advances only
+the guide; it does not submit a query or clear a mood. The cursor or touch dot points to existing
+controls and never chooses a result, starts reading or saves to TBR automatically.
+
+A deliberate cover click binds that book for the current run. Once its personal reading record
+loads, the existing reading chapter continues there. Start reading waits for the successful
+mutation before opening the book; optimistic removal from the shortlist cannot complete the
+chapter. Saving to TBR completes only after membership succeeds, not when the list is created.
+Failure stays on the existing screen, and retries reuse the list. Unavailable reader identity must
+reject the shelf save rather than report a successful no-op. Late responses from an ended or
+restarted guide cannot advance the newer run. No new stored milestone, migration or telemetry is
+introduced.
+
+On a narrow screen the coach participates in page layout, keeping the mood input and book actions
+clear. Only explicit chapter navigation scrolls to the next coach; save observations never move
+the page. Desktop uses the existing anchored panel. Both retain interruption and reduced motion.
+Empty, unavailable or filtered-out choices stay honest: the reader uses the existing selection,
+retry or Add controls. The walkthrough never fills an empty library with practice books.
+
+Private integration must keep the picks target outside the comparison's hidden normal cards and
+route its actual book-open action through the same run-scoped selection handoff. Do not close a
+comparison or clear its planning draft to start the guide. Reading Table planning and the Planner
+live chapter remain separate follow-ups; this public slice does not add a plan writer.

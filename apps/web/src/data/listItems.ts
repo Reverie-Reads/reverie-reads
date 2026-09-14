@@ -110,7 +110,8 @@ export function useAddBooksToList() {
     mutationFn: async ({ listId, bookIds }: { listId: string; bookIds: string[] }): Promise<void> => {
       const { data: auth } = await supabase.auth.getUser()
       const ownerId = auth.user?.id
-      if (!ownerId || !bookIds.length) return
+      if (!ownerId) throw new Error('Sign in again to save books to a shelf.')
+      if (!bookIds.length) return
       // Bulk add: ONE max lookup, then sequential slots — so a 200-book import lands in a
       // deterministic arrangement instead of an all-NULL shelf that reshuffles per fetch.
       const base = await nextItemPositionFor(listId)

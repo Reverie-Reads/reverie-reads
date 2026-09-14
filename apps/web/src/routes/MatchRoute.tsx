@@ -1,3 +1,5 @@
+import { StartNextReadTour } from '../guidance/BookTour'
+import { useBookTour } from '../guidance/BookTourContext'
 import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -266,7 +268,13 @@ function NextReadCard({
   const { b, why, isRead } = pick
   const navigate = useNavigate()
   const update = useUpdateBook(b.id)
-  const open = () => void navigate({ to: '/book/$bookId', params: { bookId: b.id } })
+  const { state: tour, send: sendTour } = useBookTour()
+  const guideRun = tour.journey === 'next-read' && tour.status !== 'off' ? tour.run : null
+  const open = () => {
+    if (guideRun != null)
+      sendTour({ type: 'next-read', run: guideRun, action: 'select', bookId: b.id })
+    void navigate({ to: '/book/$bookId', params: { bookId: b.id } })
+  }
   async function start() {
     try {
       // The optimistic patch removes this candidate, unmounting its mutation observer. Await
@@ -294,6 +302,7 @@ function NextReadCard({
 }
 
 function MatchScreen() {
+  const { state: tour, send: sendTour } = useBookTour()
   const navigate = useNavigate()
   const search = matchRoute.useSearch()
   const queryClient = useQueryClient()
@@ -375,6 +384,7 @@ function MatchScreen() {
   }
   async function save(ids: string[]) {
     if (saveLock.current || !ids.length || !listsQ.isSuccess) return
+    const guideRun = tour.journey === 'next-read' && tour.status !== 'off' ? tour.run : null
     saveLock.current = true
     setSaving(true)
     setNotice(null)
@@ -393,6 +403,7 @@ function MatchScreen() {
       }
       await addToList.mutateAsync({ listId: priority.id, bookIds: ids })
       setSavedShelf({ id: priority.id, name: priority.name })
+      if (guideRun != null) sendTour({ type: 'next-read', run: guideRun, action: 'saved' })
     } catch {
       setSaveError(true)
     } finally {
@@ -403,13 +414,20 @@ function MatchScreen() {
   const q = QUIZ[step]
   return (
     <section className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <h1 className="text-3xl font-semibold text-ink" style={{ fontFamily: 'var(--font-display)' }}>
-        Next read
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1
+          className="text-3xl font-semibold text-ink"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          Next read
+        </h1>
+        <StartNextReadTour quiet />
+      </div>
       <ReadingTips>
         <p className="mt-2 text-base text-muted">Find something you want to open.</p>
       </ReadingTips>
-      <fieldset className="mt-6">
+      <div className="mt-4 empty:hidden" data-book-tour-inline="next-scope" />
+      <fieldset className="mt-6" data-book-tour="next-scope">
         <legend className="mb-2 text-sm font-semibold text-ink">Choose from</legend>
         <select
           aria-label="Choose from"
@@ -448,6 +466,7 @@ function MatchScreen() {
         <label htmlFor="next-read-mood" className="text-sm font-semibold text-ink">
           What are you in the mood for?
         </label>
+        <div className="mt-3 empty:hidden" data-book-tour-inline="next-mood" />
         <form
           className="mt-2 flex flex-col gap-2 sm:flex-row"
           onSubmit={(e) => {
@@ -473,6 +492,7 @@ function MatchScreen() {
             onChange={(e) => setVibeQ(e.target.value)}
             placeholder="A quiet mystery, or an adventure far from home"
             id="next-read-mood"
+            data-book-tour="next-mood"
             className="min-h-11 min-w-0 flex-1 skin-field border border-line bg-[color:var(--field)] px-3 text-base text-ink"
           />
           <button
@@ -579,13 +599,14 @@ function MatchScreen() {
           </button>
         </div>
       )}
+      <div className="mt-5 empty:hidden" data-book-tour-inline="next-picks" />
       {booksQ.isPending ? (
-        <p role="status" className="mt-8 text-muted">
+        <p role="status" className="mt-8 text-muted" data-book-tour="next-picks">
           Loading your library…
         </p>
       ) : booksQ.isError ? (
         <div className="mt-8">
-          <p role="alert" className="text-ink">
+          <p role="alert" className="text-ink" data-book-tour="next-picks">
             Your library could not be loaded.
           </p>
           <button
@@ -598,7 +619,9 @@ function MatchScreen() {
         </div>
       ) : !books?.length ? (
         <Surface tone="card" radius="panel" pad={5} className="mt-6">
-          <h2 className="text-xl font-semibold text-ink">Start with a book</h2>
+          <h2 className="text-xl font-semibold text-ink" data-book-tour="next-picks">
+            Start with a book
+          </h2>
           <p className="mt-2 text-muted">
             Add a book or import your reading history. Then choose your next read here.
           </p>
@@ -614,7 +637,7 @@ function MatchScreen() {
         <>
           <div className="mt-7 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-ink">
+              <h2 className="text-xl font-semibold text-ink" data-book-tour="next-picks">
                 {vibe && vibePicks.length ? 'Picks for your mood' : result.headline}
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-muted">

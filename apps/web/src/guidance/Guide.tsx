@@ -7,7 +7,7 @@ import { PageHeader } from '../components/PageHeader'
 import { useUpdateGuidance } from './data'
 import { GUIDE_CHAPTERS, chapterAvailable, type GuidanceMode, type GuideId } from './model'
 import { getGuideChapterDetails } from './chapterDetailsSlot'
-import { StartBookTour, StartReadingTour } from './BookTour'
+import { StartBookTour, StartReadingTour, StartNextReadTour } from './BookTour'
 import { useBookTour } from './BookTourContext'
 
 const linkClass =
@@ -250,6 +250,15 @@ export function GuideScreen() {
                   </p>
                 </div>
               )}
+              {chapter.id === 'choose' && (
+                <div className="mt-5 border-b border-line pb-5">
+                  <StartNextReadTour />
+                  <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                    Follow your own shelves from a mood to a book. You choose what to open, save or
+                    start.
+                  </p>
+                </div>
+              )}
               {chapter.id === 'reading' && (
                 <div className="mt-5 border-b border-line pb-5">
                   <StartReadingTour />
@@ -407,6 +416,7 @@ export function GuidanceTrail() {
         </div>
         {chapter?.id === 'books' && <StartBookTour />}
         {chapter?.id === 'reading' && <StartReadingTour />}
+        {chapter?.id === 'choose' && <StartNextReadTour />}
         <Link to="/settings/guidance" className={linkClass}>
           {chapter ? 'Continue walkthrough' : 'Guidance settings'}
         </Link>

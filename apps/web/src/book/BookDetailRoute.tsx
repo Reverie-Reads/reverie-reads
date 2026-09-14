@@ -310,14 +310,28 @@ export function BookDetailScreen() {
   const readingTour = bookTour.journey === 'reading' && bookTour.status !== 'off'
   const readingTarget = readingTour && bookTour.bookId === book?.id
   useEffect(() => {
-    if (readingTour && book && reads && !readsError)
+    if (
+      (readingTour || (bookTour.journey === 'next-read' && bookTour.bookId === book?.id)) &&
+      book &&
+      reads &&
+      !readsError
+    )
       sendTour({
         type: 'reading-open',
         run: bookTour.run,
         bookId: book.id,
         reading: book.readStatus === 'Reading',
       })
-  }, [readingTour, bookTour.run, book, reads, readsError, sendTour])
+  }, [
+    readingTour,
+    bookTour.journey,
+    bookTour.bookId,
+    bookTour.run,
+    book,
+    reads,
+    readsError,
+    sendTour,
+  ])
   useEffect(() => {
     if (!readingTarget || !book) return
     if (dialog === 'progress')
