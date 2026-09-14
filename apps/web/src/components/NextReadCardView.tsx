@@ -77,7 +77,7 @@ export function NextReadCardView({
             {starting ? 'Starting…' : isRead ? 'Read again' : 'Start reading'}
           </button>
           <button type="button" className={quietButton} disabled={saving} onClick={onSave}>
-            {saving ? 'Saving…' : saveLabel}
+            {saveLabel}
           </button>
         </div>
         {startError && (
