@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -7,6 +7,7 @@ import {
   lookupBody,
   hash,
   validatePlan,
+  selectRecoveryScope,
   snapshotSql,
   processItem,
   verifySaved,
@@ -22,6 +23,7 @@ import {
   saveSql,
   parseArgs,
   seriesDeployment,
+  main,
 } from './series-recovery.mjs'
 
 let checks = 0
@@ -312,6 +314,110 @@ const template = readFileSync(
   new URL('../docs/queries/series-unavailable-retry.sql', import.meta.url),
   'utf8',
 )
+const held = { ...work, id: 'ba200000-0000-4000-8000-000000000002', title: 'Review Book' }
+const manifest = {
+  version: 1,
+  project: body.project,
+  works: [{ id: held.id, fingerprint: held.fingerprint, reason: 'Identity needs review' }],
+}
+const scope = selectRecoveryScope([work, held], manifest, body.project)
+const scopedBody = { ...body, ...scope }
+const scopedPlan = validatePlan({ ...scopedBody, digest: hash(scopedBody) })
+check('complete inventory partitions into frozen run and private holdout', () => {
+  assert.equal(scopedPlan.eligibleCount, 2)
+  assert.deepEqual(scopedPlan.works, [work])
+  assert.deepEqual(scopedPlan.excluded, [{ ...held, reason: 'Identity needs review' }])
+  assert.deepEqual(selectRecoveryScope([work], undefined, body.project), {
+    works: [work],
+    excluded: [],
+    eligibleCount: 1,
+  })
+})
+check('excluded record never enters reset SQL', () => {
+  const sql = resetSql(template, scopedPlan.works, actor, true)
+  assert.ok(sql.includes(work.id))
+  assert.ok(!sql.includes(held.id))
+})
+check('exclusion metadata survives the sealed disk roundtrip', () => {
+  const path = join(directory, 'excluded-plan.json')
+  durableFile(path, scopedPlan)
+  assert.deepEqual(validatePlan(JSON.parse(readFileSync(path, 'utf8'))), scopedPlan)
+})
+check('exclusion file order is canonicalized', () => {
+  const another = { ...held, id: 'ba200000-0000-4000-8000-000000000003' }
+  const entries = [another, held].map((w) => ({
+    id: w.id,
+    fingerprint: w.fingerprint,
+    reason: 'Review',
+  }))
+  const selected = selectRecoveryScope(
+    [work, held, another],
+    { ...manifest, works: entries },
+    body.project,
+  )
+  assert.deepEqual(
+    selected.excluded.map((w) => w.id),
+    [held.id, another.id],
+  )
+})
+for (const [label, candidate] of [
+  ['wrong project', { ...manifest, project: 'wrong' }],
+  ['wrong version', { ...manifest, version: 2 }],
+  ['missing list', { ...manifest, works: null }],
+  ['duplicate', { ...manifest, works: [manifest.works[0], manifest.works[0]] }],
+  [
+    'stale fingerprint',
+    { ...manifest, works: [{ ...manifest.works[0], fingerprint: 'b'.repeat(32) }] },
+  ],
+  ['unknown id', { ...manifest, works: [{ ...manifest.works[0], id: actor }] }],
+  ['invalid id', { ...manifest, works: [{ ...manifest.works[0], id: 'not-a-uuid' }] }],
+  ['missing reason', { ...manifest, works: [{ ...manifest.works[0], reason: ' ' }] }],
+  ['long reason', { ...manifest, works: [{ ...manifest.works[0], reason: 'x'.repeat(241) }] }],
+  ['null entry', { ...manifest, works: [null] }],
+])
+  check('exclusion refuses ' + label, () =>
+    assert.throws(() => selectRecoveryScope([work, held], candidate, body.project)),
+  )
+check('excluding everything refuses', () =>
+  assert.throws(() => selectRecoveryScope([held], manifest, body.project), /empty_recovery_scope/),
+)
+check('exclusions cannot hide an oversized inventory', () =>
+  assert.throws(
+    () => selectRecoveryScope(Array(1001).fill(held), manifest, body.project),
+    /inventory_over_limit/,
+  ),
+)
+check('duplicate inventory cannot be hidden', () =>
+  assert.throws(
+    () => selectRecoveryScope([work, work, held], manifest, body.project),
+    /duplicate_targets/,
+  ),
+)
+check('edited exclusion reason breaks original seal', () =>
+  assert.throws(
+    () => validatePlan({ ...scopedPlan, excluded: [{ ...held, reason: 'Changed' }] }),
+    /plan_hash_mismatch/,
+  ),
+)
+for (const patch of [
+  { eligibleCount: 1 },
+  { eligibleCount: 1001 },
+  { excluded: null },
+  { excluded: [{ ...work, reason: 'Overlaps selected work' }] },
+  { excluded: [{ ...held, fingerprint: 'bad', reason: 'Review' }] },
+  { excluded: [{ ...held, reason: '' }] },
+])
+  check('sealed exclusions retain structural gates', () => {
+    const invalid = { ...scopedBody, ...patch }
+    assert.throws(() => validatePlan({ ...invalid, digest: hash(invalid) }))
+  })
+for (const mode of ['run', 'resume', 'status'])
+  check('exclusion override refused during ' + mode, () =>
+    assert.throws(
+      () => parseArgs([`--mode=${mode}`, '--exclude-file=private.json']),
+      /exclusions_are_plan_only/,
+    ),
+  )
 check('reset defaults rollback', () =>
   assert.match(resetSql(template, [work], actor, false), /rollback;/),
 )
@@ -382,6 +488,88 @@ for (const field of ['copies', 'reads', 'shared', 'personal', 'suggestions'])
   check('reset protects linked ' + field, () =>
     assert.throws(() => verifyReset(before, { ...resetSnapshot, [field]: 'changed' })),
   )
+// Exercise the actual plan/status entry point with synthetic CLI executables and no network.
+const fixture = join(directory, 'plan-fixture'),
+  bin = join(fixture, 'bin')
+mkdirSync(bin, { recursive: true })
+mkdirSync(join(fixture, 'supabase', '.temp'), { recursive: true })
+writeFileSync(join(fixture, 'supabase', '.temp', 'project-ref'), body.project)
+const exclusionsFile = join(fixture, 'exclusions.json')
+writeFileSync(exclusionsFile, JSON.stringify(manifest))
+writeFileSync(
+  join(bin, 'git'),
+  `#!/usr/bin/env node
+const args=process.argv.slice(2);
+if(args[0]==='status') process.exit(0);
+if(args[0]!=='rev-parse') process.exit(1);
+console.log(args.includes('--git-common-dir')?${JSON.stringify(join(fixture, 'common'))}:${JSON.stringify(body.revision)});
+`,
+  { mode: 0o700 },
+)
+writeFileSync(
+  join(bin, 'supabase'),
+  `#!/usr/bin/env node
+const fs=require('node:fs'),args=process.argv.slice(2);
+if(args[0]==='functions') {console.log(${JSON.stringify(JSON.stringify([deployment]))});process.exit(0);}
+if(args[0]!=='db'||args[1]!=='query') process.exit(1);
+const sql=fs.readFileSync(args[args.indexOf('--file')+1],'utf8');
+if(sql.startsWith('select exists(')) console.log(JSON.stringify({rows:[{administrator:true,sweeps:0}]}));
+else if(sql.startsWith('begin read only; select w.id')) console.log(${JSON.stringify(JSON.stringify({ rows: [work, held] }))});
+else process.exit(1);
+`,
+  { mode: 0o700 },
+)
+const originalArgv = process.argv,
+  originalPath = process.env.PATH,
+  originalFetch = globalThis.fetch,
+  originalLog = console.log
+const printed = [],
+  requests = []
+try {
+  process.env.PATH = bin + ':' + originalPath
+  globalThis.fetch = async (url) => {
+    requests.push(String(url))
+    assert.equal(String(url), 'https://example.test/version.json')
+    return { ok: true, json: async () => ({ build: body.build }) }
+  }
+  console.log = (value) => printed.push(JSON.parse(value))
+  const commonArgs = [`--project=${body.project}`, `--deployment=${fixture}`]
+  process.argv = [
+    'node',
+    'synthetic',
+    '--mode=plan',
+    ...commonArgs,
+    `--actor=${actor}`,
+    '--app=https://example.test',
+    `--exclude-file=${exclusionsFile}`,
+  ]
+  await main()
+  const created = printed[0],
+    diskPlan = validatePlan(JSON.parse(readFileSync(created.plan, 'utf8')))
+  check('actual plan CLI seals only selected work for execution', () => {
+    assert.equal(created.eligible, 2)
+    assert.equal(created.excluded, 1)
+    assert.equal(created.works, 1)
+    assert.deepEqual(diskPlan.works, [work])
+    assert.equal(diskPlan.excluded[0].id, held.id)
+    assert.deepEqual(requests, ['https://example.test/version.json'])
+  })
+  writeFileSync(exclusionsFile, '{}')
+  process.argv = ['node', 'synthetic', '--mode=status', ...commonArgs, `--run=${created.run}`]
+  await main()
+  check('status uses sealed scope, never rereads the edited source file or acquires', () => {
+    assert.equal(printed[1].planned, 1)
+    assert.equal(printed[1].excluded, 1)
+    assert.equal(printed[1].untouched, 1)
+    assert.equal(printed[1].last, 'not_started')
+    assert.equal(requests.length, 1)
+  })
+} finally {
+  process.argv = originalArgv
+  process.env.PATH = originalPath
+  globalThis.fetch = originalFetch
+  console.log = originalLog
+}
 console.log(
   `${checks} recovery checks passed; no network or database calls. Local journal fixtures: ${directory}`,
 )

@@ -38,6 +38,44 @@ export const inventoryPredicate = `w.series_check_state = 'no_series'
  and not exists (select 1 from public.corpus_series_entries e where e.work_id=w.id and e.removed_at is null)
  and not exists (select 1 from public.work_series_suggestions s where s.work_id=w.id and s.status='pending')`
 
+/** Exclusions only subtract from the complete live inventory, before any attempt is allocated. */
+export function selectRecoveryScope(rows, manifest, project) {
+  requireThat(Array.isArray(rows) && rows.length <= MAX_WORKS, 'inventory_over_limit')
+  const byId = new Map(rows.map((work) => [work.id, work]))
+  requireThat(byId.size === rows.length, 'duplicate_targets')
+  if (manifest === undefined) return { works: rows, excluded: [], eligibleCount: rows.length }
+  requireThat(
+    manifest?.version === 1 &&
+      manifest.project === project &&
+      Array.isArray(manifest.works) &&
+      manifest.works.length <= MAX_WORKS,
+    'invalid_exclusion_manifest',
+  )
+  const ids = new Set()
+  const excluded = manifest.works
+    .map((entry) => {
+      requireThat(
+        entry &&
+          UUID.test(entry.id) &&
+          /^[a-f0-9]{32}$/.test(entry.fingerprint) &&
+          typeof entry.reason === 'string' &&
+          entry.reason.trim().length > 0 &&
+          entry.reason.length <= 240,
+        'invalid_exclusion_entry',
+      )
+      requireThat(!ids.has(entry.id), 'duplicate_exclusion')
+      ids.add(entry.id)
+      const work = byId.get(entry.id)
+      requireThat(work, 'exclusion_not_in_inventory')
+      requireThat(work.fingerprint === entry.fingerprint, 'exclusion_fingerprint_changed')
+      return { ...work, reason: entry.reason.trim() }
+    })
+    .sort((a, b) => a.id.localeCompare(b.id))
+  const works = rows.filter((work) => !ids.has(work.id))
+  requireThat(works.length > 0, 'empty_recovery_scope')
+  return { works, excluded, eligibleCount: rows.length }
+}
+
 export function validatePlan(plan) {
   const { digest, ...body } = plan
   requireThat(digest === hash(body) && plan.version === 1, 'plan_hash_mismatch')
@@ -60,7 +98,27 @@ export function validatePlan(plan) {
     stable(plan.works.map((w) => w.id)) === stable(plan.works.map((w) => w.id).sort()),
     'unordered_targets',
   )
-  for (const work of plan.works) {
+  const excluded = plan.excluded ?? []
+  requireThat(Array.isArray(excluded), 'invalid_exclusions')
+  if ('excluded' in plan || 'eligibleCount' in plan) {
+    requireThat(
+      Array.isArray(plan.excluded) &&
+        Number.isInteger(plan.eligibleCount) &&
+        plan.eligibleCount === plan.works.length + excluded.length &&
+        plan.eligibleCount <= MAX_WORKS,
+      'invalid_scope_accounting',
+    )
+  }
+  const targets = [...plan.works, ...excluded]
+  requireThat(new Set(targets.map((w) => w.id)).size === targets.length, 'overlapping_scope')
+  requireThat(
+    stable(excluded.map((w) => w.id)) === stable(excluded.map((w) => w.id).sort()) &&
+      excluded.every(
+        (w) => typeof w.reason === 'string' && w.reason.trim().length > 0 && w.reason.length <= 240,
+      ),
+    'invalid_exclusions',
+  )
+  for (const work of targets) {
     requireThat(
       UUID.test(work.id) && /^[a-f0-9]{32}$/.test(work.fingerprint),
       'invalid_target_fingerprint',

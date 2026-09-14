@@ -192,6 +192,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   uncertain writes stop. Resume advances only untouched work, never replays a lookup/save. It reuses
   the existing classifier and RPC, verifies protected personal data, and does not run the general
   cover/metadata sweep. See `docs/tasks/resumable-series-recovery.md`.
+  New plans may subtract a private, project-bound, fingerprint-checked exclusion manifest. The
+  sealed plan retains its excluded identities and reasons; they receive no reset, attempt marker,
+  lookup or save. Exclusions never raise the complete-inventory cap and cannot change a started
+  run or waive consumed-attempt protections. Do not commit the private manifest.
   Hardcover series and book-tag queries use exact `_eq`, never prohibited `_ilike` filters.
   Case-sensitive query keys must not share a normalized cache entry. Relationship observations
   are separate from unambiguous numbered shelf slots; translations/sets at one ordinal cannot
