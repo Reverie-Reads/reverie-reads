@@ -8,7 +8,7 @@
 // package); enrichParity.test.ts runs golden fixtures through both and asserts identical output,
 // so drift fails CI. Keep both in sync.
 
-import { cleanIsbn, isbn10to13, normalizeIsbn } from './match'
+import { cleanIsbn, normalizeIsbn } from './match'
 import { bestGoogleCoverLink } from './covers'
 
 export type EnrichSource = 'openlibrary' | 'google' | 'hardcover' | 'isbndb' | 'manual'
@@ -366,9 +366,10 @@ export function normalizeHardcover(book: any): SourceRecord {
  */
 export function normalizeHardcoverSearch(doc: any): SourceRecord {
   if (!doc) return {}
-  const isbns = [
-    ...new Set((doc.isbns ?? []).map((x: string) => cleanIsbn(String(x))).filter(Boolean)),
-  ].slice(0, 25) as string[]
+  const rawIsbns = [...new Set<string>((doc.isbns ?? []).map((x: string) => cleanIsbn(String(x))))]
+    .filter((value) => normalizeIsbn(value))
+    .slice(0, 25) as string[]
+  const isbns = [...new Set(rawIsbns.map(normalizeIsbn))]
   const tags: string[] = [...(doc.genres ?? []), ...(doc.moods ?? []), ...(doc.tags ?? [])]
     .map((t: any) => (typeof t === 'string' ? t : (t?.tag ?? t?.name ?? '')))
     .filter(Boolean)
@@ -387,7 +388,7 @@ export function normalizeHardcoverSearch(doc: any): SourceRecord {
     pageCount: typeof doc.pages === 'number' ? doc.pages : null,
     ...parsePubDate(releaseDate),
     isbn13: isbns.find((i) => i.length === 13) ?? '',
-    isbn10: isbns.find((i) => i.length === 10) ?? '',
+    isbn10: rawIsbns.find((i) => i.length === 10) ?? '',
     isbns,
     ids: doc.id ? { work: String(doc.id) } : {},
   }
@@ -499,17 +500,24 @@ export function mergeRecords(
   out.genre = mapped.genre
   out.genres = mapped.genres
 
-  // ISBNs: union of every source's isbn10/isbn13/isbns; normalize the canonical 13.
-  const allIsbns = dedupe(
+  // ISBNs: accept only checksum-valid ISBNs and store their canonical ISBN-13 form.
+  const rawIsbns = dedupe(
     sources
       .flatMap((s) => [s.record.isbn13, s.record.isbn10, ...(s.record.isbns ?? [])])
       .map((i) => cleanIsbn(i ?? '')),
   )
+  const allIsbns = dedupe(rawIsbns.map(normalizeIsbn))
   out.isbns = allIsbns
-  if (!out.isbn13)
-    out.isbn13 = allIsbns.find((i) => i.length === 13) ?? (out.isbn10 ? isbn10to13(out.isbn10) : '')
-  if (!out.isbn10) out.isbn10 = allIsbns.find((i) => i.length === 10) ?? ''
-  out.isbn = out.isbn13 || normalizeIsbn(out.isbn10) || out.isbn10 || ''
+  const preferredIsbn13 = normalizeIsbn(out.isbn13)
+  const preferredIsbn10 = cleanIsbn(out.isbn10)
+  if (!preferredIsbn13) delete out.provenance.isbn13
+  if (preferredIsbn10.length !== 10 || !normalizeIsbn(preferredIsbn10)) delete out.provenance.isbn10
+  out.isbn13 = preferredIsbn13 || normalizeIsbn(preferredIsbn10) || allIsbns[0] || ''
+  out.isbn10 =
+    (preferredIsbn10.length === 10 && normalizeIsbn(preferredIsbn10) ? preferredIsbn10 : '') ||
+    rawIsbns.find((i) => i.length === 10 && normalizeIsbn(i)) ||
+    ''
+  out.isbn = out.isbn13
 
   // Identity: cross-reference source ids; resolve work + edition (first available, source-prefixed).
   for (const s of sources) {

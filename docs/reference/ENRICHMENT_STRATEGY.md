@@ -69,8 +69,9 @@ per field so conflicts can be re-evaluated and the user can override.)
 - page count / audio duration: edition-specific -> ISBNdb / Open Library edition -> Google.
 - publisher / pub date / binding / format / language / dimensions / weight / dewey:
   ISBNdb -> Open Library edition -> Google.
-- ISBNs / alternate editions / formats: UNION (collect every edition's ISBNs to power per-format
-  ownership and "other formats").
+- ISBNs / alternate editions / formats: UNION only checksum-valid ISBN-10/ISBN-13 values, normalize
+  the stored union to canonical ISBN-13, and discard retailer/product identifiers that merely look
+  like ISBNs (collect edition ISBNs to power per-format ownership and "other formats").
 - intensity (spice) / content signals: not in these APIs -> user/manual; (romance skin) may infer
   from community tags as a hint only.
 - ANY user-authored field: always wins; never overwritten by enrichment.

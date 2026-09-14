@@ -50,7 +50,7 @@ describe('mergeRecords — field precedence', () => {
 })
 
 describe('mergeRecords — union + longest description', () => {
-  it('unions categories and ISBNs (deduped) and keeps the longest description', () => {
+  it('unions categories and checksum-valid ISBNs and keeps the longest description', () => {
     const merged = mergeRecords([
       src('google', {
         categories: ['Romance', 'Fiction'],
@@ -63,8 +63,9 @@ describe('mergeRecords — union + longest description', () => {
     expect(merged.categories.sort()).toEqual(['Contemporary', 'Fiction', 'Romance'])
     expect(merged.description).toBe('A much longer and more complete synopsis of the book.')
     expect(merged.provenance.description?.source).toBe('isbndb')
-    expect(merged.isbns).toContain('9781111111111')
-    expect(merged.isbns).toContain('1111111111')
+    expect(merged.isbns).toEqual(['9781111111113'])
+    expect(merged.isbn10).toBe('1111111111')
+    expect(merged.isbn13).toBe('9781111111113')
   })
 
   it('unions authors preserving first-seen order, case-insensitively deduped', () => {
@@ -263,7 +264,7 @@ describe('source normalizers (captured fixtures)', () => {
       title: 'Fourth Wing',
       author_names: ['Rebecca Yarros'],
       image: { url: 'https://assets.hardcover.app/x.jpeg' },
-      isbns: ['1637991029', '9781637991022', 'bad'],
+      isbns: ['1637991029', '9781637991022', '2940016319506', 'bad'],
       release_date: '2023-05-02',
       series_names: ['The Empyrean'],
       featured_series_position: 1,
@@ -279,6 +280,7 @@ describe('source normalizers (captured fixtures)', () => {
     expect(r.seriesPosition).toBe(1)
     expect(r.isbn13).toBe('9781637991022')
     expect(r.isbn10).toBe('1637991029')
+    expect(r.isbns).toEqual(['9781637991022'])
     expect(r.categories).toEqual(['Fantasy', 'Romance', 'adventurous']) // genres+moods+tags union
     expect(r.pageCount).toBe(517)
     expect({ y: r.pubY, m: r.pubM, d: r.pubD }).toEqual({ y: 2023, m: 5, d: 2 })
