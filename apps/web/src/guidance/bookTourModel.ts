@@ -24,6 +24,8 @@ export interface BookTourState {
   step: BookTourStep
   /** Session-only; never written to the profile, storage or analytics. */
   bookId: string | null
+  /** Last usable in-app URL, including filters. Account-keyed memory only. */
+  returnTo: string | null
 }
 export const INITIAL_BOOK_TOUR: BookTourState = {
   status: 'off',
@@ -31,11 +33,13 @@ export const INITIAL_BOOK_TOUR: BookTourState = {
   journey: 'first-book',
   step: 'add',
   bookId: null,
+  returnTo: null,
 }
 export type BookTourEvent =
   | { type: 'start' | 'end' | 'pause' | 'resume' }
-  | { type: 'start-reading' }
-  | { type: 'reading-open'; bookId: string; reading: boolean }
+  | { type: 'start-reading'; bookId?: string }
+  | { type: 'reading-open'; run: number; bookId: string; reading: boolean }
+  | { type: 'location'; run: number; href: string }
   | {
       type: 'reading'
       run: number
@@ -52,7 +56,7 @@ export type BookTourEvent =
         | 'finished'
       bookId: string
     }
-  | { type: 'observe'; step: BookTourStep; bookId?: string }
+  | { type: 'observe'; run: number; step: BookTourStep; bookId?: string }
 
 export function bookTourReducer(state: BookTourState, event: BookTourEvent): BookTourState {
   if (event.type === 'start') return { ...INITIAL_BOOK_TOUR, status: 'active', run: state.run + 1 }
@@ -63,9 +67,13 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
       run: state.run + 1,
       journey: 'reading',
       step: 'read-choose',
+      bookId: event.bookId ?? null,
     }
   if (event.type === 'end') return { ...INITIAL_BOOK_TOUR, run: state.run }
   if (state.status === 'off') return state
+  if ('run' in event && event.run !== state.run) return state
+  if (event.type === 'location')
+    return state.returnTo === event.href ? state : { ...state, returnTo: event.href }
   if (event.type === 'pause')
     return state.status === 'paused' ? state : { ...state, status: 'paused' }
   if (event.type === 'resume')
@@ -74,7 +82,8 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
     if (event.type === 'reading-open') {
       // Only the reader's initial choice selects a book. Optimistic updates and other books
       // cannot turn a started/finished operation into a confirmed success.
-      if (state.step !== 'read-choose') return state
+      if (state.step !== 'read-choose' || (state.bookId && state.bookId !== event.bookId))
+        return state
       return {
         ...state,
         bookId: event.bookId,
@@ -111,6 +120,30 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
     : (event.bookId ?? state.bookId)
   if (state.step === event.step && state.bookId === bookId) return state
   return { ...state, step: event.step, bookId }
+}
+
+/** Route availability is shared by launch, pause and resume; a resume cannot briefly run elsewhere. */
+export function isBookTourLocation(
+  state: Pick<BookTourState, 'journey' | 'bookId'>,
+  pathname: string,
+): boolean {
+  if (state.journey === 'reading')
+    return state.bookId
+      ? pathname === `/book/${state.bookId}`
+      : pathname === '/library' || /^\/book\/[^/]+$/.test(pathname)
+  return (
+    pathname === '/add' ||
+    pathname === '/library' ||
+    (!!state.bookId && pathname === `/book/${state.bookId}`)
+  )
+}
+
+export function bookTourReturnHref(state: BookTourState): string {
+  if (state.bookId && (state.journey === 'reading' || state.step === 'opened'))
+    return `/book/${encodeURIComponent(state.bookId)}`
+  if (state.bookId)
+    return state.returnTo?.split('?')[0] === '/library' ? state.returnTo : '/library'
+  return state.returnTo ?? (state.journey === 'reading' ? '/library' : '/add')
 }
 
 export const BOOK_TOUR_STEPS = {

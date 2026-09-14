@@ -12,6 +12,7 @@ import {
 } from '@reverie/core'
 import { rootRoute } from './RootRoute'
 import { useBooks, useUpdateBook } from '../data/books'
+import { StartReadingTour } from '../guidance/BookTour'
 import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 import { useHideIntensity } from '../data/profile'
 import { useFilters } from '../library/filterStore'
@@ -449,6 +450,7 @@ export function LibraryHeader({
         actions={
           <>
             <ScopeSwitch scope={scope} />
+            {scope === 'personal' && <StartReadingTour quiet />}
             <Link
               to="/add"
               search={scope === 'household' ? { scope: 'household' } : {}}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, createRoute, useNavigate } from '@tanstack/react-router'
+import { StartReadingTour } from '../guidance/BookTour'
 import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 import {
   authorOf,
@@ -310,8 +311,13 @@ export function BookDetailScreen() {
   const readingTarget = readingTour && bookTour.bookId === book?.id
   useEffect(() => {
     if (readingTour && book && reads && !readsError)
-      sendTour({ type: 'reading-open', bookId: book.id, reading: book.readStatus === 'Reading' })
-  }, [readingTour, book, reads, readsError, sendTour])
+      sendTour({
+        type: 'reading-open',
+        run: bookTour.run,
+        bookId: book.id,
+        reading: book.readStatus === 'Reading',
+      })
+  }, [readingTour, bookTour.run, book, reads, readsError, sendTour])
   useEffect(() => {
     if (!readingTarget || !book) return
     if (dialog === 'progress')
@@ -386,9 +392,12 @@ export function BookDetailScreen() {
 
   return (
     <section className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:py-8">
-      <BackLink fallback="/library" className="text-[13px] text-muted hover:text-ink">
-        ← Library
-      </BackLink>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <BackLink fallback="/library" className="text-[13px] text-muted hover:text-ink">
+          ← Library
+        </BackLink>
+        <StartReadingTour quiet />
+      </div>
 
       {/* header */}
       {/* cover + title share the row even on phones — a stacked w-32 cover left dead space beside it */}

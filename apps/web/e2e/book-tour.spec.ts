@@ -200,7 +200,11 @@ for (const touch of [false, true]) {
           path: `test-results/live-tour-${touch ? 'phone' : 'desktop'}.png`,
           fullPage: true,
         })
-        await guide.getByRole('button', { name: 'Keep exploring', exact: true }).click()
+        // Continue from the selected book, including the desktop drawer, without choosing again.
+        await guide.getByRole('button', { name: 'Guide my reading', exact: true }).click()
+        await expect(page).toHaveURL(new RegExp(`/book/${saved[0]!.id}$`))
+        await expect(guide.getByRole('status')).toHaveText('Begin where you are')
+        await guide.getByRole('button', { name: 'End live walkthrough', exact: true }).click()
         await expect(guide).toHaveCount(0)
         expect(await account.rows()).toEqual(saved)
       } finally {

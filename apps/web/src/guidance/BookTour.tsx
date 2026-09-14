@@ -5,7 +5,7 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Button } from '../components/Button'
 import { useJustFinishedStore } from '../lib/chainPrompt'
 import { useBookTour } from './BookTourContext'
-import { BOOK_TOUR_STEPS } from './bookTourModel'
+import { BOOK_TOUR_STEPS, bookTourReturnHref, isBookTourLocation } from './bookTourModel'
 import './bookTour.css'
 
 /** Visible targets only: the shell can render both desktop and mobile Add controls. */
@@ -18,41 +18,78 @@ function findBookTourTarget(name: string): HTMLElement | null {
   )
 }
 
-export function StartBookTour({
+/** Entry controls preserve the current form; only an explicit return leaves this screen. */
+function StartTour({
+  journey,
+  label,
   className = '',
-  label = 'Guide me in the app',
+  quiet = false,
+  bookId,
 }: {
+  bookId?: string
+  journey: 'first-book' | 'reading'
+  label: string
   className?: string
-  label?: string
+  quiet?: boolean
 }) {
-  const { send } = useBookTour()
+  const { state, send } = useBookTour()
   const navigate = useNavigate()
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const continuing = state.status !== 'off' && state.journey === journey
+  const here = isBookTourLocation(state, pathname)
+  const currentBookId = bookId ?? /^\/book\/([^/]+)$/.exec(pathname)?.[1]
+  const startHere =
+    journey === 'reading'
+      ? pathname === '/library' || !!currentBookId
+      : pathname === '/add' || pathname === '/library'
+  function start() {
+    const event =
+      journey === 'reading'
+        ? { type: 'start-reading' as const, bookId: currentBookId }
+        : { type: 'start' as const }
+    if (journey === 'reading' && bookId && pathname !== `/book/${bookId}`)
+      void navigate({ to: '/book/$bookId', params: { bookId } }).then(() => send(event))
+    else if (startHere) send(event)
+    else void navigate({ to: '/library', search: {} }).then(() => send(event))
+  }
+  // The active coach already carries resume/replay. Do not add a duplicate toolbar above a form.
+  if (quiet && continuing && here) return null
   return (
-    <Button
-      className={className}
-      onClick={() => {
-        if (pathname === '/add' || pathname === '/library') send({ type: 'start' })
-        else void navigate({ to: '/library', search: {} }).then(() => send({ type: 'start' }))
-      }}
-    >
-      {label}
-    </Button>
+    <span className={`inline-flex flex-wrap items-center gap-2 ${className}`}>
+      <Button
+        variant={quiet ? 'ghost' : 'primary'}
+        onClick={() => {
+          if (!continuing) start()
+          else if (here) send({ type: 'resume' })
+          else
+            void navigate({ href: bookTourReturnHref(state) }).then(() => send({ type: 'resume' }))
+        }}
+      >
+        {continuing ? (here ? 'Continue walkthrough' : 'Return to previous walkthrough') : label}
+      </Button>
+      {continuing && !here && (
+        <Button variant="ghost" onClick={start}>
+          {startHere ? 'Start over here' : 'Start over in Library'}
+        </Button>
+      )}
+    </span>
   )
 }
 
-export function StartReadingTour() {
-  const { send } = useBookTour()
-  const navigate = useNavigate()
-  return (
-    <Button
-      onClick={() =>
-        void navigate({ to: '/library', search: {} }).then(() => send({ type: 'start-reading' }))
-      }
-    >
-      Guide my reading
-    </Button>
-  )
+export function StartBookTour({
+  className = '',
+  label = 'Guide me in the app',
+  quiet = false,
+}: {
+  className?: string
+  label?: string
+  quiet?: boolean
+}) {
+  return <StartTour journey="first-book" label={label} className={className} quiet={quiet} />
+}
+
+export function StartReadingTour({ quiet = false, bookId }: { quiet?: boolean; bookId?: string }) {
+  return <StartTour journey="reading" label="Guide my reading" quiet={quiet} bookId={bookId} />
 }
 
 export function BookTour() {
@@ -137,13 +174,19 @@ export function BookTour() {
   useEffect(() => {
     stop()
     if (!running) return
-    const allowed =
-      (location.pathname === '/library' && (state.journey !== 'reading' || !state.bookId)) ||
-      (state.journey === 'reading' && !state.bookId && location.pathname.startsWith('/book/')) ||
-      location.pathname === '/add' ||
-      (state.bookId && location.pathname === `/book/${state.bookId}`)
-    if (!allowed) send({ type: 'pause' })
-  }, [location.pathname, running, state.bookId, state.journey, send, stop])
+    if (!isBookTourLocation({ journey: state.journey, bookId: state.bookId }, location.pathname))
+      send({ type: 'pause' })
+    else send({ type: 'location', run: state.run, href: location.href })
+  }, [
+    location.pathname,
+    location.href,
+    running,
+    state.bookId,
+    state.journey,
+    state.run,
+    send,
+    stop,
+  ])
 
   useEffect(() => {
     stop()
@@ -193,7 +236,7 @@ export function BookTour() {
       clearTimeout(timeout)
       window.removeEventListener('resize', locate)
     }
-  }, [running, step.target, state.journey, state.bookId, stop, send])
+  }, [running, step.target, state.journey, state.bookId, state.run, stop, send])
 
   useEffect(() => stop(), [target, stop])
 
@@ -426,15 +469,33 @@ export function BookTour() {
             ready.
           </p>
         )}
+        {state.status === 'paused' && !isBookTourLocation(state, location.pathname) && (
+          <p className="book-tour-text">
+            Returning leaves this page. Finish any unsaved changes first.
+          </p>
+        )}
         <div className="book-tour-actions">
           {state.status === 'paused' ? (
-            <Button variant="secondary" onClick={() => send({ type: 'resume' })}>
-              Resume
-            </Button>
+            isBookTourLocation(state, location.pathname) && target ? (
+              <Button variant="secondary" onClick={() => send({ type: 'resume' })}>
+                Resume
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  void navigate({ href: bookTourReturnHref(state) }).then(() =>
+                    send({ type: 'resume' }),
+                  )
+                }}
+              >
+                Return to this task
+              </Button>
+            )
           ) : state.step === 'opened' ? (
             <>
               <Button onClick={finish}>Keep exploring</Button>
-              <StartReadingTour />
+              <StartReadingTour bookId={state.bookId ?? undefined} />
             </>
           ) : (
             <Button
@@ -493,20 +554,30 @@ export function BookTour() {
               More walkthroughs
             </Link>
           )}
-          {state.status === 'paused' && (
+          {state.status === 'paused' && isBookTourLocation(state, location.pathname) && target && (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                send(
+                  state.journey === 'reading'
+                    ? { type: 'start-reading', bookId: state.bookId ?? undefined }
+                    : { type: 'start' },
+                )
+              }
+            >
+              Start over here
+            </Button>
+          )}
+          {missing && state.journey === 'reading' && (
             <Button
               variant="ghost"
               onClick={() => {
-                void navigate(
-                  state.journey === 'reading' && state.bookId
-                    ? { to: '/book/$bookId', params: { bookId: state.bookId } }
-                    : state.bookId || state.journey === 'reading'
-                      ? { to: '/library', search: {} }
-                      : { to: '/add', search: {} },
-                ).then(() => send({ type: 'resume' }))
+                void navigate({ to: '/library', search: {} }).then(() =>
+                  send({ type: 'start-reading' }),
+                )
               }}
             >
-              Return to this task
+              Choose another book
             </Button>
           )}
         </div>

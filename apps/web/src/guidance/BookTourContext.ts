@@ -15,6 +15,6 @@ export function useBookTourObservation(step: BookTourStep | null, bookId?: strin
   const { state, send } = useBookTour()
   const running = state.status !== 'off'
   useEffect(() => {
-    if (running && step) send({ type: 'observe', step, bookId })
-  }, [running, step, bookId, send])
+    if (running && step) send({ type: 'observe', run: state.run, step, bookId })
+  }, [running, state.run, step, bookId, send])
 }
