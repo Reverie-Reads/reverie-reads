@@ -27,7 +27,7 @@ function StartTour({
   bookId,
 }: {
   bookId?: string
-  journey: 'first-book' | 'reading'
+  journey: 'first-book' | 'reading' | 'next-read'
   label: string
   className?: string
   quiet?: boolean
@@ -39,18 +39,25 @@ function StartTour({
   const here = isBookTourLocation(state, pathname)
   const currentBookId = bookId ?? /^\/book\/([^/]+)$/.exec(pathname)?.[1]
   const startHere =
-    journey === 'reading'
-      ? pathname === '/library' || !!currentBookId
-      : pathname === '/add' || pathname === '/library'
+    journey === 'next-read'
+      ? pathname === '/match'
+      : journey === 'reading'
+        ? pathname === '/library' || !!currentBookId
+        : pathname === '/add' || pathname === '/library'
   function start() {
     const event =
-      journey === 'reading'
-        ? { type: 'start-reading' as const, bookId: currentBookId }
-        : { type: 'start' as const }
+      journey === 'next-read'
+        ? { type: 'start-next-read' as const }
+        : journey === 'reading'
+          ? { type: 'start-reading' as const, bookId: currentBookId }
+          : { type: 'start' as const }
     if (journey === 'reading' && bookId && pathname !== `/book/${bookId}`)
       void navigate({ to: '/book/$bookId', params: { bookId } }).then(() => send(event))
     else if (startHere) send(event)
-    else void navigate({ to: '/library', search: {} }).then(() => send(event))
+    else
+      void navigate({ to: journey === 'next-read' ? '/match' : '/library', search: {} }).then(() =>
+        send(event),
+      )
   }
   // The active coach already carries resume/replay. Do not add a duplicate toolbar above a form.
   if (quiet && continuing && here) return null
@@ -69,7 +76,11 @@ function StartTour({
       </Button>
       {continuing && !here && (
         <Button variant="ghost" onClick={start}>
-          {startHere ? 'Start over here' : 'Start over in Library'}
+          {startHere
+            ? 'Start over here'
+            : journey === 'next-read'
+              ? 'Start over in Next read'
+              : 'Start over in Library'}
         </Button>
       )}
     </span>
@@ -92,6 +103,10 @@ export function StartReadingTour({ quiet = false, bookId }: { quiet?: boolean; b
   return <StartTour journey="reading" label="Guide my reading" quiet={quiet} bookId={bookId} />
 }
 
+export function StartNextReadTour({ quiet = false }: { quiet?: boolean }) {
+  return <StartTour journey="next-read" label="Guide my next read" quiet={quiet} />
+}
+
 export function BookTour() {
   const { state, send } = useBookTour()
   const finishedBookId = useJustFinishedStore((s) => s.target?.book.id)
@@ -109,6 +124,7 @@ export function BookTour() {
   const [modal, setModal] = useState<HTMLElement | null>(null)
   const [missing, setMissing] = useState(false)
   const [touch, setTouch] = useState(() => window.matchMedia('(pointer: coarse)').matches)
+  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 699px)').matches)
   const [reduced, setReduced] = useState(
     () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
@@ -118,6 +134,7 @@ export function BookTour() {
   const cue = useRef<HTMLDivElement>(null)
   const animation = useRef<Animation | null>(null)
   const attempt = useRef(0)
+  const requestedStep = useRef<string | null>(null)
   const active = state.status === 'active'
   const running = state.status !== 'off'
   const stop = useCallback(() => {
@@ -130,6 +147,10 @@ export function BookTour() {
 
   useEffect(() => {
     if (!running) return
+    const width = window.matchMedia('(max-width: 699px)')
+    const resize = () => setNarrow(width.matches)
+    resize()
+    width.addEventListener('change', resize)
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
     const change = () => {
       setReduced(preference.matches)
@@ -143,6 +164,7 @@ export function BookTour() {
     preference.addEventListener('change', change)
     document.addEventListener('pointerdown', input, true)
     return () => {
+      width.removeEventListener('change', resize)
       preference.removeEventListener('change', change)
       document.removeEventListener('pointerdown', input, true)
     }
@@ -259,11 +281,25 @@ export function BookTour() {
   }, [target, active])
 
   const modalOutlet = modal?.querySelector<HTMLElement>('[data-book-tour-outlet]') ?? null
+  const pageOutlet =
+    state.journey === 'next-read' && narrow && isBookTourLocation(state, location.pathname)
+      ? document.querySelector<HTMLElement>(`[data-book-tour-inline="${step.target}"]`)
+      : null
+  const inlineOutlet = modalOutlet ?? pageOutlet
+  // Only an explicit chapter-navigation button requests scrolling. Saves and observations never
+  // move the page. Phone coaching moves in the document, so its next stop must stay findable.
+  useEffect(() => {
+    if (requestedStep.current !== state.step || !active || !inlineOutlet || !panel.current) return
+    requestedStep.current = null
+    const rect = panel.current.getBoundingClientRect()
+    if (rect.top < 72 || rect.bottom > innerHeight - 88)
+      panel.current.scrollIntoView({ block: 'center', behavior: 'instant' })
+  }, [state.step, active, inlineOutlet])
   const blockedByModal = !!modal && (!target || !modal.contains(target))
   useEffect(() => {
     const floating = panel.current
     if (!running || !floating || blockedByModal) return
-    if (modalOutlet) {
+    if (inlineOutlet) {
       floating.removeAttribute('style')
       floating.removeAttribute('data-compact')
       return
@@ -328,7 +364,7 @@ export function BookTour() {
       window.visualViewport?.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
     }
-  }, [target, running, state.status, blockedByModal, modalOutlet])
+  }, [target, running, state.status, blockedByModal, inlineOutlet])
 
   useEffect(
     () => () => {
@@ -421,6 +457,12 @@ export function BookTour() {
     setPlaying(false)
   }
 
+  function advanceNextRead(action: 'scope' | 'mood' | 'picks') {
+    stop()
+    requestedStep.current = `next-${action}`
+    send({ type: 'next-read', run: state.run, action })
+  }
+
   function finish() {
     stop()
     const focusTarget = target ?? document.getElementById('main')
@@ -436,15 +478,17 @@ export function BookTour() {
         className="book-tour-panel"
         aria-label="Live walkthrough"
         data-book-tour-panel
-        data-inline={!!modalOutlet}
+        data-inline={!!inlineOutlet}
       >
         <div className="book-tour-heading">
           <p className="book-tour-eyebrow">
             {state.status === 'paused'
               ? 'Walkthrough paused'
-              : state.journey === 'reading'
-                ? 'Your reading life'
-                : 'Your first book'}
+              : state.journey === 'next-read'
+                ? 'Your next read'
+                : state.journey === 'reading'
+                  ? 'Your reading life'
+                  : 'Your first book'}
           </p>
           <button
             type="button"
@@ -507,6 +551,30 @@ export function BookTour() {
               Show me this step
             </Button>
           )}
+          {active && state.journey === 'next-read' && (
+            <>
+              {state.step === 'next-scope' && (
+                <Button variant="secondary" onClick={() => advanceNextRead('mood')}>
+                  Next: a mood
+                </Button>
+              )}
+              {['next-scope', 'next-mood'].includes(state.step) && (
+                <Button variant="ghost" onClick={() => advanceNextRead('picks')}>
+                  Go to my picks
+                </Button>
+              )}
+              {state.step === 'next-picks' && (
+                <Button variant="ghost" onClick={() => advanceNextRead('scope')}>
+                  Change the selection
+                </Button>
+              )}
+              {state.step === 'next-saved' && (
+                <Button variant="secondary" onClick={finish}>
+                  Keep browsing
+                </Button>
+              )}
+            </>
+          )}
           {active &&
             ['read-saved', 'read-finished', 'read-finish', 'read-finish-editor'].includes(
               state.step,
@@ -559,13 +627,27 @@ export function BookTour() {
               variant="ghost"
               onClick={() =>
                 send(
-                  state.journey === 'reading'
-                    ? { type: 'start-reading', bookId: state.bookId ?? undefined }
-                    : { type: 'start' },
+                  state.journey === 'next-read' && location.pathname === '/match'
+                    ? { type: 'start-next-read' }
+                    : state.journey === 'reading' || state.journey === 'next-read'
+                      ? { type: 'start-reading', bookId: state.bookId ?? undefined }
+                      : { type: 'start' },
                 )
               }
             >
               Start over here
+            </Button>
+          )}
+          {missing && state.journey === 'next-read' && (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                void navigate({ href: bookTourReturnHref(state) }).then(() =>
+                  send({ type: 'start-next-read' }),
+                )
+              }
+            >
+              Return to Next read
             </Button>
           )}
           {missing && state.journey === 'reading' && (
@@ -603,6 +685,6 @@ export function BookTour() {
         <span className="book-tour-ripple" />
       </div>
     </>,
-    modalOutlet ?? modal ?? document.body,
+    inlineOutlet ?? modal ?? document.body,
   )
 }

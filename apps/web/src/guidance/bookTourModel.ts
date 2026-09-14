@@ -8,6 +8,12 @@ export type ReadingTourStep =
   | 'read-finish-editor'
   | 'read-reflect'
   | 'read-finished'
+export type NextReadTourStep =
+  | 'next-scope'
+  | 'next-mood'
+  | 'next-picks'
+  | 'next-saved'
+  | 'next-opening'
 export type BookTourStep =
   | 'add'
   | 'search'
@@ -17,10 +23,11 @@ export type BookTourStep =
   | 'library'
   | 'opened'
   | ReadingTourStep
+  | NextReadTourStep
 export interface BookTourState {
   status: 'off' | 'active' | 'paused'
   run: number
-  journey: 'first-book' | 'reading'
+  journey: 'first-book' | 'reading' | 'next-read'
   step: BookTourStep
   /** Session-only; never written to the profile, storage or analytics. */
   bookId: string | null
@@ -38,6 +45,9 @@ export const INITIAL_BOOK_TOUR: BookTourState = {
 export type BookTourEvent =
   | { type: 'start' | 'end' | 'pause' | 'resume' }
   | { type: 'start-reading'; bookId?: string }
+  | { type: 'start-next-read' }
+  | { type: 'next-read'; run: number; action: 'scope' | 'mood' | 'picks' | 'saved' }
+  | { type: 'next-read'; run: number; action: 'select'; bookId: string }
   | { type: 'reading-open'; run: number; bookId: string; reading: boolean }
   | { type: 'location'; run: number; href: string }
   | {
@@ -69,6 +79,14 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
       step: 'read-choose',
       bookId: event.bookId ?? null,
     }
+  if (event.type === 'start-next-read')
+    return {
+      ...INITIAL_BOOK_TOUR,
+      status: 'active',
+      run: state.run + 1,
+      journey: 'next-read',
+      step: 'next-scope',
+    }
   if (event.type === 'end') return { ...INITIAL_BOOK_TOUR, run: state.run }
   if (state.status === 'off') return state
   if ('run' in event && event.run !== state.run) return state
@@ -78,6 +96,20 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
     return state.status === 'paused' ? state : { ...state, status: 'paused' }
   if (event.type === 'resume')
     return state.status === 'active' ? state : { ...state, status: 'active' }
+  if (state.journey === 'next-read') {
+    if (
+      event.type === 'reading-open' &&
+      state.step === 'next-opening' &&
+      event.bookId === state.bookId
+    )
+      return { ...state, journey: 'reading', step: event.reading ? 'read-progress' : 'read-start' }
+    if (event.type !== 'next-read') return state
+    if (event.action === 'select') return { ...state, bookId: event.bookId, step: 'next-opening' }
+    // A shelf response cannot replace an in-flight reader-selected book handoff.
+    if (state.step === 'next-opening') return state
+    const step: NextReadTourStep = `next-${event.action}`
+    return step === state.step ? state : { ...state, step }
+  }
   if (state.journey === 'reading') {
     if (event.type === 'reading-open') {
       // Only the reader's initial choice selects a book. Optimistic updates and other books
@@ -112,7 +144,8 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
       ? { ...state, step: transition[1] }
       : state
   }
-  if (event.type !== 'observe' || event.step.startsWith('read-')) return state
+  if (event.type !== 'observe' || event.step.startsWith('read-') || event.step.startsWith('next-'))
+    return state
   if (event.step === 'saved' && !event.bookId) return state
   if (['library', 'opened'].includes(event.step) && event.bookId !== state.bookId) return state
   const bookId = ['search', 'choose', 'details'].includes(event.step)
@@ -127,6 +160,8 @@ export function isBookTourLocation(
   state: Pick<BookTourState, 'journey' | 'bookId'>,
   pathname: string,
 ): boolean {
+  if (state.journey === 'next-read')
+    return pathname === '/match' || (!!state.bookId && pathname === `/book/${state.bookId}`)
   if (state.journey === 'reading')
     return state.bookId
       ? pathname === `/book/${state.bookId}`
@@ -139,6 +174,8 @@ export function isBookTourLocation(
 }
 
 export function bookTourReturnHref(state: BookTourState): string {
+  if (state.journey === 'next-read')
+    return state.returnTo?.split('?')[0] === '/match' ? state.returnTo : '/match'
   if (state.bookId && (state.journey === 'reading' || state.step === 'opened'))
     return `/book/${encodeURIComponent(state.bookId)}`
   if (state.bookId)
@@ -147,6 +184,41 @@ export function bookTourReturnHref(state: BookTourState): string {
 }
 
 export const BOOK_TOUR_STEPS = {
+  'next-scope': {
+    title: 'Begin with your shelves',
+    text: 'Choose books you have, your wishlist, or your whole library. Your current selection stays in place.',
+    target: 'next-scope',
+    action: 'Show the library selection',
+    demonstration: 'point',
+  },
+  'next-mood': {
+    title: 'A mood, if you have one',
+    text: 'Describe what you feel like reading, or use Help me choose. You can also go straight to your picks without changing a thing.',
+    target: 'next-mood',
+    action: 'Go to the mood field',
+    demonstration: 'focus',
+  },
+  'next-picks': {
+    title: 'Find a book to open',
+    text: 'Open a book to look closer, save a choice to TBR, or start reading. Your library explains each pick; you make the choice.',
+    target: 'next-picks',
+    action: 'Show your choices',
+    demonstration: 'point',
+  },
+  'next-saved': {
+    title: 'Kept for another day',
+    text: 'Your choice is saved to TBR. This keeps it close without starting a read or setting a deadline.',
+    target: 'next-picks',
+    action: 'Return to your choices',
+    demonstration: 'point',
+  },
+  'next-opening': {
+    title: 'A closer look',
+    text: 'Your chosen book is opening. Once its reading record is ready, the guide can help you keep your place.',
+    target: 'tour-opened-book',
+    action: 'Show your chosen book',
+    demonstration: 'point',
+  },
   add: {
     title: 'Bring a book home',
     text: 'Start with Add a book. You can search for a title, scan its barcode or enter the details yourself.',

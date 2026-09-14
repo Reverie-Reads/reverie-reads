@@ -124,6 +124,14 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Automatic practice playback requires isolated data
   adapters; query-cache seeding over live Supabase hooks is not a practice library. See
   `docs/tasks/reader-guidance.md`.
+- **Next read guidance follows actual choices.** Preserve scope, unsent mood, quiz and shortlist on
+  entry/replay. Demonstrations never submit a mood query, choose a result or save. A chosen book's
+  loaded personal record hands off to the reading chapter; Start waits for the successful promise,
+  not optimistic disappearance. TBR completion requires membership, not merely list creation or
+  an unauthenticated no-op. Scope all callbacks to the active run; late results cannot advance a
+  replay. Touch coaching participates in layout; only explicit chapter navigation requests scroll.
+  In private integration, target the visible comparison and preserve its planning draft. See
+  `docs/tasks/reader-guidance.md`.
 - **Reading tips are optional; essential information is not.** Account-scoped
   `profiles.show_reading_tips` defaults on and is independent of onboarding milestones. The signed-in
   shell supplies this preference to explicitly selected `ReadingTips` passages. Never hide labels,
