@@ -9,6 +9,8 @@ import { useBooks } from '../data/books'
 import { useReadingHistory } from '../data/readingHistory'
 import { personalReleaseWindow } from '../data/releases'
 import { FromYourAuthors } from '../planner/FromYourAuthors'
+import { StartPlannerTour } from '../guidance/BookTour'
+import { usePlannerTourContext } from '../guidance/usePlannerTourContext'
 import { ReadingPlan, type PlanView } from '../planner/ReadingPlan'
 import '../planner/release-horizon.css'
 
@@ -109,7 +111,14 @@ function Releases({ books, openBook }: { books: Book[]; openBook: (id: string) =
 
   return (
     <div className="release-horizon">
-      <Surface radius="panel" tone="card" pad={4} raised className="release-horizon-intro">
+      <Surface
+        radius="panel"
+        tone="card"
+        pad={4}
+        raised
+        className="release-horizon-intro"
+        data-book-tour="plan-releases"
+      >
         <p className="plan-eyebrow">Your release horizon</p>
         <h2>See what is coming into view.</h2>
         <p>
@@ -171,6 +180,9 @@ function PlannerScreen() {
   const library = useBooks()
   const books = library.data
   const { tab = 'queue' } = plannerRoute.useSearch()
+  usePlannerTourContext(
+    !books || tab === 'releases' ? { kind: 'view', view: !books ? 'waiting' : tab } : null,
+  )
   const setTab = (next: Tab) =>
     void navigate({
       to: '/planner',
@@ -181,6 +193,9 @@ function PlannerScreen() {
 
   return (
     <section className="mx-auto w-full max-w-[1180px] px-4 py-6 sm:px-6 lg:py-8">
+      <div className="mb-3 flex justify-end empty:hidden">
+        <StartPlannerTour quiet />
+      </div>
       <PageHeader
         eyebrow="Your reading life, ahead"
         title="Keep your reading life close."
@@ -196,6 +211,7 @@ function PlannerScreen() {
         className="plan-view-switcher"
         role="group"
         aria-label="Reading life view"
+        data-book-tour="plan-view"
       >
         {(['queue', 'calendar', 'releases'] as const).map((item) => (
           <button key={item} type="button" onClick={() => setTab(item)} aria-pressed={tab === item}>
@@ -205,8 +221,13 @@ function PlannerScreen() {
         ))}
       </Surface>
 
+      <div className="mt-4 empty:hidden" data-book-tour-inline="plan-add" />
+      <div className="empty:hidden" data-book-tour-inline="plan-calendar" />
+      <div className="empty:hidden" data-book-tour-inline="plan-releases" />
+      <div className="empty:hidden" data-book-tour-inline="plan-view" />
+      <div className="empty:hidden" data-book-tour-inline="plan-status" />
       {!books ? (
-        <div className="mt-6">
+        <div className="mt-6" data-book-tour="plan-status">
           <p role={library.isError ? 'alert' : 'status'} className="mb-4 text-muted">
             {library.isError
               ? 'Your library could not be loaded.'

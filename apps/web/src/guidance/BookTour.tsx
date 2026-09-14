@@ -27,7 +27,7 @@ function StartTour({
   bookId,
 }: {
   bookId?: string
-  journey: 'first-book' | 'reading' | 'next-read'
+  journey: 'first-book' | 'reading' | 'next-read' | 'planner'
   label: string
   className?: string
   quiet?: boolean
@@ -39,25 +39,30 @@ function StartTour({
   const here = isBookTourLocation(state, pathname)
   const currentBookId = bookId ?? /^\/book\/([^/]+)$/.exec(pathname)?.[1]
   const startHere =
-    journey === 'next-read'
-      ? pathname === '/match'
-      : journey === 'reading'
-        ? pathname === '/library' || !!currentBookId
-        : pathname === '/add' || pathname === '/library'
+    journey === 'planner'
+      ? pathname === '/planner'
+      : journey === 'next-read'
+        ? pathname === '/match'
+        : journey === 'reading'
+          ? pathname === '/library' || !!currentBookId
+          : pathname === '/add' || pathname === '/library'
   function start() {
     const event =
-      journey === 'next-read'
-        ? { type: 'start-next-read' as const }
-        : journey === 'reading'
-          ? { type: 'start-reading' as const, bookId: currentBookId }
-          : { type: 'start' as const }
+      journey === 'planner'
+        ? { type: 'start-planner' as const }
+        : journey === 'next-read'
+          ? { type: 'start-next-read' as const }
+          : journey === 'reading'
+            ? { type: 'start-reading' as const, bookId: currentBookId }
+            : { type: 'start' as const }
     if (journey === 'reading' && bookId && pathname !== `/book/${bookId}`)
       void navigate({ to: '/book/$bookId', params: { bookId } }).then(() => send(event))
     else if (startHere) send(event)
     else
-      void navigate({ to: journey === 'next-read' ? '/match' : '/library', search: {} }).then(() =>
-        send(event),
-      )
+      void navigate({
+        to: journey === 'planner' ? '/planner' : journey === 'next-read' ? '/match' : '/library',
+        search: {},
+      }).then(() => send(event))
   }
   // The active coach already carries resume/replay. Do not add a duplicate toolbar above a form.
   if (quiet && continuing && here) return null
@@ -78,9 +83,11 @@ function StartTour({
         <Button variant="ghost" onClick={start}>
           {startHere
             ? 'Start over here'
-            : journey === 'next-read'
-              ? 'Start over in Next read'
-              : 'Start over in Library'}
+            : journey === 'planner'
+              ? 'Start over in Planner'
+              : journey === 'next-read'
+                ? 'Start over in Next read'
+                : 'Start over in Library'}
         </Button>
       )}
     </span>
@@ -105,6 +112,10 @@ export function StartReadingTour({ quiet = false, bookId }: { quiet?: boolean; b
 
 export function StartNextReadTour({ quiet = false }: { quiet?: boolean }) {
   return <StartTour journey="next-read" label="Guide my next read" quiet={quiet} />
+}
+
+export function StartPlannerTour({ quiet = false }: { quiet?: boolean }) {
+  return <StartTour journey="planner" label="Guide my planning" quiet={quiet} />
 }
 
 export function BookTour() {
@@ -235,6 +246,7 @@ export function BookTour() {
         openModal &&
         !usable &&
         !openModal.querySelector('[data-book-tour="tour-opened-book"]') &&
+        !(state.journey === 'planner' && openModal.querySelector('[data-planner-tour-context]')) &&
         !(
           state.journey === 'reading' &&
           openModal.querySelector(`[data-reading-tour-book="${state.bookId}"]`)
@@ -282,7 +294,9 @@ export function BookTour() {
 
   const modalOutlet = modal?.querySelector<HTMLElement>('[data-book-tour-outlet]') ?? null
   const pageOutlet =
-    state.journey === 'next-read' && narrow && isBookTourLocation(state, location.pathname)
+    ['next-read', 'planner'].includes(state.journey) &&
+    narrow &&
+    isBookTourLocation(state, location.pathname)
       ? document.querySelector<HTMLElement>(`[data-book-tour-inline="${step.target}"]`)
       : null
   const inlineOutlet = modalOutlet ?? pageOutlet
@@ -441,13 +455,22 @@ export function BookTour() {
     // The allowlist contains navigation only. No save, result choice, field value or mutation.
     if (
       step.demonstration === 'click' &&
-      ['add', 'saved', 'library', 'read-progress', 'read-finish', 'read-reflect'].includes(
-        state.step,
-      ) &&
+      [
+        'add',
+        'saved',
+        'library',
+        'read-progress',
+        'read-finish',
+        'read-reflect',
+        'plan-queue',
+      ].includes(state.step) &&
       !original.matches(':disabled')
     )
       original.click()
-    else if (step.demonstration === 'focus' && original instanceof HTMLInputElement)
+    else if (
+      step.demonstration === 'focus' &&
+      (original instanceof HTMLInputElement || original instanceof HTMLTextAreaElement)
+    )
       original.focus({ preventScroll: true })
     else {
       if (!original.hasAttribute('tabindex') && !original.matches('button,a,input'))
@@ -461,6 +484,12 @@ export function BookTour() {
     stop()
     requestedStep.current = `next-${action}`
     send({ type: 'next-read', run: state.run, action })
+  }
+
+  function advancePlanner(step: 'plan-timing' | 'plan-note' | 'plan-save') {
+    stop()
+    requestedStep.current = step
+    send({ type: 'planner-step', run: state.run, step })
   }
 
   function finish() {
@@ -484,11 +513,13 @@ export function BookTour() {
           <p className="book-tour-eyebrow">
             {state.status === 'paused'
               ? 'Walkthrough paused'
-              : state.journey === 'next-read'
-                ? 'Your next read'
-                : state.journey === 'reading'
-                  ? 'Your reading life'
-                  : 'Your first book'}
+              : state.journey === 'planner'
+                ? 'Your reading plans'
+                : state.journey === 'next-read'
+                  ? 'Your next read'
+                  : state.journey === 'reading'
+                    ? 'Your reading life'
+                    : 'Your first book'}
           </p>
           <button
             type="button"
@@ -550,6 +581,34 @@ export function BookTour() {
             >
               Show me this step
             </Button>
+          )}
+          {active && state.journey === 'planner' && (
+            <>
+              {state.plannerEditorId && state.step !== 'plan-saved' && (
+                <>
+                  {state.step === 'plan-timing' && (
+                    <Button variant="secondary" onClick={() => advancePlanner('plan-note')}>
+                      Next: a note
+                    </Button>
+                  )}
+                  {state.step !== 'plan-save' && (
+                    <Button variant="ghost" onClick={() => advancePlanner('plan-save')}>
+                      Go to saving
+                    </Button>
+                  )}
+                  {state.step !== 'plan-timing' && (
+                    <Button variant="ghost" onClick={() => advancePlanner('plan-timing')}>
+                      Back to timing
+                    </Button>
+                  )}
+                </>
+              )}
+              {['plan-saved', 'plan-calendar', 'plan-releases'].includes(state.step) && (
+                <Button variant="secondary" onClick={finish}>
+                  Keep exploring
+                </Button>
+              )}
+            </>
           )}
           {active && state.journey === 'next-read' && (
             <>
@@ -627,11 +686,13 @@ export function BookTour() {
               variant="ghost"
               onClick={() =>
                 send(
-                  state.journey === 'next-read' && location.pathname === '/match'
-                    ? { type: 'start-next-read' }
-                    : state.journey === 'reading' || state.journey === 'next-read'
-                      ? { type: 'start-reading', bookId: state.bookId ?? undefined }
-                      : { type: 'start' },
+                  state.journey === 'planner'
+                    ? { type: 'start-planner' }
+                    : state.journey === 'next-read' && location.pathname === '/match'
+                      ? { type: 'start-next-read' }
+                      : state.journey === 'reading' || state.journey === 'next-read'
+                        ? { type: 'start-reading', bookId: state.bookId ?? undefined }
+                        : { type: 'start' },
                 )
               }
             >
