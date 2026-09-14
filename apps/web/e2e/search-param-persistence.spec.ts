@@ -232,7 +232,7 @@ test('guided Discover restores its search after a library visit and refresh, and
 
 // ── /match · vibeQ ─────────────────────────────────────────────────────────────────────────────
 test.describe('/match keeps the vibe it ran', () => {
-  const FIELD = 'Describe tonight’s vibe'
+  const FIELD = 'What are you in the mood for?'
 
   test('typing alone does NOT write to the URL — only submitting does', async ({ page }) => {
     const c = await client()
@@ -240,7 +240,6 @@ test.describe('/match keeps the vibe it ran', () => {
     await stub(page)
 
     await page.goto('/match')
-    await page.getByText('Refine choices', { exact: true }).click()
     await page.getByLabel(FIELD).fill('cozy rivals')
     // Long enough that a debounce, if one existed, would have fired. The field means "the search
     // you ran"; a half-typed phrase is not that.
@@ -254,7 +253,6 @@ test.describe('/match keeps the vibe it ran', () => {
     await stub(page)
 
     await page.goto('/match')
-    await page.getByText('Refine choices', { exact: true }).click()
     await page.getByLabel(FIELD).fill('cozy rivals')
     await page.getByRole('button', { name: 'Find this mood' }).click()
     await expect.poll(() => page.url(), { timeout: 10_000 }).toContain('vibeQ=cozy')
@@ -262,7 +260,6 @@ test.describe('/match keeps the vibe it ran', () => {
     await page.goto('/library')
     await page.locator('main').waitFor({ state: 'visible' })
     await page.goBack()
-    await page.getByText('Refine choices', { exact: true }).click()
 
     await expect(page.getByLabel(FIELD)).toHaveValue('cozy rivals')
   })
@@ -273,7 +270,6 @@ test.describe('/match keeps the vibe it ran', () => {
     await stub(page)
 
     await page.goto('/match?vibeQ[]=a&vibeQ[]=b')
-    await page.getByText('Refine choices', { exact: true }).click()
     await expect(page.locator('main')).toBeVisible()
     await expect(page.getByLabel(FIELD)).toHaveValue('')
   })

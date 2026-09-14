@@ -1,7 +1,7 @@
 import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { createRoute, useNavigate } from '@tanstack/react-router'
+import { createRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   beginReadingPatch,
   buildMatchContext,
@@ -288,6 +288,7 @@ function NextReadCard({
       starting={update.isPending}
       saving={saving}
       startError={update.isError}
+      saveLabel="Save to TBR"
     />
   )
 }
@@ -307,6 +308,7 @@ function MatchScreen() {
   const [tasteOnly, setTasteOnly] = useState(!search.mood)
   const [moodChoices, setMoodChoices] = useState<number[]>([])
   const [notice, setNotice] = useState<string | null>(null)
+  const [savedShelf, setSavedShelf] = useState<{ id: string; name: string } | null>(null)
   const [saveError, setSaveError] = useState(false)
   const [saving, setSaving] = useState(false)
   const saveLock = useRef(false)
@@ -377,6 +379,7 @@ function MatchScreen() {
     setSaving(true)
     setNotice(null)
     setSaveError(false)
+    setSavedShelf(null)
     try {
       let priority =
         listsQ.data.find((list) => list.kind === 'tbr' && list.priority) ?? createdPriority.current
@@ -389,7 +392,7 @@ function MatchScreen() {
         createdPriority.current = priority
       }
       await addToList.mutateAsync({ listId: priority.id, bookIds: ids })
-      setNotice(`Saved to ${priority.name}. Find it in Library → Shelves.`)
+      setSavedShelf({ id: priority.id, name: priority.name })
     } catch {
       setSaveError(true)
     } finally {
@@ -441,29 +444,10 @@ function MatchScreen() {
           {SCOPES.find((option) => option.value === scope)?.description}
         </p>
       </fieldset>
-      <details className="mt-4 rounded-xl border border-line p-4">
-        <summary className="min-h-11 cursor-pointer py-2 text-[13px] font-medium leading-5 text-ink">
-          Refine choices
-        </summary>
-        <div className="mt-2 flex flex-wrap gap-x-5">
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              checked={includeRereads}
-              onChange={(e) => changeScope({ rereads: e.target.checked || undefined })}
-            />
-            Include rereads
-          </label>
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              checked={includeDnf}
-              onChange={(e) => changeScope({ dnf: e.target.checked || undefined })}
-            />
-            Include books I stopped reading
-          </label>
-        </div>
-
+      <section className="mt-6" aria-label="Choose a mood">
+        <label htmlFor="next-read-mood" className="text-sm font-semibold text-ink">
+          What are you in the mood for?
+        </label>
         <form
           className="mt-2 flex flex-col gap-2 sm:flex-row"
           onSubmit={(e) => {
@@ -488,7 +472,7 @@ function MatchScreen() {
             value={vibeQ}
             onChange={(e) => setVibeQ(e.target.value)}
             placeholder="A quiet mystery, or an adventure far from home"
-            aria-label="Describe tonight’s vibe"
+            id="next-read-mood"
             className="min-h-11 min-w-0 flex-1 skin-field border border-line bg-[color:var(--field)] px-3 text-base text-ink"
           />
           <button
@@ -507,10 +491,16 @@ function MatchScreen() {
         )}
         <button
           type="button"
-          className={`${quietButton} mt-3`}
+          className="mt-2 min-h-11 py-2 text-sm font-semibold text-ink underline underline-offset-4"
+          aria-expanded={quizOpen}
+          aria-controls={quizOpen ? 'next-read-questions' : undefined}
           onClick={() => {
+            if (quizOpen) {
+              setQuizOpen(false)
+              return
+            }
             vibeRequest.current++
-            setQuizOpen(!quizOpen)
+            setQuizOpen(true)
             setStep(0)
             setAnswers(emptyAnswers())
             setMoodChoices([])
@@ -519,10 +509,10 @@ function MatchScreen() {
             setVibe(null)
           }}
         >
-          Use mood questions
+          {quizOpen ? 'Close questions' : 'Help me choose'}
         </button>
         {quizOpen && q && (
-          <div className="mt-4">
+          <div id="next-read-questions" className="mt-4">
             <p className="text-sm text-muted">
               Question {step + 1} of {QUIZ.length}
             </p>
@@ -552,10 +542,33 @@ function MatchScreen() {
             </div>
           </div>
         )}
+      </section>
+      <details className="mt-2 border-b border-line pb-2">
+        <summary className="min-h-11 cursor-pointer py-2 text-[13px] font-medium leading-5 text-ink">
+          More options
+        </summary>
+        <div className="mt-2 flex flex-wrap gap-x-5">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={includeRereads}
+              onChange={(e) => changeScope({ rereads: e.target.checked || undefined })}
+            />
+            Include rereads
+          </label>
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={includeDnf}
+              onChange={(e) => changeScope({ dnf: e.target.checked || undefined })}
+            />
+            Include books I stopped reading
+          </label>
+        </div>
       </details>
       {search.vibeQ && !vibe && !vibeSearch.isPending && tasteOnly && (
         <p className="mt-4 text-sm text-ink">
-          Your saved mood is “{search.vibeQ}”. Open Refine choices to run it again.
+          Your saved mood is “{search.vibeQ}”. Choose Find this mood to run it again.
         </p>
       )}
       {(vibe || !tasteOnly) && (
@@ -619,7 +632,7 @@ function MatchScreen() {
                 disabled={saving || !listsQ.isSuccess}
                 onClick={() => void save(visiblePicks.slice(0, 3).map((pick) => pick.b.id))}
               >
-                Save top {Math.min(3, visiblePicks.length)} for later
+                Save these {Math.min(3, visiblePicks.length)} to TBR
               </button>
             )}
           </div>
@@ -648,7 +661,7 @@ function MatchScreen() {
               )}
             </Surface>
           )}
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <div className="next-read-grid mt-4">
             {displayed.map((pick) => (
               <div key={pick.b.id} className="flex flex-col gap-2">
                 <NextReadCard
@@ -698,6 +711,18 @@ function MatchScreen() {
             “Show less often” reduces a book’s ranking for up to 60 days.
           </p>
         </>
+      )}
+      {savedShelf && (
+        <p role="status" className="mt-4 text-sm text-ink">
+          Saved to {savedShelf.name}.{' '}
+          <Link
+            to="/shelf/$listId"
+            params={{ listId: savedShelf.id }}
+            className="font-semibold underline underline-offset-4"
+          >
+            Open shelf
+          </Link>
+        </p>
       )}
       {notice && (
         <p role="status" className="mt-4 text-sm text-ink">
