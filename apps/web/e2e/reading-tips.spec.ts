@@ -99,7 +99,7 @@ test('reading tips save across sessions, preserve essential copy and the guide, 
     await expect(
       page.getByText('Add a book or import your reading history. Then choose your next read here.'),
     ).toBeVisible()
-    const refine = page.locator('summary').filter({ hasText: 'Refine choices' })
+    const refine = page.locator('summary').filter({ hasText: 'More options' })
     await refine.focus()
     await page.keyboard.press('Enter')
     await expect(page.getByRole('checkbox', { name: 'Include rereads' })).toBeVisible()
@@ -217,7 +217,7 @@ test('reading tips and the smaller disclosure remain usable in all eighteen room
         await expect.poll(() => account.preference()).toBe(false)
         await expect(tips).not.toBeChecked()
         await page.goto('/match')
-        const refine = page.locator('summary').filter({ hasText: 'Refine choices' })
+        const refine = page.locator('summary').filter({ hasText: 'More options' })
         await expect(refine).toBeVisible()
         await page.evaluate(() => document.fonts.ready)
         const geometry = await refine.evaluate((el) => ({

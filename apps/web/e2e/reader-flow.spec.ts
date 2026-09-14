@@ -114,7 +114,7 @@ test('Next read scopes lead to a real saved choice and an active read without ac
     await page.getByRole('button', { name: /See \d+ more books?/ }).click()
     await expect(page.getByRole('article', { name: 'Latent format' })).toBeVisible()
     await expect(page.getByRole('article', { name: 'Finished choice' })).toHaveCount(0)
-    await page.getByText('Refine choices', { exact: true }).click()
+    await page.getByText('More options', { exact: true }).click()
     await page.getByRole('checkbox', { name: 'Include rereads', exact: true }).check()
     await page.getByRole('button', { name: /See \d+ more books?/ }).click()
     await expect(page.getByRole('article', { name: 'Finished choice' })).toBeVisible()
@@ -132,13 +132,24 @@ test('Next read scopes lead to a real saved choice and an active read without ac
       .getByRole('checkbox', { name: 'Include books I stopped reading', exact: true })
       .uncheck()
     const card = page.getByRole('article', { name: 'Borrowed choice' })
-    await card.getByRole('button', { name: 'Save for later' }).click()
+    await card.getByRole('button', { name: 'Save to TBR' }).click()
     await expect(
       page.getByRole('status').filter({ hasText: 'Saved to Priority TBR' }),
     ).toBeVisible()
     const saved = await c.sb.from('list_items').select('book_id').eq('book_id', borrowed)
     expect(saved.error).toBeNull()
     expect(saved.data).toHaveLength(1)
+    const savedShelf = await c.sb
+      .from('list_items')
+      .select('list_id')
+      .eq('book_id', borrowed)
+      .single()
+    if (savedShelf.error || !savedShelf.data)
+      throw savedShelf.error ?? new Error('Saved TBR shelf missing')
+    await expect(page.getByRole('link', { name: 'Open shelf', exact: true })).toHaveAttribute(
+      'href',
+      `/shelf/${savedShelf.data.list_id}`,
+    )
     await card.getByRole('button', { name: 'Start reading' }).click()
     await expect(page).toHaveURL(new RegExp(`/book/${borrowed}`))
     await expect(page.getByRole('button', { name: 'Update progress', exact: true })).toBeVisible()
@@ -431,8 +442,7 @@ test('mood refinements survive a book visit and bounded mood results have an hon
       return route.fulfill({ json: {} })
     })
     await page.goto('/match')
-    await page.getByText('Refine choices', { exact: true }).click()
-    await page.getByLabel('Describe tonight’s vibe').fill('an adventure')
+    await page.getByLabel('What are you in the mood for?').fill('an adventure')
     await page.getByRole('button', { name: 'Find this mood' }).click()
     await expect(page.getByText(/No returned mood matches are in this selection/)).toBeVisible()
     await expect(page.getByRole('article', { name: 'Available adventure' })).toBeVisible()
@@ -444,8 +454,7 @@ test('mood refinements survive a book visit and bounded mood results have an hon
     await expect(page.getByRole('heading', { name: 'Picks for your mood' })).toBeVisible()
     expect(requests, 'a book visit reuses results instead of charging for another search').toBe(1)
     await page.getByRole('button', { name: 'Clear mood' }).click()
-    await page.getByText('Refine choices', { exact: true }).click()
-    await page.getByRole('button', { name: 'Use mood questions' }).click()
+    await page.getByRole('button', { name: 'Help me choose' }).click()
     for (const answer of [
       'Sweeping adventure & magic',
       'Gentle & comforting',

@@ -1,4 +1,5 @@
-import { possessionState, type Book } from '@reverie/core'
+import './nextReadCard.css'
+import { authorOf, possessionState, type Book } from '@reverie/core'
 import { CoverImage } from './CoverImage'
 import { Surface } from './Surface'
 
@@ -19,6 +20,7 @@ export function NextReadCardView({
   starting = false,
   saving = false,
   startError = false,
+  saveLabel = 'Save for later',
 }: {
   book: Book
   reportCoverErrors?: boolean
@@ -30,20 +32,23 @@ export function NextReadCardView({
   starting?: boolean
   saving?: boolean
   startError?: boolean
+  saveLabel?: string
 }) {
   const identity = (
     <>
-      <div className="aspect-[2/3] w-20 shrink-0 overflow-hidden rounded-lg border border-line bg-[color:var(--field)]">
+      <div className="aspect-[2/3] w-24 shrink-0 overflow-hidden rounded-lg border border-line bg-[color:var(--field)]">
         <CoverImage reportErrors={reportCoverErrors} book={book} />
       </div>
       <div className="min-w-0">
         <h3
-          className="break-words text-lg font-semibold leading-[1.3] text-ink"
+          className={`${onOpen ? 'line-clamp-3 ' : ''}break-words text-xl font-semibold leading-[1.3] text-ink`}
           style={{ fontFamily: 'var(--font-display)' }}
         >
           {book.title}
         </h3>
-        <p className="mt-1 text-sm text-ink">{[book.first, book.last].filter(Boolean).join(' ')}</p>
+        <p className="mt-2 break-words text-sm leading-relaxed text-muted">
+          {authorOf(book) || 'Author not recorded'}
+        </p>
         <p className="mt-2 text-sm capitalize text-ink">
           {possessionState(book) === 'unset' ? 'No copy recorded' : possessionState(book)}
           {isRead ? ' · Reread' : book.readStatus === 'DNF' ? ' · Previously stopped' : ''}
@@ -52,19 +57,19 @@ export function NextReadCardView({
     </>
   )
   return (
-    <Surface tone="card" radius="panel" pad={4}>
+    <Surface tone="card-solid" radius="panel" pad={4} className="h-full">
       <article aria-label={book.title} className="flex h-full flex-col gap-4">
         {onOpen ? (
           <button
             type="button"
             onClick={onOpen}
-            className="flex w-full items-start gap-4 text-left"
+            className="flex w-full flex-col items-start gap-4 text-left"
             aria-label={`Open ${book.title}`}
           >
             {identity}
           </button>
         ) : (
-          <div className="flex w-full items-start gap-4 text-left">{identity}</div>
+          <div className="flex w-full flex-col items-start gap-4 text-left">{identity}</div>
         )}
         <p className="text-sm leading-relaxed text-ink">{reason}</p>
         <div className="mt-auto flex flex-wrap gap-2">
@@ -72,7 +77,7 @@ export function NextReadCardView({
             {starting ? 'Starting…' : isRead ? 'Read again' : 'Start reading'}
           </button>
           <button type="button" className={quietButton} disabled={saving} onClick={onSave}>
-            Save for later
+            {saveLabel}
           </button>
         </div>
         {startError && (
