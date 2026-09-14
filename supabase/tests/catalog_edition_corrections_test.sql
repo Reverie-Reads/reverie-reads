@@ -11,12 +11,16 @@ insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,cr
 ('74111111-1111-4111-8111-111111111111','authenticated','authenticated','edition-admin@example.com','{}','{}',now(),now()),
 ('74222222-2222-4222-8222-222222222222','authenticated','authenticated','edition-reader@example.com','{}','{}',now(),now());
 insert into public.corpus_admins(user_id) values('74111111-1111-4111-8111-111111111111');
+-- This fixture represents the historical invalid row that the correction workflow must repair.
+-- Bypass only the new tuple guard for that one insert, then restore it immediately.
+alter table public.works disable trigger works_validate_publication_tuple;
 insert into public.works(id,work_key,title,author_text,contributors,isbns,description,pages,pub_y,pub_m,pub_d,
  series,position,series_check_state,series_checked_at,metadata_provenance) values
 ('74000000-0000-4000-8000-000000000001','edition correction fixture','Edition Correction Fixture','Test Writer',
  '[{"name":"Test Writer","role":"author"}]','{9780306406157,9780140449136}','Protected description',321,2025,2,29,
  'Protected Series',1,'found','2020-01-01',
  '{"series":{"source":"manual","confidence":"high"},"pageCount":{"source":"openlibrary"},"pubY":{"source":"openlibrary"},"pubM":{"source":"hardcover"},"pubD":{"source":"hardcover"}}');
+alter table public.works enable trigger works_validate_publication_tuple;
 insert into public.books(id,owner_id,corpus_work_id,title,authors_display,isbn,pages,pub_y,pub_m,pub_d,ownership) values
 ('74000000-0000-4000-8000-000000000002','74111111-1111-4111-8111-111111111111','74000000-0000-4000-8000-000000000001','Edition Correction Fixture','Test Writer','9780306406157',111,1999,3,2,'unowned'),
 ('74000000-0000-4000-8000-000000000003','74222222-2222-4222-8222-222222222222','74000000-0000-4000-8000-000000000001','Edition Correction Fixture','Test Writer','9780140449136',222,2001,null,null,'unowned');

@@ -25,8 +25,13 @@ insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,cr
 ('74111111-1111-4111-8111-111111111111','authenticated','authenticated','date-admin@example.com','{}','{}',now(),now()),
 ('74222222-2222-4222-8222-222222222222','authenticated','authenticated','date-reader@example.com','{}','{}',now(),now());
 insert into public.corpus_admins(user_id) values('74111111-1111-4111-8111-111111111111');
+-- Simulate one historical row written before the tuple guard. Keep the bypass scoped to this
+-- trigger and restore it immediately so the rest of the test exercises current write behavior.
+alter table public.works disable trigger works_validate_publication_tuple;
 insert into public.works(id,work_key,title,author_text,description,pub_y,pub_m,pub_d) values
-('74000000-0000-4000-8000-000000000001','date-detection-invalid','Date detection invalid','Date Writer','Description',2025,2,29),
+('74000000-0000-4000-8000-000000000001','date-detection-invalid','Date detection invalid','Date Writer','Description',2025,2,29);
+alter table public.works enable trigger works_validate_publication_tuple;
+insert into public.works(id,work_key,title,author_text,description,pub_y,pub_m,pub_d) values
 ('74000000-0000-4000-8000-000000000002','date-detection-valid','Date detection valid','Date Writer','Description',2024,2,29),
 ('74000000-0000-4000-8000-000000000003','date-detection-unknown','Date detection unknown','Date Writer','Description',null,null,null);
 -- Emulate reviews made before this migration. Only the invalid date should reopen.
@@ -53,7 +58,9 @@ select is(jsonb_array_length(public.admin_list_corpus_metadata_reviews('all','in
 reset role;
 select is((select count(*)::int from public.corpus_metadata_review_events),0,'opening queue creates no review event');
 select ok(not exists(select 1 from date_baseline b join public.works w using(id) where b.value<>to_jsonb(w)),'queue changes no shared metadata');
+alter table public.works disable trigger works_validate_publication_tuple;
 update public.works set pub_m=4,pub_d=31 where id='74000000-0000-4000-8000-000000000001';
+alter table public.works enable trigger works_validate_publication_tuple;
 select isnt((select public.catalog_metadata_review_record(w)->>'fingerprint' from public.works w where id='74000000-0000-4000-8000-000000000001'),
   (select fingerprint from date_snapshot),'changed invalid month/day changes assessment fingerprint');
 set local role authenticated;
