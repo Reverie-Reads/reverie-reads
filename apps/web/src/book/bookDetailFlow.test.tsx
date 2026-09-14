@@ -18,6 +18,11 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@tanstack/react-router')>()),
   createRoute: (options: object) => ({ ...options, useParams: () => ({ bookId: 'active' }) }),
   useNavigate: () => vi.fn(),
+  useRouterState: ({
+    select,
+  }: {
+    select: (state: { location: { pathname: string } }) => unknown
+  }) => select({ location: { pathname: '/book/active' } }),
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
     <a href={to}>{children}</a>
   ),
