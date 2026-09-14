@@ -1,5 +1,6 @@
 import { configureReturningReader } from './support/readerGuidance'
 import { randomInt, randomUUID } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
 import AxeBuilder from '@axe-core/playwright'
 import { SKIN_LIST } from '@reverie/core'
@@ -249,9 +250,43 @@ test('edition correction previews a whole date, persists after refresh and prote
     await ok(
       c.admin
         .from('works')
-        .update({ isbns: [c.isbn], pages: 321, pub_y: 2025, pub_m: 2, pub_d: 29 })
+        .update({ isbns: [c.isbn], pages: 321, pub_y: 2025, pub_m: 2, pub_d: 28 })
         .eq('id', c.workId),
       'edition baseline',
+    )
+    const rejected = await c.admin.from('works').update({ pub_d: 29 }).eq('id', c.workId)
+    expect(rejected.error?.code).toBe('22007')
+    // Reproduce a historical invalid date inside the fixed local test container. The API must
+    // reject new invalid dates above; this transaction bypasses only the tuple guard to seed
+    // the legacy case, then restores it before the browser exercises real review and writes.
+    execFileSync(
+      'docker',
+      [
+        'exec',
+        '-i',
+        'supabase_db_book-corpus',
+        'psql',
+        '-U',
+        'postgres',
+        '-d',
+        'postgres',
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-v',
+        `work_id=${c.workId}`,
+      ],
+      {
+        input: `begin;
+set local lock_timeout = '5s';
+set local statement_timeout = '10s';
+alter table public.works disable trigger works_validate_publication_tuple;
+update public.works set pub_d=29 where id=:'work_id'::uuid;
+alter table public.works enable trigger works_validate_publication_tuple;
+commit;
+`,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 15000,
+      },
     )
     const before = await ok(
       c.admin.from('books').select('*').eq('id', c.bookId).single(),
