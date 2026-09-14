@@ -233,6 +233,32 @@ describe('household Library presentation', () => {
     expect(edit).not.toHaveBeenCalled()
   })
 
+  it('refuses an impossible shared calendar date before invoking the corpus writer', () => {
+    const edit = vi.fn().mockResolvedValue(undefined)
+    render(
+      <HouseholdBookDetail
+        book={book('reader-a', 'Avery')}
+        currentReaderId="reader-a"
+        onEditCorpus={edit}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit shared details' }))
+    fireEvent.change(screen.getByLabelText('Shared publication year'), {
+      target: { value: '2025' },
+    })
+    fireEvent.change(screen.getByLabelText('Shared publication month'), {
+      target: { value: '2' },
+    })
+    fireEvent.change(screen.getByLabelText('Shared publication day'), {
+      target: { value: '29' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save shared details' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Use a real calendar date.')
+    expect(edit).not.toHaveBeenCalled()
+  })
+
   it('lets an authorized editor select an existing reviewed shared cover', async () => {
     const edit = vi.fn().mockResolvedValue(undefined)
     const first = 'https://covers.example.test/first.jpg'

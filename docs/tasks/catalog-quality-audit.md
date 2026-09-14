@@ -41,3 +41,13 @@ stale invalid-date decisions, bounded filtering, read-only behavior and administ
 The browser journey finds the invalid-only concern, opens it, refuses an impossible proposed date,
 corrects with an explicit fixture reference, reloads, clears the concern and verifies personal
 copies are unchanged. Production remains read-only.
+
+## Preventing recurrence
+
+Migration `20261016010000_publication_tuple_write_guard.sql` rejects a new or changed personal or
+shared publication tuple unless it is unknown, year-only, year/month, or a real complete calendar
+date. It deliberately permits unrelated updates to a historical invalid row so detection does not
+strand the reader's other edits; changing that row's publication fields must correct or clear the
+tuple. The personal and shared edit forms apply the same rule before starting a write and name
+missing precision separately from an impossible day. Add and edition-correction flows already use
+calendar-valid parsers and retain their existing behavior.

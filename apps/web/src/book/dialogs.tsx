@@ -47,6 +47,7 @@ import { MoodPicker } from '../components/MoodPicker'
 import { useLabels } from '../skin/labels'
 import { readableWriteError } from '../lib/writeErrors'
 import { todayLocalDate } from '../lib/localDate'
+import { publicationDateError } from '../lib/publicationDate'
 import { Surface } from '../components/Surface'
 import { LevelPicker } from '../components/LevelPicker'
 
@@ -316,6 +317,22 @@ export function EditDetails({
     // close, the save would look successful, and the edit would simply not have happened.
     const errors: Partial<Record<keyof typeof f, string>> = parsed.ok ? {} : { ...parsed.errors }
     if (!f.title.trim()) errors.title = 'A book needs a title.'
+    if (parsed.ok) {
+      const publicationError = publicationDateError({
+        y: parsed.values.pubY,
+        m: parsed.values.pubM,
+        d: parsed.values.pubD,
+      })
+      if (publicationError) {
+        const field: 'pubY' | 'pubM' | 'pubD' =
+          publicationError.field === 'year'
+            ? 'pubY'
+            : publicationError.field === 'month'
+              ? 'pubM'
+              : 'pubD'
+        errors[field] = publicationError.message
+      }
+    }
     if (Object.keys(errors).length) {
       setFieldErrors(errors)
       setSaveError('Some values need fixing before this can save.')

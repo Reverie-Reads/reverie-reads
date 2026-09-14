@@ -20,6 +20,7 @@ import { CorpusCoverReviewToggle } from './CorpusCoverReviewToggle'
 import { Modal } from './Modal'
 import { Nameplate } from './Nameplate'
 import { Surface } from './Surface'
+import { publicationDateError } from '../lib/publicationDate'
 
 export type LibraryScope = 'personal' | 'household'
 
@@ -291,6 +292,15 @@ function CorpusEditForm({
               })
               if (!parsed.ok) {
                 setValidationError(Object.values(parsed.errors)[0] ?? 'Check the numeric fields.')
+                return
+              }
+              const publicationError = publicationDateError({
+                y: parsed.values.publicationYear,
+                m: parsed.values.publicationMonth,
+                d: parsed.values.publicationDay,
+              })
+              if (publicationError) {
+                setValidationError(publicationError.message)
                 return
               }
               setValidationError('')
