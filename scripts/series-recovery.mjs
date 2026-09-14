@@ -24,6 +24,7 @@ import {
   quote,
   requireThat,
   inventoryPredicate,
+  selectRecoveryScope,
   validatePlan,
   snapshotSql,
   processItem,
@@ -154,7 +155,7 @@ export function parseArgs(argv) {
     argv
       .filter((x) => x !== '--')
       .map((arg) => {
-        const match = /^--(mode|project|actor|deployment|app|run)=(.+)$/.exec(arg)
+        const match = /^--(mode|project|actor|deployment|app|run|exclude-file)=(.+)$/.exec(arg)
         requireThat(match, 'use_named_equals_arguments')
         requireThat(!names.has(match[1]), 'duplicate_argument')
         names.add(match[1])
@@ -162,6 +163,7 @@ export function parseArgs(argv) {
       }),
   )
   requireThat(['plan', 'run', 'resume', 'status'].includes(args.mode), 'mode_required')
+  requireThat(!args['exclude-file'] || args.mode === 'plan', 'exclusions_are_plan_only')
   requireThat(/^[a-z]{20}$/.test(args.project), 'explicit_project_required')
   requireThat(args.deployment && realpathSync(args.deployment), 'deployment_checkout_required')
   requireThat(
@@ -305,6 +307,11 @@ export async function main() {
     const rows =
       db(`begin read only; select w.id,w.title,w.author_text,w.series,w.position,w.work_id,w.enrichment_confidence,
       md5(to_jsonb(w)::text) as fingerprint from public.works w where ${inventoryPredicate} order by w.id limit ${MAX_WORKS + 1}; commit;`)
+    const scope = selectRecoveryScope(
+      rows,
+      args['exclude-file'] ? JSON.parse(readFileSync(args['exclude-file'], 'utf8')) : undefined,
+      args.project,
+    )
     const gate =
       db(`select exists(select 1 from public.corpus_admins where user_id=${quote(args.actor)}::uuid) as administrator,
       (select count(*) from public.corpus_sweep_runs where status in ('queued','running')) as sweeps;`)[0]
@@ -329,7 +336,7 @@ export async function main() {
       revision: git('rev-parse', 'HEAD'),
       runtime: runtimeHash(),
       node: process.version,
-      works: rows,
+      ...scope,
     })
     validatePlan(plan)
     const directory = resolve(base, plan.digest)
@@ -340,8 +347,10 @@ export async function main() {
         {
           mode: 'read-only plan',
           run: plan.digest,
-          works: rows.length,
-          batches: Math.ceil(rows.length / BATCH_SIZE),
+          eligible: scope.eligibleCount,
+          excluded: scope.excluded.length,
+          works: scope.works.length,
+          batches: Math.ceil(scope.works.length / BATCH_SIZE),
           plan: resolve(directory, 'plan.json'),
         },
         null,
@@ -359,6 +368,7 @@ export async function main() {
     const latest = new Map(events.filter((e) => e.workId).map((e) => [e.workId, e]))
     return {
       planned: plan.works.length,
+      excluded: plan.excluded?.length ?? 0,
       verified: [...latest.values()].filter((e) => e.type === 'verified').length,
       confirmed: [...latest.values()].filter(
         (e) => e.type === 'verified' && e.outcome === 'confirmed',
@@ -459,7 +469,7 @@ export async function main() {
         'interactive_owner_terminal_required',
       )
       console.log(
-        `Frozen scope: ${plan.works.length} works, batches <=25. Resets outage flags, performs one lookup per admitted work, saves exact relational classifications, and reconciles eligible personal defaults. No retries, no review acceptance, no covers or other enrichment. Plan: ${directory}/plan.json`,
+        `Frozen scope: ${plan.works.length} works, ${plan.excluded?.length ?? 0} excluded without reset or lookup, batches <=25. Resets outage flags, performs one lookup per admitted work, saves exact relational classifications, and reconciles eligible personal defaults. No retries, no review acceptance, no covers or other enrichment. Plan: ${directory}/plan.json`,
       )
       const prompt = createInterface({ input: process.stdin, output: process.stdout })
       let answer

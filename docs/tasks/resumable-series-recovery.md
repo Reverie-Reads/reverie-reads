@@ -68,6 +68,29 @@ Replace the uppercase placeholders. These commands belong in an owner terminal, 
 console or SQL editor. `plan` does no production writes; `run` and `resume` must never be executed by
 an agent session or approved with piped input.
 
+### Hold identity exceptions out of a new plan
+
+The optional `--exclude-file=/absolute/private/exclusions.json` is accepted by `plan` only.
+It subtracts reviewed exceptions from the complete eligible inventory **before** reset batches,
+attempt markers, provider calls or saves. It does not alter those catalog rows or mark them
+standalone. Keep this file private; do not commit identities or review notes.
+
+The file has `version: 1`, the exact `project` reference, and a `works` array. Each entry contains
+the existing work's `id`, its current complete-row MD5 `fingerprint` from the read-only inventory,
+and a nonblank `reason` of at most 240 characters. Unknown/ineligible IDs, changed fingerprints,
+duplicates, a wrong project, or exclusion of the entire population refuse the plan. Exclusions
+cannot bypass the original 1,000-work inventory cap. No flag raises the 25-work reset limit.
+
+The sealed plan retains the excluded identities/fingerprints/reasons alongside its selected works
+and the reconciled eligible count. Review both lists before approval. Later edits to the source
+file cannot change a sealed run; `run`, `resume`, and `status` refuse exclusion overrides. Excluded
+works remain untouched and available for a separate, explicitly reviewed future action. Existing
+attempt markers, runtime locks and the prohibition on replaying consumed work remain unchanged.
+Do not upgrade the runtime of an already-started recovery or regenerate its plan to add exclusions.
+
+The existing CLI invocation below may include that optional flag when creating a **new** plan.
+Parser and scope handling are tested offline; production execution remains owner-run.
+
 ```sh
 cd /Users/gregchism/dev/reverie
 pnpm series:recovery --mode=plan --project=PROJECT_REF --actor=ADMIN_UUID --deployment=/Users/gregchism/dev/reverie --app=https://APP_HOST
