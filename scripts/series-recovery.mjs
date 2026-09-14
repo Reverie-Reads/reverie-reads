@@ -197,7 +197,7 @@ function query(sql, deployment, directory, project) {
   try {
     const output = execFileSync(
       'supabase',
-      ['db', 'query', '--project-ref', project, '--file', path, '--output', 'json'],
+      ['db', 'query', '--linked', '--project-ref', project, '--file', path, '--output', 'json'],
       {
         cwd: deployment,
         encoding: 'utf8',

@@ -512,6 +512,7 @@ writeFileSync(
 const fs=require('node:fs'),args=process.argv.slice(2);
 if(args[0]==='functions') {console.log(${JSON.stringify(JSON.stringify([deployment]))});process.exit(0);}
 if(args[0]!=='db'||args[1]!=='query') process.exit(1);
+if(!args.includes('--linked')) process.exit(1);
 const sql=fs.readFileSync(args[args.indexOf('--file')+1],'utf8');
 if(sql.startsWith('select exists(')) console.log(JSON.stringify({rows:[{administrator:true,sweeps:0}]}));
 else if(sql.startsWith('begin read only; select w.id')) console.log(${JSON.stringify(JSON.stringify({ rows: [work, held] }))});
