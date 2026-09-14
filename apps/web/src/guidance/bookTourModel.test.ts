@@ -214,3 +214,105 @@ describe('Next read follows deliberate choices', () => {
     )
   })
 })
+
+describe('Planner follows the mounted context and confirmed editor', () => {
+  const start = () => reduce(initial, { type: 'start-planner' })
+  const editor = (state = start(), editorId = 'editor-one', bookId = 'mine') =>
+    reduce(state, {
+      type: 'planner-context',
+      run: state.run,
+      context: { kind: 'editor', bookId, editorId, view: 'calendar' },
+    })
+  it('starts only explicitly and remembers the actual Planner view', () => {
+    expect(
+      reduce(initial, {
+        type: 'planner-context',
+        run: 0,
+        context: { kind: 'view', view: 'calendar' },
+      }),
+    ).toBe(initial)
+    const state = reduce(start(), {
+      type: 'planner-context',
+      run: 1,
+      context: { kind: 'view', view: 'releases' },
+    })
+    expect(state.step).toBe('plan-releases')
+    expect(isBookTourLocation(state, '/planner')).toBe(true)
+    expect(isBookTourLocation(state, '/match')).toBe(false)
+    expect(bookTourReturnHref({ ...state, returnTo: '/planner?tab=releases' })).toBe(
+      '/planner?tab=releases',
+    )
+  })
+  it('does not turn an editor observation or an ordinary book event into a saved plan', () => {
+    const state = editor()
+    expect(state.step).toBe('plan-timing')
+    expect(
+      reduce(state, { type: 'observe', run: state.run, step: 'plan-saved', bookId: 'mine' }),
+    ).toBe(state)
+    expect(
+      reduce(state, { type: 'reading', run: state.run, action: 'started', bookId: 'mine' }),
+    ).toBe(state)
+    expect(
+      reduce(initial, { type: 'planner-saved', run: 0, editorId: 'editor-one', bookId: 'mine' }),
+    ).toBe(initial)
+  })
+  it('rejects successes from another book, closed editor or restarted run', () => {
+    const state = editor()
+    const success = {
+      type: 'planner-saved' as const,
+      run: state.run,
+      bookId: 'mine',
+      editorId: 'editor-one',
+    }
+    expect(reduce(state, { ...success, bookId: 'other' })).toBe(state)
+    expect(reduce(state, { ...success, editorId: 'old-editor' })).toBe(state)
+    const closed = reduce(state, {
+      type: 'planner-context',
+      run: state.run,
+      context: { kind: 'view', view: 'calendar' },
+    })
+    expect(reduce(closed, success)).toBe(closed)
+    const reopened = editor(closed, 'editor-two')
+    expect(reduce(reopened, success)).toBe(reopened)
+    const replay = editor(reduce(state, { type: 'start-planner' }))
+    expect(reduce(replay, success)).toBe(replay)
+  })
+  it('retains a confirmed save after closing the editor, but follows a deliberate tab change', () => {
+    const state = editor()
+    const saved = reduce(state, {
+      type: 'planner-saved',
+      run: state.run,
+      bookId: 'mine',
+      editorId: 'editor-one',
+    })
+    expect(saved.step).toBe('plan-saved')
+    const closed = reduce(saved, {
+      type: 'planner-context',
+      run: state.run,
+      context: { kind: 'view', view: 'calendar' },
+    })
+    expect(closed.step).toBe('plan-saved')
+    expect(
+      reduce(closed, {
+        type: 'planner-context',
+        run: state.run,
+        context: { kind: 'view', view: 'queue' },
+      }).step,
+    ).toBe('plan-queue')
+  })
+  it('replays in the current editor and does not reset a note step on ordinary observation', () => {
+    const state = editor()
+    const note = reduce(state, { type: 'planner-step', run: state.run, step: 'plan-note' })
+    expect(editor(note)).toBe(note)
+    expect(editor(reduce(note, { type: 'start-planner' })).step).toBe('plan-timing')
+    const paused = reduce(note, { type: 'pause' })
+    const saved = reduce(paused, {
+      type: 'planner-saved',
+      run: paused.run,
+      bookId: 'mine',
+      editorId: 'editor-one',
+    })
+    expect(saved.step).toBe('plan-saved')
+    expect(saved.status).toBe('paused')
+  })
+})

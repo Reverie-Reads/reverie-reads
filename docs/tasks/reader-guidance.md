@@ -226,3 +226,28 @@ Private integration must keep the picks target outside the comparison's hidden n
 route its actual book-open action through the same run-scoped selection handoff. Do not close a
 comparison or clear its planning draft to start the guide. Reading Table planning and the Planner
 live chapter remain separate follow-ups; this public slice does not add a plan writer.
+
+### Planner live chapter
+
+**Guide my planning** appears in Planner, an open picker/editor, and Settings' planning chapter.
+Entry uses the actual Plan, Calendar or Releases view. An open editor begins at timing; an open
+picker keeps its search. Restart changes the guide run, never the mounted form, calendar month,
+book selection or draft. No permanent navigation item is added.
+
+The short path is a deliberate book choice, flexible timing, an optional private note, and an
+explicit save. The pointer may open the picker, point at timing/save controls, or focus search and
+note fields. It never chooses a book, edits a value, saves or removes a plan. Calendar and Releases
+are optional contexts reached through the normal view controls, not compulsory detours. A release
+date does not establish a plan. An empty/unavailable library retains its real state.
+
+The existing mutation is the sole writer. A successful callback carries the guide run, personal
+book ID and a session-only editor instance ID. Closed/reopened editors and restarted guides reject
+old confirmations. Merely observing optimistic data cannot complete the chapter. A failed save
+keeps the draft and actual error visible; a confirmed save keeps its success visible after the
+editor closes. Switching to another view changes context. Leaving Planner pauses the guide, and
+return navigation is explicit with the last Planner tab retained in account-keyed session memory.
+
+Native dialogs contain their coach in the existing outlet; small-screen page coaching occupies
+normal layout. Existing motion cancellation, keyboard focus, reduced-motion and touch-dot behavior
+are reused. No migration, provider request, entitlement change, telemetry event or persisted guide
+state is added. The private Reading Table's separate planning form remains a separate integration.

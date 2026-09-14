@@ -194,3 +194,14 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 Record the first failing step, expected outcome, actual outcome, environment/build, viewport,
 room/mode, and whether the issue reproduces after one fresh navigation. Do not erase a red result
 with a green rerun. Link the repair and record the first verified build that closes it.
+
+### Planner live walkthrough (next public release)
+
+- **P1:** Start Guide my planning inside an open plan editor. Keep an unsaved month and note;
+  pause/restart and cancel. Reopen and verify the previously saved plan was not changed.
+- **P1:** Follow the pointer into the picker, choose a book, leave timing at Soon or choose a month,
+  then save yourself. Confirm only the plan changes, with no new read or possession change.
+- **P1:** Start from Calendar after changing month, and from Releases. The guide stays in that
+  workspace. Leave Planner, then explicitly return to the same tab from the paused guide.
+- **P2:** On a small phone, enter from an open picker/editor, use the touch-dot demonstration and
+  keyboard, and check that the coach leaves fields and Save reachable. Repeat with reduced motion.

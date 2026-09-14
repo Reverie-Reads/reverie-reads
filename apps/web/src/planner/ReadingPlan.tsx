@@ -1,5 +1,8 @@
 import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useState } from 'react'
+import { StartPlannerTour } from '../guidance/BookTour'
+import { useBookTour } from '../guidance/BookTourContext'
+import { usePlannerTourContext } from '../guidance/usePlannerTourContext'
 import {
   authorOf,
   emptyDate,
@@ -91,6 +94,8 @@ export function ReadingPlan({
   const [finishing, setFinishing] = useState<Book | null>(null)
   const [progressMessage, setProgressMessage] = useState('')
 
+  usePlannerTourContext(editor || pickerDate ? null : { kind: 'view', view })
+
   const edit = (book: Book, initialDate?: PlanDate) => setEditor({ book, initialDate })
   const remove = (book: Book) => {
     setRemoved({
@@ -130,7 +135,9 @@ export function ReadingPlan({
                   </p>
                 </ReadingTips>
               </div>
-              <Button onClick={() => setPickerDate(EMPTY_PLAN)}>Add to your plan</Button>
+              <Button data-book-tour="plan-add" onClick={() => setPickerDate(EMPTY_PLAN)}>
+                Add to your plan
+              </Button>
             </div>
 
             {plans.length ? (
@@ -186,6 +193,7 @@ export function ReadingPlan({
       )}
       {pickerDate && (
         <PlanPicker
+          view={view}
           books={books}
           onClose={() => setPickerDate(null)}
           onChoose={(book) => {
@@ -197,6 +205,7 @@ export function ReadingPlan({
       )}
       {editor && (
         <PlanEditorDialog
+          view={view}
           book={books.find((book) => book.id === editor.book.id) ?? editor.book}
           books={books}
           initialDate={editor.initialDate}
@@ -572,7 +581,7 @@ function PlanCalendar({
         </Surface>
 
         <Surface tone="card" radius="panel" pad={3} raised className="plan-calendar-sheet">
-          <div className="plan-calendar-heading">
+          <div className="plan-calendar-heading" data-book-tour="plan-calendar">
             <button type="button" onClick={previous} aria-label="Previous month">
               ←
             </button>
@@ -774,6 +783,7 @@ function FlexiblePlanGroup({
 }
 
 function PlanPicker({
+  view,
   books,
   onClose,
   onChoose,
@@ -781,7 +791,9 @@ function PlanPicker({
   books: Book[]
   onClose: () => void
   onChoose: (book: Book) => void
+  view: PlanView
 }) {
+  usePlannerTourContext({ kind: 'picker', view })
   const [query, setQuery] = useState('')
   const normalized = query.trim().toLocaleLowerCase()
   const available = useMemo(
@@ -799,10 +811,14 @@ function PlanPicker({
   )
   return (
     <Modal title="Leave a place for a book" onClose={onClose}>
+      <div data-planner-tour-context className="mb-3">
+        <StartPlannerTour quiet />
+      </div>
       <label className="block text-[13px] font-semibold text-ink">
         Find a book in your library
         <input
           autoFocus
+          data-book-tour="plan-picker"
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -837,6 +853,7 @@ function PlanPicker({
 }
 
 export function PlanEditorDialog({
+  view,
   book,
   books,
   initialDate,
@@ -850,8 +867,12 @@ export function PlanEditorDialog({
   onClose: () => void
   onSaved: (book: Book) => void
   onRemoved: (book: Book) => void
+  view: PlanView
 }) {
   const update = useUpdateBook(book.id)
+  const { state: tour, send } = useBookTour()
+  const [editorId] = useState(() => crypto.randomUUID())
+  usePlannerTourContext({ kind: 'editor', bookId: book.id, editorId, view })
   const stored = isReadingPlan(book) ? book.plan : (initialDate ?? EMPTY_PLAN)
   const today = localToday()
   const [precision, setPrecision] = useState<'soon' | 'year' | 'month' | 'day'>(() =>
@@ -880,14 +901,23 @@ export function PlanEditorDialog({
       date = { y, m: null, d: null }
     }
     setError('')
+    const run = tour.journey === 'planner' && tour.status !== 'off' ? tour.run : null
     update.mutate(
       { id: book.id, patch: planPatch(book, books, date, intention) },
-      { onSuccess: () => onSaved(book) },
+      {
+        onSuccess: () => {
+          if (run != null) send({ type: 'planner-saved', run, bookId: book.id, editorId })
+          onSaved(book)
+        },
+      },
     )
   }
 
   return (
     <Modal title="Make a little room" onClose={onClose}>
+      <div data-planner-tour-context className="mb-3">
+        <StartPlannerTour quiet />
+      </div>
       <form
         className="plan-editor"
         onSubmit={(event) => {
@@ -904,7 +934,7 @@ export function PlanEditorDialog({
             <p>{authorOf(book)}</p>
           </div>
         </div>
-        <fieldset>
+        <fieldset data-book-tour="plan-timing">
           <legend>When might you read it?</legend>
           <div className="plan-precision">
             {(
@@ -971,6 +1001,7 @@ export function PlanEditorDialog({
         <label>
           A note to your future self <small>Optional</small>
           <textarea
+            data-book-tour="plan-note"
             rows={3}
             maxLength={300}
             value={intention}
@@ -990,7 +1021,7 @@ export function PlanEditorDialog({
         )}
         <p className="text-[12px] text-muted">This plan does not change your reading history.</p>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={update.isPending}>
+          <Button data-book-tour="plan-save" type="submit" disabled={update.isPending}>
             {update.isPending ? 'Saving…' : 'Save plan'}
           </Button>
           <button type="button" className="plan-text-button" onClick={onClose}>

@@ -132,6 +132,14 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   replay. Touch coaching participates in layout; only explicit chapter navigation requests scroll.
   In private integration, target the visible comparison and preserve its planning draft. See
   `docs/tasks/reader-guidance.md`.
+- **Planner guidance observes the open workspace.** Start/replay preserves the current tab,
+  calendar month, picker query and editor draft. The picker may be opened by a demonstration;
+  a book, timing, note, save or removal is always the reader's choice. Confirm plan saves only
+  from the existing successful mutation callback, bound to run, book and mounted editor instance.
+  An old save cannot complete a replay or a reopened editor. Calendar and release explanations
+  follow explicit tab selection; release dates never become reading plans. Loading, empty and
+  failure states stay visible. Reuse the native dialog outlet and inline phone coaching. See
+  `docs/tasks/reader-guidance.md`.
 - **Reading tips are optional; essential information is not.** Account-scoped
   `profiles.show_reading_tips` defaults on and is independent of onboarding milestones. The signed-in
   shell supplies this preference to explicitly selected `ReadingTips` passages. Never hide labels,

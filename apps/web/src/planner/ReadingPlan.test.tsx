@@ -10,6 +10,12 @@ vi.mock('../data/books', () => ({
   useUpdateBook: () => ({ mutate, isPending: false, isError: false, reset: vi.fn() }),
 }))
 vi.mock('../components/CoverImage', () => ({ CoverImage: () => <span /> }))
+// This unit suite checks plan patches; real navigation and walkthrough entry run in planner-tour.spec.
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-router')>()),
+  useNavigate: () => vi.fn(),
+  useRouterState: () => '/planner',
+}))
 
 const { ReadingPlan } = await import('./ReadingPlan')
 

@@ -14,6 +14,21 @@ export type NextReadTourStep =
   | 'next-picks'
   | 'next-saved'
   | 'next-opening'
+export type PlannerView = 'queue' | 'calendar' | 'releases' | 'waiting'
+export type PlannerContext =
+  | { kind: 'view'; view: PlannerView }
+  | { kind: 'picker'; view: PlannerView }
+  | { kind: 'editor'; bookId: string; editorId: string; view: PlannerView }
+export type PlannerTourStep =
+  | 'plan-waiting'
+  | 'plan-queue'
+  | 'plan-calendar'
+  | 'plan-releases'
+  | 'plan-picker'
+  | 'plan-timing'
+  | 'plan-note'
+  | 'plan-save'
+  | 'plan-saved'
 export type BookTourStep =
   | 'add'
   | 'search'
@@ -24,10 +39,13 @@ export type BookTourStep =
   | 'opened'
   | ReadingTourStep
   | NextReadTourStep
+  | PlannerTourStep
 export interface BookTourState {
   status: 'off' | 'active' | 'paused'
   run: number
-  journey: 'first-book' | 'reading' | 'next-read'
+  journey: 'first-book' | 'reading' | 'next-read' | 'planner'
+  plannerView?: PlannerView
+  plannerEditorId?: string
   step: BookTourStep
   /** Session-only; never written to the profile, storage or analytics. */
   bookId: string | null
@@ -46,6 +64,10 @@ export type BookTourEvent =
   | { type: 'start' | 'end' | 'pause' | 'resume' }
   | { type: 'start-reading'; bookId?: string }
   | { type: 'start-next-read' }
+  | { type: 'start-planner' }
+  | { type: 'planner-context'; run: number; context: PlannerContext }
+  | { type: 'planner-step'; run: number; step: 'plan-timing' | 'plan-note' | 'plan-save' }
+  | { type: 'planner-saved'; run: number; bookId: string; editorId: string }
   | { type: 'next-read'; run: number; action: 'scope' | 'mood' | 'picks' | 'saved' }
   | { type: 'next-read'; run: number; action: 'select'; bookId: string }
   | { type: 'reading-open'; run: number; bookId: string; reading: boolean }
@@ -87,6 +109,14 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
       journey: 'next-read',
       step: 'next-scope',
     }
+  if (event.type === 'start-planner')
+    return {
+      ...INITIAL_BOOK_TOUR,
+      status: 'active',
+      run: state.run + 1,
+      journey: 'planner',
+      step: 'plan-queue',
+    }
   if (event.type === 'end') return { ...INITIAL_BOOK_TOUR, run: state.run }
   if (state.status === 'off') return state
   if ('run' in event && event.run !== state.run) return state
@@ -96,6 +126,47 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
     return state.status === 'paused' ? state : { ...state, status: 'paused' }
   if (event.type === 'resume')
     return state.status === 'active' ? state : { ...state, status: 'active' }
+  if (state.journey === 'planner') {
+    if (event.type === 'planner-context') {
+      const context = event.context
+      if (context.kind === 'editor') {
+        if (state.plannerEditorId === context.editorId && state.bookId === context.bookId)
+          return state
+        return {
+          ...state,
+          step: 'plan-timing',
+          bookId: context.bookId,
+          plannerEditorId: context.editorId,
+          plannerView: context.view,
+        }
+      }
+      if (context.kind === 'picker')
+        return {
+          ...state,
+          step: 'plan-picker',
+          bookId: null,
+          plannerEditorId: undefined,
+          plannerView: context.view,
+        }
+      // Closing after a confirmed save keeps the success visible. A different view is a new context.
+      const step =
+        state.step === 'plan-saved' && state.plannerView === context.view
+          ? state.step
+          : (`plan-${context.view}` as PlannerTourStep)
+      if (state.step === step && state.plannerView === context.view && !state.plannerEditorId)
+        return state
+      return { ...state, step, plannerView: context.view, plannerEditorId: undefined, bookId: null }
+    }
+    if (event.type === 'planner-step' && state.plannerEditorId)
+      return { ...state, step: event.step }
+    if (
+      event.type === 'planner-saved' &&
+      state.plannerEditorId === event.editorId &&
+      state.bookId === event.bookId
+    )
+      return { ...state, step: 'plan-saved' }
+    return state
+  }
   if (state.journey === 'next-read') {
     if (
       event.type === 'reading-open' &&
@@ -144,7 +215,12 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
       ? { ...state, step: transition[1] }
       : state
   }
-  if (event.type !== 'observe' || event.step.startsWith('read-') || event.step.startsWith('next-'))
+  if (
+    event.type !== 'observe' ||
+    event.step.startsWith('read-') ||
+    event.step.startsWith('next-') ||
+    event.step.startsWith('plan-')
+  )
     return state
   if (event.step === 'saved' && !event.bookId) return state
   if (['library', 'opened'].includes(event.step) && event.bookId !== state.bookId) return state
@@ -160,6 +236,7 @@ export function isBookTourLocation(
   state: Pick<BookTourState, 'journey' | 'bookId'>,
   pathname: string,
 ): boolean {
+  if (state.journey === 'planner') return pathname === '/planner'
   if (state.journey === 'next-read')
     return pathname === '/match' || (!!state.bookId && pathname === `/book/${state.bookId}`)
   if (state.journey === 'reading')
@@ -174,6 +251,8 @@ export function isBookTourLocation(
 }
 
 export function bookTourReturnHref(state: BookTourState): string {
+  if (state.journey === 'planner')
+    return state.returnTo?.split('?')[0] === '/planner' ? state.returnTo : '/planner'
   if (state.journey === 'next-read')
     return state.returnTo?.split('?')[0] === '/match' ? state.returnTo : '/match'
   if (state.bookId && (state.journey === 'reading' || state.step === 'opened'))
@@ -184,6 +263,69 @@ export function bookTourReturnHref(state: BookTourState): string {
 }
 
 export const BOOK_TOUR_STEPS = {
+  'plan-waiting': {
+    title: 'Your library comes first',
+    text: 'Planner needs your personal books before you can choose a plan. The message here shows whether they are loading, offline or need another try.',
+    target: 'plan-status',
+    action: 'Show the library status',
+    demonstration: 'point',
+  },
+  'plan-queue': {
+    title: 'Leave a little room',
+    text: 'Choose a book for your plan, or edit one already here. “Soon” is enough; nothing needs a deadline.',
+    target: 'plan-add',
+    action: 'Open the book picker',
+    demonstration: 'click',
+  },
+  'plan-calendar': {
+    title: 'Your reading life in view',
+    text: 'Explore a month or year. Plans are possibilities; reading history records what happened. Choose a day to plan, or edit an existing plan.',
+    target: 'plan-calendar',
+    action: 'Show your calendar',
+    demonstration: 'point',
+  },
+  'plan-releases': {
+    title: 'What is coming into view',
+    text: 'Explore upcoming books from your library and authors. A release date is not a reading plan. Open a book to review it, or switch to Plan when you want to leave it a place.',
+    target: 'plan-releases',
+    action: 'Show your release horizon',
+    demonstration: 'point',
+  },
+  'plan-picker': {
+    title: 'A book of your choosing',
+    text: 'Find a book in your library and choose it yourself. Books already planned or currently being read are left out; existing plans can be edited in Planner.',
+    target: 'plan-picker',
+    action: 'Go to the book search',
+    demonstration: 'focus',
+  },
+  'plan-timing': {
+    title: 'As open-ended as you like',
+    text: 'Keep it at Soon, or choose a year, month or day. Your current timing stays in place. A plan never starts a read.',
+    target: 'plan-timing',
+    action: 'Show the timing choices',
+    demonstration: 'point',
+  },
+  'plan-note': {
+    title: 'A note for another day',
+    text: 'Leave yourself a thought about this book, if you like. This note is private and optional; you can leave it exactly as it is.',
+    target: 'plan-note',
+    action: 'Go to the optional note',
+    demonstration: 'focus',
+  },
+  'plan-save': {
+    title: 'Keep this possibility',
+    text: 'Save plan when it feels right. Cancel keeps your saved plan unchanged. Only you choose to save or remove a plan.',
+    target: 'plan-save',
+    action: 'Show where to save the plan',
+    demonstration: 'point',
+  },
+  'plan-saved': {
+    title: 'A place is waiting',
+    text: 'Your plan is saved. You can change its timing, move it or remove it later. Your reading history is unchanged.',
+    target: 'plan-view',
+    action: 'Show your Planner views',
+    demonstration: 'point',
+  },
   'next-scope': {
     title: 'Begin with your shelves',
     text: 'Choose books you have, your wishlist, or your whole library. Your current selection stays in place.',
