@@ -180,3 +180,21 @@ RPC. The previous local-storage flag is retained only by the first-use regressio
 suppress another account's welcome. The e2e server disables live Sentry reporting, matching CI and
 keeping intentional test failures out of production monitoring; monitoring behavior has its own unit
 coverage.
+
+## Contextual live entry and same-session continuation
+
+Library and personal book pages offer **Guide my reading**; Add offers **Guide me through adding**.
+Starting on a loaded personal book selects that book and observes its real reading state, without
+routing through Library. Starting in Library preserves the current view and filters. Starting or
+restarting on Add observes the existing search, chosen result or form without clearing its draft.
+
+A running task offers **Continue walkthrough** and a separate **Start over here**. On another
+screen, returning is labelled explicitly; the paused coach reminds the reader to finish unsaved
+changes before leaving. Resume is offered only where the target is usable. If a selected book is
+no longer available, **Choose another book** returns to Library and begins a new selection.
+
+Both initial screen observations and successful reading callbacks carry the run number. Restarting
+on an unchanged loaded screen re-observes its data; delayed observations from earlier runs cannot
+select a book or complete the new task. The last usable URL is kept only in the account-keyed
+provider's memory. No guide data is written to browser storage, analytics or the profile. This
+continuation does not restore form drafts after navigation or reload. No migration is needed.

@@ -66,6 +66,7 @@ import { LevelPicker } from '../components/LevelPicker'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import { delegatedMemberId, type AddDestination } from '../components/addDestination'
 import { GoogleBooksAttribution, GoogleBooksResultLink } from '../components/GoogleBooksAttribution'
+import { StartBookTour } from '../guidance/BookTour'
 import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 
 interface BarcodeDetectorLike {
@@ -1432,6 +1433,7 @@ function AddScreen() {
 
   return (
     <section className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
+      {!householdOnly && <StartBookTour label="Guide me through adding" quiet />}
       <h1
         className="text-[22px] italic text-ink"
         style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}

@@ -117,7 +117,11 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   the reading chapter waits for successful start/progress/finish callbacks scoped to the selected
   book and tour run, never optimistic values. Finishing stays optional and retains the existing
   partial-save retry. Preserve drafts and filters, and cancel pending animation when the reader intervenes. Native
-  dialogs keep their existing focus boundary. Automatic practice playback requires isolated data
+  dialogs keep their existing focus boundary. Contextual entry observes the current personal book
+  or Add form without resetting it; Library keeps its filters. Resume is usable only on the right
+  screen, with explicit return navigation from elsewhere. Initial observations, as well as save
+  callbacks, carry the run number. Return URLs remain account-keyed session memory only.
+  Automatic practice playback requires isolated data
   adapters; query-cache seeding over live Supabase hooks is not a practice library. See
   `docs/tasks/reader-guidance.md`.
 - **Reading tips are optional; essential information is not.** Account-scoped

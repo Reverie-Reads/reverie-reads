@@ -56,6 +56,14 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 ## P1 — core promise and activation
 
+- [ ] **Contextual walkthrough:** from a filtered Library, an open personal book, and a populated
+      Add form, start the local guide. Keep the current view, book, and typed draft. Pause and
+      restart on the same screen; the guide should recognize the current step immediately. Leave
+      for another page and confirm return is explicit, with no silent abandonment of an unsaved
+      form. Continue directly from the first-book drawer into reading that same book. Check on a
+      physical phone with the keyboard open. Refresh ends the live session; it does not promise to
+      recover unsaved form drafts.
+
 - [ ] **Live reading walkthrough on a physical phone:** in Settings → Walkthroughs and guidance →
       Settle into a book, choose Guide my reading. Pick your own book, start/resume deliberately,
       open Update progress and type with the actual keyboard. Guidance must not cover the field or

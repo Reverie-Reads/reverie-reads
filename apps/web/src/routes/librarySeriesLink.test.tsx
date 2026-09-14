@@ -14,6 +14,11 @@ vi.mock('@tanstack/react-router', () => ({
     </a>
   ),
   useNavigate: () => vi.fn(),
+  useRouterState: ({
+    select,
+  }: {
+    select: (state: { location: { pathname: string } }) => unknown
+  }) => select({ location: { pathname: '/library' } }),
 }))
 vi.mock('./RootRoute', () => ({ rootRoute: {} }))
 vi.mock('../data/books', () => ({

@@ -392,3 +392,164 @@ test('a finish target below the fold keeps the guide reachable before demonstrat
     await account.cleanup()
   }
 })
+
+for (const context of [
+  { status: 'Unread', progress: 0, title: 'Begin where you are', control: 'Start reading' },
+  { status: 'Reading', progress: 27, title: 'Keep your place', control: 'Update progress' },
+  { status: 'DNF', progress: 43, title: 'Begin where you are', control: 'Start reading' },
+  { status: 'Read', progress: 100, title: 'Begin where you are', control: 'Read again' },
+]) {
+  test(`a contextual guide starts and restarts on the open ${context.status} book without writing`, async ({
+    page,
+  }) => {
+    const account = await setup(page, context.status, context.progress)
+    try {
+      await page.goto(`/book/${account.bookId}`)
+      await expect(page.getByRole('button', { name: context.control, exact: true })).toBeVisible()
+      await page.getByRole('button', { name: 'Guide my reading', exact: true }).click()
+      const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
+      await expect(guide.getByRole('status')).toHaveText(context.title)
+      await expect(page).toHaveURL(new RegExp(`/book/${account.bookId}$`))
+      await guide.getByRole('button', { name: 'Pause', exact: true }).click()
+      await guide.getByRole('button', { name: 'Start over here', exact: true }).click()
+      await expect(guide.getByRole('status')).toHaveText(context.title)
+      await expect(
+        guide.getByRole('button', { name: 'Show me this step', exact: true }),
+      ).toBeEnabled()
+      expect(await account.book()).toEqual({
+        read_status: context.status,
+        progress: context.progress,
+        ownership: 'owned',
+      })
+      expect(await account.reads()).toEqual([])
+      if (context.status === 'Reading')
+        await page.screenshot({ path: 'test-results/contextual-reading-desktop.png' })
+    } finally {
+      await account.cleanup()
+    }
+  })
+}
+
+test('the contextual guide preserves Library scope and view, and explicitly returns from an unfinished Add screen', async ({
+  page,
+}) => {
+  const account = await setup(page, 'Reading', 27)
+  try {
+    await page.goto('/library?view=list')
+    await page.getByRole('button', { name: 'Guide my reading', exact: true }).click()
+    await expect(page).toHaveURL(/\/library\?view=list$/)
+    const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
+    await expect(guide.getByRole('status')).toHaveText('Choose a book to spend time with')
+    await page.getByRole('button', { name: /^Open The Quiet Lantern$/ }).click()
+    await expect(guide.getByRole('status')).toHaveText('Keep your place')
+    await guide.getByRole('button', { name: 'Pause', exact: true }).click()
+    await page.getByRole('link', { name: 'Add a book', exact: true }).first().click()
+    const search = page.getByRole('textbox', { name: 'Search for a book' })
+    await search.fill('An unfinished search')
+    await expect(guide).toContainText('Returning leaves this page')
+    await expect(guide.getByRole('button', { name: 'Resume', exact: true })).toHaveCount(0)
+    await expect(search).toHaveValue('An unfinished search')
+    await expect(page).toHaveURL(/\/add$/)
+    await guide.getByRole('button', { name: 'Return to this task', exact: true }).click()
+    await expect(page).toHaveURL(new RegExp(`/book/${account.bookId}$`))
+    await expect(guide.getByRole('status')).toHaveText('Keep your place')
+    await expect(
+      guide.getByRole('button', { name: 'Show me this step', exact: true }),
+    ).toBeEnabled()
+    expect(await account.book()).toEqual({
+      read_status: 'Reading',
+      progress: 27,
+      ownership: 'owned',
+    })
+    expect(await account.reads()).toEqual([])
+  } finally {
+    await account.cleanup()
+  }
+})
+
+test('starting and replaying a guide on a populated Add form preserves the reader’s draft', async ({
+  page,
+}) => {
+  const account = await setup(page)
+  try {
+    await page.goto('/add')
+    const search = page.getByRole('textbox', { name: 'Search for a book' })
+    await search.fill('My unfinished search')
+    await page.getByRole('button', { name: 'Guide me through adding', exact: true }).click()
+    const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
+    await expect(guide.getByRole('status')).toHaveText('Find a book you know')
+    await expect(search).toHaveValue('My unfinished search')
+    await page.getByRole('button', { name: 'Add manually', exact: true }).click()
+    await page.getByPlaceholder('Title', { exact: true }).fill('A draft I want to keep')
+    await expect(guide.getByRole('status')).toHaveText('Make it yours')
+    await guide.getByRole('button', { name: 'Pause', exact: true }).click()
+    await guide.getByRole('button', { name: 'Start over here', exact: true }).click()
+    await expect(guide.getByRole('status')).toHaveText('Make it yours')
+    await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(
+      'A draft I want to keep',
+    )
+    await expect(search).toHaveValue('My unfinished search')
+    const rows = await account.reader.from('books').select('id').eq('owner_id', account.uid)
+    if (rows.error) throw rows.error
+    expect(rows.data).toEqual([{ id: account.bookId }])
+  } finally {
+    await account.cleanup()
+  }
+})
+
+test.describe('contextual phone entry', () => {
+  test.use({ hasTouch: true, viewport: { width: 320, height: 740 } })
+  test('fits all rooms and replays within a progress draft without saving it', async ({ page }) => {
+    const account = await setup(page, 'Reading', 27)
+    try {
+      await page.goto(`/book/${account.bookId}`)
+      const entry = page.getByRole('button', { name: 'Guide my reading', exact: true })
+      await expect(entry).toBeVisible()
+      for (const skin of SKIN_ORDER) {
+        for (const mode of ['light', 'dark']) {
+          await page.evaluate(
+            ({ skin, mode }) => {
+              document.documentElement.dataset.skin = skin
+              document.documentElement.dataset.mode = mode
+            },
+            { skin, mode },
+          )
+          await page.evaluate(() => document.fonts.ready)
+          expect(
+            await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+            `${skin}/${mode}`,
+          ).toBe(true)
+          const box = await entry.boundingBox()
+          expect(box!.x).toBeGreaterThanOrEqual(0)
+          expect(box!.x + box!.width).toBeLessThanOrEqual(320)
+          expect(box!.height).toBeGreaterThanOrEqual(44)
+        }
+      }
+      await entry.click()
+      const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
+      await expect(guide.getByRole('status')).toHaveText('Keep your place')
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await show(page)
+      const dialog = page.getByRole('dialog', { name: 'Update progress', exact: true })
+      const field = dialog.getByRole('spinbutton', { name: 'Progress (%)', exact: true })
+      await field.fill('65')
+      await guide.getByRole('button', { name: 'Pause', exact: true }).click()
+      await guide.getByRole('button', { name: 'Start over here', exact: true }).click()
+      await expect(guide.getByRole('status')).toHaveText('Your place, in your own time')
+      await expect(field).toHaveValue('65')
+      const violations = (
+        await new AxeBuilder({ page }).include('[data-book-tour-panel]').analyze()
+      ).violations
+      expect(violations).toEqual([])
+      await page.screenshot({ path: 'test-results/contextual-reading-phone.png' })
+      expect(await account.book()).toEqual({
+        read_status: 'Reading',
+        progress: 27,
+        ownership: 'owned',
+      })
+      expect(await account.reads()).toEqual([])
+    } finally {
+      await account.cleanup()
+    }
+  })
+})
