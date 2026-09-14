@@ -370,6 +370,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   editor's manual-series intent. Assessments and deferrals keep administrator-only history, guarded
   by work/evidence fingerprint plus review revision. Never infer a safe shared-work merge or ISBN
   reassignment from a duplicate candidate. See `docs/tasks/catalog-metadata-review.md`.
+  Its invalid-publication concern reuses the calendar validator: unknown and valid partial dates
+  are not errors. Only invalid tuples extend legacy assessment fingerprints; actual edition
+  corrections retain their separate whole-date fingerprint. Audit inventories are read-only and
+  case-level output stays private. See `docs/tasks/catalog-quality-audit.md`.
 - **Edition corrections are explicit, field-specific, and shared-only.** The existing metadata
   workspace previews either pages or the whole publication date for one already-associated,
   checksum-valid reference ISBN. The administrator must confirm exact title/full recorded

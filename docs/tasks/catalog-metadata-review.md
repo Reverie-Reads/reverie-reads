@@ -13,6 +13,10 @@ ISBN, including valid ISBN-10/13 equivalents. Queues show at most 20 works per p
 ordering: shared ISBN concerns, exact normalized title/full-author matches, invalid ISBNs, then
 missing descriptions. Each concern has a filter; deferred and assessed records remain searchable.
 
+Invalid publication dates now join the concern list ahead of missing descriptions. Empty dates and
+valid year/month precision are not errors. See `catalog-quality-audit.md` for the read-only inventory,
+calendar checks and targeted legacy-assessment reopening boundary.
+
 The comparison shows up to ten related shared records, their ISBNs, description, publication year,
 publisher, and language, plus the total related count. The evidence is deliberately conservative:
 exact normalized title and complete recorded author text, or a checksum-valid equivalent ISBN.
