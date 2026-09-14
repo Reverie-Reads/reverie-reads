@@ -7,16 +7,9 @@ import { ok, okUser } from './support/ok'
 
 // Scroll position across navigation (`scrollRestoration` on createRouter).
 //
-// TanStack ships the behaviour and it was simply unconfigured, which is wrong in BOTH directions —
-// so both are asserted here, and they are genuinely different failures:
-//
-//   FORWARD  navigating to a new route kept the PREVIOUS page's scroll offset, so a book page could
-//            open halfway down its own content.
-//   BACK     returning to a list did not restore where you were, dumping the reader at the top of a
-//            library they had scrolled a long way into.
-//
-// One option fixes both, which is exactly why it is on its own branch: a red run here has to mean
-// one thing.
+// Forward navigation should open the new page at the top. Back navigation should restore the
+// previous list position. The back test is the regression guard for the router's restoration
+// option; forward navigation is a separate characterization (see the note above that test).
 //
 // The assertions read `window.scrollY` after the navigation has settled rather than immediately —
 // restoration happens after the route renders, and asserting on the first frame would measure the
@@ -129,6 +122,7 @@ test.beforeAll(async () => {
 // evidence.
 test('forward navigation starts at the top, not at the previous page’s offset', async ({
   page,
+  isMobile,
 }) => {
   const c = await client()
   await signIn(page, c.session)
@@ -140,11 +134,17 @@ test('forward navigation starts at the top, not at the previous page’s offset'
   await page.evaluate(() => window.scrollTo(0, 1200))
   await expect.poll(() => scrollY(page), { timeout: 15_000 }).toBeGreaterThan(400)
 
-  // Navigate to a DIFFERENT route while scrolled down.
+  // Desktop covers open a drawer without leaving Library; follow its full-page link before
+  // measuring route restoration. Mobile covers navigate directly. Assert the actual transition
+  // so a drawer's incidental scroll position can never stand in for a new page again.
   await page.getByRole('button', { name: new RegExp('^Open Scroll Probe 01') }).click()
-  await page.locator('main').waitFor({ state: 'visible' })
+  if (!isMobile) {
+    await expect(page).toHaveURL(/\/library$/)
+    await page.getByRole('link', { name: 'Open full page', exact: true }).click()
+  }
+  await expect(page).toHaveURL(/\/book\/[^/?#]+$/)
+  await expect(page.getByRole('heading', { name: 'Scroll Probe 01', exact: true })).toBeVisible()
 
-  // Without scrollRestoration the offset carried over and the book page opened mid-content.
   await expect
     .poll(() => scrollY(page), {
       message: 'the new route kept the previous page’s scroll offset',
