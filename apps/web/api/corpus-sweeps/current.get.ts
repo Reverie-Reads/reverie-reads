@@ -11,8 +11,10 @@ export default defineEventHandler(async ({ req }) => {
     .from('corpus_sweep_runs')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+    .limit(10)
   if (error) throw createError({ statusCode: 500, statusMessage: 'Could not read corpus sweep' })
-  return { run: data ?? null }
+  // `purpose` is absent before the incident migration and therefore means the established sweep.
+  // Reading a small mixed history keeps this endpoint deployable before or after that migration.
+  const run = data?.find((row) => !row.purpose || row.purpose === 'corpus_sweep')
+  return { run: run ?? null }
 })

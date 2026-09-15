@@ -438,6 +438,14 @@ corpus_cover_recovery_marks
                     (book_id pk fk→books, source_fingerprint, succeeded, error_message,
                      retry_after, attempt_count, recovered_by fk→profiles, recovered_at)
                      -- internal resumability state; API roles have no direct table access
+corpus_sweep_runs    (id pk, requested_by/issuer, purpose corpus_sweep|series_recovery,
+                     workflow/checkpoint state, aggregate progress, timestamps)
+corpus_sweep_run_items
+                    (run_id/work_id pk, ordinal, status/stage, source/reset fingerprints,
+                     outcome/error, timestamps)
+                     -- administrators may read aggregate runs; only the workflow service can
+                     -- read or advance per-work checkpoints. Historical recovery stores only
+                     -- the count and hash of its private 23-work exclusion manifest.
 
 clubs               (id pk, title, author, cover_url,
                      unit_type 'chapter'|'page'|'percent', unit_count, unit_label,

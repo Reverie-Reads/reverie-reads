@@ -36,6 +36,13 @@ import { resharpenCovers, resharpenSource, type ResharpenProgress } from '../dat
 import { sweepCountText } from '../data/sweepProgress'
 import { DuplicateReview } from '../components/DuplicateReview'
 import { CorpusCompleteControl } from '../components/CorpusCompleteControl'
+import { SeriesRecoveryControl } from '../components/SeriesRecoveryControl'
+import {
+  cancelSeriesRecovery,
+  resumeSeriesRecovery,
+  startSeriesRecovery,
+  useCurrentSeriesRecovery,
+} from '../data/seriesRecoveryRuns'
 import { fileToCsvText } from '../data/xlsxAdapter'
 import type { ReviewCandidate } from '../data/intake'
 import { APP_NAME, SKIN_LIST, type Mode } from '@reverie/core'
@@ -114,6 +121,7 @@ function SettingsScreen() {
   const [progress, setProgress] = useState<BulkProgress | null>(null)
   const stopRef = useRef(false)
   const [corpusStatus, setCorpusStatus] = useState<string | null>(null)
+  const [seriesRecoveryStatus, setSeriesRecoveryStatus] = useState<string | null>(null)
   const completedCorpusRun = useRef<string | null>(null)
   const [sharpening, setSharpening] = useState(false)
   const [sharpProgress, setSharpProgress] = useState<ResharpenProgress | null>(null)
@@ -156,6 +164,8 @@ function SettingsScreen() {
           corpusRun.phase === 'recovering' ? ('recovering' as const) : ('classifying' as const),
       }
     : null
+  const seriesRecoveryQuery = useCurrentSeriesRecovery(isCorpusAdmin, session?.access_token)
+  const seriesRecoveryRun = seriesRecoveryQuery.data
 
   useEffect(() => {
     if (!corpusRun || corpusCompleting || completedCorpusRun.current === corpusRun.id) return
@@ -425,6 +435,49 @@ function SettingsScreen() {
       await corpusRunQuery.refetch()
     } catch (error) {
       setCorpusStatus(`Couldn’t stop the corpus sweep: ${(error as Error).message}`)
+    }
+  }
+
+  async function runSeriesRecovery(manifest: unknown) {
+    setSeriesRecoveryStatus(null)
+    try {
+      const token = session?.access_token
+      if (!token) throw new Error('Sign in again before starting historical recovery')
+      await startSeriesRecovery(token, manifest)
+      setSeriesRecoveryStatus(
+        'Historical recovery queued. You can leave this page; progress will reconnect here.',
+      )
+      await seriesRecoveryQuery.refetch()
+    } catch (error) {
+      setSeriesRecoveryStatus(`Couldn’t start historical recovery: ${(error as Error).message}`)
+    }
+  }
+
+  async function continueSeriesRecovery() {
+    const token = session?.access_token
+    if (!token || !seriesRecoveryRun) return
+    try {
+      await resumeSeriesRecovery(token, seriesRecoveryRun.id)
+      setSeriesRecoveryStatus(
+        'Recovery resumed from untouched work; started attempts were not replayed.',
+      )
+      await seriesRecoveryQuery.refetch()
+    } catch (error) {
+      setSeriesRecoveryStatus(`Couldn’t resume historical recovery: ${(error as Error).message}`)
+    }
+  }
+
+  async function stopSeriesRecovery() {
+    const token = session?.access_token
+    if (!token || !seriesRecoveryRun) return
+    try {
+      await cancelSeriesRecovery(token, seriesRecoveryRun.id)
+      setSeriesRecoveryStatus(
+        'Stop requested. The current checkpoint will finish before recovery stops.',
+      )
+      await seriesRecoveryQuery.refetch()
+    } catch (error) {
+      setSeriesRecoveryStatus(`Couldn’t stop historical recovery: ${(error as Error).message}`)
     }
   }
 
@@ -729,6 +782,15 @@ function SettingsScreen() {
                 books, and checks shared series information once for the whole corpus. Uncertain
                 series matches go to Review; a catalog miss never becomes a standalone claim.
               </p>
+            )}
+            {isCorpusAdmin && (
+              <SeriesRecoveryControl
+                run={seriesRecoveryRun}
+                status={seriesRecoveryStatus}
+                onStart={runSeriesRecovery}
+                onResume={continueSeriesRecovery}
+                onStop={stopSeriesRecovery}
+              />
             )}
             {!completing && (
               <button

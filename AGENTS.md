@@ -200,6 +200,12 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   uncertain writes stop. Resume advances only untouched work, never replays a lookup/save. It reuses
   the existing classifier and RPC, verifies protected personal data, and does not run the general
   cover/metadata sweep. See `docs/tasks/resumable-series-recovery.md`.
+  The already-started sealed terminal plan is retired after its preapproval database transport
+  failed; do not retry or regenerate it. Its replacement is the owner-only Settings control backed
+  by the existing durable sweep journal. It validates the private 23-work exclusion manifest at
+  start, resets no more than 25 frozen works per checkpoint, runs series-only, and stores no token
+  or exclusion identities in Workflow history. A started lookup is never replayed; a started save
+  blocks resume pending inspection.
   New plans may subtract a private, project-bound, fingerprint-checked exclusion manifest. The
   sealed plan retains its excluded identities and reasons; they receive no reset, attempt marker,
   lookup or save. Exclusions never raise the complete-inventory cap and cannot change a started
