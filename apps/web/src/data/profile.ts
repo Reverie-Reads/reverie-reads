@@ -108,10 +108,10 @@ export function useProfile() {
   })
 }
 
-export function useUpdateProfile() {
+export function useUpdateProfile(options?: { errorPresentation?: 'inline' }) {
   const qc = useQueryClient()
   return useMutation({
-    meta: { action: 'Your profile' },
+    meta: { action: 'Your profile', errorPresentation: options?.errorPresentation },
     mutationFn: async (patch: {
       displayName?: string
       goalYear?: number | null
