@@ -294,6 +294,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   Focused search, Exa fallback, structural repair and retrieval retain prior grounded observations,
   including rejected passes, so a later answer cannot erase identity, membership or order conflicts.
   See `docs/tasks/authority-evidence-safety.md`. Consumed frames and qualification locks stay intact.
+  A completed durable recovery backlog may be exported once into ignored private storage for this
+  same no-write shadow path. The exporter admits only a completed run with zero uncertain writes,
+  reconciles pending-review/deferred counts, and withholds current/proposed series labels and
+  evidence from the scout. Its isolated Luna-low/Exa results remain private review artifacts; they
+  cannot accept a suggestion or write the catalog. See `packages/series-source-trial/README.md`.
 - **Production qualification is private, locked, and single-use.** Never append qualification
   identities or truth to the public development gold file. Build the reviewed oversample under
   ignored `private-results/` from complete identity frames whose population, eligible, and

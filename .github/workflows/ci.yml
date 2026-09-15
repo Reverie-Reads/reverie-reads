@@ -237,11 +237,11 @@ jobs:
         include:
           - name: e2e
             project: rest
-            # The full 167-test suite takes about 21 minutes without retries; a legitimate retry
-            # pushed the 2026-08-31 org-transfer run to 25.7 minutes after every test had passed.
-            # This is a ceiling, not a delay: leave enough room for Playwright to report its final
-            # result and for GitHub to finish cleanup instead of cancelling a passing run.
-            timeout: 35
+            # The full suite reached 278 passing tests in 33.5 minutes on 2026-09-15, then the old
+            # 35-minute ceiling cancelled the job during action cleanup. This is a ceiling, not a
+            # delay: leave bounded room for Playwright reporting and GitHub cleanup without turning
+            # a completely passing suite into a cancelled required check.
+            timeout: 42
             artifact: playwright-traces
           - name: e2e-a11y
             project: a11y
