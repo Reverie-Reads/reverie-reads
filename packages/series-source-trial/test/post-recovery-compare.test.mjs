@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { compareAuthorityResultToSuggestion } from '../src/authority/post-recovery-compare.mjs'
+import {
+  compareAuthorityResultToDeferredWork,
+  compareAuthorityResultToSuggestion,
+} from '../src/authority/post-recovery-compare.mjs'
 
 const suggestion = (patch = {}) => ({
   proposed_series: 'Fae Isles',
@@ -71,5 +74,42 @@ test('never upgrades unresolved or policy-quarantined output', () => {
       suggestion(),
     ).disposition,
     'unresolved',
+  )
+})
+
+test('corroborates a deferred work tuple without promoting it', () => {
+  assert.deepEqual(
+    compareAuthorityResultToDeferredWork(result(), {
+      current_series: 'Fae Isles',
+      current_position: 2,
+    }),
+    { disposition: 'deferred_current_tuple_corroborated' },
+  )
+})
+
+test('keeps new deferred authority findings in manual review', () => {
+  assert.deepEqual(
+    compareAuthorityResultToDeferredWork(result(), {
+      current_series: null,
+      current_position: null,
+    }),
+    { disposition: 'authority_candidate_requires_review' },
+  )
+})
+
+test('keeps deferred position additions and conflicts distinct', () => {
+  assert.equal(
+    compareAuthorityResultToDeferredWork(result(), {
+      current_series: 'Fae Isles',
+      current_position: null,
+    }).disposition,
+    'deferred_current_series_corroborated_position_candidate',
+  )
+  assert.equal(
+    compareAuthorityResultToDeferredWork(result(), {
+      current_series: 'Other Isles',
+      current_position: 2,
+    }).disposition,
+    'series_conflict',
   )
 })

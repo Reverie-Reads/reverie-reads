@@ -298,7 +298,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   same no-write shadow path. The exporter admits only a completed run with zero uncertain writes,
   reconciles pending-review/deferred counts, and withholds current/proposed series labels and
   evidence from the scout. Its isolated Luna-low/Exa results remain private review artifacts; they
-  cannot accept a suggestion or write the catalog. See `packages/series-source-trial/README.md`.
+  cannot accept a suggestion or write the catalog. The separate read-only comparator may prioritize
+  an exact pending suggestion or a deferred work's preserved current tuple, but a deferred authority
+  finding remains a candidate and cannot manufacture a suggestion. See
+  `packages/series-source-trial/README.md`.
 - **Production qualification is private, locked, and single-use.** Never append qualification
   identities or truth to the public development gold file. Build the reviewed oversample under
   ignored `private-results/` from complete identity frames whose population, eligible, and

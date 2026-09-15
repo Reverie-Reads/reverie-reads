@@ -48,3 +48,28 @@ export function compareAuthorityResultToSuggestion(result, suggestion) {
   }
   return { disposition: 'corroborated_exact_tuple' }
 }
+
+/** Deferred recovery items have no pending suggestion to accept. Comparing a safe authority result
+ * with the preserved work tuple can prioritize manual review, but it must never promote that tuple
+ * or manufacture a suggestion. */
+export function compareAuthorityResultToDeferredWork(result, work) {
+  const currentSeries = seriesKey(work?.current_series)
+  const comparison = compareAuthorityResultToSuggestion(result, {
+    proposed_series: currentSeries ? work.current_series : '__missing_current_series__',
+    proposed_position: work?.current_position ?? null,
+    proposed_count: null,
+  })
+
+  if (!currentSeries) {
+    return comparison.disposition === 'series_conflict'
+      ? { disposition: 'authority_candidate_requires_review' }
+      : comparison
+  }
+  if (comparison.disposition === 'corroborated_exact_tuple') {
+    return { disposition: 'deferred_current_tuple_corroborated' }
+  }
+  if (comparison.disposition === 'membership_corroborated_position_additional') {
+    return { disposition: 'deferred_current_series_corroborated_position_candidate' }
+  }
+  return comparison
+}
