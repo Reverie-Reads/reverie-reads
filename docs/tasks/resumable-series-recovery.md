@@ -5,6 +5,26 @@ browser-console handoffs for the historical September 10 outage population. The 
 canaries and 25-work recovery established the existing save/read-back path; they do not certify
 every provider relationship as bibliographically correct.
 
+## Current production path
+
+The terminal runner below is retained as the frozen incident record, but the already-started sealed
+plan is retired after its owner database transport repeatedly failed before approval or reset. Do
+not retry, clear, regenerate, or delete that plan or its journal.
+
+Production recovery now starts from the signed-in administrator's Settings screen. The owner
+chooses the private 23-work exclusion manifest and clicks **Start historical recovery** once. The
+API validates the current user and project, while Postgres independently rebuilds the complete live
+incident inventory and checks every exclusion's full-row fingerprint. Only aggregate counts and a
+non-reversible manifest hash are retained; identities, notes, the browser access token, and the
+manifest never enter source control or Workflow history.
+
+The existing durable corpus-sweep journal freezes the selected work IDs and fingerprints. One
+Workflow resets and audits batches of at most 25, performs paced exact-book relationship lookups,
+and saves through the existing classifier and discovery RPC. It has no cover or general metadata
+leg. Browser refreshes reconnect to Postgres progress. A safe resume defers a started lookup rather
+than replaying it; a `save_started` checkpoint blocks resume for independent inspection. Ordinary
+corpus completion and historical recovery share the existing one-active-maintenance-run boundary.
+
 ## Scope and guarantees
 
 - `plan` reads the current eligible population and freezes ordered identities, complete work-row
@@ -38,13 +58,18 @@ every provider relationship as bibliographically correct.
   qualification dataset or consumed ISBNdb study is changed. Provider calls may populate the
   existing lookup cache; cache versus live is **not distinguished**.
 
-## Owner preparation
+## Historical terminal path
 
-Merge the public change and sync it into the private repository through the normal PR process.
-No new migration or Edge Function is introduced. Run from the clean, merged **main** checkout that
-will own this recovery, preferably `/Users/gregchism/dev/reverie`. Install the locked dependencies.
-The existing series fixes must already be deployed. Finish/cancel other corpus sweeps and keep
-deployments and catalog administration quiet during execution.
+The remaining owner preparation, commands, and local journal documentation describe the retired
+CLI artifact and are kept for auditability. They are not the execution instructions for the current
+production recovery.
+
+### Owner preparation
+
+When the CLI was introduced, its public change was synced through the normal PR process without a
+new migration or Edge Function. It was designed to run from the clean, merged **main** checkout
+that owned the recovery, preferably `/Users/gregchism/dev/reverie`, with locked dependencies and
+the existing series fixes deployed.
 
 The owner needs:
 

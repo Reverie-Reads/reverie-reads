@@ -73,7 +73,7 @@ function functionHeaders(): HeadersInit {
   return { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }
 }
 
-async function invokeFunction<T>(name: string, body: JsonObject): Promise<T> {
+export async function invokeFunction<T>(name: string, body: JsonObject): Promise<T> {
   const base = requiredEnv('SUPABASE_URL', 'VITE_SUPABASE_URL').replace(/\/$/, '')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS)
