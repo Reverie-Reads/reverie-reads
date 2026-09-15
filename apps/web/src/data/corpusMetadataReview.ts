@@ -49,6 +49,15 @@ export interface CatalogMetadataWork {
   pages?: number | null
   publication?: { y: number | null; m: number | null; d: number | null }
   editionProvenance?: Record<string, { referenceIsbn?: string; sourceRef?: string } | null>
+  /** Missing on an older server: keep confirmation controls unavailable until migration lands. */
+  seriesConfirmationVersion?: number
+  seriesFingerprint?: string
+  series?: string | null
+  position?: number | null
+  seriesCount?: number | null
+  seriesCheckState?: 'unknown' | 'unresolved' | 'no_series' | 'found' | 'review'
+  seriesCheckedAt?: string | null
+  seriesSourceUrl?: string | null
 }
 export interface MetadataQueueInput {
   state: MetadataState
@@ -87,17 +96,24 @@ export function useCatalogMetadataQueue(input: MetadataQueueInput, enabled: bool
     staleTime: 0,
   })
 }
-export type MetadataAction = 'description' | 'reviewed' | 'defer' | 'reopen' | 'edition_details'
+export type MetadataAction =
+  | 'description'
+  | 'reviewed'
+  | 'defer'
+  | 'reopen'
+  | 'edition_details'
+  | 'series_confirmation'
 export const METADATA_ACTIONS: Record<MetadataAction, string> = {
   description: 'Description corrected',
   reviewed: 'Assessment recorded',
   defer: 'Set aside for later',
   reopen: 'Review reopened',
   edition_details: 'Edition details corrected',
+  series_confirmation: 'Shared series confirmed',
 }
 export interface MetadataReviewInput {
   work: CatalogMetadataWork
-  action: Exclude<MetadataAction, 'edition_details'>
+  action: Exclude<MetadataAction, 'edition_details' | 'series_confirmation'>
   note: string
   sourceUrl: string
   description?: string
@@ -153,6 +169,37 @@ export async function saveCatalogEditionCorrection(input: EditionCorrectionInput
   if (error) throw error
   return data as string
 }
+export interface SeriesConfirmationInput {
+  work: CatalogMetadataWork
+  sourceUrl: string
+  note: string
+  identityConfirmed: boolean
+}
+export async function saveCatalogSeriesConfirmation(
+  input: SeriesConfirmationInput,
+): Promise<string> {
+  if (
+    input.work.seriesConfirmationVersion !== 1 ||
+    !input.work.seriesFingerprint ||
+    !input.work.series?.trim()
+  )
+    throw new Error(
+      'Shared series confirmation is not available for this record. Reload after deployment.',
+    )
+  const { data, error } = await supabase.rpc('admin_confirm_corpus_series_membership', {
+    p_work: input.work.id,
+    p_expected_fingerprint: input.work.seriesFingerprint,
+    p_expected_revision: input.work.revision,
+    p_series: input.work.series,
+    p_position: input.work.position ?? null,
+    p_series_count: input.work.seriesCount ?? null,
+    p_source_url: input.sourceUrl.trim(),
+    p_note: input.note.trim(),
+    p_identity_confirmed: input.identityConfirmed,
+  })
+  if (error) throw error
+  return data as string
+}
 function useMetadataMutation<T>(mutationFn: (input: T) => Promise<string>) {
   const client = useQueryClient()
   return useMutation({
@@ -181,6 +228,9 @@ export function useSaveCatalogMetadataReview() {
 export function useSaveCatalogEditionCorrection() {
   return useMetadataMutation(saveCatalogEditionCorrection)
 }
+export function useSaveCatalogSeriesConfirmation() {
+  return useMetadataMutation(saveCatalogSeriesConfirmation)
+}
 export interface MetadataEvent {
   id: string
   action: MetadataAction
@@ -194,6 +244,15 @@ export interface MetadataEvent {
     }
     field?: 'pages' | 'publication'
     referenceIsbn?: string
+    seriesConfirmation?: {
+      series: string
+      position: number | null
+      seriesCount: number | null
+      sourceUrl: string
+      note: string
+      reviewedBy: string
+      observedAt: string
+    }
   }
 }
 export function useCatalogMetadataHistory(workId: string) {

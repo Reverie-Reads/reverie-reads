@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button } from '../Button'
 import { CatalogEditionCorrection } from './CatalogEditionCorrection'
+import { CatalogSeriesConfirmation } from './CatalogSeriesConfirmation'
 import {
   METADATA_ACTIONS,
   METADATA_ISSUES,
@@ -38,13 +39,16 @@ export function CatalogMetadataEditor({
   const [confirmed, setConfirmed] = useState(false)
   const [error, setError] = useState('')
   const [editionDirty, setEditionDirty] = useState(false)
+  const [seriesDirty, setSeriesDirty] = useState(false)
   const save = useSaveCatalogMetadataReview()
   const history = useCatalogMetadataHistory(work.id)
   const reviewed = confirmed && !!note.trim()
   const descriptionChanged = description.trim() !== work.description
 
-  async function decide(action: Exclude<MetadataAction, 'edition_details'>) {
-    if (editionDirty) return
+  async function decide(
+    action: Exclude<MetadataAction, 'edition_details' | 'series_confirmation'>,
+  ) {
+    if (editionDirty || seriesDirty) return
     setError('')
     try {
       await save.mutateAsync({
@@ -142,7 +146,7 @@ export function CatalogMetadataEditor({
       )}
       <CatalogEditionCorrection
         work={work}
-        blocked={descriptionChanged || save.isPending}
+        blocked={descriptionChanged || seriesDirty || save.isPending}
         onDirtyChange={setEditionDirty}
         onSaved={onSaved}
         onRefresh={onRefresh}
@@ -150,6 +154,18 @@ export function CatalogMetadataEditor({
       {editionDirty && (
         <p className="text-sm text-muted">
           Apply or discard the edition draft before recording another decision.
+        </p>
+      )}
+      <CatalogSeriesConfirmation
+        work={work}
+        blocked={descriptionChanged || editionDirty || save.isPending}
+        onDirtyChange={setSeriesDirty}
+        onSaved={onSaved}
+        onRefresh={onRefresh}
+      />
+      {seriesDirty && (
+        <p className="text-sm text-muted">
+          Apply or discard the series draft before recording another decision.
         </p>
       )}
       <form
@@ -234,6 +250,7 @@ export function CatalogMetadataEditor({
             type="submit"
             disabled={
               editionDirty ||
+              seriesDirty ||
               save.isPending ||
               !reviewed ||
               !description.trim() ||
@@ -245,14 +262,16 @@ export function CatalogMetadataEditor({
           </Button>
           <Button
             variant="secondary"
-            disabled={editionDirty || save.isPending || !reviewed || descriptionChanged}
+            disabled={
+              editionDirty || seriesDirty || save.isPending || !reviewed || descriptionChanged
+            }
             onClick={() => void decide('reviewed')}
           >
             Record assessment
           </Button>
           <Button
             variant="secondary"
-            disabled={editionDirty || save.isPending || descriptionChanged}
+            disabled={editionDirty || seriesDirty || save.isPending || descriptionChanged}
             onClick={() => void decide('defer')}
           >
             Set aside for later
@@ -260,7 +279,7 @@ export function CatalogMetadataEditor({
           {work.state !== 'open' && (
             <Button
               variant="ghost"
-              disabled={editionDirty || save.isPending || descriptionChanged}
+              disabled={editionDirty || seriesDirty || save.isPending || descriptionChanged}
               onClick={() => void decide('reopen')}
             >
               Reopen review
@@ -292,9 +311,17 @@ export function CatalogMetadataEditor({
                   {new Date(event.created_at).toLocaleString()}
                 </time>
                 <p className="mt-1 whitespace-pre-wrap break-words">
-                  {event.next_value.review.note}
+                  {event.action === 'series_confirmation'
+                    ? event.next_value.seriesConfirmation?.note
+                    : event.next_value.review.note}
                 </p>
-                <SourceLink url={event.next_value.review.source_url} />
+                <SourceLink
+                  url={
+                    event.action === 'series_confirmation'
+                      ? (event.next_value.seriesConfirmation?.sourceUrl ?? '')
+                      : event.next_value.review.source_url
+                  }
+                />
                 {event.action === 'edition_details' && (
                   <p className="mt-1 break-words">
                     Reviewed reference ISBN: {event.next_value.referenceIsbn}.{' '}
@@ -302,6 +329,18 @@ export function CatalogMetadataEditor({
                       ? `Pages at review: ${event.next_value.record.pages ?? 'Unknown'}.`
                       : `Publication at review: ${editionPublicationLabel(event.next_value.record.publication)}.`}{' '}
                     This historical decision does not certify later changes.
+                  </p>
+                )}
+                {event.action === 'series_confirmation' && event.next_value.seriesConfirmation && (
+                  <p className="mt-1 break-words">
+                    Confirmed tuple: {event.next_value.seriesConfirmation.series}
+                    {event.next_value.seriesConfirmation.position == null
+                      ? ''
+                      : ` · book ${event.next_value.seriesConfirmation.position}`}
+                    {event.next_value.seriesConfirmation.seriesCount == null
+                      ? ''
+                      : ` · ${event.next_value.seriesConfirmation.seriesCount} declared books`}
+                    . This historical confirmation does not certify later changes.
                   </p>
                 )}
               </li>

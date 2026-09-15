@@ -783,6 +783,23 @@ series graph preservation guard around its update. Series triggers are unchanged
 writes (including same-value re-confirmation) retain reconciliation outside this narrow action.
 See `../tasks/catalog-edition-corrections.md`.
 
+`admin_confirm_corpus_series_membership` is a separate administrator-only reconciliation action for
+an existing nonblank shared series tuple. The submitted name, position and count must exactly match
+the locked work; the RPC cannot import a proposal or correct those values. It also refuses a pending
+series suggestion. Explicit identity confirmation, an HTTPS source, explanation, review revision,
+and the snapshot's separate `seriesFingerprint` are required. That fingerprint includes the work's
+series evidence/provenance and active primary graph anchor without altering the established metadata
+assessment or edition fingerprints.
+
+The confirmation stores a manual relational observation and reviewer on the work, refreshes the
+shared graph through its existing trigger, and deliberately sets the classifier transaction flag so
+an unchanged trusted tuple reconciles eligible unknown/enrichment/corpus personal defaults. It does
+not directly write personal rows; reader-selected and CSV-imported choices retain their existing
+guards. A private `series_confirmation` metadata event retains the source and explanation, while the
+overall metadata assessment state and note are preserved. There is no provider fetch, model call,
+bulk writer, service-role grant, or migration backfill. See
+`../tasks/catalog-series-confirmation.md`.
+
 For reference-bound shared values, Add/Discover maps publication only when each present date
 component names the selected valid ISBN (ISBN-10/13 equivalents match). Guided discovery with no
 selected edition omits a reference-bound date. Shared adoption preserves an existing personal date

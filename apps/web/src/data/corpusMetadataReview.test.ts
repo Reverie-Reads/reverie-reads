@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import {
   saveCatalogMetadataReview,
   saveCatalogEditionCorrection,
+  saveCatalogSeriesConfirmation,
   type CatalogMetadataWork,
 } from './corpusMetadataReview'
 import { isOfflinePersistableQueryKey } from '../lib/offlineCache'
@@ -118,4 +119,54 @@ it('does not retry an uncertain edition write', async () => {
     }),
   ).rejects.toThrow('Connection lost')
   expect(rpc).toHaveBeenCalledTimes(1)
+})
+it('confirms only the exact series tuple returned by the reviewed snapshot', async () => {
+  await saveCatalogSeriesConfirmation({
+    work: {
+      ...work,
+      seriesConfirmationVersion: 1,
+      seriesFingerprint: 'frozen-series',
+      series: 'Exact Saga',
+      position: 2,
+      seriesCount: null,
+    },
+    sourceUrl: ' https://author.example/books/exact-title ',
+    note: ' Exact title is listed second in the named series. ',
+    identityConfirmed: true,
+  })
+  expect(rpc).toHaveBeenCalledExactlyOnceWith('admin_confirm_corpus_series_membership', {
+    p_work: 'work',
+    p_expected_fingerprint: 'frozen-series',
+    p_expected_revision: 4,
+    p_series: 'Exact Saga',
+    p_position: 2,
+    p_series_count: null,
+    p_source_url: 'https://author.example/books/exact-title',
+    p_note: 'Exact title is listed second in the named series.',
+    p_identity_confirmed: true,
+  })
+})
+it('refuses series confirmation against an old server or a record without a tuple', async () => {
+  await expect(
+    saveCatalogSeriesConfirmation({
+      work,
+      sourceUrl: 'https://author.example/book',
+      note: 'Checked',
+      identityConfirmed: true,
+    }),
+  ).rejects.toThrow('not available')
+  await expect(
+    saveCatalogSeriesConfirmation({
+      work: {
+        ...work,
+        seriesConfirmationVersion: 1,
+        seriesFingerprint: 'frozen-series',
+        series: null,
+      },
+      sourceUrl: 'https://author.example/book',
+      note: 'Checked',
+      identityConfirmed: true,
+    }),
+  ).rejects.toThrow('not available')
+  expect(rpc).not.toHaveBeenCalled()
 })
