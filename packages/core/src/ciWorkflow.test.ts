@@ -16,7 +16,7 @@ describe('CI workflow topology', () => {
     expect(matrixNames).toEqual(['e2e', 'e2e-a11y', 'e2e-mobile'])
     expect(workflow).toContain('name: ${{ matrix.name }}')
     expect(workflow).toContain('fail-fast: false')
-    expect(workflow).toMatch(/- name: e2e\n\s+project: rest\n(?:\s+#.*\n)+\s+timeout: 35/)
+    expect(workflow).toMatch(/- name: e2e\n\s+project: rest\n(?:\s+#.*\n)+\s+timeout: 42/)
     expect(workflow).toContain("if: github.event_name == 'pull_request'")
     expect(workflow).not.toContain(
       "if: github.event_name == 'pull_request' && needs.changes.outputs.docs_only != 'true'",
