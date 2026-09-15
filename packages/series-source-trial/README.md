@@ -693,9 +693,11 @@ pnpm --filter @reverie/series-source-trial authority:post-recovery:compare -- \
 ```
 
 The comparator performs one read-only production query and writes another ignored local artifact.
-An exact name/position/count match is a review-priority signal, not acceptance authorization;
-series conflicts, unconfirmed positions or counts, quarantines, and unresolved results stay out of
-the exact-match lane.
+For pending suggestions it compares the proposed tuple. For deferred recovery items it compares the
+authority result with the preserved current work tuple and labels a new authority finding as a
+review candidate; it never creates a suggestion or promotes a work. An exact name/position/count
+match is a review-priority signal, not acceptance authorization; series conflicts, unconfirmed
+positions or counts, quarantines, and unresolved results stay out of the exact-match lane.
 
 The authority acquisition harness tests the next layer of the proposed production tool: can the
 model find an author or publisher page for the exact work, distinguish bibliographic series from

@@ -2,7 +2,10 @@ import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { compareAuthorityResultToSuggestion } from './authority/post-recovery-compare.mjs'
+import {
+  compareAuthorityResultToDeferredWork,
+  compareAuthorityResultToSuggestion,
+} from './authority/post-recovery-compare.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = resolve(packageRoot, '../..')
@@ -61,17 +64,34 @@ if (ids.some((id) => !UUID_RE.test(id ?? '')) || new Set(ids).size !== ids.lengt
 
 const uuidList = ids.map((id) => `'${id}'::uuid`).join(',')
 const sql = `
+with selected_items as (
+  select i.work_id,i.status,i.outcome,i.error_message,w.series,w.position
+  from public.corpus_sweep_run_items i
+  join public.works w on w.id=i.work_id
+  where i.run_id='${report.postRecoveryFrame.sourceRunId}'::uuid
+    and i.work_id=any(array[${uuidList}]::uuid[])
+), review_targets as (
+  select s.id,s.work_id,'review'::text queue,null::text reason_code,
+    s.proposed_series,s.proposed_position,s.proposed_count,
+    s.identity_confidence,s.confidence membership_confidence,s.checked_at
+  from selected_items i
+  join public.work_series_suggestions s on s.work_id=i.work_id and s.status='pending'
+  where i.status='completed' and i.outcome->'series'->>'outcome'='review'
+), deferred_targets as (
+  select null::uuid id,i.work_id,'deferred'::text queue,
+    coalesce(nullif(i.outcome->>'code',''),nullif(i.error_message,''),'unresolved') reason_code,
+    nullif(trim(i.series),'') proposed_series,i.position proposed_position,null::integer proposed_count,
+    null::text identity_confidence,null::text membership_confidence,null::timestamptz checked_at
+  from selected_items i where i.status='deferred'
+), targets as (
+  select * from review_targets union all select * from deferred_targets
+)
 select coalesce(jsonb_agg(jsonb_build_object(
-  'id',s.id,'work_id',s.work_id,'proposed_series',s.proposed_series,
-  'proposed_position',s.proposed_position,'proposed_count',s.proposed_count,
-  'identity_confidence',s.identity_confidence,'membership_confidence',s.confidence,
-  'checked_at',s.checked_at) order by s.work_id),'[]'::jsonb) suggestions
-from public.work_series_suggestions s
-where s.status='pending' and s.work_id=any(array[${uuidList}]::uuid[])
-  and exists(select 1 from public.corpus_sweep_run_items i
-    where i.run_id='${report.postRecoveryFrame.sourceRunId}'::uuid
-      and i.work_id=s.work_id and i.status='completed'
-      and i.outcome->'series'->>'outcome'='review');
+  'id',id,'work_id',work_id,'queue',queue,'reason_code',reason_code,
+  'proposed_series',proposed_series,'proposed_position',proposed_position,
+  'proposed_count',proposed_count,'identity_confidence',identity_confidence,
+  'membership_confidence',membership_confidence,'checked_at',checked_at)
+  order by work_id),'[]'::jsonb) targets from targets;
 `.replace(/\s+/g, ' ')
 const response = JSON.parse(
   execFileSync(
@@ -80,23 +100,30 @@ const response = JSON.parse(
     { cwd: repositoryRoot, encoding: 'utf8', maxBuffer: 5 * 1024 * 1024 },
   ),
 )
-const suggestions = response?.rows?.[0]?.suggestions
-if (!Array.isArray(suggestions)) throw new Error('Pending series review query returned no rows')
-const suggestionByWork = new Map(suggestions.map((suggestion) => [suggestion.work_id, suggestion]))
+const targets = response?.rows?.[0]?.targets
+if (!Array.isArray(targets)) throw new Error('Post-recovery comparison query returned no rows')
+const targetByWork = new Map(targets.map((target) => [target.work_id, target]))
 
 const comparisons = report.results.map((result) => {
-  const suggestion = suggestionByWork.get(result.caseId)
-  if (!suggestion) return { workId: result.caseId, disposition: 'not_pending_review' }
-  const comparison = compareAuthorityResultToSuggestion(result, suggestion)
+  const target = targetByWork.get(result.caseId)
+  if (!target) return { workId: result.caseId, disposition: 'not_in_reviewable_source_run' }
+  const comparison =
+    target.queue === 'deferred'
+      ? compareAuthorityResultToDeferredWork(result, {
+          current_series: target.proposed_series,
+          current_position: target.proposed_position,
+        })
+      : compareAuthorityResultToSuggestion(result, target)
   const membership = Array.isArray(result.output?.memberships) ? result.output.memberships[0] : null
   return {
     workId: result.caseId,
-    suggestionId: suggestion.id,
+    suggestionId: target.id,
+    queue: target.queue,
+    reasonCode: target.reason_code,
     disposition: comparison.disposition,
-    proposedSeries: suggestion.proposed_series,
-    proposedPosition:
-      suggestion.proposed_position === null ? null : Number(suggestion.proposed_position),
-    proposedCount: suggestion.proposed_count,
+    proposedSeries: target.proposed_series,
+    proposedPosition: target.proposed_position === null ? null : Number(target.proposed_position),
+    proposedCount: target.proposed_count,
     authoritySeries: membership?.series ?? null,
     authorityPosition: membership?.position ?? null,
     evidenceUrls: Array.isArray(membership?.evidenceUrls) ? membership.evidenceUrls : [],
@@ -118,7 +145,8 @@ const output = {
   comparedAt: new Date().toISOString(),
   counts: {
     total: comparisons.length,
-    pendingReview: suggestions.length,
+    pendingReview: targets.filter((target) => target.queue === 'review').length,
+    deferred: targets.filter((target) => target.queue === 'deferred').length,
     dispositions: dispositionCounts,
   },
   writes: 'local_ignored_comparison_only',
