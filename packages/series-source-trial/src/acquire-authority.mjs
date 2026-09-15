@@ -38,6 +38,11 @@ import {
   buildQualificationSystemManifest,
   evaluateQualificationScore,
 } from './authority/qualification.mjs'
+import {
+  loadPrivatePostRecoveryAuthorityFrame,
+  postRecoveryFrameSha256,
+  postRecoveryTrialCaseSet,
+} from './authority/post-recovery-frame.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = resolve(packageRoot, '../..')
@@ -48,6 +53,8 @@ const parseArgs = (argv) => {
     max: null,
     ids: null,
     holdout: null,
+    postRecoveryInput: null,
+    envFile: null,
     qualificationLock: null,
     resume: false,
     out: null,
@@ -70,6 +77,8 @@ const parseArgs = (argv) => {
     else if (value === '--max') options.max = Number(argv[++index])
     else if (value === '--ids') options.ids = argv[++index].split(',').filter(Boolean)
     else if (value === '--holdout') options.holdout = argv[++index]
+    else if (value === '--post-recovery-input') options.postRecoveryInput = argv[++index]
+    else if (value === '--env') options.envFile = argv[++index]
     else if (value === '--qualification-lock') options.qualificationLock = argv[++index]
     else if (value === '--out') options.out = argv[++index]
     else if (value === '--model') options.model = argv[++index]
@@ -91,6 +100,17 @@ const parseArgs = (argv) => {
   }
   if (options.holdout && (options.ids || options.max !== null || options.scope !== 'gold')) {
     throw new Error('Authority acquisition --holdout requires gold scope without --ids or --max')
+  }
+  if (
+    options.postRecoveryInput &&
+    (options.qualificationLock ||
+      options.holdout ||
+      options.scope !== 'candidate' ||
+      options.refresh)
+  ) {
+    throw new Error(
+      'Post-recovery acquisition requires candidate scope and forbids qualification, holdout, and refresh',
+    )
   }
   if (options.qualificationLock) {
     if (
@@ -187,19 +207,31 @@ const renderMarkdown = (score) =>
     'Every result is review-only. This tool cannot write authority gold, Supabase, or Reverie corpus data.',
   ].join('\n')}\n`
 
-await loadLocalEnvironment(resolve(packageRoot, '.env.local'))
-const options = parseArgs(process.argv.slice(2))
+const cliArgs = process.argv.slice(2)
+const envIndex = cliArgs.indexOf('--env')
+if (envIndex >= 0 && !cliArgs[envIndex + 1])
+  throw new Error('Authority acquisition --env requires a path')
+await loadLocalEnvironment(
+  envIndex >= 0
+    ? resolve(repositoryRoot, cliArgs[envIndex + 1])
+    : resolve(packageRoot, '.env.local'),
+)
+const options = parseArgs(cliArgs)
 if (options.exaFallback && !process.env.EXA_API_KEY?.trim()) {
   throw new Error('EXA_API_KEY is required in packages/series-source-trial/.env.local')
 }
 const developmentCaseSet = await loadTrialCases()
 let caseSet = developmentCaseSet
 let holdout = null
+let postRecoveryFrame = null
 let qualificationLock = null
 let qualificationLockPath = null
 let qualificationRunStatePath = null
 let qualificationRunState = null
 let qualificationStateWrite = Promise.resolve()
+let postRecoveryExaStatePath = null
+let postRecoveryExaState = null
+let postRecoveryExaStateWrite = Promise.resolve()
 if (options.qualificationLock) {
   qualificationLockPath = resolve(repositoryRoot, options.qualificationLock)
   qualificationLock = await readFile(qualificationLockPath, 'utf8').then(JSON.parse)
@@ -281,6 +313,47 @@ if (options.qualificationLock) {
     existingState ? undefined : { flag: 'wx', mode: 0o600 },
   )
 }
+if (options.postRecoveryInput) {
+  postRecoveryFrame = await loadPrivatePostRecoveryAuthorityFrame(
+    resolve(repositoryRoot, options.postRecoveryInput),
+    packageRoot,
+  )
+  caseSet = postRecoveryTrialCaseSet(postRecoveryFrame)
+
+  const stateRoot = resolve(packageRoot, 'private-results/post-recovery-authority-runs')
+  postRecoveryExaStatePath = resolve(stateRoot, `${postRecoveryFrame.sourceRunId}.exa-budget.json`)
+  await mkdir(stateRoot, { recursive: true })
+  try {
+    postRecoveryExaState = JSON.parse(await readFile(postRecoveryExaStatePath, 'utf8'))
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error
+  }
+  const frameSha256 = postRecoveryFrameSha256(postRecoveryFrame)
+  if (
+    postRecoveryExaState &&
+    (postRecoveryExaState.sourceRunId !== postRecoveryFrame.sourceRunId ||
+      postRecoveryExaState.frameSha256 !== frameSha256)
+  ) {
+    throw new Error('Post-recovery Exa budget state belongs to a different frozen frame')
+  }
+  postRecoveryExaState ??= {
+    schemaVersion: 1,
+    sourceRunId: postRecoveryFrame.sourceRunId,
+    frameSha256,
+    exaReservedUsd: 0,
+    createdAt: new Date().toISOString(),
+  }
+  if (
+    !Number.isFinite(postRecoveryExaState.exaReservedUsd) ||
+    postRecoveryExaState.exaReservedUsd < 0
+  ) {
+    throw new Error('Post-recovery Exa budget state has an invalid reserved amount')
+  }
+  if (!postRecoveryExaStatePath) throw new Error('Post-recovery Exa budget path is required')
+  await writeFile(postRecoveryExaStatePath, `${JSON.stringify(postRecoveryExaState, null, 2)}\n`, {
+    mode: 0o600,
+  })
+}
 const persistQualificationRunState = async () => {
   if (!qualificationRunStatePath || !qualificationRunState) return
   const snapshot = `${JSON.stringify(qualificationRunState, null, 2)}\n`
@@ -288,6 +361,15 @@ const persistQualificationRunState = async () => {
     writeFile(qualificationRunStatePath, snapshot),
   )
   await qualificationStateWrite
+}
+const persistPostRecoveryExaState = async () => {
+  if (!postRecoveryExaStatePath || !postRecoveryExaState) return
+  postRecoveryExaState.updatedAt = new Date().toISOString()
+  const snapshot = `${JSON.stringify(postRecoveryExaState, null, 2)}\n`
+  postRecoveryExaStateWrite = postRecoveryExaStateWrite.then(() =>
+    writeFile(postRecoveryExaStatePath, snapshot, { mode: 0o600 }),
+  )
+  await postRecoveryExaStateWrite
 }
 const qualificationHeartbeat = qualificationRunState
   ? setInterval(() => {
@@ -314,7 +396,11 @@ if (options.holdout) {
   holdout = loadedHoldout
 }
 let cases = caseSet.cases.filter((testCase) => {
-  if (!qualificationLock && (testCase.evaluationPartition ?? 'development') !== 'development') {
+  if (
+    !qualificationLock &&
+    !postRecoveryFrame &&
+    (testCase.evaluationPartition ?? 'development') !== 'development'
+  ) {
     return false
   }
   if (options.scope === 'gold') return testCase.truth.status === 'reviewed'
@@ -337,18 +423,22 @@ const experiment = {
   searchContextSize: options.searchContextSize,
   maxToolCalls: options.maxToolCalls,
 }
-let reservedExaSpendUsd = Number(qualificationRunState?.exaReservedUsd ?? 0)
+const exaBudgetState = qualificationRunState ?? postRecoveryExaState
+let reservedExaSpendUsd = Number(exaBudgetState?.exaReservedUsd ?? 0)
 let qualificationBudgetExhausted = false
 const qualificationExaLocator = async (target, locatorOptions) => {
-  if (!qualificationLock) return runExaAuthorityLocator(target, locatorOptions)
+  if (!qualificationLock && !postRecoveryFrame) {
+    return runExaAuthorityLocator(target, locatorOptions)
+  }
   const budgetedFetch = async (...args) => {
     if (reservedExaSpendUsd + EXA_SEARCH_REQUEST_USD > options.maximumExaSpendUsd) {
       qualificationBudgetExhausted = true
       throw new Error('qualification_exa_budget_exhausted')
     }
     reservedExaSpendUsd += EXA_SEARCH_REQUEST_USD
-    qualificationRunState.exaReservedUsd = Number(reservedExaSpendUsd.toFixed(6))
-    await persistQualificationRunState()
+    exaBudgetState.exaReservedUsd = Number(reservedExaSpendUsd.toFixed(6))
+    if (qualificationRunState) await persistQualificationRunState()
+    else await persistPostRecoveryExaState()
     return fetch(...args)
   }
   return runExaAuthorityLocator(target, { ...locatorOptions, fetchImpl: budgetedFetch })
@@ -356,21 +446,36 @@ const qualificationExaLocator = async (target, locatorOptions) => {
 const qualificationCacheRoot = qualificationLock
   ? resolve(packageRoot, 'private-results/authority-qualification-cache', qualificationLock.id)
   : null
+const postRecoveryCacheRoot = postRecoveryFrame
+  ? resolve(
+      packageRoot,
+      'private-results/post-recovery-authority-cache',
+      postRecoveryFrame.sourceRunId,
+    )
+  : null
 const cacheRoot = qualificationCacheRoot
   ? resolve(qualificationCacheRoot, 'first-pass')
-  : resolve(packageRoot, 'private-results/authority-acquisition-cache')
+  : postRecoveryCacheRoot
+    ? resolve(postRecoveryCacheRoot, 'first-pass')
+    : resolve(packageRoot, 'private-results/authority-acquisition-cache')
 await mkdir(cacheRoot, { recursive: true })
 const retrievalCacheRoot = qualificationCacheRoot
   ? resolve(qualificationCacheRoot, 'retrieval-interpretation')
-  : resolve(packageRoot, 'private-results/authority-retrieval-interpretation-cache')
+  : postRecoveryCacheRoot
+    ? resolve(postRecoveryCacheRoot, 'retrieval-interpretation')
+    : resolve(packageRoot, 'private-results/authority-retrieval-interpretation-cache')
 if (options.retrieval) await mkdir(retrievalCacheRoot, { recursive: true })
 const focusedSearchCacheRoot = qualificationCacheRoot
   ? resolve(qualificationCacheRoot, 'focused-search')
-  : resolve(packageRoot, 'private-results/authority-focused-search-cache')
+  : postRecoveryCacheRoot
+    ? resolve(postRecoveryCacheRoot, 'focused-search')
+    : resolve(packageRoot, 'private-results/authority-focused-search-cache')
 if (options.focusedSearch) await mkdir(focusedSearchCacheRoot, { recursive: true })
 const exaFallbackCacheRoot = qualificationCacheRoot
   ? resolve(qualificationCacheRoot, 'exa-fallback')
-  : resolve(packageRoot, 'private-results/authority-exa-fallback-cache')
+  : postRecoveryCacheRoot
+    ? resolve(postRecoveryCacheRoot, 'exa-fallback')
+    : resolve(packageRoot, 'private-results/authority-exa-fallback-cache')
 if (options.exaFallback) await mkdir(exaFallbackCacheRoot, { recursive: true })
 const cacheKey = (target) =>
   createHash('sha256')
@@ -565,7 +670,7 @@ const runOne = async (testCase) => {
   const target = buildAuthorityTarget(testCase)
   const policy = authorityPolicyForCase(
     testCase,
-    qualificationLock ? qualificationPlan : samplePlan,
+    qualificationLock ? qualificationPlan : postRecoveryFrame ? null : samplePlan,
   )
   const finalize = async (firstPass) => {
     let searched = options.focusedSearch
@@ -729,7 +834,11 @@ const selectedCaseSet = { ...caseSet, cases }
 const score = {
   ...scoreAuthorityAcquisition(selectedCaseSet, results, model),
   experiment,
-  evaluationPartition: qualificationLock ? 'qualification' : 'development',
+  evaluationPartition: qualificationLock
+    ? 'qualification'
+    : postRecoveryFrame
+      ? 'post_recovery_review'
+      : 'development',
 }
 if (qualificationLock) score.qualification = evaluateQualificationScore(score, evaluationPolicy)
 const qualificationErrorResults = results.filter((result) => result.status === 'error')
@@ -782,9 +891,19 @@ const basePath = resolve(
   repositoryRoot,
   qualificationLock
     ? `packages/series-source-trial/private-results/authority-qualification-runs/${qualificationLock.id}`
-    : (options.out ??
+    : postRecoveryFrame
+      ? (options.out ??
+        `packages/series-source-trial/private-results/post-recovery-authority-runs/${postRecoveryFrame.sourceRunId}_${timestamp()}`)
+      : (options.out ??
         `packages/series-source-trial/private-results/authority-acquisition/${holdout?.id ?? options.scope}_${timestamp()}`),
 )
+if (postRecoveryFrame) {
+  const privateRoot = resolve(packageRoot, 'private-results')
+  const rel = relative(privateRoot, basePath)
+  if (!rel || rel.startsWith('..') || isAbsolute(rel)) {
+    throw new Error('Post-recovery authority output must remain under private-results')
+  }
+}
 await mkdir(dirname(basePath), { recursive: true })
 await Promise.all([
   writeFile(
@@ -796,7 +915,16 @@ await Promise.all([
         experiment,
         promptVersion: AUTHORITY_ACQUISITION_PROMPT_VERSION,
         holdoutId: qualificationLock?.id ?? holdout?.id ?? null,
-        evaluationPartition: qualificationLock ? 'qualification' : 'development',
+        evaluationPartition: score.evaluationPartition,
+        postRecoveryFrame: postRecoveryFrame
+          ? {
+              purpose: postRecoveryFrame.purpose,
+              sourceRunId: postRecoveryFrame.sourceRunId,
+              sha256: postRecoveryFrameSha256(postRecoveryFrame),
+              frozenAt: postRecoveryFrame.frozenAt,
+              counts: postRecoveryFrame.counts,
+            }
+          : null,
         qualificationLockSha256: qualificationLock?.sha256 ?? null,
         retrievalEnabled: options.retrieval,
         focusedSearchEnabled: options.focusedSearch,

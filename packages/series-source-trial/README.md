@@ -646,6 +646,57 @@ series-versus-reading-independence boundary are recorded in
 
 ## Test LLM authority-source acquisition
 
+### Prepare a completed recovery backlog for review-only acquisition
+
+The owner may freeze the unresolved portion of one completed durable series-recovery run into an
+ignored local frame. The exporter performs one read-only production query and refuses an incomplete
+run, any uncertain write, an invalid identity, or unreconciled queue counts. It retains work IDs,
+identity fingerprints, queue reason codes, exact title/full authors, and optional publication year.
+It deliberately omits current and proposed series labels, positions, evidence, and truth so those
+values cannot steer the scout.
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:post-recovery:export -- \
+  --project PROJECT_REF \
+  --run COMPLETED_SERIES_RECOVERY_UUID
+```
+
+Run the frozen cases in bounded batches through the existing review-only Luna-low plus Exa path:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:acquire -- \
+  --scope candidate \
+  --post-recovery-input packages/series-source-trial/private-results/post-recovery-authority/RUN_UUID.json \
+  --max 25 \
+  --model gpt-5.6-luna \
+  --reasoning low \
+  --search-context medium \
+  --max-tool-calls 3 \
+  --env /ABSOLUTE/PATH/TO/series-source-trial/.env.local \
+  --exa-fallback
+```
+
+The frame, isolated caches, and reports stay under ignored `private-results/` with owner-only file
+permissions. Repeating an unchanged batch reuses its isolated cache; `--refresh` is forbidden for
+this input. A private ledger keyed to the frozen frame cumulatively bounds Exa spend by
+`BOOK_AUTHORITY_EXA_BUDGET_USD` (default $10), including later invocations against the same frame.
+The output remains a private review artifact: it has no Supabase client or corpus writer and cannot
+accept or dismiss a suggestion. A later human decision still uses the existing revision-checked
+administrator review path.
+
+Compare one private acquisition report with the still-pending suggestions from its source run:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:post-recovery:compare -- \
+  --project PROJECT_REF \
+  --input packages/series-source-trial/private-results/post-recovery-authority-runs/REPORT.json
+```
+
+The comparator performs one read-only production query and writes another ignored local artifact.
+An exact name/position/count match is a review-priority signal, not acceptance authorization;
+series conflicts, unconfirmed positions or counts, quarantines, and unresolved results stay out of
+the exact-match lane.
+
 The authority acquisition harness tests the next layer of the proposed production tool: can the
 model find an author or publisher page for the exact work, distinguish bibliographic series from
 connected-world noise, and cite only pages it actually consulted? It uses the Responses API's
