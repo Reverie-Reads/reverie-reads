@@ -16,6 +16,7 @@ import { findBookstores, type Store } from '../lib/overpass'
 import { formatHours12 } from '@reverie/core'
 import { Surface } from '../components/Surface'
 import { CARTO_ATTRIBUTION, cartoBasemapUrl } from '../lib/cartoBasemap'
+import { roomMapPalette } from '../lib/roomMapPalette'
 
 const miles = (km: number) => `${(km * 0.621371).toFixed(1)} mi`
 const SEARCH_RADII = [
@@ -41,7 +42,8 @@ const esc = (s: string): string =>
 // (loc + stores) in sync, mirroring what react-leaflet's keyed <MapContainer>/<TileLayer>/<CircleMarker>
 // did. Cleanup calls map.remove() on unmount.
 function StoreMap({ loc, stores }: { loc: ResolvedLocation; stores: Store[] }) {
-  const mode = useSkin((s) => s.resolvedMode)
+  const mode = useSkin((state) => state.resolvedMode)
+  const skin = useSkin((state) => state.skin)
   const elRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<L.Map | null>(null)
   const tileRef = useRef<L.TileLayer | null>(null)
@@ -91,10 +93,11 @@ function StoreMap({ loc, stores }: { loc: ResolvedLocation; stores: Store[] }) {
     const group = markersRef.current
     if (!group) return
     group.clearLayers()
+    const palette = roomMapPalette(getComputedStyle(document.documentElement))
     L.circleMarker([loc.lat, loc.lng], {
       radius: 7,
-      color: '#f0b14e',
-      fillColor: '#f0b14e',
+      color: palette.origin,
+      fillColor: palette.origin,
       fillOpacity: 0.9,
     })
       .bindPopup('You are here')
@@ -102,14 +105,14 @@ function StoreMap({ loc, stores }: { loc: ResolvedLocation; stores: Store[] }) {
     for (const s of stores) {
       L.circleMarker([s.lat, s.lng], {
         radius: 6,
-        color: '#cf2f66',
-        fillColor: '#cf2f66',
+        color: palette.store,
+        fillColor: palette.store,
         fillOpacity: 0.85,
       })
         .bindPopup(`<b>${esc(s.name)}</b>${s.address ? `<div>${esc(s.address)}</div>` : ''}`)
         .addTo(group)
     }
-  }, [loc.lat, loc.lng, stores])
+  }, [loc.lat, loc.lng, mode, skin, stores])
 
   return (
     <div
@@ -154,11 +157,13 @@ function StoreList({
   origin,
   defaultId,
   onSetDefault,
+  pendingStoreId,
 }: {
   stores: Store[]
   origin: ResolvedLocation
   defaultId: string | null
-  onSetDefault: (s: Store | null) => void
+  onSetDefault: (s: Store | null) => Promise<void>
+  pendingStoreId: string | null
 }) {
   return (
     <ul className="mt-4 flex flex-col gap-2">
@@ -199,11 +204,16 @@ function StoreList({
               </a>
               <button
                 type="button"
-                onClick={() => onSetDefault(isDefault ? null : s)}
-                className="skin-control ml-auto border border-line px-2.5 py-1 text-[12px] font-semibold text-ink"
+                onClick={() => void onSetDefault(isDefault ? null : s)}
+                disabled={pendingStoreId !== null}
+                className="skin-control ml-auto border border-line px-2.5 py-1 text-[12px] font-semibold text-ink disabled:opacity-50"
                 style={{ background: 'var(--field)' }}
               >
-                {isDefault ? 'Remove as my store' : 'Set as my store'}
+                {pendingStoreId === s.id
+                  ? 'Saving…'
+                  : isDefault
+                    ? 'Remove as my store'
+                    : 'Set as my store'}
               </button>
             </div>
           </Surface>
@@ -220,14 +230,28 @@ export default function IndieScreen() {
   const [showMap, setShowMap] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [storeError, setStoreError] = useState<string | null>(null)
+  const [pendingStoreId, setPendingStoreId] = useState<string | null>(null)
   const { data: profile } = useProfile()
-  const updateProfile = useUpdateProfile()
+  // This screen owns its own retry-ready error near the store that failed to save.
+  const updateProfile = useUpdateProfile({ errorPresentation: 'inline' })
   const defaultStore = profile?.defaultStore ?? null
 
-  const setDefault = (s: Store | null) =>
-    updateProfile.mutate({
-      defaultStore: s ? { id: s.id, name: s.name, website: s.website } : null,
-    })
+  const setDefault = async (s: Store | null) => {
+    const storeId = s?.id ?? defaultStore?.id
+    if (!storeId) return
+    setStoreError(null)
+    setPendingStoreId(storeId)
+    try {
+      await updateProfile.mutateAsync({
+        defaultStore: s ? { id: s.id, name: s.name, website: s.website } : null,
+      })
+    } catch {
+      setStoreError('Your preferred bookstore could not be saved. The directory is unchanged.')
+    } finally {
+      setPendingStoreId(null)
+    }
+  }
 
   const stores = useQuery({
     queryKey: ['bookstores', loc?.lat, loc?.lng, radius],
@@ -385,6 +409,11 @@ export default function IndieScreen() {
             </div>
           </fieldset>
 
+          {storeError && (
+            <p role="alert" className="mb-3 text-[13px] text-primary">
+              {storeError}
+            </p>
+          )}
           {stores.isLoading && (
             <p className="py-8 text-center text-[14px] text-muted">Finding nearby bookshops…</p>
           )}
@@ -438,6 +467,7 @@ export default function IndieScreen() {
                 origin={loc}
                 defaultId={defaultStore?.id ?? null}
                 onSetDefault={setDefault}
+                pendingStoreId={pendingStoreId}
               />
               <p className="mt-4 text-[11.5px] text-muted">
                 Listings and location data ©{' '}

@@ -235,3 +235,55 @@ test('the persistent add glyph is geometrically centered in Marginalia and Alman
     expect(geometry!.y, skin).toBeLessThan(0.5)
   }
 })
+
+test('a failed preferred-bookshop save leaves the directory usable and explains what happened', async ({
+  page,
+}) => {
+  await page.route('**/api/bookstores?*', (route) =>
+    route.fulfill({
+      json: {
+        payload: {
+          elements: [
+            {
+              type: 'node',
+              id: 44,
+              lat: 44.274,
+              lon: -121.176,
+              tags: { name: 'Juniper Books', website: 'juniper-books.example' },
+            },
+          ],
+        },
+      },
+    }),
+  )
+  await page.route('**/functions/v1/geo', async (route) => {
+    const input = route.request().postDataJSON() as { op: string }
+    if (input.op !== 'geocode') throw new Error(`Unexpected geo operation: ${input.op}`)
+    return route.fulfill({
+      json: {
+        payload: [{ lat: '44.2726', lon: '-121.1739', display_name: 'Redmond, Oregon' }],
+      },
+    })
+  })
+
+  await signIn(page)
+  await page.goto('/indie')
+  await page.getByLabel('ZIP code, city, or neighborhood').fill('Redmond, Oregon')
+  await page.getByRole('button', { name: 'Find', exact: true }).click()
+  await expect(page.getByText('Juniper Books', { exact: true })).toBeVisible()
+
+  await page.route('**/rest/v1/profiles?*', async (route) => {
+    if (route.request().method() !== 'PATCH') return route.continue()
+    return route.fulfill({
+      status: 500,
+      json: { code: 'profile_write_unavailable', message: 'Profile update unavailable' },
+    })
+  })
+  await page.getByRole('button', { name: 'Set as my store', exact: true }).click()
+
+  await expect(
+    page.getByText('Your preferred bookstore could not be saved. The directory is unchanged.'),
+  ).toBeVisible()
+  await expect(page.getByText('Juniper Books', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Set as my store', exact: true })).toBeEnabled()
+})
