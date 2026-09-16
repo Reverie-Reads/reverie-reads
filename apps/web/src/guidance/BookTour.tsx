@@ -294,7 +294,7 @@ export function BookTour() {
 
   const modalOutlet = modal?.querySelector<HTMLElement>('[data-book-tour-outlet]') ?? null
   const pageOutlet =
-    ['next-read', 'planner'].includes(state.journey) &&
+    ['first-book', 'next-read', 'planner'].includes(state.journey) &&
     narrow &&
     isBookTourLocation(state, location.pathname)
       ? document.querySelector<HTMLElement>(`[data-book-tour-inline="${step.target}"]`)

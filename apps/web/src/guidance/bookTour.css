@@ -140,7 +140,7 @@
   }
 }
 
-/* Dialog guidance participates in layout, keeping both fields and Save unobscured even
+/* Dialog and phone page guidance participate in layout, keeping fields and Save unobscured even
    when the phone keyboard leaves no safe space for a floating card. */
 .book-tour-panel[data-inline='true'] {
   position: relative;

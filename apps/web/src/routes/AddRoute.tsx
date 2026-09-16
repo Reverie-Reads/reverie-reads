@@ -260,6 +260,7 @@ function RefineAdded({
       >
         Done
       </button>
+      <div className="mt-3 empty:hidden" data-book-tour-inline="book-done" />
       {dialog === 'cover' && <CoverSheet book={book} onClose={() => setDialog(null)} />}
       {dialog === 'trope' && <TropePicker book={book} onClose={() => setDialog(null)} />}
     </Surface>
@@ -897,6 +898,7 @@ function AddForm({
         </Surface>
       )}
 
+      <div className="mt-4 empty:hidden" data-book-tour-inline="book-save" />
       <button
         type="button"
         onClick={() => void save()}
@@ -1501,6 +1503,8 @@ function AddScreen() {
         </button>
       </div>
 
+      <div className="mt-3 empty:hidden" data-book-tour-inline="book-search" />
+
       {scanStatus && (
         <Surface radius="card" tone="card" pad={2} className="mt-3 text-[13px] text-muted">
           {scanStatus}
@@ -1517,6 +1521,7 @@ function AddScreen() {
 
       {results && !picked && (
         <div className="mt-4 flex flex-col gap-2">
+          <div className="empty:hidden" data-book-tour-inline="book-results" />
           {results.length ? (
             <div
               className="space-y-6"

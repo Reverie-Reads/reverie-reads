@@ -160,6 +160,18 @@ In native dialogs the coaching card occupies a normal layout slot above the form
 fields or Save, including short phone viewports. The pointer remains inside the native focus boundary
 and respects reduced motion. Physical phone keyboard verification remains an owner smoke check.
 
+## First-book phone layout and return journey
+
+On narrow screens, Add places live coaching in the page beside search, result selection, Save and
+saved confirmation. The card scrolls with the page instead of covering controls or hiding its
+instructions when the viewport becomes short. Empty outlets occupy no space without a walkthrough;
+desktop floating guidance and native-dialog focus boundaries keep their existing behavior.
+
+The first-book desktop and touch acceptance scenarios continue through the selected-book reading
+handoff, an explicit start, saved progress, Home reload and reopening that same book. They check that
+the saved percentage survives without creating a finished-read log. The all-room intake check uses
+the inline layout at short viewport heights; actual phone keyboard behavior remains a manual check.
+
 ## Verification
 
 - Core guidance/navigation tests: real-history milestones, DNF, undated plans, early exploration,
