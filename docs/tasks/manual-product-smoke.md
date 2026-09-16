@@ -137,6 +137,9 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 ## P1 — return experience
 
+- [ ] **Shelves loading stability:** with a delayed library response, select Collections as the
+      owned-book shelves arrive. The controls must not move out from under the click or silently
+      keep TBRs selected. This has an open September 15 regression entry in the backlog.
 - [ ] **Reading tips:** turn off Show reading tips in Settings → Your library guide. Confirm
       introductions and routine instructions disappear on Library, Next read, Discover, Planner
       and Stats while counts, controls, empty states and private notes stay clear. Reload and
