@@ -345,7 +345,8 @@ function DerivedShelves({
 
 function ShelvesScreen() {
   const navigate = useNavigate()
-  const { data: books } = useBooks()
+  const booksQuery = useBooks()
+  const { data: books } = booksQuery
   const { data: lists } = useLists()
   const { data: items } = useAllListItems()
   const { data: profile } = useProfile()
@@ -433,8 +434,8 @@ function ShelvesScreen() {
 
   const openList = openListId ? (lists ?? []).find((l) => l.id === openListId) : null
 
-  return (
-    <section className="px-4 py-6 sm:px-6">
+  const header = (
+    <>
       <PageHeader
         eyebrow="My library"
         title="Shelves"
@@ -442,6 +443,44 @@ function ShelvesScreen() {
         descriptionIsTip
       />
       <LibraryNavigation current="shelves" className="mb-6 mt-4" />
+    </>
+  )
+
+  // An unresolved library is not empty. Rendering the empty derived shelf briefly put the
+  // Collections control where the arriving spine shelf would be, losing clicks mid-gesture.
+  // Keep the page navigation available, but reveal shelf controls only with their real layout.
+  if (!books) {
+    return (
+      <section className="px-4 py-6 sm:px-6">
+        {header}
+        <Surface radius="panel" tone="card" pad={4}>
+          {booksQuery.isError ? (
+            <>
+              <p role="alert" className="text-[14px] text-ink">
+                We couldn’t load your shelves. Try again.
+              </p>
+              <button
+                type="button"
+                className="skin-control skin-btn-secondary mt-3 min-h-11 px-4"
+                disabled={booksQuery.isFetching}
+                onClick={() => void booksQuery.refetch()}
+              >
+                {booksQuery.isFetching ? 'Trying again…' : 'Try loading shelves again'}
+              </button>
+            </>
+          ) : (
+            <p role="status" className="text-[14px] text-muted">
+              Loading your shelves…
+            </p>
+          )}
+        </Surface>
+      </section>
+    )
+  }
+
+  return (
+    <section className="px-4 py-6 sm:px-6">
+      {header}
 
       <DerivedShelves
         books={all}

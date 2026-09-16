@@ -148,6 +148,75 @@ async function stub(page: Page) {
 
 const tab = (page: Page, name: string | RegExp) => page.getByRole('button', { name })
 
+for (const phone of [false, true]) {
+  test.describe(phone ? 'phone shelf arrival' : 'desktop shelf arrival', () => {
+    test.use({
+      viewport: phone ? { width: 390, height: 844 } : { width: 1280, height: 720 },
+      hasTouch: phone,
+    })
+    test('Collections becomes selectable only when the initial shelf layout is ready', async ({
+      page,
+    }) => {
+      const c = await client()
+      await seedFixtures(c)
+      await stub(page)
+      await signIn(page, c.session)
+      let release!: () => void
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      await page.route('**/rest/v1/books?*', async (route) => {
+        if (route.request().method() === 'GET') await gate
+        await route.fallback()
+      })
+      try {
+        await page.goto('/shelves')
+        await expect(
+          page.getByRole('status').filter({ hasText: 'Loading your shelves…' }),
+        ).toBeVisible()
+        await expect(page.getByText(/Nothing shelved yet/)).toHaveCount(0)
+        await expect(tab(page, 'Collections')).toHaveCount(0)
+        await expect(page.getByRole('link', { name: 'Books', exact: true })).toBeVisible()
+        release()
+        await tab(page, 'Collections').click()
+        await expect(tab(page, 'Collections')).toHaveAttribute('aria-pressed', 'true')
+        await expect(page).toHaveURL(/tab=collection/)
+        await expect(
+          page.getByRole('button', { name: /Tab Routing Collection/ }).first(),
+        ).toBeVisible()
+      } finally {
+        release()
+      }
+    })
+  })
+}
+
+test('an unavailable initial library offers retry without claiming the shelves are empty', async ({
+  page,
+}) => {
+  const c = await client()
+  await seedFixtures(c)
+  await stub(page)
+  await signIn(page, c.session)
+  let fail = true
+  await page.route('**/rest/v1/books?*', (route) => {
+    if (fail && route.request().method() === 'GET')
+      return route.fulfill({ status: 503, json: { message: 'test library unavailable' } })
+    return route.fallback()
+  })
+  await page.goto('/shelves?tab=collection')
+  // The HTTP client and query layer both retry a 503 before it becomes a settled query error.
+  await expect(page.getByRole('alert')).toHaveText('We couldn’t load your shelves. Try again.', {
+    timeout: 20_000,
+  })
+  await expect(page.getByText(/Nothing shelved yet/)).toHaveCount(0)
+  await expect(tab(page, 'Collections')).toHaveCount(0)
+  fail = false
+  await page.getByRole('button', { name: 'Try loading shelves again' }).click()
+  await expect(tab(page, 'Collections')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: /Tab Routing Collection/ }).first()).toBeVisible()
+})
+
 // ── the reported defect, once per surface ────────────────────────────────────────────────────
 // Select the non-default tab, navigate away to a DETAIL route (a full unmount — the flat route
 // tree has no shared parent to preserve state), come back, and require the tab to have survived.

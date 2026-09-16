@@ -1014,16 +1014,19 @@ the repo goes public.
 
 ## Known-flaky, with a prior
 
-- **Shelves initial loading can move Collections during a click — OPEN, observed 2026-09-15.**
+- **Shelves initial loading can move Collections during a click — fix implemented in PR #581,
+  observed 2026-09-15; deployment smoke pending.**
   Public PR #581's fresh-database, one-worker, retries-zero run failed
   `tab-routing.spec.ts`'s first Collections selection at head `abcd4e6`; four serial followers
   consequently did not run. The retained trace shows the click at y=409 while the empty-state
   placeholder was present; the owned-book shelf arrived between pointer events and moved the
   controls toward the bottom of the viewport. The tab stayed unselected. The unchanged five-test
-  routing spec passed a subsequent diagnostic run, which does not erase this occurrence or prove
-  the loading transition safe. Reserve the loading layout or keep tab controls stable, then test
-  selection while a delayed library response settles. Do not fix this by repeatedly clicking in
-  the test. Original artifacts remain at `/private/tmp/reverie-add-save-failed-run-artifacts` on
+  routing spec passed a subsequent diagnostic run, which did not erase the occurrence or prove
+  the loading transition safe. The fix waits for the initial library before revealing the shelf
+  controls, while keeping page navigation available. Failed loading offers explicit retry instead
+  of a false empty state. Delayed desktop/phone arrival and failed-load retry now have regression
+  tests; all eight routing checks passed with retries disabled after the fix. No repeated click
+  was added to the test. Original artifacts remain at `/private/tmp/reverie-add-save-failed-run-artifacts` on
   the development machine; full result: 331 passed, 2 failed, 10 skipped, 5 did not run. The other
   failure was Add's old completion check mistaking the pending button label for success; #581
   corrects it to await the confirmed refinement screen before inspecting the saved genre.
