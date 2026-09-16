@@ -1018,11 +1018,13 @@ SHA-256 ranking, a maximum of two selected works per author identity, the exact 
 affirmative-standalone mix, Luna-low plus Exa fallback, and a $10 Exa ceiling.
 
 Build publisher-controlled selection frames through supported APIs rather than scraping retail
-pages. The PRH intake uses the public Enhanced PRH API, captures every English-language work in an
-explicit publication-date interval, verifies the API record count against unique work IDs, and
-resumes from private state after an infrastructure failure. It retains structured identity,
-category, series, and position metadata plus response hashes; it discards descriptions and never
-persists or logs the key.
+pages. The PRH intake uses the public Enhanced PRH API under its current
+`/resources/v2/title` root, captures every English-language work in an explicit publication-date
+interval, verifies the API record count against unique work IDs, and resumes from private state
+after an infrastructure failure. It accepts both active-v2 array envelopes and the older named
+collection envelope so an empty relationship is still represented explicitly. It retains
+structured identity, category, series, and position metadata plus response hashes; it discards
+descriptions and never persists or logs the key.
 
 Register for a PRH developer key, then keep it beside the other local trial keys:
 
@@ -1046,6 +1048,12 @@ same complete publication-date frame; it does not accept a series code, title qu
 random result. The selection constraint is recorded in the frame manifest. Each retained
 relationship still requires human review of its separate exact-work publisher evidence before it
 can become gold truth.
+
+PRH is not a corpus-shadow grouping provider. A 2026-09-16 exact-identity sample of 50 unresolved
+corpus works found 11 unique PRH identities but only three works with any PRH series relation; the
+returned names were publisher collections or branded catalog groupings rather than reliable
+bibliographic reading series. Keep this intake bounded to qualification and human review unless a
+future reviewed sample demonstrates a materially different precision profile.
 
 Remove `--dry-run` to capture the frame. The output remains under ignored
 `private-results/authority-qualification/` and is intentionally a review queue. Exact structured
