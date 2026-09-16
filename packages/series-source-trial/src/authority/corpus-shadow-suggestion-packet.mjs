@@ -34,6 +34,7 @@ export function buildCorpusShadowSuggestionPacket({
   if (historyById.size !== historical.works.length) fail('historical snapshot has duplicate works')
 
   const stageable = []
+  const removalReviews = []
   const manualReview = []
   for (const item of manifest.lanes.pendingSuggestions) {
     const history = historyById.get(item.id)
@@ -68,8 +69,48 @@ export function buildCorpusShadowSuggestionPacket({
     }
   }
 
+  for (const item of manifest.lanes.manualReview) {
+    if (!['review_historical_authority', 'review_standalone_conflict'].includes(item.action)) {
+      continue
+    }
+    const history = historyById.get(item.id)
+    if (
+      !history ||
+      history.identityFingerprint !== item.identityFingerprint ||
+      !Array.isArray(history.pendingSuggestions) ||
+      history.pendingSuggestions.length !== item.expectedBaseline.pendingSuggestionCount
+    ) {
+      fail(`historical removal-review baseline drifted for ${item.id}`)
+    }
+    const current = item.expectedBaseline.currentMemberships
+    if (
+      current.length !== 1 ||
+      current[0]?.role !== 'primary' ||
+      !current[0]?.series?.trim() ||
+      item.proposal.memberships.length !== 0
+    ) {
+      fail(`removal review is not one current primary with no replacement for ${item.id}`)
+    }
+    removalReviews.push({
+      workId: item.id,
+      title: item.title,
+      authors: item.authors,
+      identityFingerprint: item.identityFingerprint,
+      action: item.action,
+      expectedBaseline: item.expectedBaseline,
+      expectedPendingSuggestions: history.pendingSuggestions,
+      proposal: {
+        action: 'remove',
+        series: current[0].series,
+        position: current[0].position ?? null,
+        role: 'primary',
+        decisionSha256: item.proposal.decisionSha256,
+      },
+    })
+  }
+
   const core = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     purpose: CORPUS_SHADOW_SUGGESTION_PACKET_PURPOSE,
     createdAt,
     project: manifest.sourceFrame.project,
@@ -80,10 +121,12 @@ export function buildCorpusShadowSuggestionPacket({
     counts: {
       resolvedDecisions: manifest.lanes.pendingSuggestions.length,
       stageable: stageable.length,
+      removalReviews: removalReviews.length,
       manualReview: manualReview.length,
-      batches: Math.ceil(stageable.length / 25),
+      batches: Math.ceil(stageable.length / 25) + Math.ceil(removalReviews.length / 25),
     },
     stageable,
+    removalReviews,
     manualReview,
     mutationBoundary: 'private_staging_packet_no_supabase_or_corpus_writer',
   }
@@ -92,26 +135,39 @@ export function buildCorpusShadowSuggestionPacket({
 
 export function validateCorpusShadowSuggestionPacket(packet) {
   if (
-    packet?.schemaVersion !== 1 ||
+    packet?.schemaVersion !== 2 ||
     packet?.purpose !== CORPUS_SHADOW_SUGGESTION_PACKET_PURPOSE ||
     !Number.isFinite(Date.parse(packet.createdAt ?? '')) ||
     !/^[a-z0-9]{20}$/.test(packet.project ?? '') ||
     !/^[a-f0-9]{64}$/.test(packet.sourceManifest?.sha256 ?? '') ||
     !/^[a-f0-9]{64}$/.test(packet.sourceManifest?.historicalSha256 ?? '') ||
     !Array.isArray(packet.stageable) ||
+    !Array.isArray(packet.removalReviews) ||
     !Array.isArray(packet.manualReview)
   ) {
     fail('packet metadata is invalid')
   }
-  const ids = [...packet.stageable, ...packet.manualReview].map(({ workId }) => workId)
+  const represented = [...packet.stageable, ...packet.removalReviews, ...packet.manualReview]
+  const ids = represented.map(({ workId }) => workId)
   if (
     new Set(ids).size !== ids.length ||
-    packet.counts?.resolvedDecisions !== ids.length ||
+    packet.counts?.resolvedDecisions !== packet.stageable.length + packet.manualReview.length ||
     packet.counts?.stageable !== packet.stageable.length ||
+    packet.counts?.removalReviews !== packet.removalReviews.length ||
     packet.counts?.manualReview !== packet.manualReview.length ||
-    packet.counts?.batches !== Math.ceil(packet.stageable.length / 25) ||
+    packet.counts?.batches !==
+      Math.ceil(packet.stageable.length / 25) + Math.ceil(packet.removalReviews.length / 25) ||
     packet.stageable.some(
       (item) =>
+        item.proposal?.role !== 'primary' ||
+        !item.proposal?.series?.trim() ||
+        !/^[a-f0-9]{32}$/.test(item.identityFingerprint ?? '') ||
+        !/^[a-f0-9]{64}$/.test(item.proposal?.decisionSha256 ?? ''),
+    ) ||
+    packet.removalReviews.some(
+      (item) =>
+        !['review_historical_authority', 'review_standalone_conflict'].includes(item.action) ||
+        item.proposal?.action !== 'remove' ||
         item.proposal?.role !== 'primary' ||
         !item.proposal?.series?.trim() ||
         !/^[a-f0-9]{32}$/.test(item.identityFingerprint ?? '') ||

@@ -123,6 +123,11 @@ function ListBucket({ title, items }: { title: string; items: NeedsLookItem[] })
 export function CorpusSeriesReview({ suggestions }: { suggestions: CorpusSeriesSuggestion[] }) {
   const review = useReviewCorpusSeriesSuggestion()
   if (!suggestions.length) return null
+  const ordered = [...suggestions].sort((left, right) => {
+    const action =
+      Number(right.proposalAction === 'remove') - Number(left.proposalAction === 'remove')
+    return action || left.title.localeCompare(right.title) || left.id.localeCompare(right.id)
+  })
   return (
     <section className="mt-6">
       <h2
@@ -133,10 +138,11 @@ export function CorpusSeriesReview({ suggestions }: { suggestions: CorpusSeriesS
       </h2>
       <p className="mb-2 text-[12px] leading-relaxed text-muted">
         These catalog matches were not certain enough to change shared series information. Accept
-        only when the proposed series and position belong to this work.
+        only when the proposed series and position belong to this work. Shared corrections flow to
+        eligible automatic library defaults; reader and import choices stay unchanged.
       </p>
       <ul className="space-y-2">
-        {suggestions.map((suggestion) => (
+        {ordered.map((suggestion) => (
           <Surface as="li" key={suggestion.id} tone="card" radius="card" pad={3}>
             <div className="break-words text-[13.5px] font-semibold text-ink">
               {suggestion.title}
@@ -157,9 +163,19 @@ export function CorpusSeriesReview({ suggestions }: { suggestions: CorpusSeriesS
               <div>
                 <span className="text-muted">Proposed: </span>
                 <span className="text-ink">
-                  {suggestion.proposedSeries}
-                  {suggestion.proposedPosition == null ? '' : ` · #${suggestion.proposedPosition}`}
-                  {suggestion.proposedCount == null ? '' : ` · ${suggestion.proposedCount} books`}
+                  {suggestion.proposalAction === 'remove' ? (
+                    <>Remove the shared {suggestion.proposedSeries} membership</>
+                  ) : (
+                    <>
+                      {suggestion.proposedSeries}
+                      {suggestion.proposedPosition == null
+                        ? ''
+                        : ` · #${suggestion.proposedPosition}`}
+                      {suggestion.proposedCount == null
+                        ? ''
+                        : ` · ${suggestion.proposedCount} books`}
+                    </>
+                  )}
                 </span>
               </div>
             </div>
@@ -223,7 +239,9 @@ export function CorpusSeriesReview({ suggestions }: { suggestions: CorpusSeriesS
                 className="skin-control min-h-11 px-3 py-2 text-[12.5px] font-semibold disabled:opacity-50"
                 style={{ background: 'var(--accent-fill)', color: 'var(--on-primary)' }}
               >
-                Accept shared series
+                {suggestion.proposalAction === 'remove'
+                  ? 'Remove false series'
+                  : 'Accept shared series'}
               </button>
               <button
                 type="button"
@@ -231,7 +249,7 @@ export function CorpusSeriesReview({ suggestions }: { suggestions: CorpusSeriesS
                 onClick={() => review.mutate({ suggestionId: suggestion.id, decision: 'dismiss' })}
                 className="skin-control min-h-11 border border-line px-3 py-2 text-[12.5px] font-semibold text-ink disabled:opacity-50"
               >
-                Dismiss
+                {suggestion.proposalAction === 'remove' ? 'Keep current series' : 'Dismiss'}
               </button>
             </div>
           </Surface>
@@ -254,7 +272,7 @@ export function CorpusShadowSuggestionStaging() {
       const parsed = await parseCorpusShadowSuggestionPacket(JSON.parse(await file.text()))
       setPacket(parsed)
       setStatus(
-        `${parsed.counts.stageable} primary proposals ready in ${parsed.counts.batches} batches; ${parsed.counts.manualReview} non-primary relationship remains manual.`,
+        `${parsed.counts.stageable} primary proposals and ${parsed.counts.removalReviews} historical removal reviews are ready in ${parsed.counts.batches} batches; ${parsed.counts.manualReview} relationship remains outside this queue.`,
       )
     } catch (error) {
       setStatus(`Couldn’t use that file: ${(error as Error).message}`)
@@ -299,7 +317,7 @@ export function CorpusShadowSuggestionStaging() {
           className="skin-control min-h-11 px-3 py-2 text-[12.5px] font-semibold disabled:opacity-50"
           style={{ background: 'var(--accent-fill)', color: 'var(--on-primary)' }}
         >
-          Stage {packet?.counts.stageable ?? 0} suggestions
+          Stage {(packet?.counts.stageable ?? 0) + (packet?.counts.removalReviews ?? 0)} suggestions
         </button>
       </div>
       {status && (

@@ -197,13 +197,20 @@ describe('personal cover corpus review state', () => {
 describe('corpus shadow suggestion staging packet', () => {
   it('accepts only a hash-bound packet whose counts reconcile', async () => {
     const core = {
-      schemaVersion: 1 as const,
+      schemaVersion: 2 as const,
       purpose: 'corpus-series-shadow-suggestion-staging-packet' as const,
       createdAt: '2026-09-16T00:00:00.000Z',
       project: 'abcdefghijklmnopqrst',
       sourceManifest: { sha256: 'a'.repeat(64), historicalSha256: 'b'.repeat(64) },
-      counts: { resolvedDecisions: 1, stageable: 1, manualReview: 0, batches: 1 },
+      counts: {
+        resolvedDecisions: 1,
+        stageable: 1,
+        removalReviews: 1,
+        manualReview: 0,
+        batches: 2,
+      },
       stageable: [{ workId: 'work-1' }],
+      removalReviews: [{ workId: 'work-2' }],
       manualReview: [],
       mutationBoundary: 'private_staging_packet_no_supabase_or_corpus_writer',
     }

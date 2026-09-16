@@ -274,6 +274,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   policy-quarantined and remains a locator, never evidence. The shadow workflow has no production
   writer; later application must use reviewed administrator deltas and preserve reader/import
   choices. See `docs/tasks/corpus-series-shadow-rebuild.md`.
+  Completed historical authority cases that remain unresolved or conflict with an affirmative
+  standalone result may be staged only as revision-bound administrator keep/remove reviews. They
+  never remove a shared membership during staging. Explicit acceptance tombstones the exact frozen
+  primary membership, archives an empty series, clears only eligible automatic corpus defaults,
+  and preserves reader/import choices; dismissal keeps the current graph.
   Inventaire, BookBrainz, and the resolver stay trial-only until the reviewed accuracy,
   standalone-safety, rights, privacy, latency, and cost gates pass. See
   `docs/reference/DATA_SOURCES.md`.

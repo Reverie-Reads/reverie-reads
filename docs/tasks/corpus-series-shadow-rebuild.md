@@ -53,6 +53,20 @@ validates identity and the complete live baseline, is idempotent, and changes ne
 nor personal books. Accept/dismiss rechecks the catalog-series fingerprint and metadata-review
 revision captured at staging; stale proposals stop for refresh.
 
+Completed historical cases that remain unresolved, plus affirmative standalone conflicts, enter
+the handoff only as explicit keep-or-remove reviews. Their current primary membership is the frozen
+subject of review—not a model-issued removal decision. Acceptance must match the exact work, entry,
+series revision, review revision, and packet hashes; it tombstones that membership and archives the
+series only if no live entries remain. Dismissal retains the graph. Reader- and import-chosen
+personal series stay unchanged, while eligible automatic corpus defaults follow an accepted shared
+correction.
+
+Ordinary bibliographic series membership has one direction of authority: shared corpus to eligible
+library defaults. Same-world, universe, crossover, and interconnected-setting relationships remain
+outside that primary stream; the shadow policy continues to quarantine them rather than forcing
+them into `corpus_series_entries`. A separate universe relation can be considered later from a
+demonstrated reader need without weakening basic series accuracy.
+
 ## First command
 
 This command performs one read-only production query and writes one owner-only ignored file. Its

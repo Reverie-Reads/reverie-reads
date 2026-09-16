@@ -198,9 +198,14 @@ test('builds a private staging packet and isolates relationships unsupported by 
   assert.deepEqual(packet.counts, {
     resolvedDecisions: 3,
     stageable: 2,
+    removalReviews: 1,
     manualReview: 1,
-    batches: 1,
+    batches: 2,
   })
+  assert.equal(packet.schemaVersion, 2)
+  assert.equal(packet.removalReviews[0].action, 'review_standalone_conflict')
+  assert.equal(packet.removalReviews[0].proposal.action, 'remove')
+  assert.equal(packet.removalReviews[0].proposal.series, 'Old')
   assert.equal(packet.manualReview[0].proposal.role, 'secondary')
   assert.equal(packet.manualReview[0].reason, 'primary_suggestion_schema_does_not_model_role')
   assert.equal(packet.mutationBoundary, 'private_staging_packet_no_supabase_or_corpus_writer')

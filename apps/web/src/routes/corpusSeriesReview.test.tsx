@@ -24,6 +24,7 @@ const suggestion: CorpusSeriesSuggestion = {
   proposedSeries: 'The Stranger Cycle',
   proposedPosition: 2,
   proposedCount: 4,
+  proposalAction: 'set',
   source: 'hardcover',
   identityConfidence: 'high',
   membershipConfidence: 'medium',
@@ -71,6 +72,37 @@ describe('corpus series administrator review', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(mocks.mutate).toHaveBeenLastCalledWith({
       suggestionId: 'suggestion-1',
+      decision: 'dismiss',
+    })
+  })
+
+  it('labels a historical removal review as a keep-or-remove decision', () => {
+    render(
+      <CorpusSeriesReview
+        suggestions={[
+          {
+            ...suggestion,
+            id: 'removal-1',
+            title: '1Q84',
+            currentSeries: '1Q84',
+            proposedSeries: '1Q84',
+            proposalAction: 'remove',
+            reason: 'The truth-blind review could not verify this historical shared series.',
+            evidence: [],
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.getByText('Remove the shared 1Q84 membership')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Remove false series' }))
+    expect(mocks.mutate).toHaveBeenLastCalledWith({
+      suggestionId: 'removal-1',
+      decision: 'accept',
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Keep current series' }))
+    expect(mocks.mutate).toHaveBeenLastCalledWith({
+      suggestionId: 'removal-1',
       decision: 'dismiss',
     })
   })
