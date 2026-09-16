@@ -11,6 +11,7 @@
     "metadata:value": "node src/value-metadata.mjs",
     "metadata:study": "node src/study-metadata.mjs",
     "authority:acquire": "node src/acquire-authority.mjs",
+    "authority:corpus-shadow:export": "node src/export-corpus-shadow.mjs",
     "authority:post-recovery:export": "node src/export-post-recovery-authority.mjs",
     "authority:post-recovery:compare": "node src/compare-post-recovery-authority.mjs",
     "authority:qualification:capture:ippy": "node src/capture-authority-qualification-ippy.mjs",
