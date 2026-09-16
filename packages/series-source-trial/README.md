@@ -694,6 +694,23 @@ The merger rejects gaps, overlaps, duplicate identities, source-frame drift, pro
 and rights-metadata drift. It rebuilds groups from all retained observations so batch boundaries do
 not create false singletons. The merged graph remains private, create-only, and review-only.
 
+Review the merged candidate graph with bounded Luna-low group calls:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:review -- \
+  --input packages/series-source-trial/private-results/corpus-series-shadow-merged/full.json \
+  --offset 0 \
+  --limit 25 \
+  --env /ABSOLUTE/PATH/TO/series-source-trial/.env.local
+```
+
+Every group member receives the existing strict authority output and deterministic policy
+validation. The input candidate is never treated as truth, all cited URLs must belong to the same
+model run's consulted-source manifest, and only direct policy-safe author or publisher evidence can
+support a group. Successful calls use a configuration-bound private cache. The Luna stage refuses
+refresh and Exa; unresolved or quarantined results are the only inputs eligible for a later Exa
+locator stage. The report remains private, review-only, create-only, and has no corpus writer.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an
