@@ -119,6 +119,13 @@ Exa routing. The merged private report admits only unresolved or policy-quaranti
 it does not send supported candidates, rejected source tuples, valid alternative classifications,
 malformed output, or infrastructure errors to Exa.
 
+The Exa queue is deduplicated by exact frozen work identity while preserving all prior Luna pass
+history for conflict validation. Run it in batches of at most 50 unique works. A hash-bound private
+ledger reserves each request and enforces one cumulative ceiling of at most $10 across the frozen
+review. Persist only aggregate Exa operations and the later Luna evidence; never retain Exa URLs,
+domains, results, snippets, queries, or request identifiers. This stage also has no production
+writer.
+
 ## Model placement and cost
 
 Do not run Exa for every work. It cannot establish truth, and the September recovery-review batch
