@@ -146,10 +146,11 @@ malformed output, or infrastructure errors to Exa.
 
 The Exa queue is deduplicated by exact frozen work identity while preserving all prior Luna pass
 history for conflict validation. Run it in batches of at most 50 unique works. A hash-bound private
-ledger reserves each request and enforces one cumulative ceiling of at most $10 across the frozen
-review. Persist only aggregate Exa operations and the later Luna evidence; never retain Exa URLs,
-domains, results, snippets, queries, or request identifiers. This stage also has no production
-writer.
+ledger reserves each request and enforces one cumulative ceiling across the frozen review. The
+ceiling may only increase, is durably recorded, and is capped at $30; the owner raised this run from
+$10 to $30 on 2026-09-16. Persist only aggregate Exa operations and the later Luna evidence; never
+retain Exa URLs, domains, results, snippets, queries, or request identifiers. This stage also has no
+production writer.
 
 After the complete Exa ranges are merged, build one deterministic work-level reconciliation ledger.
 It is hash-bound to the full candidate graph, merged Luna report, and merged Exa report. Only valid,
@@ -170,6 +171,15 @@ position-review cases, affirmative-standalone conflicts, and unresolved historic
 shadow position does not erase a historical position. Standalone-versus-membership conflicts are
 review-only, and unresolved or manual-review shadow works cannot remove any current membership. The
 result remains a private review artifact with no writer.
+
+After the identity-only historical lane finishes, merge its non-overlapping reports, overlay those
+decisions onto the original full-corpus reconciliation, and repeat the historical comparison. A
+policy-safe series or affirmative standalone result replaces the earlier unresolved shadow result.
+An unresolved, quarantined, or malformed completed result becomes
+`historical_review_complete_unresolved`; it remains a manual-review delta and never becomes an
+automatic removal. Rebuild the final review manifest and staging packet from this reconciled
+comparison. The original manifest remains the immutable input boundary for the historical run; the
+new final manifest is the immutable boundary for administrator staging.
 
 ## Model placement and cost
 

@@ -11,7 +11,11 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const HASH_RE = /^[a-f0-9]{64}$/
 const MD5_RE = /^[a-f0-9]{32}$/
 const STAGE_ACTIONS = new Set(['add_series', 'replace_series', 'update_position'])
-const REVIEW_ACTIONS = new Set(['review_position', 'review_standalone_conflict'])
+const REVIEW_ACTIONS = new Set([
+  'review_position',
+  'review_standalone_conflict',
+  'review_historical_authority',
+])
 const HISTORICAL_FORBIDDEN_KEYS = new Set([
   'action',
   'candidateSeries',

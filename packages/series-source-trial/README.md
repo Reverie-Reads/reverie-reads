@@ -872,6 +872,23 @@ compact work ledger retains only the selected classification,
 membership tuple, pass name, and hashes pointing back to the private range evidence; consulted URLs
 remain in the source reports rather than being copied forward.
 
+Overlay that completed historical authority ledger onto the original full-corpus reconciliation,
+then repeat comparison, manifest creation, and packet creation from the new hashes:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:historical:reconcile -- \
+  --manifest packages/series-source-trial/private-results/corpus-series-shadow-review-manifest/full.json \
+  --reconciliation packages/series-source-trial/private-results/corpus-series-shadow-reconciled/full.json \
+  --historical-authority packages/series-source-trial/private-results/corpus-shadow-historical-merged/full.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-reconciled/final.json
+```
+
+The overlay accepts only the complete manifest-bound historical ledger. Policy-safe resolved series
+and affirmative standalone decisions replace the earlier unresolved shadow state. An unresolved,
+quarantined, or malformed completed result is retained as
+`historical_review_complete_unresolved`, which the next comparison routes to manual review rather
+than staging or removal. The output remains private and has no Supabase or corpus writer.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an

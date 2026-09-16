@@ -8,6 +8,7 @@ import {
   validateCorpusShadowReviewManifest,
 } from '../src/authority/corpus-shadow-review-manifest.mjs'
 import { mergeCorpusShadowHistoricalReports } from '../src/authority/corpus-shadow-historical-merge.mjs'
+import { reconcileCorpusShadowHistoricalAuthority } from '../src/authority/corpus-shadow-historical-reconcile.mjs'
 import {
   buildCorpusShadowSuggestionPacket,
   validateCorpusShadowSuggestionPacket,
@@ -420,4 +421,80 @@ test('historical merge keeps a completed prefix and resumes at the first trailin
     effectiveEnd: 1,
     truncatedIncomplete: 1,
   })
+})
+
+test('reconciles the completed historical lane without trusting unresolved output', () => {
+  const manifest = buildCorpusShadowReviewManifest({
+    comparison,
+    comparisonSha256: '1'.repeat(64),
+    reconciliation,
+    reconciliationSha256,
+    createdAt: '2026-09-16T12:00:00.000Z',
+  })
+  const item = manifest.lanes.historicalVerification[0]
+  const historicalAuthority = {
+    schemaVersion: 1,
+    purpose: 'corpus-series-shadow-historical-authority-merge',
+    sourceManifest: { sha256: manifest.manifestSha256 },
+    counts: {
+      works: 1,
+      resolvedSeries: 1,
+      resolvedStandalone: 0,
+      manualReview: 0,
+      unresolved: 0,
+      exaSelected: 1,
+    },
+    works: [
+      {
+        workId: item.id,
+        title: item.title,
+        authors: item.authors,
+        publicationYear: item.publicationYear,
+        identityFingerprint: item.identityFingerprint,
+        status: 'resolved_series',
+        classification: 'series',
+        memberships: [{ series: 'Verified Series', position: 2, role: 'primary' }],
+        selectedPass: 'exa_fallback',
+        provenance: {
+          reportSha256: '7'.repeat(64),
+          outputSha256: '8'.repeat(64),
+        },
+      },
+    ],
+  }
+  const reconciled = reconcileCorpusShadowHistoricalAuthority({
+    manifest,
+    reconciliation,
+    reconciliationSha256,
+    historicalAuthority,
+    historicalAuthoritySha256: '9'.repeat(64),
+  })
+  const resolved = reconciled.works.find(({ workId }) => workId === item.id)
+  assert.equal(resolved.status, 'resolved_series')
+  assert.deepEqual(resolved.memberships, historicalAuthority.works[0].memberships)
+  assert.equal(reconciled.counts.exaSelected, 1)
+
+  const unresolvedAuthority = structuredClone(historicalAuthority)
+  unresolvedAuthority.works[0].status = 'manual_review'
+  unresolvedAuthority.works[0].classification = 'unresolved'
+  unresolvedAuthority.works[0].memberships = []
+  unresolvedAuthority.works[0].selectedPass = 'first'
+  unresolvedAuthority.counts = {
+    works: 1,
+    resolvedSeries: 0,
+    resolvedStandalone: 0,
+    manualReview: 1,
+    unresolved: 0,
+    exaSelected: 0,
+  }
+  const unresolved = reconcileCorpusShadowHistoricalAuthority({
+    manifest,
+    reconciliation,
+    reconciliationSha256,
+    historicalAuthority: unresolvedAuthority,
+    historicalAuthoritySha256: '6'.repeat(64),
+  }).works.find(({ workId }) => workId === item.id)
+  assert.equal(unresolved.status, 'historical_review_complete_unresolved')
+  assert.equal(unresolved.classification, 'unresolved')
+  assert.deepEqual(unresolved.memberships, [])
 })
