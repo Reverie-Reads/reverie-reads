@@ -773,6 +773,27 @@ Works with no relational source candidate stay unresolved, never standalone. The
 stores decision hashes and stage/group pointers rather than copying consulted URLs, and it has no
 production writer.
 
+Only after that ledger exists, take one identity-bound read-only snapshot of the historical shared
+series state and compare it:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:history:export -- \
+  --project PROJECT_REF \
+  --frame packages/series-source-trial/private-results/corpus-series-shadow/PROJECT_REF.json
+
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:compare -- \
+  --reconciliation packages/series-source-trial/private-results/corpus-series-shadow-reconciled/full.json \
+  --historical packages/series-source-trial/private-results/corpus-series-shadow-history/PROJECT_REF.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-comparison/full.json
+```
+
+The exporter reads only shared works, current shared series memberships, the compatibility
+projection, and pending suggestions. It rejects any work-ID or identity-fingerprint drift from the
+frozen frame. The comparator separates exact matches, additions, name replacements, position
+changes, affirmative-standalone removals, and still-unverified historical claims. An unknown new
+position never clears an existing position. These are review deltas, not writes; unresolved shadow
+works cannot remove historical data.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an
