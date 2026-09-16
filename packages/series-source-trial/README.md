@@ -726,6 +726,31 @@ member reviews whose Luna classification is unresolved or whose otherwise valid 
 policy-quarantined. Supported candidates, rejected provider tuples, valid alternative series,
 malformed output, and infrastructure errors do not enter the Exa queue.
 
+Run that queue in bounded unique-work batches:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:exa -- \
+  --review packages/series-source-trial/private-results/corpus-series-shadow-review-merged/full.json \
+  --graph packages/series-source-trial/private-results/corpus-series-shadow-merged/full.json \
+  --offset 0 \
+  --limit 50 \
+  --maximum-exa-spend 10 \
+  --env /ABSOLUTE/PATH/TO/series-source-trial/.env.local
+```
+
+Repeated queue entries for one work are deduplicated while every prior grounded Luna pass remains
+in the conflict history. Exa performs only its fixed title/author locator queries; its result URLs,
+domains, titles, snippets, queries, and request IDs are never persisted. A second Luna-low call may
+search at most the eight in-memory candidate domains and can cite only its own consulted-source
+manifest. A private hash-bound ledger reserves every Exa request before sending it and enforces one
+cumulative ceiling across batches. Successful work results are cached without raw Exa content.
+The stage remains review-only and has no Supabase or corpus writer.
+
+After every unique-work range finishes, merge the reports with
+`authority:corpus-shadow:exa:merge`. The merger rejects gaps, overlaps, duplicate work IDs, input
+drift, experiment drift, and forged aggregate counts before producing the complete private fallback
+artifact.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an
