@@ -66,6 +66,12 @@ The default source set is Open Library, Wikidata, Inventaire, BookBrainz, and Ha
 available only as an explicit identity-only diagnostic and cannot contribute a relationship.
 Outputs are create-only so a later command cannot silently replace an earlier observation.
 
+PRH stays outside this provider set. Its active Enhanced API is useful for publisher-catalog
+qualification, but a 2026-09-16 exact-identity check against 50 currently unresolved works found 11
+unique PRH identities and only three works with series relations. Those relations were publisher
+collections or branded catalog groupings, not clean bibliographic series evidence. That yield does
+not justify a 608-work supplement or another full model pass.
+
 The candidate graph groups exact normalized relationship names inside the frozen full-author scope.
 It carries source lineage, position observations, eligibility, conflicts, and risk flags forward.
 Every group is marked for Luna review, including apparently corroborated groups. A work with no

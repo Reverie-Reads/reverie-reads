@@ -2,7 +2,7 @@ import { normalize, slug } from '../normalize.mjs'
 import { sha256Json } from './qualification.mjs'
 
 export const PRH_API_ORIGIN = 'https://api.penguinrandomhouse.com'
-export const PRH_API_ROOT = `${PRH_API_ORIGIN}/title/client/Public`
+export const PRH_API_ROOT = `${PRH_API_ORIGIN}/resources/v2/title`
 export const PRH_PUBLIC_ORIGIN = 'https://www.penguinrandomhouse.com'
 
 const asArray = (value) => (Array.isArray(value) ? value : [])
@@ -93,7 +93,9 @@ export function buildPrhFrameSpec({
 }
 
 export function prhCollection(payload, name) {
-  const collection = payload?.data?.[name] ?? payload?.[name]
+  const collection = Array.isArray(payload?.data)
+    ? payload.data
+    : (payload?.data?.[name] ?? payload?.[name])
   if (!Array.isArray(collection)) {
     throw new Error(`PRH response does not contain data.${name}`)
   }

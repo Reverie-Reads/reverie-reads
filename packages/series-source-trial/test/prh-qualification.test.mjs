@@ -5,6 +5,7 @@ import {
   buildPrhFrameSpec,
   buildPrhQualificationCandidate,
   prhAuthorNames,
+  prhCollection,
   prhMembershipProposal,
   prhQualificationStrata,
   prhRequestUrl,
@@ -24,6 +25,8 @@ const frame = buildPrhFrameSpec({
 })
 
 test('builds a bounded first-party frame without persisting the API key', () => {
+  assert.match(frame.url, /^https:\/\/api\.penguinrandomhouse\.com\/resources\/v2\/title\//)
+  assert.doesNotMatch(frame.url, /\/title\/client\/Public\//)
   assert.match(frame.url, /domains\/PRH\.US\/works/)
   assert.match(frame.url, /workOnSaleFrom=01%2F01%2F2025/)
   assert.match(frame.url, /rows=0/)
@@ -33,6 +36,11 @@ test('builds a bounded first-party frame without persisting the API key', () => 
   const request = prhRequestUrl(frame.url, 'top-secret')
   assert.equal(request.searchParams.get('api_key'), 'top-secret')
   assert.doesNotMatch(sanitizePrhUrl(request), /top-secret|api_key/)
+})
+
+test('accepts the active v2 collection envelope and the legacy named envelope', () => {
+  assert.deepEqual(prhCollection({ data: [{ workId: 1 }] }, 'works'), [{ workId: 1 }])
+  assert.deepEqual(prhCollection({ data: { works: [{ workId: 2 }] } }, 'works'), [{ workId: 2 }])
 })
 
 test('can preregister a complete date-bounded numbered-series challenge frame', () => {
@@ -165,7 +173,7 @@ test('retains series identity, position, quarantine flags, and evidence digests 
       series: { sha256: 'abc' },
       seriesPositions: {
         SER: {
-          url: 'https://api.penguinrandomhouse.com/title/client/Public/domains/PRH.US/series/SER/works?sort=seriesNumber&api_key=should-not-survive',
+          url: 'https://api.penguinrandomhouse.com/resources/v2/title/domains/PRH.US/series/SER/works?sort=seriesNumber&api_key=should-not-survive',
           sha256: 'def',
         },
       },
