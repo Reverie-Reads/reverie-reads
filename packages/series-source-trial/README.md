@@ -664,6 +664,23 @@ stages described in `docs/tasks/corpus-series-shadow-rebuild.md`. Do not compare
 graph until the shadow graph is complete, and never give historical series values to acquisition or
 the model as hints.
 
+Acquire fixed-host relationship evidence from that frame in create-only batches:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:acquire -- \
+  --input packages/series-source-trial/private-results/corpus-series-shadow/PROJECT_REF.json \
+  --offset 0 \
+  --limit 250
+```
+
+The default sources are Open Library, Wikidata, Inventaire, BookBrainz, and Hardcover. Google is
+available only when explicitly selected and remains identity-only. Every adapter must exactly cover
+the selected batch before the candidate graph is accepted. Exact normalized relationship names are
+grouped only within the frozen full-author scope. Conflicts, singletons, risky containers, position
+observations, source lineage, and provider errors remain visible; every group still requires Luna
+review. Missing relationships stay unresolved with no standalone inference. Reports remain ignored,
+owner-only, and unable to write Supabase or either book table.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an
