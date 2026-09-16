@@ -76,7 +76,8 @@ export default defineConfig(({ command, mode }) => {
               project: process.env.SENTRY_PROJECT,
               authToken: process.env.SENTRY_AUTH_TOKEN,
               telemetry: false,
-              release: { name: sentryRelease },
+              // Deployment status is recorded after Vercel succeeds, not during the build.
+              release: { name: sentryRelease, deploy: false },
               sourcemaps: {
                 filesToDeleteAfterUpload: [
                   './dist/**/*.map',
