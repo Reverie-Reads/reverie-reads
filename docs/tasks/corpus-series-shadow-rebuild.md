@@ -132,6 +132,17 @@ review. Persist only aggregate Exa operations and the later Luna evidence; never
 domains, results, snippets, queries, or request identifiers. This stage also has no production
 writer.
 
+After the complete Exa ranges are merged, build one deterministic work-level reconciliation ledger.
+It is hash-bound to the full candidate graph, merged Luna report, and merged Exa report. Only valid,
+policy-safe Luna outputs resolve a work. A selected Exa fallback contributes the later restricted
+Luna output, never locator content. Conflicting safe outputs and partially unresolved competing
+groups stay in manual review. An unnumbered relationship supported only by a publisher-catalog
+page remains unresolved until a non-catalog authority source corroborates it, preventing a
+marketing collection from entering the automatic lane. Works without any relational candidate
+remain unresolved. The ledger
+contains compact classifications, membership tuples, decision hashes, and stage/group pointers. It
+does not copy search URLs and cannot write the catalog.
+
 ## Model placement and cost
 
 Do not run Exa for every work. It cannot establish truth, and the September recovery-review batch
