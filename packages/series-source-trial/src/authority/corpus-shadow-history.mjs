@@ -149,7 +149,10 @@ export function compareCorpusShadowWithHistory({ reconciliation, historical }) {
       comparison = compareResolvedSeries(desired, current.memberships)
     } else if (shadow.status === 'resolved_standalone') {
       comparison = current.memberships.length
-        ? { action: 'remove_series', reason: 'affirmative_standalone_conflicts_with_history' }
+        ? {
+            action: 'review_standalone_conflict',
+            reason: 'affirmative_standalone_conflicts_with_history',
+          }
         : { action: 'match', reason: 'exact_resolved_match' }
     } else {
       comparison = current.memberships.length
@@ -175,7 +178,7 @@ export function compareCorpusShadowWithHistory({ reconciliation, historical }) {
     'replace_series',
     'update_position',
     'review_position',
-    'remove_series',
+    'review_standalone_conflict',
     'review_unverified_historical',
     'no_action_unresolved',
   ]

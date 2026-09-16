@@ -790,9 +790,10 @@ pnpm --filter @reverie/series-source-trial authority:corpus-shadow:compare -- \
 The exporter reads only shared works, current shared series memberships, the compatibility
 projection, and pending suggestions. It rejects any work-ID or identity-fingerprint drift from the
 frozen frame. The comparator separates exact matches, additions, name replacements, position
-changes, affirmative-standalone removals, and still-unverified historical claims. An unknown new
-position never clears an existing position. These are review deltas, not writes; unresolved shadow
-works cannot remove historical data.
+changes, affirmative-standalone conflicts, and still-unverified historical claims. An unknown new
+position never clears an existing position. An affirmative standalone that conflicts with an
+existing membership is review-only rather than a removal instruction. These are review deltas, not
+writes; unresolved shadow works cannot remove historical data.
 
 ### Prepare a completed recovery backlog for review-only acquisition
 

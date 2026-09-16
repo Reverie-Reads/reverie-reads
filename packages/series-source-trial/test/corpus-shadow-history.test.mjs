@@ -83,7 +83,7 @@ test('validates a complete identity-bound historical snapshot', () => {
   )
 })
 
-test('classifies exact, add, replace, position, removal, and unresolved historical deltas', () => {
+test('classifies exact, add, replace, position, standalone conflict, and unresolved deltas', () => {
   const historical = {
     counts: { works: 8 },
     sourceFrame,
@@ -128,7 +128,7 @@ test('classifies exact, add, replace, position, removal, and unresolved historic
       'replace_series',
       'update_position',
       'review_position',
-      'remove_series',
+      'review_standalone_conflict',
       'review_unverified_historical',
       'no_action_unresolved',
     ],
