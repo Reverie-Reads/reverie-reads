@@ -711,6 +711,21 @@ support a group. Successful calls use a configuration-bound private cache. The L
 refresh and Exa; unresolved or quarantined results are the only inputs eligible for a later Exa
 locator stage. The report remains private, review-only, create-only, and has no corpus writer.
 
+After all Luna ranges finish, merge them before any Exa request:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:review:merge -- \
+  --input packages/series-source-trial/private-results/corpus-series-shadow-review/first.json \
+  --input packages/series-source-trial/private-results/corpus-series-shadow-review/next.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-review-merged/full.json
+```
+
+The merger requires complete contiguous coverage of the frozen candidate graph, one exact Luna
+experiment, reconciled counts, and unique group IDs. It creates the later Exa queue only from
+member reviews whose Luna classification is unresolved or whose otherwise valid result was
+policy-quarantined. Supported candidates, rejected provider tuples, valid alternative series,
+malformed output, and infrastructure errors do not enter the Exa queue.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an

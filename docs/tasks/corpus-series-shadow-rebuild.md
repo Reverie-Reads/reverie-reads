@@ -114,6 +114,11 @@ This is deliberately the Luna stage only. `--exa-fallback` and `--refresh` are r
 fallback stage may admit only unresolved or policy-quarantined Luna results; Exa remains an
 ephemeral locator and never becomes evidence.
 
+Completed Luna batches must be merged with complete, contiguous candidate-group coverage before
+Exa routing. The merged private report admits only unresolved or policy-quarantined member reviews;
+it does not send supported candidates, rejected source tuples, valid alternative classifications,
+malformed output, or infrastructure errors to Exa.
+
 ## Model placement and cost
 
 Do not run Exa for every work. It cannot establish truth, and the September recovery-review batch
