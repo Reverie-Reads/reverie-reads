@@ -36,7 +36,7 @@ returns jsonb language sql as $$
         'kind','relational_membership','sourceRef',coalesce(ref,(9000+n)::text),'series',label,'position',ordinal))));
 $$;
 create function pg_temp.decide(n integer, decision text) returns uuid language sql as $$
-  select public.review_corpus_series_suggestion(id,decision)
+  select public.review_corpus_series_suggestion_revisioned(id,decision)
   from public.work_series_suggestions where work_id=pg_temp.w(n) and status='pending';
 $$;
 -- Whole graph snapshots catch hidden source/alias/claim/audit/revision writes, not just scalar names.
@@ -156,7 +156,7 @@ select ok(not has_function_privilege('authenticated','public.sync_corpus_series_
 select ok(not has_function_privilege('service_role','public.sync_corpus_series_catalog_work(uuid,text)','execute'),'graph helper remains internal');
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"f5300000-0000-4000-8000-000000000002","role":"authenticated"}',true);
-select throws_ok($$select public.review_corpus_series_suggestion((select id from public.work_series_suggestions limit 1),'dismiss')$$,'42501','corpus administrator required','ordinary reader cannot dismiss a proposal');
+select throws_ok($$select public.review_corpus_series_suggestion_revisioned((select id from public.work_series_suggestions limit 1),'dismiss')$$,'42501','corpus administrator required','ordinary reader cannot dismiss a proposal');
 reset role;
 select * from finish();
 rollback;

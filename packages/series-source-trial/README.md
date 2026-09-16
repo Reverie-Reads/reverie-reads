@@ -813,6 +813,23 @@ comparison reason or evidence, and is the only lane a truth-blind follow-up runn
 The manifest still has no production writer; a later administrator handoff must revalidate live
 catalog state and stage proposals for review rather than apply them.
 
+Build the private administrator-staging packet from that manifest and its exact historical
+snapshot:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:suggestions -- \
+  --manifest packages/series-source-trial/private-results/corpus-series-shadow-review-manifest/full.json \
+  --historical packages/series-source-trial/private-results/corpus-series-shadow-history/PROJECT_REF.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-suggestion-packet/full.json
+```
+
+The packet is create-only, owner-readable and bound to both source hashes. Primary relationships
+enter batches of at most 25; roles the existing primary suggestion queue cannot represent remain in
+its manual-review lane. After the staging migration and web app are deployed, a corpus
+administrator loads this local file from **Review → Stage corpus rebuild proposals**. Staging is
+idempotent and validates the frozen identity, graph/projection baseline and exact pending
+suggestions before creating review rows. It does not accept them or modify catalog/personal data.
+
 Run the identity-only historical lane through the existing truth-blind authority scout in bounded,
 non-overlapping ranges:
 
@@ -854,6 +871,23 @@ prefix from an interrupted range when the next input resumes at exactly that pre
 compact work ledger retains only the selected classification,
 membership tuple, pass name, and hashes pointing back to the private range evidence; consulted URLs
 remain in the source reports rather than being copied forward.
+
+Overlay that completed historical authority ledger onto the original full-corpus reconciliation,
+then repeat comparison, manifest creation, and packet creation from the new hashes:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:historical:reconcile -- \
+  --manifest packages/series-source-trial/private-results/corpus-series-shadow-review-manifest/full.json \
+  --reconciliation packages/series-source-trial/private-results/corpus-series-shadow-reconciled/full.json \
+  --historical-authority packages/series-source-trial/private-results/corpus-shadow-historical-merged/full.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-reconciled/final.json
+```
+
+The overlay accepts only the complete manifest-bound historical ledger. Policy-safe resolved series
+and affirmative standalone decisions replace the earlier unresolved shadow state. An unresolved,
+quarantined, or malformed completed result is retained as
+`historical_review_complete_unresolved`, which the next comparison routes to manual review rather
+than staging or removal. The output remains private and has no Supabase or corpus writer.
 
 ### Prepare a completed recovery backlog for review-only acquisition
 

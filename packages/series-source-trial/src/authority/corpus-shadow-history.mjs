@@ -154,6 +154,11 @@ export function compareCorpusShadowWithHistory({ reconciliation, historical }) {
             reason: 'affirmative_standalone_conflicts_with_history',
           }
         : { action: 'match', reason: 'exact_resolved_match' }
+    } else if (shadow.status === 'historical_review_complete_unresolved') {
+      comparison = {
+        action: 'review_historical_authority',
+        reason: 'historical_authority_remains_unresolved_or_quarantined',
+      }
     } else {
       comparison = current.memberships.length
         ? { action: 'review_unverified_historical', reason: 'shadow_not_resolved' }
@@ -179,6 +184,7 @@ export function compareCorpusShadowWithHistory({ reconciliation, historical }) {
     'update_position',
     'review_position',
     'review_standalone_conflict',
+    'review_historical_authority',
     'review_unverified_historical',
     'no_action_unresolved',
   ]

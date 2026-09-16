@@ -49,6 +49,7 @@ export async function fetchCorpusAdminStatus(): Promise<boolean> {
 export const corpusAdminKey = ['corpus-admin'] as const
 export const corpusEnrichmentCandidatesKey = ['corpus-enrichment-candidates'] as const
 export const corpusSeriesSuggestionsKey = ['corpus-series-suggestions'] as const
+export const corpusShadowSuggestionStagingKey = ['corpus-shadow-suggestion-staging'] as const
 export const personalCoverCorpusReviewKey = (
   bookId: string,
   workId: string,
@@ -195,7 +196,7 @@ export function useReviewCorpusSeriesSuggestion() {
   return useMutation({
     meta: { action: 'The corpus series review' },
     mutationFn: async (input: { suggestionId: string; decision: 'accept' | 'dismiss' }) => {
-      const { error } = await supabase.rpc('review_corpus_series_suggestion', {
+      const { error } = await supabase.rpc('review_corpus_series_suggestion_revisioned', {
         p_suggestion: input.suggestionId,
         p_decision: input.decision,
       })
@@ -208,6 +209,85 @@ export function useReviewCorpusSeriesSuggestion() {
         queryClient.invalidateQueries({ queryKey: ['works'] }),
         queryClient.invalidateQueries({ queryKey: ['household'] }),
       ])
+    },
+  })
+}
+
+export interface CorpusShadowSuggestionPacket {
+  schemaVersion: 1
+  purpose: 'corpus-series-shadow-suggestion-staging-packet'
+  project: string
+  sourceManifest: { sha256: string; historicalSha256: string }
+  counts: { resolvedDecisions: number; stageable: number; manualReview: number; batches: number }
+  stageable: Record<string, unknown>[]
+  manualReview: Record<string, unknown>[]
+  packetSha256: string
+}
+
+const HASH_RE = /^[a-f0-9]{64}$/
+const hex = (bytes: ArrayBuffer) =>
+  [...new Uint8Array(bytes)].map((value) => value.toString(16).padStart(2, '0')).join('')
+
+export async function parseCorpusShadowSuggestionPacket(
+  value: unknown,
+): Promise<CorpusShadowSuggestionPacket> {
+  if (!value || typeof value !== 'object') throw new Error('The staging file is not an object')
+  const packet = value as CorpusShadowSuggestionPacket
+  if (
+    packet.schemaVersion !== 1 ||
+    packet.purpose !== 'corpus-series-shadow-suggestion-staging-packet' ||
+    !/^[a-z0-9]{20}$/.test(packet.project ?? '') ||
+    !HASH_RE.test(packet.sourceManifest?.sha256 ?? '') ||
+    !HASH_RE.test(packet.sourceManifest?.historicalSha256 ?? '') ||
+    !HASH_RE.test(packet.packetSha256 ?? '') ||
+    !Array.isArray(packet.stageable) ||
+    !Array.isArray(packet.manualReview) ||
+    packet.counts?.resolvedDecisions !== packet.stageable.length + packet.manualReview.length ||
+    packet.counts?.stageable !== packet.stageable.length ||
+    packet.counts?.manualReview !== packet.manualReview.length ||
+    packet.counts?.batches !== Math.ceil(packet.stageable.length / 25)
+  ) {
+    throw new Error('The staging file metadata or counts are invalid')
+  }
+  const core = { ...packet } as Partial<CorpusShadowSuggestionPacket>
+  delete core.packetSha256
+  const calculated = hex(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(core))),
+  )
+  if (calculated !== packet.packetSha256) throw new Error('The staging file hash is invalid')
+  return packet
+}
+
+export async function stageCorpusShadowSuggestions(packet: CorpusShadowSuggestionPacket) {
+  let staged = 0
+  let alreadyPresent = 0
+  let superseded = 0
+  for (let offset = 0; offset < packet.stageable.length; offset += 25) {
+    const { data, error } = await supabase.rpc('admin_stage_corpus_shadow_series_suggestions', {
+      p_manifest_sha256: packet.sourceManifest.sha256,
+      p_packet_sha256: packet.packetSha256,
+      p_items: packet.stageable.slice(offset, offset + 25),
+    })
+    if (error) throw error
+    const result = data as {
+      staged?: number
+      alreadyPresent?: number
+      superseded?: number
+    }
+    staged += Number(result.staged ?? 0)
+    alreadyPresent += Number(result.alreadyPresent ?? 0)
+    superseded += Number(result.superseded ?? 0)
+  }
+  return { staged, alreadyPresent, superseded }
+}
+
+export function useStageCorpusShadowSuggestions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { action: 'The corpus shadow suggestion staging' },
+    mutationFn: stageCorpusShadowSuggestions,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: corpusSeriesSuggestionsKey })
     },
   })
 }
