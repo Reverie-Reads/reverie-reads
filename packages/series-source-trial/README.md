@@ -646,6 +646,24 @@ series-versus-reading-independence boundary are recorded in
 
 ## Test LLM authority-source acquisition
 
+### Freeze the full corpus for a clean series shadow rebuild
+
+When the existing shared graph cannot be trusted as a baseline, freeze every work from identity
+only. The exporter excludes historical series labels, positions, counts, classifier states,
+suggestions, graph memberships, evidence, and ISBN assignments. It performs one read-only production
+query and writes one owner-only ignored frame; it has no Supabase writer.
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:export -- \
+  --project PROJECT_REF
+```
+
+The fixed default output path prevents several competing baselines. Provider relationship
+acquisition, candidate grouping, Luna review, comparison, and reviewed application are separate
+stages described in `docs/tasks/corpus-series-shadow-rebuild.md`. Do not compare with the historical
+graph until the shadow graph is complete, and never give historical series values to acquisition or
+the model as hints.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an

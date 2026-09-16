@@ -251,6 +251,14 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   proposal automatic and only affirmative authority evidence can establish standalone status. The
   model uses strict structured output, has no Supabase write path, and cannot invent a field or
   citation absent from the packet.
+  The full-corpus series shadow rebuild starts from a frozen identity-only inventory of every
+  shared work. Historical series labels, positions, counts, classifier states, suggestions, graph
+  memberships, evidence and ISBN assignments are excluded from acquisition and model input; they
+  are comparison/rollback data only after the shadow graph is complete. Luna reviews every proposed
+  final group and affirmative standalone claim. Exa runs only after Luna is unresolved or
+  policy-quarantined and remains a locator, never evidence. The shadow workflow has no production
+  writer; later application must use reviewed administrator deltas and preserve reader/import
+  choices. See `docs/tasks/corpus-series-shadow-rebuild.md`.
   Inventaire, BookBrainz, and the resolver stay trial-only until the reviewed accuracy,
   standalone-safety, rights, privacy, latency, and cost gates pass. See
   `docs/reference/DATA_SOURCES.md`.
