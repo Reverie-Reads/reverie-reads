@@ -48,6 +48,30 @@ The exporter intentionally excludes ISBNs as well as series data from the first 
 ISBN assignments may themselves be historical or ambiguous; provider acquisition may admit an ISBN
 only after its normal exact title/full-author validation.
 
+## Relationship acquisition
+
+Acquire source relationships in batches of at most 250 frozen identities. The command uses the
+existing fixed-host adapters, validates every adapter result against the exact selected batch, and
+writes a new owner-only ignored report. It never reads historical series data and has no Supabase
+writer.
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:acquire -- \
+  --input packages/series-source-trial/private-results/corpus-series-shadow/PROJECT_REF.json \
+  --offset 0 \
+  --limit 250
+```
+
+The default source set is Open Library, Wikidata, Inventaire, BookBrainz, and Hardcover. Google is
+available only as an explicit identity-only diagnostic and cannot contribute a relationship.
+Outputs are create-only so a later command cannot silently replace an earlier observation.
+
+The candidate graph groups exact normalized relationship names inside the frozen full-author scope.
+It carries source lineage, position observations, eligibility, conflicts, and risk flags forward.
+Every group is marked for Luna review, including apparently corroborated groups. A work with no
+exact relationship remains unresolved with `standalone: null`; absence never becomes a standalone
+classification.
+
 ## Model placement and cost
 
 Do not run Exa for every work. It cannot establish truth, and the September recovery-review batch
