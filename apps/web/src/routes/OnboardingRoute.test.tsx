@@ -4,9 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Book } from '@reverie/core'
 import { makeBook } from '../../../../packages/core/src/book.fixture'
 import type { ImportExportResult } from '../data/importLibrary'
+import type { Guidance } from '../guidance/model'
 
 const state = vi.hoisted(() => ({
   books: [] as Book[] | undefined,
+  guidance: null as Pick<Guidance, 'mode' | 'setupComplete'> | null,
+  saveGuidance: vi.fn(),
+  sendTour: vi.fn(),
   isPending: false,
   isFetching: false,
   isError: false,
@@ -42,13 +46,16 @@ vi.mock('../data/importLibrary', () => ({ importDetectedExport: state.importFile
 vi.mock('../data/guestHandoff', () => ({ importGuestHandoff: state.guestImport }))
 vi.mock('../data/profile', () => ({
   profileKey: ['profile'],
-  useProfile: () => ({ data: { guidance: { mode: 'full', setupComplete: true } } }),
+  useProfile: () => ({ data: { guidance: state.guidance } }),
   useUpdateProfile: () => ({ mutateAsync: state.updateProfile }),
 }))
 vi.mock('../guidance/data', () => ({
   useUpdateGuidance: () => ({
-    mutate: (_patch: unknown, options?: { onSuccess?: () => void }) => options?.onSuccess?.(),
+    mutate: state.saveGuidance,
   }),
+}))
+vi.mock('../guidance/BookTourContext', () => ({
+  useBookTour: () => ({ send: state.sendTour }),
 }))
 vi.mock('../data/importEnrich', () => ({ enrichImported: vi.fn() }))
 vi.mock('../data/xlsxAdapter', () => ({ fileToCsvText: state.convert }))
@@ -123,7 +130,12 @@ function upload() {
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
+  state.navigate.mockResolvedValue(undefined)
   state.books = []
+  state.guidance = { mode: 'full', setupComplete: true }
+  state.saveGuidance.mockImplementation((_patch: unknown, options?: { onSuccess?: () => void }) =>
+    options?.onSuccess?.(),
+  )
   state.isPending = false
   state.isFetching = false
   state.isError = false
@@ -142,6 +154,53 @@ beforeEach(() => {
 })
 
 describe('book-first onboarding', () => {
+  it.each([
+    { choice: 'Show me around', tour: 'books', destination: '/add' },
+    { choice: 'Explore on my own', tour: null, destination: '/library' },
+  ])(
+    'waits for the saved $choice choice before leaving welcome',
+    async ({ choice, tour, destination }) => {
+      state.guidance = null
+      state.saveGuidance.mockImplementation(() => {})
+      let arrive: (() => void) | undefined
+      state.navigate.mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            arrive = resolve
+          }),
+      )
+      render(<Onboarding />)
+      fireEvent.click(screen.getByRole('button', { name: choice }))
+      expect(state.saveGuidance).toHaveBeenCalledWith(
+        { mode: 'full', complete: true, tour },
+        expect.objectContaining({ onSuccess: expect.any(Function) }),
+      )
+      expect(state.navigate).not.toHaveBeenCalled()
+      expect(state.sendTour).not.toHaveBeenCalledWith({ type: 'start' })
+      state.saveGuidance.mock.calls[0]![1].onSuccess()
+      expect(state.navigate).toHaveBeenCalledWith({ to: destination, replace: true })
+      await Promise.resolve()
+      expect(state.sendTour).not.toHaveBeenCalledWith({ type: 'start' })
+      arrive!()
+      if (tour) await waitFor(() => expect(state.sendTour).toHaveBeenCalledWith({ type: 'start' }))
+      else expect(state.sendTour).not.toHaveBeenCalledWith({ type: 'start' })
+      expect(state.importFile).not.toHaveBeenCalled()
+      expect(state.guestImport).not.toHaveBeenCalled()
+    },
+  )
+
+  it('keeps the gentle import-or-add choice without starting a live tour', () => {
+    state.guidance = null
+    render(<Onboarding />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start gently' }))
+    expect(state.saveGuidance).toHaveBeenCalledWith(
+      { mode: 'gentle', complete: false, tour: 'books' },
+      expect.any(Object),
+    )
+    expect(state.navigate).not.toHaveBeenCalled()
+    expect(state.sendTour).not.toHaveBeenCalledWith({ type: 'start' })
+  })
+
   it('reviews an explicit guest handoff before importing and applies its room', async () => {
     localStorage.setItem(
       'reverie.guest-handoff.v1',

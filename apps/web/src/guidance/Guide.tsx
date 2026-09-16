@@ -47,8 +47,8 @@ export function GuidanceChoice({
           Show me around
         </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-muted">
-          Keep every destination visible. Take a walkthrough from adding a book to reading,
-          organizing, discovering and looking back.
+          Keep every destination visible. Start a live walkthrough with your first book, then
+          explore more walkthroughs in Settings.
         </p>
         <Button
           variant="secondary"

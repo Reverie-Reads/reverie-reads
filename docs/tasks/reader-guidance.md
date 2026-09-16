@@ -160,6 +160,15 @@ In native dialogs the coaching card occupies a normal layout slot above the form
 fields or Save, including short phone viewports. The pointer remains inside the native focus boundary
 and respects reduced motion. Physical phone keyboard verification remains an owner smoke check.
 
+## Direct welcome entry
+
+After a successful welcome-preference save, **Show me around** opens Add with the live first-book
+coach already active. It does not fill the search, choose a result or save a book. The account-keyed,
+session-only tour provider spans welcome and the app so the handoff survives navigation; welcome
+itself does not render a coach and pauses any earlier tour on entry. A reload does not start the
+animation again. **Start gently** retains its import-or-add choice, and **Explore on my own** opens
+Library without starting a live tour. Settings retains the written chapter reference and replay.
+
 ## First-book phone layout and return journey
 
 On narrow screens, Add places live coaching in the page beside search, result selection, Save and

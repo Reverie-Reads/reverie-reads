@@ -112,7 +112,9 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Before numbering a new migration, check the combined deployment history; public and private
   migrations share one version namespace. See `docs/tasks/reader-guidance.md`.
 - **Live walkthroughs observe the real screens.** The first-book guide is account-keyed, session-only
-  state. Its pointer may demonstrate allowlisted navigation, but must never choose a result, fill
+  state. The full welcome choice opens Add with its live guide only after preference-save success;
+  independent exploration stays unguided. The provider spans welcome and the app, remains keyed by
+  account, and a reload never auto-starts it. Re-entering welcome pauses an earlier tour. Its pointer may demonstrate allowlisted navigation, but must never choose a result, fill
   reader data or press Save. Advance from observed successful intake and the matching personal book;
   the reading chapter waits for successful start/progress/finish callbacks scoped to the selected
   book and tour run, never optimistic values. Finishing stays optional and retains the existing

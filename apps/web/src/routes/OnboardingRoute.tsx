@@ -31,6 +31,7 @@ import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import type { AddDestination } from '../components/addDestination'
 import { GuidanceChoice } from '../guidance/Guide'
 import { useUpdateGuidance } from '../guidance/data'
+import { useBookTour } from '../guidance/BookTourContext'
 import { arrangementFromUnknown } from '../design/arrangements'
 
 // Compatibility for an older cached build only. The current app uses profiles.guidance;
@@ -71,6 +72,9 @@ function OnboardingFlow() {
   const updateProfile = useUpdateProfile()
   const profile = useProfile()
   const updateGuidance = useUpdateGuidance()
+  const { send: sendTour } = useBookTour()
+  // Returning to welcome pauses an existing tour. Only a saved, explicit choice starts one.
+  useEffect(() => sendTour({ type: 'pause' }), [sendTour])
   const existing = booksQuery.data ?? []
   const currentRead = existing.find((book) => book.readStatus === 'Reading')
   const available = nextReadCandidates(existing)
@@ -240,7 +244,9 @@ function OnboardingFlow() {
                 onSuccess: () => {
                   if (mode === 'full') {
                     markOnboarded()
-                    void navigate({ to: tour ? '/settings/guidance' : '/library', replace: true })
+                    void navigate({ to: tour ? '/add' : '/library', replace: true }).then(() => {
+                      if (tour) sendTour({ type: 'start' })
+                    })
                   }
                 },
               },

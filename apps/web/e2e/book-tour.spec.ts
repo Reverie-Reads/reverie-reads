@@ -34,9 +34,10 @@ async function firstReader(page: Page) {
   )
   await page.getByRole('button', { name: /enter your library/i }).click({ timeout: 20_000 })
   await page.getByRole('button', { name: 'Show me around', exact: true }).click()
+  await expect(page).toHaveURL(/\/add$/)
   await expect(
-    page.getByRole('heading', { name: 'Walkthroughs and guidance', exact: true }),
-  ).toBeVisible()
+    page.getByRole('complementary', { name: 'Live walkthrough' }).getByRole('status'),
+  ).toHaveText('Find a book you know')
   return {
     reader,
     uid,
@@ -102,31 +103,12 @@ for (const touch of [false, true]) {
             },
           }),
         )
-        // Replay is reachable from Settings, with no permanent help destination in the dock.
-        await page.goto('/guide')
-        await expect(
-          page.getByRole('heading', { name: 'Your library guide', exact: true }),
-        ).toBeVisible()
-        await expect(page.getByRole('navigation', { name: 'Primary', exact: true })).toHaveCount(0)
-        await page.goto('/settings')
-        await expect(
-          page.getByRole('heading', { name: 'Walkthroughs and guidance', exact: true }),
-        ).toBeVisible()
-        await expect(page.getByRole('complementary', { name: 'Your library guide' })).toHaveCount(0)
-        await expect(
-          page
-            .getByRole('navigation', { name: 'Primary', exact: true })
-            .getByRole('link', { name: 'Library guide', exact: true }),
-        ).toHaveCount(0)
-        await page.getByRole('button', { name: 'Guide me in the app', exact: true }).click()
+        // Welcome starts the real coach directly, without visiting the written guide or Settings.
         const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
-        await expect(guide.getByRole('status')).toHaveText('Bring a book home')
         const show = () => {
           const button = guide.getByRole('button', { name: /Show me (this step|again)/ })
           return touch ? button.tap() : button.click()
         }
-        await show()
-        await expect(page).toHaveURL(/\/add$/)
         await expect(guide.getByRole('status')).toHaveText('Find a book you know')
         await show()
         await expect(page.getByRole('textbox', { name: 'Search for a book' })).toBeFocused()
@@ -273,7 +255,6 @@ test('a reader can interrupt a demonstration and resume without losing their ent
   test.setTimeout(90_000)
   const account = await firstReader(page)
   try {
-    await page.getByRole('button', { name: 'Guide me in the app' }).click()
     const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
     await guide.getByRole('button', { name: 'Show me this step' }).click()
     await expect(guide.getByRole('status')).toHaveText('Find a book you know')
@@ -319,7 +300,6 @@ test('the live guide keeps its target clear and readable in every room and a sho
   const account = await firstReader(page)
   try {
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.getByRole('button', { name: 'Guide me in the app', exact: true }).click()
     const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
     await guide.getByRole('button', { name: 'Show me this step' }).click()
     await expect(guide.getByRole('status')).toHaveText('Find a book you know')

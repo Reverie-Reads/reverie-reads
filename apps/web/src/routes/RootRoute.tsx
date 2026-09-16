@@ -91,14 +91,16 @@ function RootLayout() {
       {verified && <PersonalLibrarySync readerId={session.user.id} />}
       {!verified ? (
         <VerifyEmail email={session.user.email} />
-      ) : onboarding ? (
-        <Outlet />
       ) : (
         <BookTourProvider key={session.user.id}>
-          <AppShell>
+          {onboarding ? (
             <Outlet />
-            <BookTour />
-          </AppShell>
+          ) : (
+            <AppShell>
+              <Outlet />
+              <BookTour />
+            </AppShell>
+          )}
         </BookTourProvider>
       )}
       <UpdateToast />
