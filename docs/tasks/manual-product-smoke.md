@@ -101,6 +101,11 @@ writes, migrations, function deployment, and deletion remain owner-run operation
       change the room, and arrange the dock without the demo jumping down the page or losing state.
 - [ ] **Guest handoff:** choose books, note, room, and arrangement; begin signup; verify explicit
       consent, duplicate handling, retry/cancel behavior, and the first useful post-auth action.
+- [ ] **First-search recovery:** in local test data, make Add's search unavailable. Confirm the
+      query remains, the message says search is unavailable, and Try search again retries only when
+      pressed. A successful empty lookup should instead offer manual entry. Type a short query and
+      check the minimum-length explanation. Enter manually while a request is pending; the draft
+      must remain intact. Repeat with the live coach and the phone keyboard open.
 - [ ] **Add and find:** add by title/author, ISBN, scan where supported, and manual entry; return to
       the added book through search and Back without losing filter or scroll context.
 - [ ] **Possession:** set owned formats, borrowed, and wishlist in overlapping combinations; confirm

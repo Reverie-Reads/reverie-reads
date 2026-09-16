@@ -159,6 +159,10 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Goodreads/StoryGraph CSV importer, and the spoiler-gating rule (`comment.unit <=
 myProgress`). Move them into `packages/core` with tests.
 - Copy stays sentence case, plain verbs, no filler; empty states invite action.
+- **Add search distinguishes failure from absence.** Only a successful empty response means no
+  matches. Keep the entered query available for explicit retry or manual entry; a newer search,
+  manual choice or route exit cancels the older request so late results cannot replace the current
+  task. Short queries explain the minimum rather than pretending to have searched.
 - **Possession is five independent flags, and every shelf is a derived view.** `ownership` is
   `'owned' | 'unowned'` (default `unowned`) and answers only _do you own a copy_. `borrowed`
   and `wishlist` are **flags beside it, not values inside it** — all combinations are legal
