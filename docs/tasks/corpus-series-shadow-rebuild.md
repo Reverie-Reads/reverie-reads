@@ -45,6 +45,14 @@ The follow-up uses Luna-low first. Exa is invoked only for an unresolved or poli
 result and reuses the original shadow run's cumulative Exa ledger rather than creating a fresh
 budget. Its outputs remain private review artifacts and cannot stage or apply a catalog change.
 
+Resolved comparison changes enter production only as pending administrator suggestions. A second
+private packet binds the manifest and historical snapshot, carries the exact frozen baseline and
+any pending suggestion it may supersede, and separates relationship roles the current primary-only
+queue cannot represent. The administrator UI stages at most 25 proposals per transaction. Staging
+validates identity and the complete live baseline, is idempotent, and changes neither the catalog
+nor personal books. Accept/dismiss rechecks the catalog-series fingerprint and metadata-review
+revision captured at staging; stale proposals stop for refresh.
+
 ## First command
 
 This command performs one read-only production query and writes one owner-only ignored file. Its

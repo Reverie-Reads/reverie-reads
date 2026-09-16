@@ -1,5 +1,5 @@
 import { CatalogReviewNav } from '../components/catalog/CatalogReviewNav'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { createRoute, Link } from '@tanstack/react-router'
 import type { Book, NeedsLookItem, NeedsLookReason } from '@reverie/core'
 import { rootRoute } from './RootRoute'
@@ -14,7 +14,10 @@ import {
   useCorpusAdminStatus,
   useCorpusSeriesSuggestions,
   useReviewCorpusSeriesSuggestion,
+  useStageCorpusShadowSuggestions,
+  parseCorpusShadowSuggestionPacket,
   type CorpusSeriesSuggestion,
+  type CorpusShadowSuggestionPacket,
 } from '../data/enrichCorpus'
 
 const REASON_LABEL: Record<NeedsLookReason, string> = {
@@ -238,6 +241,76 @@ export function CorpusSeriesReview({ suggestions }: { suggestions: CorpusSeriesS
   )
 }
 
+export function CorpusShadowSuggestionStaging() {
+  const input = useRef<HTMLInputElement>(null)
+  const [packet, setPacket] = useState<CorpusShadowSuggestionPacket | null>(null)
+  const [status, setStatus] = useState<string | null>(null)
+  const stage = useStageCorpusShadowSuggestions()
+  async function choose(file?: File) {
+    setPacket(null)
+    setStatus(null)
+    if (!file) return
+    try {
+      const parsed = await parseCorpusShadowSuggestionPacket(JSON.parse(await file.text()))
+      setPacket(parsed)
+      setStatus(
+        `${parsed.counts.stageable} primary proposals ready in ${parsed.counts.batches} batches; ${parsed.counts.manualReview} non-primary relationship remains manual.`,
+      )
+    } catch (error) {
+      setStatus(`Couldn’t use that file: ${(error as Error).message}`)
+    }
+  }
+  return (
+    <section className="mt-6 border-b border-line pb-5">
+      <h2 className="text-[15px] font-semibold text-ink">Stage corpus rebuild proposals</h2>
+      <p className="mt-1 text-[12px] leading-relaxed text-muted">
+        Load the private hash-bound packet to create review suggestions. This does not accept a
+        proposal or change shared or personal book data.
+      </p>
+      <input
+        ref={input}
+        type="file"
+        accept="application/json,.json"
+        className="sr-only"
+        onChange={(event) => void choose(event.target.files?.[0])}
+      />
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          className="skin-control min-h-11 border border-line px-3 py-2 text-[12.5px] font-semibold text-ink"
+          style={{ background: 'var(--field)' }}
+        >
+          Choose private staging file
+        </button>
+        <button
+          type="button"
+          disabled={!packet || stage.isPending}
+          onClick={() =>
+            packet &&
+            stage.mutate(packet, {
+              onSuccess: (result) =>
+                setStatus(
+                  `${result.staged} suggestions staged; ${result.alreadyPresent} already present; ${result.superseded} frozen older suggestions superseded.`,
+                ),
+              onError: (error) => setStatus(`Staging stopped: ${error.message}`),
+            })
+          }
+          className="skin-control min-h-11 px-3 py-2 text-[12.5px] font-semibold disabled:opacity-50"
+          style={{ background: 'var(--accent-fill)', color: 'var(--on-primary)' }}
+        >
+          Stage {packet?.counts.stageable ?? 0} suggestions
+        </button>
+      </div>
+      {status && (
+        <p className="mt-2 text-[12px] text-muted" role="status" aria-live="polite">
+          {status}
+        </p>
+      )}
+    </section>
+  )
+}
+
 function ReviewScreen() {
   const voice = useVoice()
   const model = useImportReviewModel()
@@ -281,6 +354,7 @@ function ReviewScreen() {
           Administrator review
         </h1>
         <CatalogReviewNav />
+        <CorpusShadowSuggestionStaging />
         <CorpusSeriesReview suggestions={seriesSuggestions} />
         <CorpusSeriesCatalog />
       </section>

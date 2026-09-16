@@ -813,6 +813,23 @@ comparison reason or evidence, and is the only lane a truth-blind follow-up runn
 The manifest still has no production writer; a later administrator handoff must revalidate live
 catalog state and stage proposals for review rather than apply them.
 
+Build the private administrator-staging packet from that manifest and its exact historical
+snapshot:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:suggestions -- \
+  --manifest packages/series-source-trial/private-results/corpus-series-shadow-review-manifest/full.json \
+  --historical packages/series-source-trial/private-results/corpus-series-shadow-history/PROJECT_REF.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-suggestion-packet/full.json
+```
+
+The packet is create-only, owner-readable and bound to both source hashes. Primary relationships
+enter batches of at most 25; roles the existing primary suggestion queue cannot represent remain in
+its manual-review lane. After the staging migration and web app are deployed, a corpus
+administrator loads this local file from **Review → Stage corpus rebuild proposals**. Staging is
+idempotent and validates the frozen identity, graph/projection baseline and exact pending
+suggestions before creating review rows. It does not accept them or modify catalog/personal data.
+
 Run the identity-only historical lane through the existing truth-blind authority scout in bounded,
 non-overlapping ranges:
 

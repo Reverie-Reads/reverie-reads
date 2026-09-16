@@ -232,7 +232,7 @@ select ok(
   'Fantastic Fiction retains only the allowed membership, series, and order facts');
 
 select lives_ok(
-  $$select public.review_corpus_series_suggestion(
+  $$select public.review_corpus_series_suggestion_revisioned(
     (select id from public.work_series_suggestions
      where work_id = 'b2000000-0000-4000-8000-000000000004' and status = 'pending'),
     'accept'
@@ -268,7 +268,7 @@ select is(
    where id = 'b2000000-0000-4000-8000-000000000005'),
   'Curated Saga|4', 'the conflict leaves existing shared metadata intact before review');
 select lives_ok(
-  $$select public.review_corpus_series_suggestion(
+  $$select public.review_corpus_series_suggestion_revisioned(
     (select id from public.work_series_suggestions
      where work_id = 'b2000000-0000-4000-8000-000000000005' and status = 'pending'),
     'dismiss'
@@ -307,7 +307,7 @@ set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"b1000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.review_corpus_series_suggestion(
+  $$select public.review_corpus_series_suggestion_revisioned(
     (select id from public.work_series_suggestions
      where work_id = 'b2000000-0000-4000-8000-000000000004'),
     'accept'

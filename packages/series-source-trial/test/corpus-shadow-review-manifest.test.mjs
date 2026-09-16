@@ -8,6 +8,10 @@ import {
   validateCorpusShadowReviewManifest,
 } from '../src/authority/corpus-shadow-review-manifest.mjs'
 import { mergeCorpusShadowHistoricalReports } from '../src/authority/corpus-shadow-historical-merge.mjs'
+import {
+  buildCorpusShadowSuggestionPacket,
+  validateCorpusShadowSuggestionPacket,
+} from '../src/authority/corpus-shadow-suggestion-packet.mjs'
 import { AUTHORITY_ACQUISITION_PROMPT_VERSION } from '../src/authority/schema.mjs'
 
 const actions = [
@@ -158,6 +162,47 @@ test('rejects manifest drift, source drift, and historical-label leakage', () =>
   delete core.manifestSha256
   leaked.manifestSha256 = createHash('sha256').update(JSON.stringify(core)).digest('hex')
   assert.throws(() => validateCorpusShadowReviewManifest(leaked), /exposes series/)
+})
+
+test('builds a private staging packet and isolates relationships unsupported by the primary queue', () => {
+  const secondaryComparison = structuredClone(comparison)
+  const secondaryReconciliation = structuredClone(reconciliation)
+  secondaryComparison.works[1].desiredMemberships[0].role = 'secondary'
+  secondaryReconciliation.works[1].memberships[0].role = 'secondary'
+  const manifest = buildCorpusShadowReviewManifest({
+    comparison: secondaryComparison,
+    comparisonSha256: '1'.repeat(64),
+    reconciliation: secondaryReconciliation,
+    reconciliationSha256,
+    createdAt: '2026-09-16T12:00:00.000Z',
+  })
+  const historical = {
+    schemaVersion: 1,
+    purpose: 'corpus-series-shadow-historical-snapshot',
+    sourceFrame,
+    counts: { works: works.length },
+    works: works.map((work) => ({
+      workId: work.workId,
+      identityFingerprint: work.identityFingerprint,
+      pendingSuggestions: [],
+    })),
+  }
+  const packet = buildCorpusShadowSuggestionPacket({
+    manifest,
+    historical,
+    historicalSha256: manifest.inputs.historicalSha256,
+    createdAt: '2026-09-16T13:00:00.000Z',
+  })
+  assert.equal(validateCorpusShadowSuggestionPacket(packet), packet)
+  assert.deepEqual(packet.counts, {
+    resolvedDecisions: 3,
+    stageable: 2,
+    manualReview: 1,
+    batches: 1,
+  })
+  assert.equal(packet.manualReview[0].proposal.role, 'secondary')
+  assert.equal(packet.manualReview[0].reason, 'primary_suggestion_schema_does_not_model_role')
+  assert.equal(packet.mutationBoundary, 'private_staging_packet_no_supabase_or_corpus_writer')
 })
 
 test('merges only complete, contiguous, manifest-bound historical acquisition reports', () => {

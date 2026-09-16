@@ -9,8 +9,14 @@ import {
   corpusWorkShouldCheck,
   personalCoverIsReviewed,
   personalCoverCorpusReviewKey,
+  parseCorpusShadowSuggestionPacket,
   type CorpusEnrichmentWork,
 } from './enrichCorpus'
+
+const digestJson = async (value: unknown) =>
+  [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value))))]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
 
 const completeWork = (over: Partial<CorpusEnrichmentWork> = {}): CorpusEnrichmentWork => ({
   id: '11111111-1111-4111-8111-111111111111',
@@ -185,6 +191,27 @@ describe('personal cover corpus review state', () => {
     expect(personalCoverIsReviewed(null, 'https://covers.example/first.webp')).toBe(false)
     expect(personalCoverIsReviewed({ url: 'https://covers.example/first.webp' }, 'https://covers.example/first.webp')).toBe(false)
     expect(personalCoverIsReviewed([null, 'url', { source: 'upload' }], 'https://covers.example/first.webp')).toBe(false)
+  })
+})
+
+describe('corpus shadow suggestion staging packet', () => {
+  it('accepts only a hash-bound packet whose counts reconcile', async () => {
+    const core = {
+      schemaVersion: 1 as const,
+      purpose: 'corpus-series-shadow-suggestion-staging-packet' as const,
+      createdAt: '2026-09-16T00:00:00.000Z',
+      project: 'abcdefghijklmnopqrst',
+      sourceManifest: { sha256: 'a'.repeat(64), historicalSha256: 'b'.repeat(64) },
+      counts: { resolvedDecisions: 1, stageable: 1, manualReview: 0, batches: 1 },
+      stageable: [{ workId: 'work-1' }],
+      manualReview: [],
+      mutationBoundary: 'private_staging_packet_no_supabase_or_corpus_writer',
+    }
+    const packet = { ...core, packetSha256: await digestJson(core) }
+    await expect(parseCorpusShadowSuggestionPacket(packet)).resolves.toEqual(packet)
+    await expect(
+      parseCorpusShadowSuggestionPacket({ ...packet, stageable: [{ workId: 'changed' }] }),
+    ).rejects.toThrow('hash')
   })
 })
 
