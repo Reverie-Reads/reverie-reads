@@ -83,6 +83,7 @@ export interface CorpusSeriesSuggestion {
   proposedSeries: string
   proposedPosition: number | null
   proposedCount: number | null
+  proposalAction: 'set' | 'remove'
   source: string
   identityConfidence: 'high' | 'medium' | 'low' | 'none'
   membershipConfidence: 'high' | 'medium'
@@ -97,6 +98,7 @@ interface CorpusSeriesSuggestionRow {
   proposed_series: string
   proposed_position: number | string | null
   proposed_count: number | null
+  proposal_action: 'set' | 'remove'
   source: string
   identity_confidence: 'high' | 'medium' | 'low' | 'none'
   confidence: 'high' | 'medium'
@@ -149,7 +151,7 @@ export async function fetchCorpusSeriesSuggestions(): Promise<CorpusSeriesSugges
     supabase
       .from('work_series_suggestions')
       .select(
-        'id, work_id, proposed_series, proposed_position, proposed_count, source, identity_confidence, confidence, reason, evidence, checked_at, works:work_id(title, author_text, series, position)',
+        'id, work_id, proposed_series, proposed_position, proposed_count, proposal_action, source, identity_confidence, confidence, reason, evidence, checked_at, works:work_id(title, author_text, series, position)',
         { count: 'exact' },
       )
       .eq('status', 'pending')
@@ -171,6 +173,7 @@ export async function fetchCorpusSeriesSuggestions(): Promise<CorpusSeriesSugges
         proposedSeries: row.proposed_series,
         proposedPosition: row.proposed_position == null ? null : Number(row.proposed_position),
         proposedCount: row.proposed_count,
+        proposalAction: row.proposal_action,
         source: row.source,
         identityConfidence: row.identity_confidence,
         membershipConfidence: row.confidence,
@@ -214,12 +217,19 @@ export function useReviewCorpusSeriesSuggestion() {
 }
 
 export interface CorpusShadowSuggestionPacket {
-  schemaVersion: 1
+  schemaVersion: 2
   purpose: 'corpus-series-shadow-suggestion-staging-packet'
   project: string
   sourceManifest: { sha256: string; historicalSha256: string }
-  counts: { resolvedDecisions: number; stageable: number; manualReview: number; batches: number }
+  counts: {
+    resolvedDecisions: number
+    stageable: number
+    removalReviews: number
+    manualReview: number
+    batches: number
+  }
   stageable: Record<string, unknown>[]
+  removalReviews: Record<string, unknown>[]
   manualReview: Record<string, unknown>[]
   packetSha256: string
 }
@@ -234,18 +244,21 @@ export async function parseCorpusShadowSuggestionPacket(
   if (!value || typeof value !== 'object') throw new Error('The staging file is not an object')
   const packet = value as CorpusShadowSuggestionPacket
   if (
-    packet.schemaVersion !== 1 ||
+    packet.schemaVersion !== 2 ||
     packet.purpose !== 'corpus-series-shadow-suggestion-staging-packet' ||
     !/^[a-z0-9]{20}$/.test(packet.project ?? '') ||
     !HASH_RE.test(packet.sourceManifest?.sha256 ?? '') ||
     !HASH_RE.test(packet.sourceManifest?.historicalSha256 ?? '') ||
     !HASH_RE.test(packet.packetSha256 ?? '') ||
     !Array.isArray(packet.stageable) ||
+    !Array.isArray(packet.removalReviews) ||
     !Array.isArray(packet.manualReview) ||
     packet.counts?.resolvedDecisions !== packet.stageable.length + packet.manualReview.length ||
     packet.counts?.stageable !== packet.stageable.length ||
+    packet.counts?.removalReviews !== packet.removalReviews.length ||
     packet.counts?.manualReview !== packet.manualReview.length ||
-    packet.counts?.batches !== Math.ceil(packet.stageable.length / 25)
+    packet.counts?.batches !==
+      Math.ceil(packet.stageable.length / 25) + Math.ceil(packet.removalReviews.length / 25)
   ) {
     throw new Error('The staging file metadata or counts are invalid')
   }
@@ -268,6 +281,25 @@ export async function stageCorpusShadowSuggestions(packet: CorpusShadowSuggestio
       p_packet_sha256: packet.packetSha256,
       p_items: packet.stageable.slice(offset, offset + 25),
     })
+    if (error) throw error
+    const result = data as {
+      staged?: number
+      alreadyPresent?: number
+      superseded?: number
+    }
+    staged += Number(result.staged ?? 0)
+    alreadyPresent += Number(result.alreadyPresent ?? 0)
+    superseded += Number(result.superseded ?? 0)
+  }
+  for (let offset = 0; offset < packet.removalReviews.length; offset += 25) {
+    const { data, error } = await supabase.rpc(
+      'admin_stage_corpus_shadow_series_removal_reviews',
+      {
+        p_manifest_sha256: packet.sourceManifest.sha256,
+        p_packet_sha256: packet.packetSha256,
+        p_items: packet.removalReviews.slice(offset, offset + 25),
+      },
+    )
     if (error) throw error
     const result = data as {
       staged?: number

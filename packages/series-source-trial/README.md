@@ -824,11 +824,17 @@ pnpm --filter @reverie/series-source-trial authority:corpus-shadow:suggestions -
 ```
 
 The packet is create-only, owner-readable and bound to both source hashes. Primary relationships
-enter batches of at most 25; roles the existing primary suggestion queue cannot represent remain in
-its manual-review lane. After the staging migration and web app are deployed, a corpus
+and explicit keep-or-remove reviews for completed historical/standalone conflicts enter separate
+batches of at most 25; unsupported relationship roles remain in its manual-review lane. A removal
+review never treats unresolved acquisition as truth: it preserves the current primary relationship
+and requires a corpus administrator to choose **Keep current series** or **Remove false series**.
+After the staging migration and web app are deployed, a corpus
 administrator loads this local file from **Review → Stage corpus rebuild proposals**. Staging is
 idempotent and validates the frozen identity, graph/projection baseline and exact pending
 suggestions before creating review rows. It does not accept them or modify catalog/personal data.
+Accepting a removal review tombstones only the matching revision-bound shared membership, archives
+the series if it becomes empty, clears eligible automatic corpus defaults, and preserves every
+reader- or import-chosen personal series.
 
 Run the identity-only historical lane through the existing truth-blind authority scout in bounded,
 non-overlapping ranges:
