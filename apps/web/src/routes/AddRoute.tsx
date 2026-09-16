@@ -25,6 +25,7 @@ import { rootRoute } from './RootRoute'
 import { useAuth } from '../auth/AuthProvider'
 import { useIntake, type ReviewCandidate } from '../data/intake'
 import { useBooks } from '../data/books'
+import { searchAddCatalog, useAddSearch } from '../data/useAddSearch'
 import {
   useAddCorpusWorkToHousehold,
   useAddCorpusWorkToMemberLibrary,
@@ -42,7 +43,6 @@ import {
   googleBooksResultUrl,
   partitionSearchResults,
   selectedSearchIsbn,
-  searchEverywhere,
   type SearchResult,
 } from '../lib/search'
 import { useEffectiveSkin, useLabels, useVoice } from '../skin/labels'
@@ -105,30 +105,6 @@ interface Picked extends Partial<SearchHit> {
   position?: string
   genre?: string
   seriesClaim?: SeriesClaim
-}
-
-/** How many catalog results Add shows. */
-const ADD_RESULT_LIMIT = 8
-
-/**
- * Add's catalog lookup — routed through the `search` edge function, NOT the browser.
- *
- * NAMED FOR WHAT IT DOES. This was `searchGoogleBooks` until this change, which was a leftover from
- * before the client-side Google fallback was removed and had become a name that LIES about a
- * privacy-relevant behaviour: the browser does not talk to Google here, `searchEverywhere` does the
- * whole job server-side (Hardcover + Google fill, server-cached, rate-limited). Someone auditing
- * "does the browser talk to Google" greps for exactly that name, and would have been misled by it.
- *
- * Returns `SearchResult`, not Add's five-field `SearchHit`, and that is load-bearing rather than
- * incidental: `series` and `seriesPosition` survive to the triage classifier, which needs them for
- * matchBook's `title-series-pos` leg. Truncating first would disable that leg silently.
- */
-async function searchCatalog(q: string): Promise<SearchResult[]> {
-  const results = await searchEverywhere(q)
-  const sections = partitionSearchResults(results.filter((r) => r.title))
-  // Add keeps its concise catalog limit, while every Google result returned by the provider stays
-  // visible and in order. Truncating the combined array would silently alter Google's result set.
-  return [...sections.catalog.slice(0, ADD_RESULT_LIMIT), ...sections.google]
 }
 
 /** A catalog result as the form's prefill — `pub` takes the fn's `year`, and its ISBN-13-preferred
@@ -972,7 +948,7 @@ function BulkAdd({ addToHousehold }: { addToHousehold: boolean }) {
     for (const [i, line] of lines.entries()) {
       setStatus(`Looking up ${i + 1}/${lines.length}…`)
       try {
-        const top = (await searchCatalog(line))[0]
+        const top = (await searchAddCatalog(line))[0]
         if (!top) continue
         const res = await intake(bulkIncomingFromSearch(top, skinGenre, bulkSub), 'add')
         if (res.outcome === 'merged') merged++
@@ -1341,14 +1317,7 @@ function AddScreen() {
   const householdOnly = destination === 'household' || !!targetMemberId
   const collectiveDestination = destination !== 'mine'
   const [q, setQ] = useState('')
-  // SearchResult, not SearchHit: the triage classifier needs `series`/`seriesPosition`, which the
-  // five-field hit drops. The truncation to a hit happens at the PICK, not at the search.
-  const [results, setResults] = useState<SearchResult[] | null>(null)
-  const [busy, setBusy] = useState(false)
-  // The term the results on screen belong to. Distinct from `q`, which changes on every keystroke:
-  // the corpus lookup must follow what was SEARCHED, or a half-typed query refetches the corpus on
-  // every character and labels the visible results against a term nobody asked for.
-  const [searched, setSearched] = useState('')
+  const { results, searched, busy, issue: searchIssue, search, cancel } = useAddSearch()
   const [picked, setPicked] = useState<Picked | null>(() => pickedFromAddPrefill(prefill))
   useBookTourObservation(picked ? null : !busy && results?.length ? 'choose' : 'search')
   const [scanStatus, setScanStatus] = useState<string | null>(null)
@@ -1366,21 +1335,14 @@ function AddScreen() {
   const catalogTriaged = triageResults(resultSections.catalog, books ?? [], corpus.data)
   const googleTriaged = triageResults(resultSections.google, books ?? [], corpus.data)
 
-  async function runSearch(term = q) {
-    const query = term.trim()
-    if (!query) return
-    setBusy(true)
-    setPicked(null)
-    // Set BEFORE the await, so the corpus lookup starts alongside the catalog search rather than
-    // after it. The two round trips overlap; neither waits on the other.
-    setSearched(query)
-    try {
-      setResults(await searchCatalog(query))
-    } catch {
-      setResults([])
-    } finally {
-      setBusy(false)
-    }
+  function runSearch(term = q) {
+    if (term.trim().length >= 3) setPicked(null)
+    return search(term)
+  }
+
+  function pickBook(book: Picked) {
+    cancel()
+    setPicked(book)
   }
 
   function stopScan() {
@@ -1466,6 +1428,8 @@ function AddScreen() {
           }}
           placeholder="Title, author, or ISBN"
           aria-label="Search for a book"
+          aria-describedby={searchIssue ? 'add-search-issue' : undefined}
+          aria-invalid={searchIssue === 'short' || undefined}
           data-book-tour="book-search"
           className="h-11 min-w-[200px] flex-1 skin-field border border-line px-4 text-[14px] text-ink outline-none"
           style={{ background: 'var(--field)' }}
@@ -1495,7 +1459,7 @@ function AddScreen() {
             force the empty state. The form already accepts a bare { title }. */}
         <button
           type="button"
-          onClick={() => setPicked({ title: q.trim() })}
+          onClick={() => pickBook({ title: q.trim() })}
           className="h-11 skin-control border border-line px-5 text-[14px] font-semibold text-ink"
           style={{ background: 'var(--card)' }}
         >
@@ -1517,7 +1481,29 @@ function AddScreen() {
         playsInline
       />
 
-      {busy && <p className="mt-4 text-center text-[13px] text-muted">Searching…</p>}
+      {busy && (
+        <p role="status" className="mt-4 text-center text-[13px] text-muted">
+          Searching…
+        </p>
+      )}
+      {searchIssue && (
+        <Surface radius="card" tone="card" pad={3} className="mt-4">
+          <p id="add-search-issue" role="alert" className="text-[14px] text-ink">
+            {searchIssue === 'short'
+              ? 'Enter at least 3 characters to search, or add the book manually.'
+              : 'Search is unavailable right now. Try again, or add the book manually.'}
+          </p>
+          {searchIssue === 'unavailable' && (
+            <button
+              type="button"
+              onClick={() => void runSearch()}
+              className="skin-control skin-btn-secondary mt-3 min-h-11 px-4 text-[14px]"
+            >
+              Try search again
+            </button>
+          )}
+        </Surface>
+      )}
 
       {results && !picked && (
         <div className="mt-4 flex flex-col gap-2">
@@ -1539,7 +1525,7 @@ function AddScreen() {
                       <TriageRow
                         key={`${t.result.isbn}|${t.result.title}|${i}`}
                         t={t}
-                        onPick={setPicked}
+                        onPick={pickBook}
                         household={collectiveDestination}
                       />
                     ))}
@@ -1559,7 +1545,7 @@ function AddScreen() {
                       <TriageRow
                         key={`${t.result.isbn}|${t.result.title}|${i}`}
                         t={t}
-                        onPick={setPicked}
+                        onPick={pickBook}
                         household={collectiveDestination}
                       />
                     ))}
@@ -1572,7 +1558,7 @@ function AddScreen() {
               {voice.miss}{' '}
               <button
                 type="button"
-                onClick={() => setPicked({ title: q })}
+                onClick={() => pickBook({ title: q.trim() })}
                 className="font-semibold text-primary"
               >
                 Add it manually

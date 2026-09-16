@@ -14,9 +14,8 @@ import { supabase } from './supabase'
 // the kind of thing a reader can consent to, because its existence is invisible until it triggers.
 // Availability we can measure; a leak we cannot observe we cannot bound.
 //
-// SO: with the function down, search returns EMPTY and the caller shows its error state. Chosen,
-// not defaulted into — the surfaces already render `isError` (DiscoverRoute:225, :391), so the
-// failure is visible to the reader rather than silently empty.
+// With the function down, search throws and each caller must show an unavailable state.
+// A failed request must never look like a successful search with no matches.
 
 /** A search hit — cover/title/author/year/series (task §1). No consensus fields (anti-consensus). */
 export interface SearchResult {

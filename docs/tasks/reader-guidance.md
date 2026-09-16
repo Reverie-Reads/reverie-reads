@@ -181,6 +181,15 @@ handoff, an explicit start, saved progress, Home reload and reopening that same 
 the saved percentage survives without creating a finished-read log. The all-room intake check uses
 the inline layout at short viewport heights; actual phone keyboard behavior remains a manual check.
 
+## First-search recovery
+
+Add distinguishes an unavailable search from a successful lookup with no matches. An outage keeps
+search text and an explicit **Try search again** action; manual entry remains reachable. Queries
+shorter than three characters explain the minimum without contacting the provider. A newer search,
+manual entry or leaving Add cancels the pending request; late success or failure cannot replace the
+current result or disturb the manual draft. The live guide stays on search until actual results or
+a chosen manual form are visible. No retry, book selection or save is automatic.
+
 ## Verification
 
 - Core guidance/navigation tests: real-history milestones, DNF, undated plans, early exploration,
