@@ -751,6 +751,25 @@ After every unique-work range finishes, merge the reports with
 drift, experiment drift, and forged aggregate counts before producing the complete private fallback
 artifact.
 
+Reconcile the complete graph, Luna review, and Exa fallback into one work-level ledger before any
+historical comparison:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:reconcile -- \
+  --graph packages/series-source-trial/private-results/corpus-series-shadow-merged/full.json \
+  --review packages/series-source-trial/private-results/corpus-series-shadow-review-merged/full.json \
+  --exa packages/series-source-trial/private-results/corpus-series-shadow-exa-merged/full.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-reconciled/full.json
+```
+
+The reconciler accepts only the exact hash-bound complete artifacts. It resolves a work only from a
+valid, policy-safe Luna decision. A selected Exa fallback is still a Luna decision grounded in that
+call's consulted-source manifest; Exa itself remains only the locator. Conflicting classifications,
+memberships, positions, roles, or an unresolved competing provider group stay in manual review.
+Works with no relational source candidate stay unresolved, never standalone. The compact ledger
+stores decision hashes and stage/group pointers rather than copying consulted URLs, and it has no
+production writer.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an

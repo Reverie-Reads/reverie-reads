@@ -18,6 +18,7 @@
     "authority:corpus-shadow:review:merge": "node src/merge-corpus-shadow-reviews.mjs",
     "authority:corpus-shadow:exa": "node src/run-corpus-shadow-exa.mjs",
     "authority:corpus-shadow:exa:merge": "node src/merge-corpus-shadow-exa.mjs",
+    "authority:corpus-shadow:reconcile": "node src/reconcile-corpus-shadow.mjs",
     "authority:post-recovery:export": "node src/export-post-recovery-authority.mjs",
     "authority:post-recovery:compare": "node src/compare-post-recovery-authority.mjs",
     "authority:qualification:capture:ippy": "node src/capture-authority-qualification-ippy.mjs",
