@@ -23,7 +23,12 @@ const expectedTarget = (item) => ({
 })
 
 const resultStatus = (result) => {
-  if (!result.validation?.valid || !result.validation?.policySafe) return 'manual_review'
+  if (
+    !result.validation?.valid ||
+    !result.validation?.policySafe ||
+    result.output?.caseId !== result.caseId
+  )
+    return 'manual_review'
   if (result.output?.classification === 'series' && result.output.memberships?.length) {
     return 'resolved_series'
   }
@@ -107,19 +112,21 @@ export function mergeCorpusShadowHistoricalReports({ manifest, reports }) {
       if (!equal(target, expectedTarget(item)) || result?.caseId !== item.id) {
         fail(`target identity or order drifted at ${range.offset + index}`)
       }
-      if (result.status !== 'completed' || result.output?.caseId !== item.id) {
+      if (result.status !== 'completed') {
         fail(`work ${item.id} did not complete and must be retried`)
       }
+      const status = resultStatus(result)
+      const trustedOutput = status !== 'manual_review'
       works.push({
         workId: item.id,
         title: item.title,
         authors: item.authors,
         publicationYear: item.publicationYear,
         identityFingerprint: item.identityFingerprint,
-        status: resultStatus(result),
-        classification: result.output.classification,
+        status,
+        classification: trustedOutput ? result.output.classification : 'unresolved',
         memberships:
-          result.output.classification === 'series'
+          trustedOutput && result.output.classification === 'series'
             ? result.output.memberships.map(({ series, position, role }) => ({
                 series,
                 position,
@@ -130,7 +137,7 @@ export function mergeCorpusShadowHistoricalReports({ manifest, reports }) {
         provenance: {
           reportSha256: sha256,
           resultIndex: index,
-          outputSha256: sha256Json(result.output),
+          outputSha256: sha256Json(result.output ?? null),
         },
       })
     }

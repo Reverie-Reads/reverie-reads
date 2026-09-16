@@ -254,6 +254,17 @@ test('merges only complete, contiguous, manifest-bound historical acquisition re
   ])
   assert.equal(JSON.stringify(merged).includes('publisher.example'), false)
 
+  const quarantined = structuredClone(report)
+  quarantined.results[0].output.caseId = 'wrong-case'
+  quarantined.results[0].validation = { valid: false, policySafe: false }
+  const quarantinedMerge = mergeCorpusShadowHistoricalReports({
+    manifest,
+    reports: [{ report: quarantined, sha256: '6'.repeat(64) }],
+  })
+  assert.equal(quarantinedMerge.works[0].status, 'manual_review')
+  assert.equal(quarantinedMerge.works[0].classification, 'unresolved')
+  assert.deepEqual(quarantinedMerge.works[0].memberships, [])
+
   const failed = structuredClone(report)
   failed.results[0] = { caseId: item.id, status: 'error' }
   assert.throws(
