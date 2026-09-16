@@ -910,7 +910,11 @@ function AddForm({
           Saving your book…
         </p>
       )}
-      <div className="mt-4 empty:hidden" data-book-tour-inline="book-save" />
+      <div
+        className="mt-4 empty:hidden"
+        data-book-tour-inline="book-save"
+        data-book-tour-inline-desktop
+      />
       <button
         type="button"
         onClick={() => void save()}

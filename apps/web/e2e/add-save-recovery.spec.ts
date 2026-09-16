@@ -119,6 +119,23 @@ for (const touch of [false, true]) {
         await expect(
           page.getByRole('complementary', { name: 'Live walkthrough' }).getByRole('status'),
         ).toHaveText('Make it yours')
+        // The coach must occupy layout space instead of covering the failure or retry control.
+        await expect
+          .poll(async () => {
+            const coach = await page
+              .getByRole('complementary', { name: 'Live walkthrough' })
+              .boundingBox()
+            const alert = await page.getByRole('alert').boundingBox()
+            const button = await add.boundingBox()
+            return (
+              !!coach &&
+              !!alert &&
+              !!button &&
+              alert.y + alert.height <= coach.y &&
+              coach.y + coach.height <= button.y
+            )
+          })
+          .toBe(true)
         await page.screenshot({
           path: `test-results/add-save-${touch ? 'phone' : 'desktop'}.png`,
           fullPage: true,

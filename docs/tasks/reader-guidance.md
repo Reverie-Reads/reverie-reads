@@ -193,8 +193,9 @@ a chosen manual form are visible. No retry, book selection or save is automatic.
 ## First-save feedback and recovery
 
 Single-book Add announces a pending save and blocks repeated submissions. A failed personal save
-keeps the form and the live guide at details; only a confirmed save enters refinement. Retry first
-checks the exact reader-owned insertion UUID retained by this mounted form, then refreshes the
+keeps the form and the live guide at details; only a confirmed save enters refinement. The details
+coach sits in the page on desktop as well as phone, keeping errors and retry controls unobstructed.
+Retry first checks the exact reader-owned insertion UUID retained by this mounted form, then refreshes the
 library before matching again. An absent row may be retried using the same UUID, so a late original
 insert cannot create a second copy. Import and bulk Add do not opt into this session identity.
 
