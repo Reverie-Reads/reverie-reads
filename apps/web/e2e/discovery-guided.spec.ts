@@ -1,9 +1,9 @@
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
-import { ok, okUser } from './support/ok'
+import { ok, okData, okUser } from './support/ok'
 import { SKIN_ORDER } from '@reverie/core'
 import AxeBuilder from '@axe-core/playwright'
 
@@ -18,8 +18,8 @@ const PASSWORD = 'discovery-guided-e2e-password'
 test.describe.configure({ mode: 'serial' })
 
 type Client = {
-  sb: ReturnType<typeof createClient>
-  admin: ReturnType<typeof createClient>
+  sb: SupabaseClient
+  admin: SupabaseClient
   session: { access_token: string; refresh_token: string }
   uid: string
 }
@@ -85,7 +85,7 @@ test.beforeAll(async () => {
     c.admin.from('works').delete().like('work_key', 'discovery-guided-%'),
     'fixture works cleanup',
   )
-  const works = await ok(
+  const works = await okData(
     c.admin
       .from('works')
       .insert(
@@ -128,7 +128,8 @@ test.afterAll(async () => {
       shared.admin.from('corpus_series').delete().eq('id', sharedSeriesId),
       'fixture shared series cleanup',
     )
-  await ok(shared.admin.auth.admin.deleteUser(shared.uid), 'fixture account cleanup')
+  const cleanup = await shared.admin.auth.admin.deleteUser(shared.uid)
+  if (cleanup.error) throw cleanup.error
   await ok(
     shared.admin.from('works').delete().like('work_key', 'discovery-guided-%'),
     'fixture catalog cleanup',
@@ -177,7 +178,7 @@ test('a real shortlist keeps order through details, save, wishlist add and retur
   await page.getByRole('button', { name: `Not this time: ${titles[2]}` }).click()
   await page.getByRole('button', { name: 'Save shortlist', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('Shortlist saved')
-  const rows = await ok(c.sb.from('discovery_sessions').select('id,document'), 'saved snapshot')
+  const rows = await okData(c.sb.from('discovery_sessions').select('id,document'), 'saved snapshot')
   expect(rows).toHaveLength(1)
   expect(rows[0].document.picks.map((p: { book: { title: string } }) => p.book.title)).toEqual([
     titles[1],
@@ -187,8 +188,8 @@ test('a real shortlist keeps order through details, save, wishlist add and retur
   await page.getByRole('link', { name: 'Add to wishlist', exact: true }).click()
   await expect(page).toHaveURL(new RegExp(`discoverSession=${sid}`))
   await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
-  await expect(page.getByRole('button', { name: /Done|Keep browsing/ })).toBeVisible()
-  await page.getByRole('link', { name: 'Return to your shortlist', exact: true }).click()
+  await expect(page.getByRole('link', { name: 'Open your book', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Return to your shortlist', exact: true }).click()
   await expect(page).toHaveURL(new RegExp(`session=${sid}`))
   await expect(cards.locator('h3')).toHaveText([titles[1]!])
   await expect(cards).toContainText('On your wishlist')
@@ -299,7 +300,7 @@ test('series invitation needs reviewed membership and disappears after removing 
   page,
 }) => {
   const c = await client()
-  const [book] = await ok(
+  const [book] = await okData(
     c.sb.from('books').select('id').eq('corpus_work_id', workIds[0]!),
     'series starting copy',
   )
@@ -309,7 +310,7 @@ test('series invitation needs reviewed membership and disappears after removing 
       .insert({ book_id: book.id, owner_id: c.uid, read_on: '2026-09-01', format: 'physical' }),
     'completed read fixture',
   )
-  const [personal] = await ok(
+  const [personal] = await okData(
     c.sb
       .from('series')
       .insert({ owner_id: c.uid, name: 'Discovery fixture saga', source: 'manual' })
@@ -333,7 +334,7 @@ test('series invitation needs reviewed membership and disappears after removing 
     }),
     'personal membership fixture',
   )
-  const [corpus] = await ok(
+  const [corpus] = await okData(
     c.admin
       .from('corpus_series')
       .insert({

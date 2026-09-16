@@ -165,6 +165,9 @@ myProgress`). Move them into `packages/core` with tests.
   inserted again or silently repaired. Partial saves offer review without replaying contributor,
   household or verdict writes. New-row retries reuse that UUID; this is session-only, not a
   cross-device idempotency claim. Import and bulk Add keep their existing behavior.
+  After a confirmed save, a failed library reload is a read failure, not an ongoing save.
+  Keep the confirmation, household warning and an exit visible; retry reads only. Offer direct
+  book navigation only once that exact personal record is loaded, without starting a read.
 - **Add search distinguishes failure from absence.** Only a successful empty response means no
   matches. Keep the entered query available for explicit retry or manual entry; a newer search,
   manual choice or route exit cancels the older request so late results cannot replace the current

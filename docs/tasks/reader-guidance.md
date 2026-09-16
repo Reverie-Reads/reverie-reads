@@ -205,6 +205,25 @@ A removed row is not revived. Duplicate decisions share the same pending guard, 
 failed decision can only retry that decision. Household partial-success warnings remain intact.
 The draft and retry identity last only while the form is mounted; refresh does not restore them.
 
+## From a saved book to reading
+
+After a confirmed save, Add distinguishes loading the book's details, a failed read, an offline
+pause and a successful library response that no longer contains the book. Each keeps the save
+confirmation, any household warning and an explicit return action visible. **Try loading again**
+only refetches the personal library; it cannot insert a copy or replay the completed save.
+
+Once the exact personal record is loaded, **Open your book** goes directly to its book page without
+changing reading state. Cover and tag refinement remain optional. The secondary return action names
+its destination and retains the existing shortlist/household context. The walkthrough still offers
+the Library stop; readers can also open the saved book directly and continue into its reading chapter.
+While details are absent, the guide explains the confirmed save's loading state; only the loaded
+record advances it to refinement. Both loading and saved-step coaching occupy the page on desktop
+and phone so recovery and navigation actions remain unobstructed.
+
+Browser fault injection checks the failure, pending retry and recovery against one real saved row,
+then opens and reloads that same book without starting a read. A separate missing-row response checks
+the exit path. The existing full reading journey continues through explicit progress and Home resume.
+
 ## Verification
 
 - Core guidance/navigation tests: real-history milestones, DNF, undated plans, early exploration,
