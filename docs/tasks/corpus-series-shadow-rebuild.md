@@ -143,6 +143,15 @@ remain unresolved. The ledger
 contains compact classifications, membership tuples, decision hashes, and stage/group pointers. It
 does not copy search URLs and cannot write the catalog.
 
+Historical comparison begins only from that complete ledger. Export one read-only snapshot of the
+current shared projection, active shared graph, and pending suggestions, bound to every frozen work
+ID and identity fingerprint. Reject corpus drift rather than heuristically rebinding a changed work.
+The comparator classifies exact matches, missing series, name replacements, position updates,
+position-review cases, affirmative-standalone conflicts, and unresolved historical claims. A null
+shadow position does not erase a historical position. Standalone-versus-membership conflicts are
+review-only, and unresolved or manual-review shadow works cannot remove any current membership. The
+result remains a private review artifact with no writer.
+
 ## Model placement and cost
 
 Do not run Exa for every work. It cannot establish truth, and the September recovery-review batch
