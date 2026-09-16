@@ -1,6 +1,6 @@
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
 import { ok, okData, okUser } from './support/ok'
@@ -28,7 +28,7 @@ const PASSWORD = 'tab-routing-e2e-password'
 test.describe.configure({ mode: 'serial' })
 
 type Client = {
-  sb: ReturnType<typeof createClient>
+  sb: SupabaseClient
   session: { access_token: string; refresh_token: string }
   uid: string
 }
