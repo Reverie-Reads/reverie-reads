@@ -4,8 +4,8 @@ import { EXA_SEARCH_REQUEST_USD } from './exa-locator.mjs'
 
 export async function createCorpusShadowExaBudget({ path, reviewSha256, maximumUsd }) {
   if (!/^[a-f0-9]{64}$/.test(reviewSha256 ?? '')) throw new Error('Exa budget requires review hash')
-  if (!Number.isFinite(maximumUsd) || maximumUsd <= 0 || maximumUsd > 10) {
-    throw new Error('Exa budget must be greater than zero and at most $10')
+  if (!Number.isFinite(maximumUsd) || maximumUsd <= 0 || maximumUsd > 30) {
+    throw new Error('Exa budget must be greater than zero and at most $30')
   }
   await mkdir(dirname(path), { recursive: true, mode: 0o700 })
   let state
@@ -31,13 +31,36 @@ export async function createCorpusShadowExaBudget({ path, reviewSha256, maximumU
     state?.schemaVersion !== 1 ||
     state?.purpose !== 'corpus-series-shadow-exa-budget' ||
     state?.reviewSha256 !== reviewSha256 ||
-    state?.maximumUsd !== maximumUsd ||
     !Number.isInteger(state?.reservedRequests) ||
     state.reservedRequests < 0 ||
     Number(state?.reservedUsd) !==
       Number((state.reservedRequests * EXA_SEARCH_REQUEST_USD).toFixed(6))
   ) {
     throw new Error('Exa budget state does not match the frozen review')
+  }
+  if (maximumUsd < state.maximumUsd) {
+    throw new Error('Exa budget cannot reduce a durable ceiling')
+  }
+  if (maximumUsd > state.maximumUsd) {
+    const previousMaximumUsd = state.maximumUsd
+    state = {
+      ...state,
+      maximumUsd,
+      ceilingHistory: [
+        ...(Array.isArray(state.ceilingHistory) ? state.ceilingHistory : []),
+        {
+          raisedAt: new Date().toISOString(),
+          fromUsd: previousMaximumUsd,
+          toUsd: maximumUsd,
+        },
+      ],
+    }
+    const temporary = `${path}.${process.pid}.tmp`
+    await writeFile(temporary, `${JSON.stringify(state, null, 2)}\n`, {
+      encoding: 'utf8',
+      mode: 0o600,
+    })
+    await rename(temporary, path)
   }
 
   let lock = Promise.resolve()

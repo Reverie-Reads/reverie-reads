@@ -22,6 +22,7 @@
     "authority:corpus-shadow:history:export": "node src/export-corpus-shadow-history.mjs",
     "authority:corpus-shadow:compare": "node src/compare-corpus-shadow.mjs",
     "authority:corpus-shadow:manifest": "node src/build-corpus-shadow-review-manifest.mjs",
+    "authority:corpus-shadow:historical:merge": "node src/merge-corpus-shadow-historical.mjs",
     "authority:post-recovery:export": "node src/export-post-recovery-authority.mjs",
     "authority:post-recovery:compare": "node src/compare-post-recovery-authority.mjs",
     "authority:qualification:capture:ippy": "node src/capture-authority-qualification-ippy.mjs",

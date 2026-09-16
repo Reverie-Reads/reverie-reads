@@ -43,6 +43,11 @@ import {
   postRecoveryFrameSha256,
   postRecoveryTrialCaseSet,
 } from './authority/post-recovery-frame.mjs'
+import {
+  corpusShadowHistoricalTrialCaseSet,
+  loadPrivateCorpusShadowReviewManifest,
+} from './authority/corpus-shadow-review-manifest.mjs'
+import { createCorpusShadowExaBudget } from './authority/corpus-shadow-exa-budget.mjs'
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const repositoryRoot = resolve(packageRoot, '../..')
@@ -54,6 +59,8 @@ const parseArgs = (argv) => {
     ids: null,
     holdout: null,
     postRecoveryInput: null,
+    corpusShadowManifest: null,
+    offset: 0,
     envFile: null,
     qualificationLock: null,
     resume: false,
@@ -78,6 +85,8 @@ const parseArgs = (argv) => {
     else if (value === '--ids') options.ids = argv[++index].split(',').filter(Boolean)
     else if (value === '--holdout') options.holdout = argv[++index]
     else if (value === '--post-recovery-input') options.postRecoveryInput = argv[++index]
+    else if (value === '--corpus-shadow-manifest') options.corpusShadowManifest = argv[++index]
+    else if (value === '--offset') options.offset = Number(argv[++index])
     else if (value === '--env') options.envFile = argv[++index]
     else if (value === '--qualification-lock') options.qualificationLock = argv[++index]
     else if (value === '--out') options.out = argv[++index]
@@ -98,19 +107,29 @@ const parseArgs = (argv) => {
   if (options.max !== null && (!Number.isInteger(options.max) || options.max < 1)) {
     throw new Error('Authority acquisition max must be a positive integer')
   }
+  if (!Number.isInteger(options.offset) || options.offset < 0) {
+    throw new Error('Authority acquisition offset must be a non-negative integer')
+  }
   if (options.holdout && (options.ids || options.max !== null || options.scope !== 'gold')) {
     throw new Error('Authority acquisition --holdout requires gold scope without --ids or --max')
   }
+  if (options.postRecoveryInput && options.corpusShadowManifest) {
+    throw new Error('Choose either post-recovery input or corpus shadow manifest')
+  }
+  const privateReviewInput = options.postRecoveryInput || options.corpusShadowManifest
   if (
-    options.postRecoveryInput &&
+    privateReviewInput &&
     (options.qualificationLock ||
       options.holdout ||
       options.scope !== 'candidate' ||
       options.refresh)
   ) {
     throw new Error(
-      'Post-recovery acquisition requires candidate scope and forbids qualification, holdout, and refresh',
+      'Private review acquisition requires candidate scope and forbids qualification, holdout, and refresh',
     )
+  }
+  if (options.offset > 0 && !privateReviewInput) {
+    throw new Error('Authority acquisition offset requires a private review input')
   }
   if (options.qualificationLock) {
     if (
@@ -224,6 +243,8 @@ const developmentCaseSet = await loadTrialCases()
 let caseSet = developmentCaseSet
 let holdout = null
 let postRecoveryFrame = null
+let corpusShadowManifest = null
+let corpusShadowExaBudget = null
 let qualificationLock = null
 let qualificationLockPath = null
 let qualificationRunStatePath = null
@@ -354,6 +375,23 @@ if (options.postRecoveryInput) {
     mode: 0o600,
   })
 }
+if (options.corpusShadowManifest) {
+  corpusShadowManifest = await loadPrivateCorpusShadowReviewManifest(
+    resolve(repositoryRoot, options.corpusShadowManifest),
+    packageRoot,
+  )
+  caseSet = corpusShadowHistoricalTrialCaseSet(corpusShadowManifest)
+  if (options.exaFallback) {
+    corpusShadowExaBudget = await createCorpusShadowExaBudget({
+      path: resolve(
+        packageRoot,
+        `private-results/corpus-series-shadow-exa-state/${corpusShadowManifest.inputs.reviewSha256}.json`,
+      ),
+      reviewSha256: corpusShadowManifest.inputs.reviewSha256,
+      maximumUsd: options.maximumExaSpendUsd,
+    })
+  }
+}
 const persistQualificationRunState = async () => {
   if (!qualificationRunStatePath || !qualificationRunState) return
   const snapshot = `${JSON.stringify(qualificationRunState, null, 2)}\n`
@@ -399,6 +437,7 @@ let cases = caseSet.cases.filter((testCase) => {
   if (
     !qualificationLock &&
     !postRecoveryFrame &&
+    !corpusShadowManifest &&
     (testCase.evaluationPartition ?? 'development') !== 'development'
   ) {
     return false
@@ -414,7 +453,7 @@ if (selectedIds) {
   if (missing.length) throw new Error(`Unknown or out-of-scope case ids: ${missing.join(', ')}`)
   cases = selectedIds.map((id) => availableById.get(id))
 }
-cases = cases.slice(0, options.max ?? undefined)
+cases = cases.slice(options.offset, options.max === null ? undefined : options.offset + options.max)
 if (!cases.length) throw new Error('Authority acquisition selection is empty')
 
 const model = options.model
@@ -427,10 +466,14 @@ const exaBudgetState = qualificationRunState ?? postRecoveryExaState
 let reservedExaSpendUsd = Number(exaBudgetState?.exaReservedUsd ?? 0)
 let qualificationBudgetExhausted = false
 const qualificationExaLocator = async (target, locatorOptions) => {
-  if (!qualificationLock && !postRecoveryFrame) {
+  if (!qualificationLock && !postRecoveryFrame && !corpusShadowManifest) {
     return runExaAuthorityLocator(target, locatorOptions)
   }
   const budgetedFetch = async (...args) => {
+    if (corpusShadowManifest) {
+      await corpusShadowExaBudget.reserve()
+      return fetch(...args)
+    }
     if (reservedExaSpendUsd + EXA_SEARCH_REQUEST_USD > options.maximumExaSpendUsd) {
       qualificationBudgetExhausted = true
       throw new Error('qualification_exa_budget_exhausted')
@@ -453,30 +496,51 @@ const postRecoveryCacheRoot = postRecoveryFrame
       postRecoveryFrame.sourceRunId,
     )
   : null
+const corpusShadowCacheRoot = corpusShadowManifest
+  ? resolve(
+      packageRoot,
+      'private-results/corpus-shadow-historical-cache',
+      corpusShadowManifest.manifestSha256,
+    )
+  : null
 const cacheRoot = qualificationCacheRoot
   ? resolve(qualificationCacheRoot, 'first-pass')
   : postRecoveryCacheRoot
     ? resolve(postRecoveryCacheRoot, 'first-pass')
-    : resolve(packageRoot, 'private-results/authority-acquisition-cache')
+    : corpusShadowCacheRoot
+      ? resolve(corpusShadowCacheRoot, 'first-pass')
+      : resolve(packageRoot, 'private-results/authority-acquisition-cache')
 await mkdir(cacheRoot, { recursive: true })
 const retrievalCacheRoot = qualificationCacheRoot
   ? resolve(qualificationCacheRoot, 'retrieval-interpretation')
   : postRecoveryCacheRoot
     ? resolve(postRecoveryCacheRoot, 'retrieval-interpretation')
-    : resolve(packageRoot, 'private-results/authority-retrieval-interpretation-cache')
+    : corpusShadowCacheRoot
+      ? resolve(corpusShadowCacheRoot, 'retrieval-interpretation')
+      : resolve(packageRoot, 'private-results/authority-retrieval-interpretation-cache')
 if (options.retrieval) await mkdir(retrievalCacheRoot, { recursive: true })
 const focusedSearchCacheRoot = qualificationCacheRoot
   ? resolve(qualificationCacheRoot, 'focused-search')
   : postRecoveryCacheRoot
     ? resolve(postRecoveryCacheRoot, 'focused-search')
-    : resolve(packageRoot, 'private-results/authority-focused-search-cache')
+    : corpusShadowCacheRoot
+      ? resolve(corpusShadowCacheRoot, 'focused-search')
+      : resolve(packageRoot, 'private-results/authority-focused-search-cache')
 if (options.focusedSearch) await mkdir(focusedSearchCacheRoot, { recursive: true })
 const exaFallbackCacheRoot = qualificationCacheRoot
   ? resolve(qualificationCacheRoot, 'exa-fallback')
   : postRecoveryCacheRoot
     ? resolve(postRecoveryCacheRoot, 'exa-fallback')
-    : resolve(packageRoot, 'private-results/authority-exa-fallback-cache')
+    : corpusShadowCacheRoot
+      ? resolve(corpusShadowCacheRoot, 'exa-fallback')
+      : resolve(packageRoot, 'private-results/authority-exa-fallback-cache')
 if (options.exaFallback) await mkdir(exaFallbackCacheRoot, { recursive: true })
+const finalResultCacheRoot = postRecoveryCacheRoot
+  ? resolve(postRecoveryCacheRoot, 'final-result')
+  : corpusShadowCacheRoot
+    ? resolve(corpusShadowCacheRoot, 'final-result')
+    : null
+if (finalResultCacheRoot) await mkdir(finalResultCacheRoot, { recursive: true })
 const cacheKey = (target) =>
   createHash('sha256')
     .update(
@@ -486,6 +550,19 @@ const cacheKey = (target) =>
         experiment,
         promptVersion: AUTHORITY_ACQUISITION_PROMPT_VERSION,
         target: authorityAcquisitionCacheMaterial(target),
+      }),
+    )
+    .digest('hex')
+const finalResultCacheKey = (target) =>
+  createHash('sha256')
+    .update(
+      JSON.stringify({
+        cacheVersion: 1,
+        firstPassCacheKey: cacheKey(target),
+        focusedSearch: options.focusedSearch,
+        exaFallback: options.exaFallback,
+        maximumExaSpendUsd: options.maximumExaSpendUsd,
+        retrieval: options.retrieval,
       }),
     )
     .digest('hex')
@@ -670,7 +747,11 @@ const runOne = async (testCase) => {
   const target = buildAuthorityTarget(testCase)
   const policy = authorityPolicyForCase(
     testCase,
-    qualificationLock ? qualificationPlan : postRecoveryFrame ? null : samplePlan,
+    qualificationLock
+      ? qualificationPlan
+      : postRecoveryFrame || corpusShadowManifest
+        ? null
+        : samplePlan,
   )
   const finalize = async (firstPass) => {
     let searched = options.focusedSearch
@@ -697,6 +778,61 @@ const runOne = async (testCase) => {
         })
       : searched
   }
+  const finalResultCachePath = finalResultCacheRoot
+    ? resolve(finalResultCacheRoot, `${finalResultCacheKey(target)}.json`)
+    : null
+  const asCachedFinalResult = (result) => ({
+    ...result,
+    cached: true,
+    billing: emptyBilling(),
+    ...(result.exaFallback?.locator
+      ? {
+          exaFallback: {
+            ...result.exaFallback,
+            replayedFromCache: true,
+            locator: {
+              ...result.exaFallback.locator,
+              operations: {
+                ...result.exaFallback.locator.operations,
+                queriesPlanned: 0,
+                queriesCompleted: 0,
+                requests: 0,
+                urlsInspected: 0,
+                latencyMs: 0,
+                estimatedCostUsd: 0,
+              },
+            },
+            ...(result.exaFallback.search
+              ? {
+                  search: {
+                    ...result.exaFallback.search,
+                    cached: true,
+                    billing: emptyBilling(),
+                  },
+                }
+              : {}),
+          },
+        }
+      : {}),
+  })
+  const finalizeAndCache = async (firstPass) => {
+    const result = await finalize(firstPass)
+    if (finalResultCachePath && result.status === 'completed') {
+      await writeFile(finalResultCachePath, `${JSON.stringify(result, null, 2)}\n`, { mode: 0o600 })
+    }
+    return result
+  }
+  if (finalResultCachePath && !options.refresh) {
+    try {
+      const cachedFinal = JSON.parse(await readFile(finalResultCachePath, 'utf8'))
+      if (cachedFinal.status !== 'completed' || cachedFinal.caseId !== target.caseId) {
+        throw new Error('Final authority cache identity drifted')
+      }
+      return asCachedFinalResult(cachedFinal)
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error
+    }
+  }
   const cachePath = resolve(cacheRoot, `${cacheKey(target)}.json`)
   if (!options.refresh) {
     try {
@@ -706,7 +842,7 @@ const runOne = async (testCase) => {
       const cachedMetadata = { ...cached }
       delete cachedMetadata.output
       delete cachedMetadata.rawOutput
-      return await finalize({
+      return await finalizeAndCache({
         caseId: target.caseId,
         status: 'completed',
         ...cachedMetadata,
@@ -779,7 +915,7 @@ const runOne = async (testCase) => {
       rawOutput,
     }
     await writeFile(cachePath, `${JSON.stringify(cacheRecord, null, 2)}\n`, { mode: 0o600 })
-    return await finalize({
+    return await finalizeAndCache({
       caseId: target.caseId,
       status: 'completed',
       ...cacheRecord,
@@ -838,7 +974,9 @@ const score = {
     ? 'qualification'
     : postRecoveryFrame
       ? 'post_recovery_review'
-      : 'development',
+      : corpusShadowManifest
+        ? 'corpus_shadow_historical_review'
+        : 'development',
 }
 if (qualificationLock) score.qualification = evaluateQualificationScore(score, evaluationPolicy)
 const qualificationErrorResults = results.filter((result) => result.status === 'error')
@@ -894,14 +1032,17 @@ const basePath = resolve(
     : postRecoveryFrame
       ? (options.out ??
         `packages/series-source-trial/private-results/post-recovery-authority-runs/${postRecoveryFrame.sourceRunId}_${timestamp()}`)
-      : (options.out ??
-        `packages/series-source-trial/private-results/authority-acquisition/${holdout?.id ?? options.scope}_${timestamp()}`),
+      : corpusShadowManifest
+        ? (options.out ??
+          `packages/series-source-trial/private-results/corpus-shadow-historical-runs/${corpusShadowManifest.manifestSha256.slice(0, 12)}_${options.offset}-${options.offset + cases.length}_${timestamp()}`)
+        : (options.out ??
+          `packages/series-source-trial/private-results/authority-acquisition/${holdout?.id ?? options.scope}_${timestamp()}`),
 )
-if (postRecoveryFrame) {
+if (postRecoveryFrame || corpusShadowManifest) {
   const privateRoot = resolve(packageRoot, 'private-results')
   const rel = relative(privateRoot, basePath)
   if (!rel || rel.startsWith('..') || isAbsolute(rel)) {
-    throw new Error('Post-recovery authority output must remain under private-results')
+    throw new Error('Private review authority output must remain under private-results')
   }
 }
 await mkdir(dirname(basePath), { recursive: true })
@@ -923,6 +1064,20 @@ await Promise.all([
               sha256: postRecoveryFrameSha256(postRecoveryFrame),
               frozenAt: postRecoveryFrame.frozenAt,
               counts: postRecoveryFrame.counts,
+            }
+          : null,
+        corpusShadowManifest: corpusShadowManifest
+          ? {
+              purpose: corpusShadowManifest.purpose,
+              sha256: corpusShadowManifest.manifestSha256,
+              createdAt: corpusShadowManifest.createdAt,
+              sourceFrame: corpusShadowManifest.sourceFrame,
+              historicalVerificationCount: corpusShadowManifest.counts.historicalVerification,
+              reviewRange: {
+                offset: options.offset,
+                end: options.offset + cases.length,
+                total: corpusShadowManifest.counts.historicalVerification,
+              },
             }
           : null,
         qualificationLockSha256: qualificationLock?.sha256 ?? null,

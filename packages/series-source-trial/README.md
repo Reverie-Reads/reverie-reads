@@ -813,6 +813,48 @@ comparison reason or evidence, and is the only lane a truth-blind follow-up runn
 The manifest still has no production writer; a later administrator handoff must revalidate live
 catalog state and stage proposals for review rather than apply them.
 
+Run the identity-only historical lane through the existing truth-blind authority scout in bounded,
+non-overlapping ranges:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:acquire -- \
+  --scope candidate \
+  --corpus-shadow-manifest packages/series-source-trial/private-results/corpus-series-shadow-review-manifest/full.json \
+  --offset 0 \
+  --max 25 \
+  --model gpt-5.6-luna \
+  --reasoning low \
+  --search-context medium \
+  --max-tool-calls 3 \
+  --env /ABSOLUTE/PATH/TO/series-source-trial/.env.local \
+  --exa-fallback
+```
+
+Luna always receives only the selected identity fields. Exa runs only after that Luna result stays
+unresolved or policy-quarantined. The fallback reuses the original corpus-shadow Exa ledger. Its
+initial cumulative $10 ceiling may only move upward, is durably recorded, and is capped at $30;
+the owner raised this run to $30 on 2026-09-16. Each range
+uses an isolated manifest-bound cache and writes an owner-only private report. Overlapping ranges
+reuse cache entries but must not be merged as if they were independent coverage.
+
+After every range has completed without an acquisition error, merge the exact non-overlapping
+coverage:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:historical:merge -- \
+  --manifest packages/series-source-trial/private-results/corpus-series-shadow-review-manifest/full.json \
+  --input packages/series-source-trial/private-results/corpus-shadow-historical-runs/range-0.json \
+  --input packages/series-source-trial/private-results/corpus-shadow-historical-runs/range-1.json \
+  --out packages/series-source-trial/private-results/corpus-shadow-historical-merged/full.json
+```
+
+The merger rejects a gap, overlap, changed model or prompt, altered target order, foreign identity,
+or any completed result after an unfinished/error result. It may retain a contiguous completed
+prefix from an interrupted range when the next input resumes at exactly that prefix boundary. Its
+compact work ledger retains only the selected classification,
+membership tuple, pass name, and hashes pointing back to the private range evidence; consulted URLs
+remain in the source reports rather than being copied forward.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an
