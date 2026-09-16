@@ -1,0 +1,57 @@
+name: Sentry production deploy
+
+on:
+  deployment_status:
+
+permissions: {}
+
+concurrency:
+  group: sentry-deploy-${{ github.event.deployment.id }}
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Production' &&
+      github.event.deployment.creator.login == 'vercel[bot]' &&
+      github.event.deployment_status.creator.login == 'vercel[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # No checkout or code from the deployed branch executes with this secret.
+      - name: Record the successful production deployment
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: steppe-xu
+          SENTRY_PROJECT: reverie
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+          const sha = event.deployment.sha;
+          if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error('Expected a full commit SHA');
+          if (!process.env.SENTRY_AUTH_TOKEN) throw new Error('SENTRY_AUTH_TOKEN is missing');
+          const base = `https://sentry.io/api/0/organizations/${process.env.SENTRY_ORG}/releases/`;
+          async function api(path, method = 'GET', body) {
+            const response = await fetch(base + path, {
+              method,
+              headers: { Authorization: `Bearer ${process.env.SENTRY_AUTH_TOKEN}`, 'Content-Type': 'application/json' },
+              ...(body ? { body: JSON.stringify(body) } : {}),
+            });
+            if (!response.ok) throw new Error(`Sentry ${method} failed: ${response.status}`);
+            return response.json();
+          }
+          await api('', 'POST', { version: sha, projects: [process.env.SENTRY_PROJECT] });
+          const path = `${sha}/deploys/`;
+          const name = `vercel-${event.deployment.id}`;
+          const existing = await api(path);
+          if (!existing.some(deploy => deploy.name === name)) {
+            await api(path, 'POST', {
+              environment: 'production', name,
+              dateFinished: event.deployment_status.updated_at,
+              url: event.deployment_status.environment_url || event.deployment_status.target_url,
+            });
+          }
+          console.log(`Recorded ${process.env.SENTRY_PROJECT} production deploy for ${sha}`);
+          JS

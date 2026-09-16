@@ -36,6 +36,7 @@ export function initErrorMonitoring(): void {
       Sentry.init({
         dsn: DSN,
         release: RELEASE,
+        environment: import.meta.env.VITE_SENTRY_ENVIRONMENT,
         tracesSampleRate: 0, // no performance traces — protect the free quota
         sampleRate: 1,
         ignoreErrors: [
