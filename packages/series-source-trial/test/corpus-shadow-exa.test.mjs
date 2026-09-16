@@ -146,14 +146,26 @@ test('durably reserves concurrent Exa requests and enforces the cumulative ceili
   assert.equal(persisted.reservedRequests, 2)
   assert.equal(persisted.reservedUsd, 0.014)
   assert.equal((await stat(path)).mode & 0o777, 0o600)
+  const raised = await createCorpusShadowExaBudget({
+    path,
+    reviewSha256: 'd'.repeat(64),
+    maximumUsd: 0.021,
+  })
+  await raised.reserve()
+  const raisedState = JSON.parse(await readFile(path, 'utf8'))
+  assert.equal(raisedState.maximumUsd, 0.021)
+  assert.deepEqual(
+    raisedState.ceilingHistory.map(({ fromUsd, toUsd }) => ({ fromUsd, toUsd })),
+    [{ fromUsd: 0.014, toUsd: 0.021 }],
+  )
   await assert.rejects(
     () =>
       createCorpusShadowExaBudget({
         path,
         reviewSha256: 'd'.repeat(64),
-        maximumUsd: 0.021,
+        maximumUsd: 0.014,
       }),
-    /does not match/,
+    /cannot reduce/,
   )
 })
 

@@ -41,6 +41,10 @@ Historical verification is an identity-only lane: title, every full author, opti
 year, work ID, and frozen identity fingerprint. A follow-up model runner must consume only that lane
 and must never receive the historical series tuple.
 
+The follow-up uses Luna-low first. Exa is invoked only for an unresolved or policy-quarantined Luna
+result and reuses the original shadow run's cumulative Exa ledger rather than creating a fresh
+budget. Its outputs remain private review artifacts and cannot stage or apply a catalog change.
+
 ## First command
 
 This command performs one read-only production query and writes one owner-only ignored file. Its

@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { isAbsolute, relative, resolve } from 'node:path'
 
 import { CORPUS_SHADOW_COMPARISON_PURPOSE } from './corpus-shadow-history.mjs'
 import { CORPUS_SHADOW_RECONCILIATION_PURPOSE } from './corpus-shadow-reconcile.mjs'
@@ -307,3 +309,37 @@ export function validateCorpusShadowReviewManifest(manifest) {
 }
 
 export const corpusShadowReviewManifestHash = sha256Json
+
+export async function loadPrivateCorpusShadowReviewManifest(inputPath, packageRoot) {
+  const privateRoot = resolve(packageRoot, 'private-results')
+  const absolute = resolve(inputPath)
+  const nested = relative(privateRoot, absolute)
+  if (!nested || nested.startsWith('..') || isAbsolute(nested)) {
+    throw new Error('Corpus shadow review manifest must remain under private-results')
+  }
+  return validateCorpusShadowReviewManifest(JSON.parse(await readFile(absolute, 'utf8')))
+}
+
+export function corpusShadowHistoricalTrialCaseSet(manifest) {
+  validateCorpusShadowReviewManifest(manifest)
+  return {
+    schemaVersion: 1,
+    methodology: {
+      reviewedCases: 0,
+      candidateCases: manifest.lanes.historicalVerification.length,
+      note: 'Historical corpus claims are withheld. This identity-only queue is review-only, not ground truth.',
+    },
+    sharedSources: {},
+    cases: manifest.lanes.historicalVerification.map((item) => ({
+      id: item.id,
+      title: item.title.trim(),
+      authors: item.authors.map((author) => author.trim()),
+      publicationYear: item.publicationYear,
+      evaluationPartition: 'corpus_shadow_historical_review',
+      sampleOrigin: 'production_shared_catalog_historical_verification',
+      stratum: 'historical_verification',
+      identityFingerprint: item.identityFingerprint,
+      truth: { status: 'candidate', standalone: null, memberships: [], sources: [] },
+    })),
+  }
+}
