@@ -72,6 +72,21 @@ Every group is marked for Luna review, including apparently corroborated groups.
 exact relationship remains unresolved with `standalone: null`; absence never becomes a standalone
 classification.
 
+After every source batch completes, merge the reports before model review. The merger requires one
+frozen frame, one ordered provider set, exact contiguous coverage from zero through the complete
+inventory, unique work identities, and stable provider-rights metadata. It rebuilds the candidate
+graph from all raw observations so a series divided by a batch boundary becomes one group.
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:merge -- \
+  --input packages/series-source-trial/private-results/corpus-series-shadow-acquisition/BATCH-1.json \
+  --input packages/series-source-trial/private-results/corpus-series-shadow-acquisition/BATCH-2.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-merged/full.json
+```
+
+Partial, overlapping, mixed-provider, or identity-drifted inputs fail closed. The merged artifact is
+still private, review-only, create-only, and has no production writer.
+
 ## Model placement and cost
 
 Do not run Exa for every work. It cannot establish truth, and the September recovery-review batch
