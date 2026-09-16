@@ -26,6 +26,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { useIntake, type ReviewCandidate } from '../data/intake'
 import { useBooks } from '../data/books'
 import { searchAddCatalog, useAddSearch } from '../data/useAddSearch'
+import { useAddSave } from '../data/useAddSave'
 import {
   useAddCorpusWorkToHousehold,
   useAddCorpusWorkToMemberLibrary,
@@ -37,7 +38,7 @@ import { useWorksLookup, workToHit, type WorkRow } from '../data/works'
 import { parseReleasePub } from '../data/releases'
 import { useCorpusAdminStatus } from '../data/enrichCorpus'
 import { resultIsbn, triageLabel, triageResults, type TriagedResult } from '../lib/addTriage'
-import { resolveCandidate, type ReviewAction } from '../data/duplicates'
+import { resolveCandidate } from '../data/duplicates'
 import { enrichBook, type CoverAlternate } from '../lib/enrich'
 import {
   googleBooksResultUrl,
@@ -255,6 +256,8 @@ function AddForm({
   onAdded: () => void
 }) {
   const intake = useIntake()
+  const { session } = useAuth()
+  const saveState = useAddSave(session?.user.id)
   const addPersonalBooksToHousehold = useAddPersonalBooksToHousehold()
   const voice = useVoice()
   // Context-sensitive default: arriving from a wanting context (Discover) assumes wishlist; a plain
@@ -265,7 +268,7 @@ function AddForm({
     defaultUnowned ? 'wishlist' : 'unset',
   )
   const qc = useQueryClient()
-  const { data: books } = useBooks()
+  const { data: books, refetch: refreshBooks } = useBooks()
   // genre is a required metadata field, not a romance-only tag — default it to the ROOM the reader
   // is in (add in Grimoire → fantasy, in Marrow → horror), never a hardcoded 'romance'.
   const skinGenre = SKINS[useEffectiveSkin()].genre.toLowerCase()
@@ -414,6 +417,7 @@ function AddForm({
   const inputStyle = { background: 'var(--field)' } as const
 
   async function save() {
+    if (dup) return
     if (!form.title.trim()) return
     const parsedPosition = parseNumericField(form.position, SERIES_POSITION)
     if (!parsedPosition.ok) {
@@ -500,49 +504,45 @@ function AddForm({
     // for exactly this decision already existed and was already wired up below (`setDup`, and the
     // `dup && …` block) — it was simply unreachable from single-Add, because this argument said to
     // skip it. Import and bulk paths already ask.
-    const res = await intake(book, 'review')
-    if (res.outcome === 'review' && res.review) {
-      setDup(res.review)
-      return
-    }
-    // Added or merged — hand off to the refine step against the real book (cover + tropes).
-    if (res.bookId) {
-      if (addToHousehold) {
-        try {
-          await addPersonalBooksToHousehold.mutateAsync([res.bookId])
-        } catch {
-          setHouseholdWarning(
-            'The personal book was saved, but the household entry could not be added. Try Household only after reconnecting.',
-          )
-        }
+    await saveState.run('save', async (newId, retry) => {
+      if (retry) await refreshBooks({ throwOnError: true })
+      const res = await intake(book, 'review', newId)
+      if (res.outcome === 'review' && res.review) {
+        setDup(res.review)
+        return
       }
-      setAddedId(res.bookId)
-      return
-    }
-    onAdded()
+      if (!res.bookId) throw new Error('No confirmed book')
+      await finishSavedBook(res.bookId)
+    })
   }
 
-  async function resolveDup(action: ReviewAction) {
-    if (!dup) return
-    const existing = (books ?? []).find((b) => b.id === dup.existingId)
-    const resolvedBookId = existing ? await resolveCandidate(dup, existing, action) : null
-    if (addToHousehold && resolvedBookId) {
+  async function finishSavedBook(bookId: string) {
+    if (addToHousehold) {
       try {
-        await addPersonalBooksToHousehold.mutateAsync([resolvedBookId])
+        await addPersonalBooksToHousehold.mutateAsync([bookId])
       } catch {
         setHouseholdWarning(
           'The personal book was saved, but the household entry could not be added. Try Household only after reconnecting.',
         )
       }
     }
-    await qc.invalidateQueries({ queryKey: ['books'] })
-    await qc.invalidateQueries({ queryKey: ['reads', 'all'] })
-    setDup(null)
-    if (resolvedBookId) {
-      setAddedId(resolvedBookId)
-      return
-    }
-    onAdded()
+    setAddedId(bookId)
+  }
+
+  async function resolveDup(action: 'merge' | 'keep_both') {
+    if (!dup) return
+    await saveState.run(action, async (newId) => {
+      // Review choices must use the current record, including any fields saved before a lost response.
+      const fresh = await refreshBooks({ throwOnError: true })
+      const existing = fresh.data?.find((book) => book.id === dup.existingId)
+      if (!existing) throw new Error('The matching book is unavailable')
+      const resolvedBookId = await resolveCandidate(dup, existing, action, undefined, newId)
+      if (!resolvedBookId) throw new Error('No confirmed book')
+      await qc.invalidateQueries({ queryKey: ['books'] })
+      await qc.invalidateQueries({ queryKey: ['reads', 'all'] })
+      setDup(null)
+      await finishSavedBook(resolvedBookId)
+    })
   }
 
   if (addedId)
@@ -550,296 +550,302 @@ function AddForm({
 
   return (
     <Surface radius="panel" tone="card" pad={3} className="mt-4">
-      <div className="flex gap-4">
-        <div className="flex-none">
-          <div
-            className="aspect-[2/3] w-20 overflow-hidden rounded-lg border border-line"
-            style={{ background: `linear-gradient(150deg, ${g0}, ${g1})` }}
-          >
-            {/* Through CoverImage so a Google "no image" plate is rejected on load, same as the grid —
+      <fieldset
+        disabled={saveState.busy || !!dup || !!saveState.recoveredBookId}
+        className="min-w-0"
+      >
+        <div className="flex gap-4">
+          <div className="flex-none">
+            <div
+              className="aspect-[2/3] w-20 overflow-hidden rounded-lg border border-line"
+              style={{ background: `linear-gradient(150deg, ${g0}, ${g1})` }}
+            >
+              {/* Through CoverImage so a Google "no image" plate is rejected on load, same as the grid —
                 and UNCONDITIONALLY, so a coverless book gets the skin's designed plate here exactly as
                 it does everywhere else. Rendering this conditionally left the gradient bare on the one
                 screen and made the genre tint visible in Add and nowhere after it
                 (docs/decisions/0003-cover-gradient-latent-not-default.md). */}
-            <CoverImage
-              book={{ title: form.title, first: previewFirst, last: previewLast, cover }}
-              thumb
-            />
+              <CoverImage
+                book={{ title: form.title, first: previewFirst, last: previewLast, cover }}
+                thumb
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => void fetchDetails()}
+              disabled={enriching}
+              className="mt-1.5 skin-control border border-line px-2.5 py-1 text-[11px] font-semibold text-ink disabled:opacity-50"
+              style={{ background: 'var(--field)' }}
+            >
+              {enriching ? '…' : '🔎 Fetch details'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => void fetchDetails()}
-            disabled={enriching}
-            className="mt-1.5 skin-control border border-line px-2.5 py-1 text-[11px] font-semibold text-ink disabled:opacity-50"
-            style={{ background: 'var(--field)' }}
-          >
-            {enriching ? '…' : '🔎 Fetch details'}
-          </button>
-        </div>
-        {/* min-w-0 is load-bearing: a flex item defaults to min-width:auto, so without it this
+          {/* min-w-0 is load-bearing: a flex item defaults to min-width:auto, so without it this
             column cannot shrink below its children's intrinsic minimum. ContributorEditor's row set
             that floor, this column overflowed the card, and the whole PAGE gained horizontal scroll
             (measured at a 390px viewport: scrollWidth 532 vs clientWidth 390). Never "fix" that
             class of symptom with overflow-x:hidden — it hides the next instance instead of the
             box being wrong. */}
-        <div className="min-w-0 flex-1 space-y-2">
+          <div className="min-w-0 flex-1 space-y-2">
+            <input
+              value={form.title}
+              onChange={(e) => set('title', e.target.value)}
+              placeholder="Title"
+              className={inputClass}
+              style={inputStyle}
+            />
+            <ContributorEditor
+              value={contribs}
+              onChange={setContribs}
+              suggestions={authorSuggestions}
+            />
+          </div>
+        </div>
+
+        {hit.source === 'google' && hit.sourceUrl && (
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <GoogleBooksAttribution />
+              <GoogleBooksResultLink result={hit} />
+            </div>
+            <p className="mt-2 text-[12px] text-muted">
+              Reverie will keep the book details and look for a cover that can stay with your
+              library.
+            </p>
+          </div>
+        )}
+
+        {/* Pick a cover — enrichment's alternate editions, before saving (upload/camera come after add). */}
+        {alternates.length > 0 && (
+          <div className="mt-3">
+            <div className="mb-1.5 text-[11px] uppercase tracking-[0.15em] text-muted">
+              Pick a cover
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {alternates.map((a, i) => (
+                <button
+                  key={a.isbn13 || a.cover || i}
+                  type="button"
+                  onClick={() => setCover(a.cover)}
+                  aria-label={`Use the ${a.source} cover`}
+                  aria-pressed={cover === a.cover}
+                  className="h-[4.5rem] w-12 flex-none overflow-hidden rounded"
+                  style={{
+                    border:
+                      cover === a.cover ? '2px solid var(--primary)' : '1px solid var(--line)',
+                  }}
+                >
+                  {/* through CoverImage so a "no image" plate never poses as a pickable cover */}
+                  <CoverImage book={{ title: form.title, cover: a.cover }} thumb />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {coverNote && <p className="mt-1.5 text-[12px] text-muted">{coverNote}</p>}
+
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           <input
-            value={form.title}
-            onChange={(e) => set('title', e.target.value)}
-            placeholder="Title"
+            value={form.series}
+            onChange={(e) => {
+              seriesEdited.current = true
+              set('series', e.target.value)
+            }}
+            placeholder="Series"
             className={inputClass}
             style={inputStyle}
           />
-          <ContributorEditor
-            value={contribs}
-            onChange={setContribs}
-            suggestions={authorSuggestions}
+          <input
+            value={form.position}
+            onChange={(e) => set('position', e.target.value)}
+            placeholder="Book #"
+            inputMode="decimal"
+            aria-invalid={!!positionError}
+            className={inputClass}
+            style={inputStyle}
+          />
+          <select
+            value={form.genre}
+            onChange={(e) => {
+              genreEdited.current = true
+              set('genre', e.target.value)
+            }}
+            aria-label={labels.genre}
+            className={inputClass}
+            style={inputStyle}
+          >
+            {/* The unset state needs its own option, or the select renders the FIRST genre as though
+              it were chosen — swapping one silent guess for another, this time in the UI. This is
+              the "prompts" half of types.ts's "prompts, never guesses". */}
+            <option value="">Genre — not set</option>
+            {form.genre && !CORE_GENRES.some((g) => g.toLowerCase() === form.genre) && (
+              <option value={form.genre}>{form.genre}</option>
+            )}
+            {CORE_GENRES.map((g) => (
+              <option key={g} value={g.toLowerCase()}>
+                {g}
+              </option>
+            ))}
+          </select>
+          <select
+            value={form.format}
+            onChange={(e) => set('format', e.target.value)}
+            className={inputClass}
+            style={inputStyle}
+          >
+            {FORMATS.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+          <select
+            value={form.readStatus}
+            onChange={(e) => set('readStatus', e.target.value as Book['readStatus'])}
+            className={inputClass}
+            style={inputStyle}
+          >
+            {READ_STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {readStatusLabel(s)}
+              </option>
+            ))}
+          </select>
+          <label className="text-[12px] text-muted">
+            Pages
+            <input
+              value={form.pages}
+              onChange={(e) => set('pages', e.target.value)}
+              inputMode="numeric"
+              placeholder="Unknown"
+              aria-invalid={!!pagesError}
+              className={inputClass}
+              style={inputStyle}
+            />
+          </label>
+          <input
+            value={form.pub}
+            onChange={(e) => set('pub', e.target.value)}
+            placeholder="Publication date — YYYY, YYYY-MM, or YYYY-MM-DD"
+            aria-label="Publication date"
+            aria-invalid={!!publicationError}
+            className={`${inputClass} col-span-2 sm:col-span-3`}
+            style={inputStyle}
           />
         </div>
-      </div>
-
-      {hit.source === 'google' && hit.sourceUrl && (
-        <div className="mt-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <GoogleBooksAttribution />
-            <GoogleBooksResultLink result={hit} />
-          </div>
-          <p className="mt-2 text-[12px] text-muted">
-            Reverie will keep the book details and look for a cover that can stay with your library.
+        {positionError && (
+          <p role="alert" className="mt-1.5 text-[12px]" style={{ color: 'var(--accent-ink)' }}>
+            {positionError}
           </p>
-        </div>
-      )}
+        )}
+        {pagesError && (
+          <p role="alert" className="mt-1.5 text-[12px] text-ink">
+            {pagesError}
+          </p>
+        )}
+        {publicationError && (
+          <p role="alert" className="mt-1.5 text-[12px]" style={{ color: 'var(--accent-ink)' }}>
+            {publicationError}
+          </p>
+        )}
 
-      {/* Pick a cover — enrichment's alternate editions, before saving (upload/camera come after add). */}
-      {alternates.length > 0 && (
+        {/* Subgenres — multi-pick from the CHOSEN genre's shelf (selections survive a genre switch),
+          with every other genre's shelf a disclosure away: a horror-romance is a real shape, and
+          storage (flat text[]) always allowed it — only this vocabulary didn't. */}
         <div className="mt-3">
-          <div className="mb-1.5 text-[11px] uppercase tracking-[0.15em] text-muted">
-            Pick a cover
+          <div className="mb-1.5 text-[11px] uppercase tracking-[0.15em] text-muted">Subgenres</div>
+          <div className="flex flex-wrap gap-1.5">
+            {ownSubOptions.map((s) => (
+              <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
+                {s}
+              </Chip>
+            ))}
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {alternates.map((a, i) => (
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => setShowOtherSubs((v) => !v)}
+              aria-expanded={showOtherSubs}
+              className="text-[12px] font-semibold text-primary"
+            >
+              {showOtherSubs ? 'Hide other genres’ subgenres' : 'Other genres’ subgenres…'}
+            </button>
+            {showOtherSubs && (
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {otherGenreSubgenres(form.genre || skinGenre)
+                  .filter((x) => !ownSubOptions.includes(x))
+                  .map((s) => (
+                    <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
+                      {s}
+                    </Chip>
+                  ))}
+              </div>
+            )}
+          </div>
+          {subs.length > 1 && (
+            <p className="mt-1.5 text-[11px] text-muted">
+              First pick leads — it sets the book’s gradient.
+            </p>
+          )}
+        </div>
+
+        {/* Ownership — a record no longer implies possession; most of a TBR is books you don't own. */}
+        <div className="mt-3">
+          <div className="mb-1.5 text-[11px] uppercase tracking-[0.15em] text-muted">Ownership</div>
+          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Ownership">
+            {(
+              [
+                ['owned', voice.ownIt],
+                ['borrowed', voice.borrowedIt],
+                ['wishlist', voice.wantIt],
+                ['unset', voice.unsetIt],
+              ] as const
+            ).map(([value, sub]) => (
               <button
-                key={a.isbn13 || a.cover || i}
+                key={value}
                 type="button"
-                onClick={() => setCover(a.cover)}
-                aria-label={`Use the ${a.source} cover`}
-                aria-pressed={cover === a.cover}
-                className="h-[4.5rem] w-12 flex-none overflow-hidden rounded"
-                style={{
-                  border: cover === a.cover ? '2px solid var(--primary)' : '1px solid var(--line)',
-                }}
+                role="radio"
+                aria-checked={possession === value}
+                aria-label={OWNERSHIP_LABELS[value]}
+                onClick={() => setPossession(value)}
+                className="skin-control border px-3 py-1.5 text-center leading-tight"
+                style={
+                  possession === value
+                    ? {
+                        background: 'var(--accent-fill)',
+                        color: 'var(--on-primary)',
+                        borderColor: 'transparent',
+                      }
+                    : {
+                        background: 'var(--field)',
+                        color: 'var(--muted)',
+                        borderColor: 'var(--line)',
+                      }
+                }
               >
-                {/* through CoverImage so a "no image" plate never poses as a pickable cover */}
-                <CoverImage book={{ title: form.title, cover: a.cover }} thumb />
+                {/* plain word tells you what it sets; the skin voice is the flavor subtitle */}
+                <span className="block text-[12.5px] font-semibold">{OWNERSHIP_LABELS[value]}</span>
+                <span className="block text-[10px] font-normal italic">{sub}</span>
               </button>
             ))}
           </div>
         </div>
-      )}
-      {coverNote && <p className="mt-1.5 text-[12px] text-muted">{coverNote}</p>}
 
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <input
-          value={form.series}
-          onChange={(e) => {
-            seriesEdited.current = true
-            set('series', e.target.value)
-          }}
-          placeholder="Series"
-          className={inputClass}
-          style={inputStyle}
+        <LevelPicker
+          label={labels.intensity}
+          glyph={labels.intensityGlyph}
+          levels={labels.intensityLevels}
+          value={intensity}
+          onChange={setIntensity}
+          name="intensity"
         />
-        <input
-          value={form.position}
-          onChange={(e) => set('position', e.target.value)}
-          placeholder="Book #"
-          inputMode="decimal"
-          aria-invalid={!!positionError}
-          className={inputClass}
-          style={inputStyle}
+        <LevelPicker
+          label={labels.darkness}
+          glyph={labels.darknessGlyph}
+          levels={labels.darknessLevels}
+          value={darkness}
+          onChange={setDarkness}
+          name="darkness"
         />
-        <select
-          value={form.genre}
-          onChange={(e) => {
-            genreEdited.current = true
-            set('genre', e.target.value)
-          }}
-          aria-label={labels.genre}
-          className={inputClass}
-          style={inputStyle}
-        >
-          {/* The unset state needs its own option, or the select renders the FIRST genre as though
-              it were chosen — swapping one silent guess for another, this time in the UI. This is
-              the "prompts" half of types.ts's "prompts, never guesses". */}
-          <option value="">Genre — not set</option>
-          {form.genre && !CORE_GENRES.some((g) => g.toLowerCase() === form.genre) && (
-            <option value={form.genre}>{form.genre}</option>
-          )}
-          {CORE_GENRES.map((g) => (
-            <option key={g} value={g.toLowerCase()}>
-              {g}
-            </option>
-          ))}
-        </select>
-        <select
-          value={form.format}
-          onChange={(e) => set('format', e.target.value)}
-          className={inputClass}
-          style={inputStyle}
-        >
-          {FORMATS.map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
-        <select
-          value={form.readStatus}
-          onChange={(e) => set('readStatus', e.target.value as Book['readStatus'])}
-          className={inputClass}
-          style={inputStyle}
-        >
-          {READ_STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {readStatusLabel(s)}
-            </option>
-          ))}
-        </select>
-        <label className="text-[12px] text-muted">
-          Pages
-          <input
-            value={form.pages}
-            onChange={(e) => set('pages', e.target.value)}
-            inputMode="numeric"
-            placeholder="Unknown"
-            aria-invalid={!!pagesError}
-            className={inputClass}
-            style={inputStyle}
-          />
-        </label>
-        <input
-          value={form.pub}
-          onChange={(e) => set('pub', e.target.value)}
-          placeholder="Publication date — YYYY, YYYY-MM, or YYYY-MM-DD"
-          aria-label="Publication date"
-          aria-invalid={!!publicationError}
-          className={`${inputClass} col-span-2 sm:col-span-3`}
-          style={inputStyle}
-        />
-      </div>
-      {positionError && (
-        <p role="alert" className="mt-1.5 text-[12px]" style={{ color: 'var(--accent-ink)' }}>
-          {positionError}
-        </p>
-      )}
-      {pagesError && (
-        <p role="alert" className="mt-1.5 text-[12px] text-ink">
-          {pagesError}
-        </p>
-      )}
-      {publicationError && (
-        <p role="alert" className="mt-1.5 text-[12px]" style={{ color: 'var(--accent-ink)' }}>
-          {publicationError}
-        </p>
-      )}
-
-      {/* Subgenres — multi-pick from the CHOSEN genre's shelf (selections survive a genre switch),
-          with every other genre's shelf a disclosure away: a horror-romance is a real shape, and
-          storage (flat text[]) always allowed it — only this vocabulary didn't. */}
-      <div className="mt-3">
-        <div className="mb-1.5 text-[11px] uppercase tracking-[0.15em] text-muted">Subgenres</div>
-        <div className="flex flex-wrap gap-1.5">
-          {ownSubOptions.map((s) => (
-            <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
-              {s}
-            </Chip>
-          ))}
-        </div>
-        <div className="mt-2">
-          <button
-            type="button"
-            onClick={() => setShowOtherSubs((v) => !v)}
-            aria-expanded={showOtherSubs}
-            className="text-[12px] font-semibold text-primary"
-          >
-            {showOtherSubs ? 'Hide other genres’ subgenres' : 'Other genres’ subgenres…'}
-          </button>
-          {showOtherSubs && (
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {otherGenreSubgenres(form.genre || skinGenre)
-                .filter((x) => !ownSubOptions.includes(x))
-                .map((s) => (
-                  <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
-                    {s}
-                  </Chip>
-                ))}
-            </div>
-          )}
-        </div>
-        {subs.length > 1 && (
-          <p className="mt-1.5 text-[11px] text-muted">
-            First pick leads — it sets the book’s gradient.
-          </p>
-        )}
-      </div>
-
-      {/* Ownership — a record no longer implies possession; most of a TBR is books you don't own. */}
-      <div className="mt-3">
-        <div className="mb-1.5 text-[11px] uppercase tracking-[0.15em] text-muted">Ownership</div>
-        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Ownership">
-          {(
-            [
-              ['owned', voice.ownIt],
-              ['borrowed', voice.borrowedIt],
-              ['wishlist', voice.wantIt],
-              ['unset', voice.unsetIt],
-            ] as const
-          ).map(([value, sub]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={possession === value}
-              aria-label={OWNERSHIP_LABELS[value]}
-              onClick={() => setPossession(value)}
-              className="skin-control border px-3 py-1.5 text-center leading-tight"
-              style={
-                possession === value
-                  ? {
-                      background: 'var(--accent-fill)',
-                      color: 'var(--on-primary)',
-                      borderColor: 'transparent',
-                    }
-                  : {
-                      background: 'var(--field)',
-                      color: 'var(--muted)',
-                      borderColor: 'var(--line)',
-                    }
-              }
-            >
-              {/* plain word tells you what it sets; the skin voice is the flavor subtitle */}
-              <span className="block text-[12.5px] font-semibold">{OWNERSHIP_LABELS[value]}</span>
-              <span className="block text-[10px] font-normal italic">{sub}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <LevelPicker
-        label={labels.intensity}
-        glyph={labels.intensityGlyph}
-        levels={labels.intensityLevels}
-        value={intensity}
-        onChange={setIntensity}
-        name="intensity"
-      />
-      <LevelPicker
-        label={labels.darkness}
-        glyph={labels.darknessGlyph}
-        levels={labels.darknessLevels}
-        value={darkness}
-        onChange={setDarkness}
-        name="darkness"
-      />
-
+      </fieldset>
       {dup && (
         <Surface radius="card" tone="field" pad={2} className="mt-4 text-[13px]">
           <p className="text-ink">
@@ -850,23 +856,34 @@ function AddForm({
             <button
               type="button"
               onClick={() => void resolveDup('merge')}
-              className="skin-control px-3 py-1.5 text-[12.5px] font-semibold text-on-primary"
+              disabled={
+                saveState.busy ||
+                !!saveState.recoveredBookId ||
+                (saveState.failedAction !== null && saveState.failedAction !== 'merge')
+              }
+              className="skin-control min-h-11 px-3 py-1.5 text-[12.5px] font-semibold text-on-primary"
               style={{ background: 'var(--accent-fill)' }}
             >
-              Merge into it
+              {saveState.failedAction === 'merge' ? 'Try merging again' : 'Merge into it'}
             </button>
             <button
               type="button"
               onClick={() => void resolveDup('keep_both')}
-              className="skin-control border border-line px-3 py-1.5 text-[12.5px] font-semibold text-ink"
+              disabled={
+                saveState.busy ||
+                !!saveState.recoveredBookId ||
+                (saveState.failedAction !== null && saveState.failedAction !== 'keep_both')
+              }
+              className="skin-control min-h-11 border border-line px-3 py-1.5 text-[12.5px] font-semibold text-ink"
               style={{ background: 'var(--card)' }}
             >
-              Keep both
+              {saveState.failedAction === 'keep_both' ? 'Try keeping both again' : 'Keep both'}
             </button>
             <button
               type="button"
               onClick={() => setDup(null)}
-              className="skin-control px-3 py-1.5 text-[12.5px] font-semibold text-muted"
+              disabled={saveState.busy || saveState.failedAction !== null}
+              className="skin-control min-h-11 px-3 py-1.5 text-[12.5px] font-semibold text-muted"
             >
               Cancel
             </button>
@@ -874,18 +891,49 @@ function AddForm({
         </Surface>
       )}
 
-      <div className="mt-4 empty:hidden" data-book-tour-inline="book-save" />
+      {saveState.error && (
+        <div className="mt-4 text-[14px] text-ink">
+          <p role="alert">{saveState.error}</p>
+          {saveState.recoveredBookId && (
+            <Link
+              to="/book/$bookId"
+              params={{ bookId: saveState.recoveredBookId }}
+              className="skin-control skin-btn-secondary mt-3 inline-flex min-h-11 items-center px-4"
+            >
+              Review saved book
+            </Link>
+          )}
+        </div>
+      )}
+      {saveState.busy && (
+        <p role="status" className="mt-4 text-[14px] text-muted">
+          Saving your book…
+        </p>
+      )}
+      <div
+        className="mt-4 empty:hidden"
+        data-book-tour-inline="book-save"
+        data-book-tour-inline-desktop
+      />
       <button
         type="button"
         onClick={() => void save()}
         data-book-tour="book-save"
+        disabled={saveState.busy || !!saveState.recoveredBookId || !!dup}
+        aria-busy={saveState.busy}
         className="mt-4 h-11 w-full skin-control text-[14px] font-semibold"
         style={{
           background: 'linear-gradient(135deg, var(--primary), var(--gold))',
           color: 'var(--on-primary)',
         }}
       >
-        {addToHousehold ? 'Add to my library + Household' : 'Add to my library'}
+        {saveState.busy
+          ? 'Saving…'
+          : saveState.error && !dup && !saveState.recoveredBookId
+            ? 'Try saving again'
+            : addToHousehold
+              ? 'Add to my library + Household'
+              : 'Add to my library'}
       </button>
     </Surface>
   )

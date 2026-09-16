@@ -111,7 +111,9 @@ async function addBookTitled(page: Page, title: string) {
   await expect(t).toBeVisible({ timeout: 10_000 })
   await t.fill(title)
   await page.getByRole('button', { name: /^Add to my library$/ }).click()
-  await expect(page.getByRole('button', { name: /^Add to my library$/ })).toBeHidden({
+  // A pending label is not a saved record. Wait for the confirmed refinement screen before
+  // reading the database; the Add button now changes its label as soon as the request starts.
+  await expect(page.getByRole('heading', { name: 'Added — finish the details' })).toBeVisible({
     timeout: 20_000,
   })
 }

@@ -76,6 +76,8 @@ export async function resolveCandidate(
   action: ReviewAction,
   /** Per-field overrides from DuplicateReview's picker; absent = the engine's own answer. */
   picks?: MergeFieldPicks,
+  /** Single-Add keeps one insertion identity across uncertain responses. */
+  newBookId?: string,
 ): Promise<string | null> {
   const ownerId = await currentUserId()
   const inc = candidate.incoming
@@ -88,7 +90,7 @@ export async function resolveCandidate(
       await rememberVerdict(existing.id, inc, 'always_merge')
       return existing.id
     case 'keep_both': {
-      const created = await insertNewBook(inc, ownerId)
+      const created = await insertNewBook(inc, ownerId, newBookId)
       await rememberVerdict(existing.id, inc, 'keep_separate')
       return created.id
     }

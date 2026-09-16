@@ -190,6 +190,21 @@ manual entry or leaving Add cancels the pending request; late success or failure
 current result or disturb the manual draft. The live guide stays on search until actual results or
 a chosen manual form are visible. No retry, book selection or save is automatic.
 
+## First-save feedback and recovery
+
+Single-book Add announces a pending save and blocks repeated submissions. A failed personal save
+keeps the form and the live guide at details; only a confirmed save enters refinement. The details
+coach sits in the page on desktop as well as phone, keeping errors and retry controls unobstructed.
+Retry first checks the exact reader-owned insertion UUID retained by this mounted form, then refreshes the
+library before matching again. An absent row may be retried using the same UUID, so a late original
+insert cannot create a second copy. Import and bulk Add do not opt into this session identity.
+
+If the row already exists after a lost response, contributor failure or Keep both verdict failure,
+the form offers **Review saved book**. It does not replay those writes or claim all details succeeded.
+A removed row is not revived. Duplicate decisions share the same pending guard, and an unresolved
+failed decision can only retry that decision. Household partial-success warnings remain intact.
+The draft and retry identity last only while the form is mounted; refresh does not restore them.
+
 ## Verification
 
 - Core guidance/navigation tests: real-history milestones, DNF, undated plans, early exploration,

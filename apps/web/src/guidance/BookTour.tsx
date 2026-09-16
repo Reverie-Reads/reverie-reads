@@ -293,11 +293,12 @@ export function BookTour() {
   }, [target, active])
 
   const modalOutlet = modal?.querySelector<HTMLElement>('[data-book-tour-outlet]') ?? null
+  const stepOutlet = document.querySelector<HTMLElement>(`[data-book-tour-inline="${step.target}"]`)
   const pageOutlet =
     ['first-book', 'next-read', 'planner'].includes(state.journey) &&
-    narrow &&
+    (narrow || stepOutlet?.hasAttribute('data-book-tour-inline-desktop')) &&
     isBookTourLocation(state, location.pathname)
-      ? document.querySelector<HTMLElement>(`[data-book-tour-inline="${step.target}"]`)
+      ? stepOutlet
       : null
   const inlineOutlet = modalOutlet ?? pageOutlet
   // Only an explicit chapter-navigation button requests scrolling. Saves and observations never

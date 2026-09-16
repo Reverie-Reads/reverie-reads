@@ -106,6 +106,12 @@ writes, migrations, function deployment, and deletion remain owner-run operation
       pressed. A successful empty lookup should instead offer manual entry. Type a short query and
       check the minimum-length explanation. Enter manually while a request is pending; the draft
       must remain intact. Repeat with the live coach and the phone keyboard open.
+- [ ] **First-save recovery:** in local disposable data, reject Add's personal save and confirm the
+      fields stay intact, the pending button prevents repeat submissions, and a deliberate retry
+      saves one book. Simulate a lost successful response or contributor/verdict failure: checking
+      again must find the saved copy and offer review without another insertion. Keep both must not
+      create a third copy. Check phone keyboard, focus, and the live guide's honest failure state.
+      Refresh does not promise to restore an unsaved draft or retry identity.
 - [ ] **Add and find:** add by title/author, ISBN, scan where supported, and manual entry; return to
       the added book through search and Back without losing filter or scroll context.
 - [ ] **Possession:** set owned formats, borrowed, and wishlist in overlapping combinations; confirm
@@ -131,6 +137,11 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 ## P1 — return experience
 
+- [ ] **Shelves loading stability:** with a delayed library response, select Collections as the
+      owned-book shelves arrive. The controls must not move out from under the click or silently
+      keep TBRs selected. Confirm an unavailable initial library offers retry without claiming it
+      is empty, and a successful retry preserves the requested Collections tab. See the September
+      15 regression entry in the backlog.
 - [ ] **Reading tips:** turn off Show reading tips in Settings → Your library guide. Confirm
       introductions and routine instructions disappear on Library, Next read, Discover, Planner
       and Stats while counts, controls, empty states and private notes stay clear. Reload and
