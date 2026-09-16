@@ -106,6 +106,12 @@ writes, migrations, function deployment, and deletion remain owner-run operation
       pressed. A successful empty lookup should instead offer manual entry. Type a short query and
       check the minimum-length explanation. Enter manually while a request is pending; the draft
       must remain intact. Repeat with the live coach and the phone keyboard open.
+- [ ] **First-save recovery:** in local disposable data, reject Add's personal save and confirm the
+      fields stay intact, the pending button prevents repeat submissions, and a deliberate retry
+      saves one book. Simulate a lost successful response or contributor/verdict failure: checking
+      again must find the saved copy and offer review without another insertion. Keep both must not
+      create a third copy. Check phone keyboard, focus, and the live guide's honest failure state.
+      Refresh does not promise to restore an unsaved draft or retry identity.
 - [ ] **Add and find:** add by title/author, ISBN, scan where supported, and manual entry; return to
       the added book through search and Back without losing filter or scroll context.
 - [ ] **Possession:** set owned formats, borrowed, and wishlist in overlapping combinations; confirm

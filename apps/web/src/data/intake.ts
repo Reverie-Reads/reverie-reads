@@ -104,11 +104,15 @@ async function insertReads(bookId: string, ownerId: string, reads: Book['reads']
 }
 
 /** Insert an incoming record as a brand-new book (+ its reads). Returns the row + hydrated Book. */
-export async function insertNewBook(inc: Incoming, ownerId: string): Promise<{ id: string; book: Book }> {
+export async function insertNewBook(
+  inc: Incoming,
+  ownerId: string,
+  newBookId?: string,
+): Promise<{ id: string; book: Book }> {
   const book = incomingToBook(inc)
   const { data, error } = await supabase
     .from('books')
-    .insert({ ...toBookRow(book), owner_id: ownerId, title: book.title })
+    .insert({ ...toBookRow(book), owner_id: ownerId, title: book.title, ...(newBookId ? { id: newBookId } : {}) })
     .select('id')
     .single()
   if (error) throw error
@@ -157,7 +161,7 @@ export async function applyIncoming(
   inc: Incoming,
   library: Book[],
   ownerId: string,
-  opts: { fuzzy: 'review' | 'add'; autoMergeStrong?: boolean; verdicts?: VerdictLookup },
+  opts: { fuzzy: 'review' | 'add'; autoMergeStrong?: boolean; verdicts?: VerdictLookup; newBookId?: string },
 ): Promise<IntakeResult> {
   const m = matchBook(inc, library)
   const verdict = m.strength !== 'none' ? (opts.verdicts?.get(verdictLookupKey(m.book.id, inc)) ?? null) : null
@@ -168,7 +172,7 @@ export async function applyIncoming(
   })
 
   if (decision === 'add') {
-    const { id, book } = await insertNewBook(inc, ownerId)
+    const { id, book } = await insertNewBook(inc, ownerId, opts.newBookId)
     library.push(book)
     return { outcome: 'added', bookId: id }
   }
@@ -200,13 +204,13 @@ export async function applyIncoming(
 /** Single-intake hook for the Add / bulk paths — matches against the books cache, then writes. */
 export function useIntake() {
   const qc = useQueryClient()
-  return async (inc: Incoming, fuzzyMode: 'review' | 'add' = 'add'): Promise<IntakeResult> => {
+  return async (inc: Incoming, fuzzyMode: 'review' | 'add' = 'add', newBookId?: string): Promise<IntakeResult> => {
     const { data: auth } = await supabase.auth.getUser()
     const ownerId = auth.user?.id
     if (!ownerId) throw new Error('Not signed in')
     const autoMergeStrong = qc.getQueryData<Profile>(profileKey)?.autoMergeDuplicates ?? true
     const library = (qc.getQueryData<Book[]>(booksKey) ?? []).map((b) => ({ ...b, reads: [...b.reads] }))
-    const result = await applyIncoming(inc, library, ownerId, { fuzzy: fuzzyMode, autoMergeStrong })
+    const result = await applyIncoming(inc, library, ownerId, { fuzzy: fuzzyMode, autoMergeStrong, newBookId })
     await qc.invalidateQueries({ queryKey: booksKey })
     await qc.invalidateQueries({ queryKey: ['reads', 'all'] })
     return result

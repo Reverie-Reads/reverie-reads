@@ -159,6 +159,12 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Goodreads/StoryGraph CSV importer, and the spoiler-gating rule (`comment.unit <=
 myProgress`). Move them into `packages/core` with tests.
 - Copy stays sentence case, plain verbs, no filler; empty states invite action.
+- **Single-book Add keeps a retry identity.** Pending submissions and duplicate decisions share
+  one synchronous guard. A failed attempt keeps its draft and original duplicate action. Retrying
+  checks its exact reader-owned insertion UUID first; an already saved or removed row is never
+  inserted again or silently repaired. Partial saves offer review without replaying contributor,
+  household or verdict writes. New-row retries reuse that UUID; this is session-only, not a
+  cross-device idempotency claim. Import and bulk Add keep their existing behavior.
 - **Add search distinguishes failure from absence.** Only a successful empty response means no
   matches. Keep the entered query available for explicit retry or manual entry; a newer search,
   manual choice or route exit cancels the older request so late results cannot replace the current
