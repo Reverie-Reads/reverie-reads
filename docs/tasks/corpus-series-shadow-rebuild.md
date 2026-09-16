@@ -136,7 +136,10 @@ After the complete Exa ranges are merged, build one deterministic work-level rec
 It is hash-bound to the full candidate graph, merged Luna report, and merged Exa report. Only valid,
 policy-safe Luna outputs resolve a work. A selected Exa fallback contributes the later restricted
 Luna output, never locator content. Conflicting safe outputs and partially unresolved competing
-groups stay in manual review; works without any relational candidate remain unresolved. The ledger
+groups stay in manual review. An unnumbered relationship supported only by a publisher-catalog
+page remains unresolved until a non-catalog authority source corroborates it, preventing a
+marketing collection from entering the automatic lane. Works without any relational candidate
+remain unresolved. The ledger
 contains compact classifications, membership tuples, decision hashes, and stage/group pointers. It
 does not copy search URLs and cannot write the catalog.
 

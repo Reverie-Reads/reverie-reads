@@ -17,6 +17,19 @@ const unresolved = (caseId) => ({
   output: { caseId, classification: 'unresolved', memberships: [] },
   validation: { valid: true, policySafe: false },
 })
+const catalogOnly = (caseId, series) => {
+  const url = 'https://publisher.example/series/marketing'
+  const review = safe(caseId, 'series', [
+    { series, position: null, role: 'primary', evidenceUrls: [url] },
+  ])
+  return {
+    ...review,
+    output: {
+      ...review.output,
+      authoritySources: [{ url, kind: 'publisher_catalog' }],
+    },
+  }
+}
 const identity = (suffix, title) => ({
   id: `${suffix.repeat(8)}-${suffix.repeat(4)}-4${suffix.repeat(3)}-8${suffix.repeat(3)}-${suffix.repeat(12)}`,
   title,
@@ -31,6 +44,7 @@ const members = [
   identity('4', 'Partial Candidate Review'),
   identity('5', 'Exa Resolved'),
   identity('6', 'Resolved Standalone'),
+  identity('7', 'Catalog Collection Review'),
 ]
 const group = (groupId, testCase) => ({
   groupId,
@@ -46,6 +60,7 @@ const groups = [
   group('g5', members[3]),
   group('g6', members[4]),
   group('g7', members[5]),
+  group('g8', members[6]),
 ]
 
 test('reconciles safe work decisions while keeping gaps and competing claims visible', () => {
@@ -79,6 +94,10 @@ test('reconciles safe work decisions while keeping gaps and competing claims vis
       { groupId: 'g5', reviews: [unresolved(members[3].id)] },
       { groupId: 'g6', reviews: [unresolved(members[4].id)] },
       { groupId: 'g7', reviews: [safe(members[5].id, 'standalone')] },
+      {
+        groupId: 'g8',
+        reviews: [catalogOnly(members[6].id, 'Marketing Collection')],
+      },
     ],
   }
   const exa = {
@@ -97,11 +116,11 @@ test('reconciles safe work decisions while keeping gaps and competing claims vis
 
   const result = reconcileCorpusShadowDecisions({ graph, review, exa })
   assert.deepEqual(result.counts, {
-    works: 6,
+    works: 7,
     resolvedSeries: 2,
     resolvedStandalone: 1,
     manualReview: 2,
-    unresolved: 1,
+    unresolved: 2,
     exaSelected: 1,
   })
   const byId = new Map(result.works.map((work) => [work.workId, work]))
@@ -113,6 +132,7 @@ test('reconciles safe work decisions while keeping gaps and competing claims vis
     { series: 'Gamma', position: 2, role: 'primary' },
   ])
   assert.equal(byId.get(members[5].id).status, 'resolved_standalone')
+  assert.equal(byId.get(members[6].id).reason, 'no_policy_safe_authority_resolution')
   assert.ok(result.works.every((work) => !JSON.stringify(work).includes('https://')))
 })
 

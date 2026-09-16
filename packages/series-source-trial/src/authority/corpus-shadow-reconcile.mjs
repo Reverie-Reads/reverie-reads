@@ -13,10 +13,26 @@ const equal = (left, right) => JSON.stringify(left) === JSON.stringify(right)
 const asArray = (value) => (Array.isArray(value) ? value : [])
 const sha256Json = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
 
+const hasUnnumberedPublisherCatalogOnlyMembership = (output) =>
+  output?.classification === 'series' &&
+  asArray(output.memberships).some((membership) => {
+    if (Number.isFinite(membership?.position) || !asArray(membership?.evidenceUrls).length) {
+      return false
+    }
+    const evidenceSources = membership.evidenceUrls
+      .map((url) => asArray(output.authoritySources).find((source) => source?.url === url))
+      .filter(Boolean)
+    return (
+      evidenceSources.length === membership.evidenceUrls.length &&
+      evidenceSources.every(({ kind }) => kind === 'publisher_catalog')
+    )
+  })
+
 const safeAuthorityOutput = (output, validation) =>
   validation?.valid === true &&
   validation?.policySafe === true &&
-  ['series', 'standalone'].includes(output?.classification)
+  ['series', 'standalone'].includes(output?.classification) &&
+  !hasUnnumberedPublisherCatalogOnlyMembership(output)
 
 const proposalFor = ({ stage, groupId = null, output, validation }) => {
   if (!safeAuthorityOutput(output, validation)) return null

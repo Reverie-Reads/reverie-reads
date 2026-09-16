@@ -766,6 +766,9 @@ The reconciler accepts only the exact hash-bound complete artifacts. It resolves
 valid, policy-safe Luna decision. A selected Exa fallback is still a Luna decision grounded in that
 call's consulted-source manifest; Exa itself remains only the locator. Conflicting classifications,
 memberships, positions, roles, or an unresolved competing provider group stay in manual review.
+An unnumbered membership supported only by a publisher-catalog page also stays unresolved until a
+non-catalog authority source corroborates it; a catalog grouping alone cannot promote a marketing
+collection into the automatic lane.
 Works with no relational source candidate stay unresolved, never standalone. The compact ledger
 stores decision hashes and stage/group pointers rather than copying consulted URLs, and it has no
 production writer.
