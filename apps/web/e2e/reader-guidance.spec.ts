@@ -198,7 +198,9 @@ test('showing full navigation gives saved feedback, reveals destinations and pre
   }
 })
 
-test('the full walkthrough keeps its place and failed saves stay put', async ({ page }) => {
+test('welcome starts live guidance only after saving and the written guide remains replayable', async ({
+  page,
+}) => {
   test.setTimeout(90_000)
   const account = await freshReader(page)
   try {
@@ -210,8 +212,21 @@ test('the full walkthrough keeps its place and failed saves stay put', async ({ 
       page.getByRole('alert').filter({ hasText: 'Your choice could not be saved' }),
     ).toBeVisible()
     expect(await account.guidance()).toBeNull()
+    await expect(page).toHaveURL(/\/onboarding$/)
+    await expect(page.getByRole('complementary', { name: 'Live walkthrough' })).toHaveCount(0)
     await page.unroute('**/rest/v1/rpc/update_reader_guidance')
     await page.getByRole('button', { name: 'Show me around', exact: true }).click()
+    await expect(page).toHaveURL(/\/add$/)
+    const live = page.getByRole('complementary', { name: 'Live walkthrough' })
+    await expect(live.getByRole('status')).toHaveText('Find a book you know')
+    const books = await account.reader.from('books').select('id')
+    expect(books.error).toBeNull()
+    expect(books.data).toEqual([])
+    await live.getByRole('button', { name: 'End live walkthrough' }).click()
+    await page.reload()
+    await expect(page).toHaveURL(/\/add$/)
+    await expect(live).toHaveCount(0)
+    await page.goto('/settings/guidance')
     await expect(page.getByRole('heading', { name: 'Walkthroughs and guidance' })).toBeVisible()
     await expect(page.getByRole('main')).toContainText('Stop 1 of 10')
     await page.getByRole('main').getByRole('button', { name: 'Next stop', exact: true }).click()
