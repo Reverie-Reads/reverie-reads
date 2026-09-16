@@ -795,6 +795,24 @@ position never clears an existing position. An affirmative standalone that confl
 existing membership is review-only rather than a removal instruction. These are review deltas, not
 writes; unresolved shadow works cannot remove historical data.
 
+Freeze the comparison into one private, hash-bound review manifest before any follow-up or staging:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:manifest -- \
+  --comparison packages/series-source-trial/private-results/corpus-series-shadow-comparison/full.json \
+  --reconciliation packages/series-source-trial/private-results/corpus-series-shadow-reconciled/full.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-review-manifest/full.json
+```
+
+The create-only, owner-readable manifest binds the exact comparison, reconciliation, historical
+snapshot, provider graph, Luna review and Exa fallback hashes. It separates resolved change
+candidates, manual position/standalone review, historical verification and no-action works. The
+historical-verification lane contains only work ID, title, every full author, optional publication
+year and the frozen identity fingerprint. It contains no historical series label, position,
+comparison reason or evidence, and is the only lane a truth-blind follow-up runner may consume.
+The manifest still has no production writer; a later administrator handoff must revalidate live
+catalog state and stage proposals for review rather than apply them.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an

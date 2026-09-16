@@ -34,6 +34,13 @@ boundaries.
    incorrect shared relationships without deleting audit history. Reader-selected and CSV-imported
    personal series choices remain untouched.
 
+Before follow-up or application, freeze the complete comparison into one create-only private
+review manifest. The manifest binds every upstream artifact hash and separates resolved change
+candidates, manual position/standalone review, historical verification, and no-action works.
+Historical verification is an identity-only lane: title, every full author, optional publication
+year, work ID, and frozen identity fingerprint. A follow-up model runner must consume only that lane
+and must never receive the historical series tuple.
+
 ## First command
 
 This command performs one read-only production query and writes one owner-only ignored file. Its
