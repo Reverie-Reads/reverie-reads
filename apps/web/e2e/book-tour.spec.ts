@@ -79,7 +79,7 @@ for (const touch of [false, true]) {
       hasTouch: touch,
       viewport: touch ? { width: 390, height: 844 } : { width: 1100, height: 900 },
     })
-    test('demonstrates real navigation, waits for a deliberate save, then opens the saved book', async ({
+    test('guides the first book into reading and restores its place after returning home', async ({
       page,
     }) => {
       test.setTimeout(120_000)
@@ -134,10 +134,24 @@ for (const touch of [false, true]) {
           'data-input',
           touch ? 'touch' : 'mouse',
         )
+        if (touch) {
+          await expect(guide).toHaveAttribute('data-inline', 'true')
+          await expect(page.locator('[data-book-tour-inline="book-search"]')).toContainText(
+            'Find a book you know',
+          )
+          // A reduced viewport tests layout containment, not a physical keyboard.
+          await page.setViewportSize({ width: 390, height: 420 })
+          await clearTarget(page, 'book-search')
+          await page.setViewportSize({ width: 390, height: 844 })
+        }
         await clearTarget(page, 'book-search')
         await page.getByRole('textbox', { name: 'Search for a book' }).fill(title)
         await page.getByRole('button', { name: 'Search', exact: true }).click()
         await expect(guide.getByRole('status')).toHaveText('Choose the right book')
+        if (touch) {
+          await expect(guide).toHaveAttribute('data-inline', 'true')
+          await clearTarget(page, 'book-results')
+        }
         await page
           .getByTestId('add-result')
           .getByRole('button', { name: new RegExp(title) })
@@ -147,6 +161,7 @@ for (const touch of [false, true]) {
         await expect(
           page.getByRole('button', { name: 'Add to my library', exact: true }),
         ).toBeFocused()
+        if (touch) await expect(guide).toHaveAttribute('data-inline', 'true')
         await clearTarget(page, 'book-save')
         expect(await account.rows()).toHaveLength(0)
         await page.getByRole('textbox', { name: 'Pages', exact: true }).fill('-1')
@@ -160,6 +175,10 @@ for (const touch of [false, true]) {
         await expect(guide.getByRole('status')).toHaveText('Your book is saved', {
           timeout: 20_000,
         })
+        if (touch) {
+          await expect(guide).toHaveAttribute('data-inline', 'true')
+          await clearTarget(page, 'book-done')
+        }
         const saved = await account.rows()
         expect(saved).toHaveLength(1)
         expect(saved[0]?.ownership).toBe(touch ? 'unowned' : 'owned')
@@ -204,9 +223,43 @@ for (const touch of [false, true]) {
         await guide.getByRole('button', { name: 'Guide my reading', exact: true }).click()
         await expect(page).toHaveURL(new RegExp(`/book/${saved[0]!.id}$`))
         await expect(guide.getByRole('status')).toHaveText('Begin where you are')
-        await guide.getByRole('button', { name: 'End live walkthrough', exact: true }).click()
-        await expect(guide).toHaveCount(0)
+        // The handoff itself has not started a read or changed the reader's book.
         expect(await account.rows()).toEqual(saved)
+        await page.getByRole('button', { name: 'Start reading', exact: true }).click()
+        await expect(guide.getByRole('status')).toHaveText('Keep your place')
+        await show()
+        const progress = page.getByRole('dialog', { name: 'Update progress', exact: true })
+        await expect(progress).toBeVisible()
+        await progress.getByRole('spinbutton', { name: 'Progress (%)', exact: true }).fill('24')
+        await clearTarget(page, 'reading-progress-save')
+        await progress.getByRole('button', { name: 'Save progress', exact: true }).click()
+        await expect(guide.getByRole('status')).toHaveText('Your place is saved')
+        await guide.getByRole('button', { name: 'Continue reading', exact: true }).click()
+        await expect(guide).toHaveCount(0)
+
+        // Re-enter through Home after a reload, rather than relying on the tour's in-memory book.
+        await page.goto('/')
+        await page.reload()
+        const readingNow = page.locator('[data-home-module="reading"]')
+        await expect(readingNow.getByRole('heading', { name: title, exact: true })).toBeVisible()
+        await readingNow.getByRole('button', { name: `Open ${title}`, exact: true }).click()
+        await expect(page).toHaveURL(new RegExp(`/book/${saved[0]!.id}$`))
+        await expect(guide).toHaveCount(0)
+        await page.getByRole('button', { name: 'Update progress', exact: true }).click()
+        await expect(
+          progress.getByRole('spinbutton', { name: 'Progress (%)', exact: true }),
+        ).toHaveValue('24')
+        await progress.getByRole('button', { name: 'Cancel', exact: true }).click()
+        const persisted = await account.reader
+          .from('books')
+          .select('read_status,progress')
+          .eq('id', saved[0]!.id)
+          .single()
+        expect(persisted.error).toBeNull()
+        expect(persisted.data).toEqual({ read_status: 'Reading', progress: 24 })
+        const history = await account.reader.from('reads').select('id').eq('book_id', saved[0]!.id)
+        expect(history.error).toBeNull()
+        expect(history.data).toEqual([])
       } finally {
         await account.cleanup()
       }
@@ -293,9 +346,18 @@ test('the live guide keeps its target clear and readable in every room and a sho
     await guide.getByRole('button', { name: 'Show me this step' }).click()
     await expect(page.getByRole('textbox', { name: 'Search for a book' })).toBeFocused()
     await clearTarget(page, 'book-search')
-    await expect(page.locator('[data-book-tour-panel]')).toHaveAttribute('data-compact', '')
+    // Inline coaching scrolls with the page; short viewports must not hide its instructions.
+    await expect(guide).toHaveAttribute('data-inline', 'true')
+    await expect(guide).not.toHaveAttribute('data-compact', '')
+    await guide.scrollIntoViewIfNeeded()
+    await clearTarget(page, 'book-search')
     const panel = await guide.boundingBox()
-    expect(panel!.y + panel!.height).toBeLessThanOrEqual(450)
+    expect(panel!.x).toBeGreaterThanOrEqual(0)
+    expect(panel!.x + panel!.width).toBeLessThanOrEqual(390)
+    await page.screenshot({
+      path: test.info().outputPath('first-book-inline-phone.png'),
+      fullPage: true,
+    })
     expect(await account.rows()).toHaveLength(0)
   } finally {
     await account.cleanup()
