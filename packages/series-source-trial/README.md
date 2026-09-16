@@ -681,6 +681,19 @@ observations, source lineage, and provider errors remain visible; every group st
 review. Missing relationships stay unresolved with no standalone inference. Reports remain ignored,
 owner-only, and unable to write Supabase or either book table.
 
+Once every batch exists, merge them into one complete graph before Luna review:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:merge -- \
+  --input packages/series-source-trial/private-results/corpus-series-shadow-acquisition/BATCH-1.json \
+  --input packages/series-source-trial/private-results/corpus-series-shadow-acquisition/BATCH-2.json \
+  --out packages/series-source-trial/private-results/corpus-series-shadow-merged/full.json
+```
+
+The merger rejects gaps, overlaps, duplicate identities, source-frame drift, provider-set drift,
+and rights-metadata drift. It rebuilds groups from all retained observations so batch boundaries do
+not create false singletons. The merged graph remains private, create-only, and review-only.
+
 ### Prepare a completed recovery backlog for review-only acquisition
 
 The owner may freeze the unresolved portion of one completed durable series-recovery run into an
