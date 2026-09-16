@@ -87,6 +87,33 @@ pnpm --filter @reverie/series-source-trial authority:corpus-shadow:merge -- \
 Partial, overlapping, mixed-provider, or identity-drifted inputs fail closed. The merged artifact is
 still private, review-only, create-only, and has no production writer.
 
+## Luna group review
+
+Review the merged graph in bounded batches of at most 50 groups. One Luna-low call reviews the
+candidate relationship and every claimed member together, allowing a direct author or publisher
+series page to resolve several books without a naive work-by-work pass.
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:corpus-shadow:review -- \
+  --input packages/series-source-trial/private-results/corpus-series-shadow-merged/full.json \
+  --offset 0 \
+  --limit 25 \
+  --env /ABSOLUTE/PATH/TO/series-source-trial/.env.local
+```
+
+The model must return one ordinary authority proposal for every member. Existing deterministic
+identity, grounding, source-risk, relationship, container, and conflict validation is applied to
+each proposal. A group is supported only when every member has policy-safe direct authority
+evidence for that exact candidate relationship. Different series evidence rejects the candidate
+only when every member is safely resolved against it; all other outcomes remain review. Successful
+group calls are cached by the complete target and model configuration so an interrupted batch can
+reuse them without another billable request. Reports and caches are owner-only ignored files and
+the command has no Supabase client or writer.
+
+This is deliberately the Luna stage only. `--exa-fallback` and `--refresh` are refused. A later
+fallback stage may admit only unresolved or policy-quarantined Luna results; Exa remains an
+ephemeral locator and never becomes evidence.
+
 ## Model placement and cost
 
 Do not run Exa for every work. It cannot establish truth, and the September recovery-review batch

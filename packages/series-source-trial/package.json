@@ -14,6 +14,7 @@
     "authority:corpus-shadow:export": "node src/export-corpus-shadow.mjs",
     "authority:corpus-shadow:acquire": "node src/acquire-corpus-shadow.mjs",
     "authority:corpus-shadow:merge": "node src/merge-corpus-shadow.mjs",
+    "authority:corpus-shadow:review": "node src/review-corpus-shadow.mjs",
     "authority:post-recovery:export": "node src/export-post-recovery-authority.mjs",
     "authority:post-recovery:compare": "node src/compare-post-recovery-authority.mjs",
     "authority:qualification:capture:ippy": "node src/capture-authority-qualification-ippy.mjs",
