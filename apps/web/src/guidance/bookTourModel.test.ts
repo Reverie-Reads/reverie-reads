@@ -15,6 +15,19 @@ describe('the live book walkthrough', () => {
   it('requires a saved identity and only completes when that book is opened', () => {
     const started = reduce(initial, { type: 'start' })
     expect(reduce(started, { type: 'observe', run: 1, step: 'saved' })).toBe(started)
+    expect(reduce(started, { type: 'observe', run: 1, step: 'saved-loading' })).toBe(started)
+    const loading = reduce(started, {
+      type: 'observe',
+      run: 1,
+      step: 'saved-loading',
+      bookId: 'mine',
+    })
+    expect(loading.step).toBe('saved-loading')
+    expect(loading.bookId).toBe('mine')
+    const replay = reduce(loading, { type: 'start' })
+    expect(reduce(replay, { type: 'observe', run: 1, step: 'saved-loading', bookId: 'mine' })).toBe(
+      replay,
+    )
     const saved = reduce(started, { type: 'observe', run: 1, step: 'saved', bookId: 'mine' })
     expect(reduce(saved, { type: 'observe', run: 1, step: 'opened', bookId: 'other' })).toBe(saved)
     const library = reduce(saved, { type: 'observe', run: 1, step: 'library', bookId: 'mine' })

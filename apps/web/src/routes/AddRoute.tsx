@@ -153,27 +153,66 @@ function RefineAdded({
   bookId,
   householdWarning,
   onDone,
+  returnLabel,
 }: {
   bookId: string
   householdWarning?: string | null
   onDone: () => void
+  returnLabel: string
 }) {
   const labels = useLabels()
-  const { data: books } = useBooks()
+  const { data: books, isFetching, isError, fetchStatus, refetch } = useBooks()
   const book = books?.find((b) => b.id === bookId)
-  useBookTourObservation(book ? 'saved' : null, book?.id)
+  // This screen only mounts after a confirmed save. Loading is not a loaded-book observation.
+  useBookTourObservation(book ? 'saved' : 'saved-loading', bookId)
   const [dialog, setDialog] = useState<'cover' | 'trope' | null>(null)
 
   if (!book) {
     return (
-      <Surface
-        radius="panel"
-        tone="card"
-        pad={3}
-        className="mt-4 text-[13px] text-muted"
-        role="status"
-      >
-        Saving…
+      <Surface radius="panel" tone="card" pad={3} className="mt-4" data-book-tour-region>
+        <div data-book-tour="book-load">
+          <h2 className="text-[16px] font-semibold text-ink">Your book was saved</h2>
+          {householdWarning && (
+            <p role="status" className="mt-2 text-[13px] text-accent-ink">
+              {householdWarning}
+            </p>
+          )}
+          <p
+            role={isError && !isFetching ? 'alert' : 'status'}
+            className="mt-2 text-[13px] text-muted"
+          >
+            {isFetching
+              ? 'Loading its details…'
+              : fetchStatus === 'paused'
+                ? 'Reconnect to load its details. You do not need to add it again.'
+                : isError
+                  ? 'Its details could not be loaded. Try loading them again; this will not add another copy.'
+                  : 'Its details are unavailable in your current library. Try loading them again, or come back later.'}
+          </p>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button
+            type="button"
+            disabled={isFetching || fetchStatus === 'paused'}
+            onClick={() => void refetch()}
+            className="min-h-11 skin-control border border-line px-4 text-[14px] font-semibold text-ink disabled:opacity-60"
+            style={{ background: 'var(--field)' }}
+          >
+            {isFetching ? 'Loading details…' : 'Try loading again'}
+          </button>
+          <button
+            type="button"
+            onClick={onDone}
+            className="min-h-11 px-2 text-[14px] text-ink underline"
+          >
+            {returnLabel}
+          </button>
+        </div>
+        <div
+          className="mt-3 empty:hidden"
+          data-book-tour-inline="book-load"
+          data-book-tour-inline-desktop
+        />
       </Surface>
     )
   }
@@ -225,19 +264,30 @@ function RefineAdded({
           </button>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onDone}
-        data-book-tour="book-done"
-        className="mt-4 h-11 w-full skin-control text-[14px] font-semibold"
+      <Link
+        to="/book/$bookId"
+        params={{ bookId }}
+        className="mt-4 flex min-h-11 w-full items-center justify-center skin-control px-4 text-center text-[14px] font-semibold"
         style={{
           background: 'linear-gradient(135deg, var(--primary), var(--gold))',
           color: 'var(--on-primary)',
         }}
       >
-        Done
+        Open your book
+      </Link>
+      <button
+        type="button"
+        onClick={onDone}
+        data-book-tour="book-done"
+        className="mt-2 min-h-11 w-full text-[14px] text-ink underline"
+      >
+        {returnLabel}
       </button>
-      <div className="mt-3 empty:hidden" data-book-tour-inline="book-done" />
+      <div
+        className="mt-3 empty:hidden"
+        data-book-tour-inline="book-done"
+        data-book-tour-inline-desktop
+      />
       {dialog === 'cover' && <CoverSheet book={book} onClose={() => setDialog(null)} />}
       {dialog === 'trope' && <TropePicker book={book} onClose={() => setDialog(null)} />}
     </Surface>
@@ -249,11 +299,13 @@ function AddForm({
   defaultUnowned = false,
   addToHousehold = false,
   onAdded,
+  returnLabel,
 }: {
   hit: Picked
   defaultUnowned?: boolean
   addToHousehold?: boolean
   onAdded: () => void
+  returnLabel: string
 }) {
   const intake = useIntake()
   const { session } = useAuth()
@@ -546,7 +598,14 @@ function AddForm({
   }
 
   if (addedId)
-    return <RefineAdded bookId={addedId} householdWarning={householdWarning} onDone={onAdded} />
+    return (
+      <RefineAdded
+        bookId={addedId}
+        householdWarning={householdWarning}
+        onDone={onAdded}
+        returnLabel={returnLabel}
+      />
+    )
 
   return (
     <Surface radius="panel" tone="card" pad={3} className="mt-4">
@@ -1643,6 +1702,13 @@ function AddScreen() {
             hit={picked}
             defaultUnowned={!!prefill.want}
             addToHousehold={destination === 'both'}
+            returnLabel={
+              bookTour.status !== 'off' && bookTour.bookId
+                ? 'Return to your library'
+                : prefill.discoverSession
+                  ? 'Return to your shortlist'
+                  : 'Return to your library'
+            }
             onAdded={() =>
               bookTour.status !== 'off' && bookTour.bookId
                 ? void navigate({ to: '/library', search: {} })

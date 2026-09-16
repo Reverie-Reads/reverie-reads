@@ -112,6 +112,11 @@ writes, migrations, function deployment, and deletion remain owner-run operation
       again must find the saved copy and offer review without another insertion. Keep both must not
       create a third copy. Check phone keyboard, focus, and the live guide's honest failure state.
       Refresh does not promise to restore an unsaved draft or retry identity.
+- [ ] **After saving:** in local disposable data, allow Add to save but fail the following library
+      reload. Confirm the app says the book was saved, offers a read-only loading retry and a return
+      action, and keeps any household warning visible. Retry, open that exact book, then refresh:
+      there should be one copy and no reading progress until you choose Start reading. If the book
+      is unavailable, confirm an exit remains available. Check both phone and desktop layouts.
 - [ ] **Add and find:** add by title/author, ISBN, scan where supported, and manual entry; return to
       the added book through search and Back without losing filter or scroll context.
 - [ ] **Possession:** set owned formats, borrowed, and wishlist in overlapping combinations; confirm

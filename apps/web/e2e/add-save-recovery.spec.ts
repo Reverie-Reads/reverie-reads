@@ -73,6 +73,159 @@ for (const touch of [false, true]) {
       hasTouch: touch,
       viewport: touch ? { width: 390, height: 844 } : { width: 1100, height: 900 },
     })
+    test('a confirmed save survives a failed details load and opens the same book after a read-only retry', async ({
+      page,
+    }) => {
+      const account = await firstReader(page)
+      const gate = barrier()
+      let inserted = false
+      let inserts = 0
+      let failReads = true
+      let reads = 0
+      try {
+        await draft(page, 'The Lamp in the Window')
+        await page.route('**/rest/v1/books?*', async (route) => {
+          if (route.request().method() === 'POST') {
+            inserts++
+            const response = await route.fetch()
+            expect(response.ok()).toBe(true)
+            inserted = true
+            return route.fulfill({ response })
+          }
+          if (
+            inserted &&
+            route.request().method() === 'GET' &&
+            new URL(route.request().url()).searchParams.get('select')?.includes('book_authors')
+          ) {
+            reads++
+            if (failReads)
+              return route.fulfill({
+                status: 400,
+                json: { message: 'test details unavailable', code: 'TEST' },
+              })
+            await gate.promise
+          }
+          return route.fallback()
+        })
+        await page.locator('[data-book-tour="book-save"]').click()
+        await expect(
+          page.getByRole('heading', { name: 'Your book was saved', exact: true }),
+        ).toBeVisible({ timeout: 20_000 })
+        await expect(page.getByRole('alert')).toContainText('Its details could not be loaded')
+        const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
+        await expect(guide.getByRole('status')).toHaveText('Loading your saved book')
+        await expect(guide).toHaveAttribute('data-inline', 'true')
+        await expect
+          .poll(async () => {
+            const coach = await guide.boundingBox()
+            const retry = await page
+              .getByRole('button', { name: 'Try loading again', exact: true })
+              .boundingBox()
+            return !!coach && !!retry && retry.y + retry.height <= coach.y
+          })
+          .toBe(true)
+        await page.screenshot({
+          path: `test-results/added-load-error-${touch ? 'phone' : 'desktop'}.png`,
+          fullPage: true,
+        })
+        await expect(page.getByRole('link', { name: 'Open your book', exact: true })).toHaveCount(0)
+        const saved = await account.rows()
+        expect(saved).toHaveLength(1)
+        expect(saved[0]!.read_status).toBe('unset')
+        const beforeRetry = reads
+        failReads = false
+        const retry = page.getByRole('button', { name: 'Try loading again', exact: true })
+        await retry.click()
+        await expect(page.getByText('Loading its details…', { exact: true })).toBeVisible()
+        await expect(
+          page.getByRole('button', { name: 'Loading details…', exact: true }),
+        ).toBeDisabled()
+        await expect(
+          page.getByRole('button', { name: 'Return to your library', exact: true }),
+        ).toBeEnabled()
+        await expect.poll(() => reads).toBe(beforeRetry + 1)
+        gate.release()
+        await expect(
+          page.getByRole('heading', { name: 'Added — finish the details' }),
+        ).toBeVisible()
+        await expect(
+          page.getByRole('complementary', { name: 'Live walkthrough' }).getByRole('status'),
+        ).toHaveText('Your book is saved')
+        await page.screenshot({
+          path: `test-results/added-handoff-${touch ? 'phone' : 'desktop'}.png`,
+          fullPage: true,
+        })
+        await page.getByRole('link', { name: 'Open your book', exact: true }).click()
+        await expect(page).toHaveURL(new RegExp(`/book/${saved[0]!.id}$`))
+        await expect(page.getByRole('button', { name: 'Start reading', exact: true })).toBeVisible()
+        await expect(
+          page.getByRole('complementary', { name: 'Live walkthrough' }).getByRole('status'),
+        ).toHaveText('You have found your way')
+        expect(inserts).toBe(1)
+        expect(await account.rows()).toEqual(saved)
+        await page.reload()
+        await expect(page.getByRole('button', { name: 'Start reading', exact: true })).toBeVisible()
+        expect(await account.rows()).toEqual(saved)
+      } finally {
+        gate.release()
+        await account.cleanup()
+      }
+    })
+
+    test('an unavailable saved book offers an exit instead of an endless save', async ({
+      page,
+    }) => {
+      const account = await firstReader(page)
+      let inserted = false
+      let inserts = 0
+      try {
+        const shortlist = '10000000-0000-4000-8000-000000000099'
+        // Preserve a real contextual return when no active tour asks for the Library stop.
+        if (touch) {
+          await page.getByRole('button', { name: 'End live walkthrough' }).click()
+          await page.goto(`/add?discoverSession=${shortlist}`)
+        }
+        await draft(page, 'A Place to Return')
+        await page.route('**/rest/v1/books?*', async (route) => {
+          if (route.request().method() === 'POST') {
+            inserts++
+            const response = await route.fetch()
+            expect(response.ok()).toBe(true)
+            inserted = true
+            return route.fulfill({ response })
+          }
+          if (
+            inserted &&
+            route.request().method() === 'GET' &&
+            new URL(route.request().url()).searchParams.get('select')?.includes('book_authors')
+          )
+            return route.fulfill({ json: [], headers: { 'content-range': '*/0' } })
+          return route.fallback()
+        })
+        await page.locator('[data-book-tour="book-save"]').click()
+        await expect(
+          page.getByText('Its details are unavailable in your current library.', { exact: false }),
+        ).toBeVisible()
+        await expect(
+          page.getByRole('button', { name: 'Try loading again', exact: true }),
+        ).toBeEnabled()
+        await expect(page.getByRole('link', { name: 'Open your book', exact: true })).toHaveCount(0)
+        await page
+          .getByRole('button', {
+            name: touch ? 'Return to your shortlist' : 'Return to your library',
+            exact: true,
+          })
+          .click()
+        await expect(page).toHaveURL(
+          touch ? new RegExp(`/discover\\?session=${shortlist}$`) : /\/library$/,
+        )
+        expect(inserts).toBe(1)
+        expect(await account.rows()).toHaveLength(1)
+      } finally {
+        await account.cleanup()
+      }
+    })
+
     test('a rejected save retains the draft and a deliberate retry creates one book', async ({
       page,
     }) => {
