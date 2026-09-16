@@ -5,9 +5,10 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { nitro } from 'nitro/vite'
 import { workflow } from 'workflow/vite'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 
 // One id per deploy: Vercel's commit SHA in CI, the local git SHA otherwise. Baked into the bundle
-// (VITE_BUILD_ID — the update watcher compares against it; VITE_RELEASE — Sentry release tagging)
+// (VITE_BUILD_ID — the update watcher compares against it)
 // and emitted as /version.json so live clients can detect that a newer deploy replaced theirs.
 function resolveBuildId(): string {
   const sha = process.env.VERCEL_GIT_COMMIT_SHA
@@ -19,6 +20,11 @@ function resolveBuildId(): string {
   }
 }
 const buildId = resolveBuildId()
+// The Vercel integration creates Sentry releases using the full commit SHA.
+const sentryRelease = process.env.VERCEL_GIT_COMMIT_SHA || process.env.SENTRY_RELEASE || buildId
+const uploadSourcemaps = Boolean(
+  process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT,
+)
 
 const emitVersion: Plugin = {
   name: 'reverie:emit-version',
@@ -63,6 +69,24 @@ export default defineConfig(({ command, mode }) => {
       react(),
       tailwindcss(),
       emitVersion,
+      ...(command === 'build' && uploadSourcemaps
+        ? [
+            sentryVitePlugin({
+              org: process.env.SENTRY_ORG,
+              project: process.env.SENTRY_PROJECT,
+              authToken: process.env.SENTRY_AUTH_TOKEN,
+              telemetry: false,
+              release: { name: sentryRelease },
+              sourcemaps: {
+                filesToDeleteAfterUpload: [
+                  './dist/**/*.map',
+                  './.output/public/**/*.map',
+                  './.vercel/output/static/**/*.map',
+                ],
+              },
+            }),
+          ]
+        : []),
     ],
     nitro: {
       // Keep the existing Vite SPA at the project root while adding Nitro's file-based `api/`
@@ -76,10 +100,14 @@ export default defineConfig(({ command, mode }) => {
     },
     define: {
       'import.meta.env.VITE_BUILD_ID': JSON.stringify(buildId),
-      'import.meta.env.VITE_RELEASE': JSON.stringify(buildId),
+      'import.meta.env.VITE_RELEASE': JSON.stringify(sentryRelease),
+      'import.meta.env.VITE_SENTRY_ENVIRONMENT': JSON.stringify(
+        process.env.VERCEL_ENV || 'development',
+      ),
     },
     server: { port: 5173 },
     build: {
+      sourcemap: uploadSourcemaps ? 'hidden' : false,
       rollupOptions: {
         output: {
           // Split big, stable vendors into their own cacheable chunks.
