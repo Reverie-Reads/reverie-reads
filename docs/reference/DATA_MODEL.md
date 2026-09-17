@@ -604,6 +604,9 @@ RPC; it must not create a graph row merely to make removal possible. Acceptance 
 scalar tuple, catalog fingerprint, review revision, and continued absence of any active graph
 membership before clearing the shared projection. Eligible corpus-derived personal defaults follow
 that correction, while reader- and import-chosen series remain unchanged.
+Removal-review rows may preserve a legacy position such as `0` solely so that revision-checked
+acceptance can compare the frozen tuple byte-for-byte. New `set` proposals still require a positive
+position; staging a removal does not legitimize or publish the historical value.
 
 Existing-slot order reviews use `review_corpus_series_entry_order`: changed or cleared positions
 require an HTTPS source page and explanation, with the current series revision. The position claim
