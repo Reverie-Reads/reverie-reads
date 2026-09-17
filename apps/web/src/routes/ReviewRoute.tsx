@@ -14,10 +14,10 @@ import {
   useCorpusAdminStatus,
   useCorpusSeriesSuggestions,
   useReviewCorpusSeriesSuggestion,
-  useStageCorpusShadowSuggestions,
-  parseCorpusShadowSuggestionPacket,
+  useStageCorpusSeriesSuggestions,
+  parseCorpusSeriesSuggestionStagingPacket,
   type CorpusSeriesSuggestion,
-  type CorpusShadowSuggestionPacket,
+  type CorpusSeriesSuggestionStagingPacket,
 } from '../data/enrichCorpus'
 
 const REASON_LABEL: Record<NeedsLookReason, string> = {
@@ -261,18 +261,20 @@ export function CorpusSeriesReview({ suggestions }: { suggestions: CorpusSeriesS
 
 export function CorpusShadowSuggestionStaging() {
   const input = useRef<HTMLInputElement>(null)
-  const [packet, setPacket] = useState<CorpusShadowSuggestionPacket | null>(null)
+  const [packet, setPacket] = useState<CorpusSeriesSuggestionStagingPacket | null>(null)
   const [status, setStatus] = useState<string | null>(null)
-  const stage = useStageCorpusShadowSuggestions()
+  const stage = useStageCorpusSeriesSuggestions()
   async function choose(file?: File) {
     setPacket(null)
     setStatus(null)
     if (!file) return
     try {
-      const parsed = await parseCorpusShadowSuggestionPacket(JSON.parse(await file.text()))
+      const parsed = await parseCorpusSeriesSuggestionStagingPacket(JSON.parse(await file.text()))
       setPacket(parsed)
       setStatus(
-        `${parsed.counts.stageable} primary proposals and ${parsed.counts.removalReviews} historical removal reviews are ready in ${parsed.counts.batches} batches; ${parsed.counts.manualReview} relationship remains outside this queue.`,
+        parsed.purpose === 'post-recovery-authority-suggestion-staging-packet'
+          ? `${parsed.counts.stageable} independently reviewed authority proposal${parsed.counts.stageable === 1 ? '' : 's'} are ready in ${parsed.counts.batches} batch${parsed.counts.batches === 1 ? '' : 'es'}.`
+          : `${parsed.counts.stageable} primary proposals and ${parsed.counts.removalReviews} historical removal reviews are ready in ${parsed.counts.batches} batches; ${parsed.counts.manualReview} relationship remains outside this queue.`,
       )
     } catch (error) {
       setStatus(`Couldn’t use that file: ${(error as Error).message}`)
@@ -280,10 +282,10 @@ export function CorpusShadowSuggestionStaging() {
   }
   return (
     <section className="mt-6 border-b border-line pb-5">
-      <h2 className="text-[15px] font-semibold text-ink">Stage corpus rebuild proposals</h2>
+      <h2 className="text-[15px] font-semibold text-ink">Stage reviewed series proposals</h2>
       <p className="mt-1 text-[12px] leading-relaxed text-muted">
-        Load the private hash-bound packet to create review suggestions. This does not accept a
-        proposal or change shared or personal book data.
+        Load a private hash-bound corpus rebuild or reviewed authority packet. Staging creates
+        review suggestions only; it does not accept a proposal or change shared or personal books.
       </p>
       <input
         ref={input}
@@ -317,7 +319,14 @@ export function CorpusShadowSuggestionStaging() {
           className="skin-control min-h-11 px-3 py-2 text-[12.5px] font-semibold disabled:opacity-50"
           style={{ background: 'var(--accent-fill)', color: 'var(--on-primary)' }}
         >
-          Stage {(packet?.counts.stageable ?? 0) + (packet?.counts.removalReviews ?? 0)} suggestions
+          Stage{' '}
+          {packet
+            ? packet.counts.stageable +
+              (packet.purpose === 'corpus-series-shadow-suggestion-staging-packet'
+                ? packet.counts.removalReviews
+                : 0)
+            : 0}{' '}
+          suggestions
         </button>
       </div>
       {status && (

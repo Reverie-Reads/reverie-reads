@@ -948,6 +948,49 @@ review candidate; it never creates a suggestion or promotes a work. An exact nam
 match is a review-priority signal, not acceptance authorization; series conflicts, unconfirmed
 positions or counts, quarantines, and unresolved results stay out of the exact-match lane.
 
+After independently opening an eligible author or publisher source, an administrator may record a
+small reviewed decision file under ignored `private-results/`. This is a human handoff, not a model
+promotion: each decision must explicitly attest that the model finding was reviewed and the cited
+source was independently verified.
+
+```json
+{
+  "schemaVersion": 1,
+  "purpose": "post-recovery-authority-reviewed-decisions",
+  "project": "PROJECT_REF",
+  "sourceRunId": "COMPLETED_SERIES_RECOVERY_UUID",
+  "decisions": [
+    {
+      "workId": "WORK_UUID",
+      "series": "Canonical series name",
+      "position": 3,
+      "sourceUrl": "https://publisher.example/series-page",
+      "note": "Publisher series page lists this exact work as volume three.",
+      "authorityFindingReviewed": true,
+      "sourceIndependentlyVerified": true
+    }
+  ]
+}
+```
+
+Once the reviewed-authority staging migration is deployed, freeze the report, comparison, human
+decisions, and current production baseline into one private packet:
+
+```sh
+pnpm --filter @reverie/series-source-trial authority:post-recovery:suggestions -- \
+  --project PROJECT_REF \
+  --authority packages/series-source-trial/private-results/post-recovery-authority-runs/REPORT.json \
+  --comparison packages/series-source-trial/private-results/post-recovery-authority-runs/REPORT.comparison.json \
+  --decisions packages/series-source-trial/private-results/post-recovery-authority-review/DECISIONS.json \
+  --out packages/series-source-trial/private-results/post-recovery-authority-suggestion-packet/PACKET.json
+```
+
+The builder performs one read-only production query. It refuses unsafe model output, identity or
+baseline gaps, and any ordinary pending suggestion. A frozen corpus-shadow removal review may be
+superseded only when its exact ID and staging hashes still match. Loading the packet in the
+administrator Review screen creates a normal pending suggestion; it does not change the catalog or
+personal books. Final publication still requires the existing revision-checked Accept action.
+
 The authority acquisition harness tests the next layer of the proposed production tool: can the
 model find an author or publisher page for the exact work, distinguish bibliographic series from
 connected-world noise, and cite only pages it actually consulted? It uses the Responses API's
