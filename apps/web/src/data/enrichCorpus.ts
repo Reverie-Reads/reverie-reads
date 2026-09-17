@@ -2,7 +2,12 @@ import {
   isIngestibleCoverUrl,
   type SeriesEvidenceRecord,
 } from '@reverie/core'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query'
 import { enrichBookOutcome, type EnrichResult } from '../lib/enrich'
 import { classifyEnrichedSeries } from '../lib/seriesClassification'
 import { ingestCorpusCover } from '../lib/covers'
@@ -205,15 +210,29 @@ export function useReviewCorpusSeriesSuggestion() {
       })
       if (error) throw error
     },
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: corpusSeriesSuggestionsKey }),
-        queryClient.invalidateQueries({ queryKey: corpusEnrichmentCandidatesKey }),
-        queryClient.invalidateQueries({ queryKey: ['works'] }),
-        queryClient.invalidateQueries({ queryKey: ['household'] }),
-      ])
-    },
+    onSuccess: (_data, input) => refreshCorpusSeriesReviewCaches(queryClient, input.suggestionId),
   })
+}
+
+export function refreshCorpusSeriesReviewCaches(
+  queryClient: Pick<QueryClient, 'getQueryData' | 'setQueryData' | 'invalidateQueries'>,
+  suggestionId: string,
+) {
+  const current = queryClient.getQueryData<CorpusSeriesSuggestion[]>(corpusSeriesSuggestionsKey)
+  if (current) {
+    queryClient.setQueryData(
+      corpusSeriesSuggestionsKey,
+      current.filter((suggestion) => suggestion.id !== suggestionId),
+    )
+  }
+  for (const queryKey of [
+    corpusSeriesSuggestionsKey,
+    corpusEnrichmentCandidatesKey,
+    ['works'] as const,
+    ['household'] as const,
+  ]) {
+    void queryClient.invalidateQueries({ queryKey }).catch(() => undefined)
+  }
 }
 
 export interface CorpusShadowSuggestionPacket {

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { QueryClient } from '@tanstack/react-query'
 import type { EnrichResult } from '../lib/enrich'
 import { supabase } from '../lib/supabase'
 import {
@@ -10,6 +11,8 @@ import {
   corpusWorkShouldCheck,
   personalCoverIsReviewed,
   personalCoverCorpusReviewKey,
+  refreshCorpusSeriesReviewCaches,
+  corpusSeriesSuggestionsKey,
   parseCorpusSeriesSuggestionStagingPacket,
   parseCorpusShadowSuggestionPacket,
   stageCorpusSeriesSuggestions,
@@ -197,6 +200,23 @@ describe('personal cover corpus review state', () => {
     expect(personalCoverIsReviewed(null, 'https://covers.example/first.webp')).toBe(false)
     expect(personalCoverIsReviewed({ url: 'https://covers.example/first.webp' }, 'https://covers.example/first.webp')).toBe(false)
     expect(personalCoverIsReviewed([null, 'url', { source: 'upload' }], 'https://covers.example/first.webp')).toBe(false)
+  })
+})
+
+describe('corpus series review completion', () => {
+  it('removes a confirmed suggestion immediately without turning refresh failure into save failure', async () => {
+    const client = new QueryClient()
+    client.setQueryData(corpusSeriesSuggestionsKey, [
+      { id: 'accepted', title: 'Accepted work' },
+      { id: 'pending', title: 'Pending work' },
+    ])
+    vi.spyOn(client, 'invalidateQueries').mockRejectedValue(new Error('follow-up load failed'))
+
+    expect(() => refreshCorpusSeriesReviewCaches(client, 'accepted')).not.toThrow()
+    expect(client.getQueryData(corpusSeriesSuggestionsKey)).toEqual([
+      { id: 'pending', title: 'Pending work' },
+    ])
+    await Promise.resolve()
   })
 })
 

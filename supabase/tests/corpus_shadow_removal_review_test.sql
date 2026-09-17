@@ -29,6 +29,10 @@ values
 (
   '77000000-0000-4000-8000-000000000002','projection removal fixture','Projection Removal Fixture',
   'Exact Writer','[{"name":"Exact Writer","role":"author"}]','Projection False Positive',0,'unknown'
+),
+(
+  '77000000-0000-4000-8000-000000000003','keep membership fixture','Keep Membership Fixture',
+  'Exact Writer','[{"name":"Exact Writer","role":"author"}]','Verified Series',1,'found'
 );
 insert into public.books(
   id,owner_id,corpus_work_id,title,authors_display,series,position,
@@ -109,6 +113,28 @@ create function pg_temp.projection_removal_item() returns jsonb language sql sta
   ) from public.works work where id='77000000-0000-4000-8000-000000000002'
 $$;
 
+create function pg_temp.keep_membership_item() returns jsonb language sql stable as $$
+  select jsonb_build_object(
+    'workId', work.id,
+    'identityFingerprint', md5(jsonb_build_object(
+      'id',work.id,'title',work.title,'contributors',work.contributors,'pubY',work.pub_y
+    )::text),
+    'action','review_historical_authority',
+    'expectedBaseline', jsonb_build_object(
+      'currentOrigin','graph',
+      'currentMemberships',jsonb_build_array(jsonb_build_object(
+        'series','Verified Series','position',1,'role','primary'
+      )),
+      'pendingSuggestionCount',0
+    ),
+    'expectedPendingSuggestions','[]'::jsonb,
+    'proposal',jsonb_build_object(
+      'action','remove','series','Verified Series','position',1,'role','primary',
+      'decisionSha256',repeat('9',64)
+    )
+  ) from public.works work where id='77000000-0000-4000-8000-000000000003'
+$$;
+
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"77222222-2222-4222-8222-222222222222","role":"authenticated"}',true);
 select throws_ok(
@@ -125,6 +151,38 @@ select is((select proposal_action from public.work_series_suggestions
   'the pending row is explicitly a removal review');
 select is((select series from public.works where id='77000000-0000-4000-8000-000000000001'),
   'False Singleton','staging does not change shared series data');
+
+select lives_ok(
+  $$select public.admin_stage_corpus_shadow_series_removal_reviews(
+    repeat('9',64),repeat('8',64),jsonb_build_array(pg_temp.keep_membership_item())
+  )$$,
+  'administrator can stage a separate keep-membership review'
+);
+
+reset role;
+update public.corpus_series
+set revision = revision + 1
+where id=(select series_id from public.corpus_series_entries
+  where work_id='77000000-0000-4000-8000-000000000003' and removed_at is null and is_primary);
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"77111111-1111-4111-8111-111111111111","role":"authenticated"}',true);
+select lives_ok(
+  $$select public.review_corpus_series_suggestion_revisioned(
+    (select id from public.work_series_suggestions
+      where work_id='77000000-0000-4000-8000-000000000003' and status='pending'),
+    'dismiss'
+  )$$,
+  'keeping the exact membership survives an unrelated parent revision change'
+);
+select is((select status from public.work_series_suggestions
+  where work_id='77000000-0000-4000-8000-000000000003'),'dismissed',
+  'the stale removal proposal leaves the queue');
+select is((select series from public.works where id='77000000-0000-4000-8000-000000000003'),
+  'Verified Series','keeping the exact membership preserves the shared series');
+select is((select count(*) from public.corpus_series_entries
+  where work_id='77000000-0000-4000-8000-000000000003'
+    and removed_at is null and is_primary),1::bigint,
+  'keeping the exact membership preserves its active graph entry');
 
 reset role;
 update public.corpus_series
