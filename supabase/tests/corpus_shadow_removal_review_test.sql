@@ -28,7 +28,7 @@ values
 ),
 (
   '77000000-0000-4000-8000-000000000002','projection removal fixture','Projection Removal Fixture',
-  'Exact Writer','[{"name":"Exact Writer","role":"author"}]','Projection False Positive',2,'unknown'
+  'Exact Writer','[{"name":"Exact Writer","role":"author"}]','Projection False Positive',0,'unknown'
 );
 insert into public.books(
   id,owner_id,corpus_work_id,title,authors_display,series,position,
@@ -52,7 +52,7 @@ insert into public.books(
 (
   '77000000-0000-4000-8000-000000000022','77111111-1111-4111-8111-111111111111',
   '77000000-0000-4000-8000-000000000002','Projection Removal Fixture','Exact Writer',
-  'Projection False Positive',2,false,'{"origin":"corpus"}','unowned'
+  'Projection False Positive',0,false,'{"origin":"corpus"}','unowned'
 );
 
 create temp table removal_protected_before as
@@ -97,13 +97,13 @@ create function pg_temp.projection_removal_item() returns jsonb language sql sta
     'expectedBaseline', jsonb_build_object(
       'currentOrigin','projection',
       'currentMemberships',jsonb_build_array(jsonb_build_object(
-        'series','Projection False Positive','position',2,'role','primary'
+        'series','Projection False Positive','position',0,'role','primary'
       )),
       'pendingSuggestionCount',0
     ),
     'expectedPendingSuggestions','[]'::jsonb,
     'proposal',jsonb_build_object(
-      'action','remove','series','Projection False Positive','position',2,'role','primary',
+      'action','remove','series','Projection False Positive','position',0,'role','primary',
       'decisionSha256',repeat('e',64)
     )
   ) from public.works work where id='77000000-0000-4000-8000-000000000002'
@@ -193,8 +193,21 @@ select is((select staging_expected_series_entry from public.work_series_suggesti
   'projection staging does not manufacture a graph entry');
 select is((select series from public.works where id='77000000-0000-4000-8000-000000000002'),
   'Projection False Positive','projection staging does not change shared series data');
+select is((select proposed_position from public.work_series_suggestions
+  where work_id='77000000-0000-4000-8000-000000000002' and status='pending'),0::numeric,
+  'projection staging preserves a legacy zero position for the revision check');
 
 reset role;
+select throws_ok(
+  $$insert into public.work_series_suggestions(
+      work_id,proposed_series,proposed_position,source,confidence,checked_at,proposal_action
+    ) values (
+      '77000000-0000-4000-8000-000000000002','Invalid Set Proposal',0,
+      'constraint-test','medium',now(),'set'
+    )$$,
+  '23514',null,'ordinary set suggestions still require a positive position'
+);
+
 select set_config('reverie.series_classifier','on',true);
 update public.works set series='Changed Projection'
 where id='77000000-0000-4000-8000-000000000002';
