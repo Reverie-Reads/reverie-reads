@@ -229,9 +229,13 @@ export interface CorpusShadowSuggestionPacket {
     batches: number
   }
   stageable: Record<string, unknown>[]
-  removalReviews: Record<string, unknown>[]
+  removalReviews: CorpusShadowRemovalReview[]
   manualReview: Record<string, unknown>[]
   packetSha256: string
+}
+
+interface CorpusShadowRemovalReview extends Record<string, unknown> {
+  expectedBaseline: { currentOrigin: 'graph' | 'projection' }
 }
 
 const HASH_RE = /^[a-f0-9]{64}$/
@@ -243,6 +247,16 @@ export async function parseCorpusShadowSuggestionPacket(
 ): Promise<CorpusShadowSuggestionPacket> {
   if (!value || typeof value !== 'object') throw new Error('The staging file is not an object')
   const packet = value as CorpusShadowSuggestionPacket
+  const graphRemovalReviews = Array.isArray(packet.removalReviews)
+    ? packet.removalReviews.filter(
+        (item) => item.expectedBaseline?.currentOrigin === 'graph',
+      )
+    : []
+  const projectionRemovalReviews = Array.isArray(packet.removalReviews)
+    ? packet.removalReviews.filter(
+        (item) => item.expectedBaseline?.currentOrigin === 'projection',
+      )
+    : []
   if (
     packet.schemaVersion !== 2 ||
     packet.purpose !== 'corpus-series-shadow-suggestion-staging-packet' ||
@@ -252,13 +266,16 @@ export async function parseCorpusShadowSuggestionPacket(
     !HASH_RE.test(packet.packetSha256 ?? '') ||
     !Array.isArray(packet.stageable) ||
     !Array.isArray(packet.removalReviews) ||
+    graphRemovalReviews.length + projectionRemovalReviews.length !== packet.removalReviews.length ||
     !Array.isArray(packet.manualReview) ||
     packet.counts?.resolvedDecisions !== packet.stageable.length + packet.manualReview.length ||
     packet.counts?.stageable !== packet.stageable.length ||
     packet.counts?.removalReviews !== packet.removalReviews.length ||
     packet.counts?.manualReview !== packet.manualReview.length ||
     packet.counts?.batches !==
-      Math.ceil(packet.stageable.length / 25) + Math.ceil(packet.removalReviews.length / 25)
+      Math.ceil(packet.stageable.length / 25) +
+        Math.ceil(graphRemovalReviews.length / 25) +
+        Math.ceil(projectionRemovalReviews.length / 25)
   ) {
     throw new Error('The staging file metadata or counts are invalid')
   }
@@ -291,24 +308,36 @@ export async function stageCorpusShadowSuggestions(packet: CorpusShadowSuggestio
     alreadyPresent += Number(result.alreadyPresent ?? 0)
     superseded += Number(result.superseded ?? 0)
   }
-  for (let offset = 0; offset < packet.removalReviews.length; offset += 25) {
-    const { data, error } = await supabase.rpc(
-      'admin_stage_corpus_shadow_series_removal_reviews',
-      {
+  const removalReviewGroups = [
+    {
+      origin: 'graph' as const,
+      rpc: 'admin_stage_corpus_shadow_series_removal_reviews' as const,
+    },
+    {
+      origin: 'projection' as const,
+      rpc: 'admin_stage_corpus_shadow_projection_series_removal_reviews' as const,
+    },
+  ]
+  for (const group of removalReviewGroups) {
+    const items = packet.removalReviews.filter(
+      (item) => item.expectedBaseline.currentOrigin === group.origin,
+    )
+    for (let offset = 0; offset < items.length; offset += 25) {
+      const { data, error } = await supabase.rpc(group.rpc, {
         p_manifest_sha256: packet.sourceManifest.sha256,
         p_packet_sha256: packet.packetSha256,
-        p_items: packet.removalReviews.slice(offset, offset + 25),
-      },
-    )
-    if (error) throw error
-    const result = data as {
-      staged?: number
-      alreadyPresent?: number
-      superseded?: number
+        p_items: items.slice(offset, offset + 25),
+      })
+      if (error) throw error
+      const result = data as {
+        staged?: number
+        alreadyPresent?: number
+        superseded?: number
+      }
+      staged += Number(result.staged ?? 0)
+      alreadyPresent += Number(result.alreadyPresent ?? 0)
+      superseded += Number(result.superseded ?? 0)
     }
-    staged += Number(result.staged ?? 0)
-    alreadyPresent += Number(result.alreadyPresent ?? 0)
-    superseded += Number(result.superseded ?? 0)
   }
   return { staged, alreadyPresent, superseded }
 }

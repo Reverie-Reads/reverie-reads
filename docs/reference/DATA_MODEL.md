@@ -598,6 +598,13 @@ without copying rejected evidence into the graph. Explicit acceptance still publ
 relationship and reconciles eligible personal defaults. A candidate book locator cannot supply a
 provider series identity. See `../tasks/series-review-trust.md`.
 
+The corpus-shadow cleanup may also review a historical compatibility label that has no active graph
+entry. Its frozen baseline records `currentOrigin=projection`, and staging uses the projection-only
+RPC; it must not create a graph row merely to make removal possible. Acceptance rechecks the exact
+scalar tuple, catalog fingerprint, review revision, and continued absence of any active graph
+membership before clearing the shared projection. Eligible corpus-derived personal defaults follow
+that correction, while reader- and import-chosen series remain unchanged.
+
 Existing-slot order reviews use `review_corpus_series_entry_order`: changed or cleared positions
 require an HTTPS source page and explanation, with the current series revision. The position claim
 is separate from membership provenance. The explanation lives only in administrator-readable

@@ -511,6 +511,11 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   `work_series_suggestions` for corpus-administrator review. Personal copies still adopt reviewed
   shared series details explicitly. On reader surfaces, the count of currently known/owned entries
   is not the series length—render “of N” only from an explicit length or additional canonical slots.
+- **Historical scalar-only series removals stay review-bound.** The corpus-shadow handoff separates
+  graph-backed memberships from compatibility-projection labels. Projection staging must prove
+  there is no active graph membership and must never create one. Acceptance rechecks the exact
+  frozen scalar tuple, catalog fingerprint and review revision before clearing it; only eligible
+  corpus-derived personal defaults follow, never reader- or import-chosen series.
 - **`isBookRead` and `hasReadingHistory` disagree on DNF on purpose.** `isBookRead` feeds series
   progress, taste and stats, where an abandoned book must not count as read. `hasReadingHistory`
   adds DNF and feeds **visibility only** (`inDefaultLibrary`), so a book you started and gave up

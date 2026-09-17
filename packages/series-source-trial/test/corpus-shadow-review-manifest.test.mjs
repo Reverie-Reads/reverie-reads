@@ -170,6 +170,7 @@ test('builds a private staging packet and isolates relationships unsupported by 
   const secondaryReconciliation = structuredClone(reconciliation)
   secondaryComparison.works[1].desiredMemberships[0].role = 'secondary'
   secondaryReconciliation.works[1].memberships[0].role = 'secondary'
+  secondaryComparison.works[4].currentOrigin = 'projection'
   const manifest = buildCorpusShadowReviewManifest({
     comparison: secondaryComparison,
     comparisonSha256: '1'.repeat(64),
@@ -206,6 +207,7 @@ test('builds a private staging packet and isolates relationships unsupported by 
   assert.equal(packet.removalReviews[0].action, 'review_standalone_conflict')
   assert.equal(packet.removalReviews[0].proposal.action, 'remove')
   assert.equal(packet.removalReviews[0].proposal.series, 'Old')
+  assert.equal(packet.removalReviews[0].expectedBaseline.currentOrigin, 'projection')
   assert.equal(packet.manualReview[0].proposal.role, 'secondary')
   assert.equal(packet.manualReview[0].reason, 'primary_suggestion_schema_does_not_model_role')
   assert.equal(packet.mutationBoundary, 'private_staging_packet_no_supabase_or_corpus_writer')

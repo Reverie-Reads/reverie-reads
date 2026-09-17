@@ -123,7 +123,16 @@ export function buildCorpusShadowSuggestionPacket({
       stageable: stageable.length,
       removalReviews: removalReviews.length,
       manualReview: manualReview.length,
-      batches: Math.ceil(stageable.length / 25) + Math.ceil(removalReviews.length / 25),
+      batches:
+        Math.ceil(stageable.length / 25) +
+        Math.ceil(
+          removalReviews.filter((item) => item.expectedBaseline.currentOrigin === 'graph').length /
+            25,
+        ) +
+        Math.ceil(
+          removalReviews.filter((item) => item.expectedBaseline.currentOrigin === 'projection')
+            .length / 25,
+        ),
     },
     stageable,
     removalReviews,
@@ -156,7 +165,16 @@ export function validateCorpusShadowSuggestionPacket(packet) {
     packet.counts?.removalReviews !== packet.removalReviews.length ||
     packet.counts?.manualReview !== packet.manualReview.length ||
     packet.counts?.batches !==
-      Math.ceil(packet.stageable.length / 25) + Math.ceil(packet.removalReviews.length / 25) ||
+      Math.ceil(packet.stageable.length / 25) +
+        Math.ceil(
+          packet.removalReviews.filter((item) => item.expectedBaseline?.currentOrigin === 'graph')
+            .length / 25,
+        ) +
+        Math.ceil(
+          packet.removalReviews.filter(
+            (item) => item.expectedBaseline?.currentOrigin === 'projection',
+          ).length / 25,
+        ) ||
     packet.stageable.some(
       (item) =>
         item.proposal?.role !== 'primary' ||
@@ -169,6 +187,7 @@ export function validateCorpusShadowSuggestionPacket(packet) {
         !['review_historical_authority', 'review_standalone_conflict'].includes(item.action) ||
         item.proposal?.action !== 'remove' ||
         item.proposal?.role !== 'primary' ||
+        !['graph', 'projection'].includes(item.expectedBaseline?.currentOrigin) ||
         !item.proposal?.series?.trim() ||
         !/^[a-f0-9]{32}$/.test(item.identityFingerprint ?? '') ||
         !/^[a-f0-9]{64}$/.test(item.proposal?.decisionSha256 ?? ''),

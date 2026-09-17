@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EnrichResult } from '../lib/enrich'
+import { supabase } from '../lib/supabase'
 import {
   corpusCoverNeedsDurableOwnership,
   corpusPatchFromEnrichment,
@@ -10,8 +11,11 @@ import {
   personalCoverIsReviewed,
   personalCoverCorpusReviewKey,
   parseCorpusShadowSuggestionPacket,
+  stageCorpusShadowSuggestions,
   type CorpusEnrichmentWork,
 } from './enrichCorpus'
+
+vi.mock('../lib/supabase', () => ({ supabase: { rpc: vi.fn() } }))
 
 const digestJson = async (value: unknown) =>
   [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value))))]
@@ -195,6 +199,8 @@ describe('personal cover corpus review state', () => {
 })
 
 describe('corpus shadow suggestion staging packet', () => {
+  beforeEach(() => vi.clearAllMocks())
+
   it('accepts only a hash-bound packet whose counts reconcile', async () => {
     const core = {
       schemaVersion: 2 as const,
@@ -210,7 +216,9 @@ describe('corpus shadow suggestion staging packet', () => {
         batches: 2,
       },
       stageable: [{ workId: 'work-1' }],
-      removalReviews: [{ workId: 'work-2' }],
+      removalReviews: [
+        { workId: 'work-2', expectedBaseline: { currentOrigin: 'projection' } },
+      ],
       manualReview: [],
       mutationBoundary: 'private_staging_packet_no_supabase_or_corpus_writer',
     }
@@ -219,6 +227,53 @@ describe('corpus shadow suggestion staging packet', () => {
     await expect(
       parseCorpusShadowSuggestionPacket({ ...packet, stageable: [{ workId: 'changed' }] }),
     ).rejects.toThrow('hash')
+  })
+
+  it('routes graph and projection removals through separate bounded RPCs', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { staged: 1, alreadyPresent: 0, superseded: 0 },
+      error: null,
+    } as never)
+    const removal = (origin: 'graph' | 'projection', index: number) => ({
+      workId: `work-${index}`,
+      expectedBaseline: { currentOrigin: origin },
+    })
+    const packet = {
+      schemaVersion: 2 as const,
+      purpose: 'corpus-series-shadow-suggestion-staging-packet' as const,
+      project: 'abcdefghijklmnopqrst',
+      sourceManifest: { sha256: 'a'.repeat(64), historicalSha256: 'b'.repeat(64) },
+      counts: {
+        resolvedDecisions: 0,
+        stageable: 0,
+        removalReviews: 26,
+        manualReview: 0,
+        batches: 2,
+      },
+      stageable: [],
+      removalReviews: [
+        ...Array.from({ length: 25 }, (_, index) => removal('graph', index)),
+        removal('projection', 25),
+      ],
+      manualReview: [],
+      packetSha256: 'c'.repeat(64),
+    }
+
+    await expect(stageCorpusShadowSuggestions(packet)).resolves.toEqual({
+      staged: 2,
+      alreadyPresent: 0,
+      superseded: 0,
+    })
+    expect(supabase.rpc).toHaveBeenNthCalledWith(
+      1,
+      'admin_stage_corpus_shadow_series_removal_reviews',
+      expect.objectContaining({ p_items: packet.removalReviews.slice(0, 25) }),
+    )
+    expect(supabase.rpc).toHaveBeenNthCalledWith(
+      2,
+      'admin_stage_corpus_shadow_projection_series_removal_reviews',
+      expect.objectContaining({ p_items: packet.removalReviews.slice(25) }),
+    )
   })
 })
 

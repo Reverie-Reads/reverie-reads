@@ -56,10 +56,13 @@ revision captured at staging; stale proposals stop for refresh.
 Completed historical cases that remain unresolved, plus affirmative standalone conflicts, enter
 the handoff only as explicit keep-or-remove reviews. Their current primary membership is the frozen
 subject of review—not a model-issued removal decision. Acceptance must match the exact work, entry,
-series revision, review revision, and packet hashes; it tombstones that membership and archives the
-series only if no live entries remain. Dismissal retains the graph. Reader- and import-chosen
-personal series stay unchanged, while eligible automatic corpus defaults follow an accepted shared
-correction.
+series revision, review revision, and packet hashes for graph-backed labels; it tombstones that
+membership and archives the series only if no live entries remain. A historical compatibility
+projection with no graph is staged through a separate origin-checked RPC and acceptance instead
+rechecks the exact scalar tuple plus the continued absence of active graph entries before clearing
+it. Staging never manufactures membership. Dismissal retains the reviewed baseline. Reader- and
+import-chosen personal series stay unchanged, while eligible automatic corpus defaults follow an
+accepted shared correction.
 
 Ordinary bibliographic series membership has one direction of authority: shared corpus to eligible
 library defaults. Same-world, universe, crossover, and interconnected-setting relationships remain
