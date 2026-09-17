@@ -328,8 +328,13 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   evidence from the scout. Its isolated Luna-low/Exa results remain private review artifacts; they
   cannot accept a suggestion or write the catalog. The separate read-only comparator may prioritize
   an exact pending suggestion or a deferred work's preserved current tuple, but a deferred authority
-  finding remains a candidate and cannot manufacture a suggestion. See
-  `packages/series-source-trial/README.md`.
+  finding remains a candidate and the comparator cannot manufacture a suggestion. After an
+  administrator independently verifies an eligible HTTPS authority source, the separate private,
+  hash-bound reviewed-decision packet may stage a normal pending suggestion through the owner-only
+  bridge. Staging may supersede only the exact frozen corpus-shadow removal review; it cannot
+  displace an ordinary pending suggestion, accept its own proposal, or change catalog/personal
+  rows. Final publication still uses the revision-checked administrator review action. See
+  `packages/series-source-trial/README.md` and `docs/tasks/app-first-book-data.md`.
 - **Production qualification is private, locked, and single-use.** Never append qualification
   identities or truth to the public development gold file. Build the reviewed oversample under
   ignored `private-results/` from complete identity frames whose population, eligible, and

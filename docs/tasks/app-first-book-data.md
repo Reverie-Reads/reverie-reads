@@ -94,6 +94,23 @@ Success for this step is one understandable review handoff, source attribution a
 reader choices—not a new accuracy percentage or a claim that the LLM is production-qualified.
 Measure reviewer effort and the concrete missing control before expanding the feature.
 
+## Demonstrated handoff gap and bounded closure
+
+The post-recovery walkthrough showed one concrete gap: a policy-safe private authority result could
+be compared with a deferred work, but the administrator had no revision-checked way to turn their
+own independent source review into the existing suggestion queue. The comparator correctly could
+not manufacture a suggestion, and the catalog series editor could create only unbound placeholder
+slots rather than attach an existing work.
+
+The bounded closure is a private, hash-bound reviewed-authority packet and one owner-only staging
+RPC. The packet binds the model report, read-only comparison, explicit human decision, identity,
+current series fingerprint, metadata-review revision and exact pending suggestion. It requires an
+independently verified HTTPS authority source. Staging may supersede only the exact pending
+corpus-shadow removal review captured in that packet; any ordinary pending suggestion blocks it.
+Staging creates a normal pending proposal and changes no catalog or personal row. The existing
+revision-checked Accept action remains the only publication step and keeps reader/import choices
+protected. This is a human-review bridge, not an in-app LLM integration or autonomous writer.
+
 ## Boundaries that do not change
 
 The resolver and authority scout remain trial-only. Their output cannot be sent to the existing

@@ -234,6 +234,25 @@ export interface CorpusShadowSuggestionPacket {
   packetSha256: string
 }
 
+export interface ReviewedAuthoritySuggestionPacket {
+  schemaVersion: 1
+  purpose: 'post-recovery-authority-suggestion-staging-packet'
+  project: string
+  sourceRunId: string
+  sources: {
+    authoritySha256: string
+    comparisonSha256: string
+    decisionsSha256: string
+  }
+  counts: { stageable: number; batches: number }
+  stageable: Record<string, unknown>[]
+  packetSha256: string
+}
+
+export type CorpusSeriesSuggestionStagingPacket =
+  | CorpusShadowSuggestionPacket
+  | ReviewedAuthoritySuggestionPacket
+
 interface CorpusShadowRemovalReview extends Record<string, unknown> {
   expectedBaseline: { currentOrigin: 'graph' | 'projection' }
 }
@@ -286,6 +305,53 @@ export async function parseCorpusShadowSuggestionPacket(
   )
   if (calculated !== packet.packetSha256) throw new Error('The staging file hash is invalid')
   return packet
+}
+
+export async function parseReviewedAuthoritySuggestionPacket(
+  value: unknown,
+): Promise<ReviewedAuthoritySuggestionPacket> {
+  if (!value || typeof value !== 'object') throw new Error('The staging file is not an object')
+  const packet = value as ReviewedAuthoritySuggestionPacket
+  if (
+    packet.schemaVersion !== 1 ||
+    packet.purpose !== 'post-recovery-authority-suggestion-staging-packet' ||
+    !/^[a-z0-9]{20}$/.test(packet.project ?? '') ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
+      packet.sourceRunId ?? '',
+    ) ||
+    !HASH_RE.test(packet.sources?.authoritySha256 ?? '') ||
+    !HASH_RE.test(packet.sources?.comparisonSha256 ?? '') ||
+    !HASH_RE.test(packet.sources?.decisionsSha256 ?? '') ||
+    !HASH_RE.test(packet.packetSha256 ?? '') ||
+    !Array.isArray(packet.stageable) ||
+    packet.stageable.length < 1 ||
+    packet.stageable.length > 25 ||
+    packet.counts?.stageable !== packet.stageable.length ||
+    packet.counts?.batches !== Math.ceil(packet.stageable.length / 25)
+  ) {
+    throw new Error('The reviewed authority staging file metadata or counts are invalid')
+  }
+  const core = { ...packet } as Partial<ReviewedAuthoritySuggestionPacket>
+  delete core.packetSha256
+  const calculated = hex(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(core))),
+  )
+  if (calculated !== packet.packetSha256) throw new Error('The staging file hash is invalid')
+  return packet
+}
+
+export async function parseCorpusSeriesSuggestionStagingPacket(
+  value: unknown,
+): Promise<CorpusSeriesSuggestionStagingPacket> {
+  if (
+    value &&
+    typeof value === 'object' &&
+    (value as { purpose?: unknown }).purpose ===
+      'post-recovery-authority-suggestion-staging-packet'
+  ) {
+    return parseReviewedAuthoritySuggestionPacket(value)
+  }
+  return parseCorpusShadowSuggestionPacket(value)
 }
 
 export async function stageCorpusShadowSuggestions(packet: CorpusShadowSuggestionPacket) {
@@ -342,11 +408,54 @@ export async function stageCorpusShadowSuggestions(packet: CorpusShadowSuggestio
   return { staged, alreadyPresent, superseded }
 }
 
+export async function stageReviewedAuthoritySuggestions(packet: ReviewedAuthoritySuggestionPacket) {
+  let staged = 0
+  let alreadyPresent = 0
+  let superseded = 0
+  for (let offset = 0; offset < packet.stageable.length; offset += 25) {
+    const { data, error } = await supabase.rpc(
+      'admin_stage_reviewed_authority_series_suggestions',
+      {
+        p_manifest_sha256: packet.sources.decisionsSha256,
+        p_packet_sha256: packet.packetSha256,
+        p_items: packet.stageable.slice(offset, offset + 25),
+      },
+    )
+    if (error) throw error
+    const result = data as {
+      staged?: number
+      alreadyPresent?: number
+      superseded?: number
+    }
+    staged += Number(result.staged ?? 0)
+    alreadyPresent += Number(result.alreadyPresent ?? 0)
+    superseded += Number(result.superseded ?? 0)
+  }
+  return { staged, alreadyPresent, superseded }
+}
+
+export function stageCorpusSeriesSuggestions(packet: CorpusSeriesSuggestionStagingPacket) {
+  return packet.purpose === 'post-recovery-authority-suggestion-staging-packet'
+    ? stageReviewedAuthoritySuggestions(packet)
+    : stageCorpusShadowSuggestions(packet)
+}
+
 export function useStageCorpusShadowSuggestions() {
   const queryClient = useQueryClient()
   return useMutation({
     meta: { action: 'The corpus shadow suggestion staging' },
     mutationFn: stageCorpusShadowSuggestions,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: corpusSeriesSuggestionsKey })
+    },
+  })
+}
+
+export function useStageCorpusSeriesSuggestions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    meta: { action: 'The reviewed corpus series suggestion staging' },
+    mutationFn: stageCorpusSeriesSuggestions,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: corpusSeriesSuggestionsKey })
     },

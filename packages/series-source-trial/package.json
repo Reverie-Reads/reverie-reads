@@ -27,6 +27,7 @@
     "authority:corpus-shadow:historical:reconcile": "node src/reconcile-corpus-shadow-historical.mjs",
     "authority:post-recovery:export": "node src/export-post-recovery-authority.mjs",
     "authority:post-recovery:compare": "node src/compare-post-recovery-authority.mjs",
+    "authority:post-recovery:suggestions": "node src/build-post-recovery-suggestion-packet.mjs",
     "authority:qualification:capture:ippy": "node src/capture-authority-qualification-ippy.mjs",
     "authority:qualification:capture:prh": "node src/capture-authority-qualification-prh.mjs",
     "authority:qualification:freeze": "node src/freeze-authority-qualification.mjs",

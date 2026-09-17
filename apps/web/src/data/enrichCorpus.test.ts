@@ -10,7 +10,9 @@ import {
   corpusWorkShouldCheck,
   personalCoverIsReviewed,
   personalCoverCorpusReviewKey,
+  parseCorpusSeriesSuggestionStagingPacket,
   parseCorpusShadowSuggestionPacket,
+  stageCorpusSeriesSuggestions,
   stageCorpusShadowSuggestions,
   type CorpusEnrichmentWork,
 } from './enrichCorpus'
@@ -273,6 +275,43 @@ describe('corpus shadow suggestion staging packet', () => {
       2,
       'admin_stage_corpus_shadow_projection_series_removal_reviews',
       expect.objectContaining({ p_items: packet.removalReviews.slice(25) }),
+    )
+  })
+
+  it('parses and routes a reviewed authority packet through its narrow staging RPC', async () => {
+    vi.mocked(supabase.rpc).mockResolvedValue({
+      data: { staged: 1, alreadyPresent: 0, superseded: 1 },
+      error: null,
+    } as never)
+    const core = {
+      schemaVersion: 1 as const,
+      purpose: 'post-recovery-authority-suggestion-staging-packet' as const,
+      createdAt: '2026-09-17T00:00:00.000Z',
+      project: 'abcdefghijklmnopqrst',
+      sourceRunId: '11111111-1111-4111-8111-111111111111',
+      sources: {
+        authoritySha256: 'a'.repeat(64),
+        comparisonSha256: 'b'.repeat(64),
+        decisionsSha256: 'c'.repeat(64),
+      },
+      counts: { stageable: 1, batches: 1 },
+      stageable: [{ workId: '22222222-2222-4222-8222-222222222222' }],
+      mutationBoundary: 'private_staging_packet_no_catalog_or_personal_writer',
+    }
+    const packet = { ...core, packetSha256: await digestJson(core) }
+    await expect(parseCorpusSeriesSuggestionStagingPacket(packet)).resolves.toEqual(packet)
+    await expect(stageCorpusSeriesSuggestions(packet)).resolves.toEqual({
+      staged: 1,
+      alreadyPresent: 0,
+      superseded: 1,
+    })
+    expect(supabase.rpc).toHaveBeenCalledWith(
+      'admin_stage_reviewed_authority_series_suggestions',
+      {
+        p_manifest_sha256: 'c'.repeat(64),
+        p_packet_sha256: packet.packetSha256,
+        p_items: packet.stageable,
+      },
     )
   })
 })
