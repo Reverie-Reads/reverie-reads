@@ -94,6 +94,7 @@ describe('corpus series administrator review', () => {
       />,
     )
 
+    fireEvent.click(screen.getByRole('button', { name: 'Removal reviews · 1' }))
     expect(screen.getByText('Remove the shared 1Q84 membership')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Remove false series' }))
     expect(mocks.mutate).toHaveBeenLastCalledWith({
@@ -105,5 +106,42 @@ describe('corpus series administrator review', () => {
       suggestionId: 'removal-1',
       decision: 'dismiss',
     })
+  })
+
+  it('separates corrections from removal reviews and searches the active view', () => {
+    render(
+      <CorpusSeriesReview
+        suggestions={[
+          suggestion,
+          {
+            ...suggestion,
+            id: 'removal-1',
+            title: '1Q84',
+            author: 'Haruki Murakami',
+            currentSeries: '1Q84',
+            proposedSeries: '1Q84',
+            proposalAction: 'remove',
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Corrections · 1' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByText('A Child Alone with Strangers')).toBeInTheDocument()
+    expect(screen.queryByText('1Q84')).not.toBeInTheDocument()
+    expect(screen.getByText('Showing 1 of 2 pending reviews.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Removal reviews · 1' }))
+    expect(screen.getByText('1Q84')).toBeInTheDocument()
+    expect(screen.queryByText('A Child Alone with Strangers')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search reviews' }), {
+      target: { value: 'no match' },
+    })
+    expect(screen.getByText('No pending reviews match this view.')).toBeInTheDocument()
+    expect(screen.getByText('Showing 0 of 2 pending reviews.')).toBeInTheDocument()
   })
 })

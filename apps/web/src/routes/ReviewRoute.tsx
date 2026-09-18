@@ -122,12 +122,41 @@ function ListBucket({ title, items }: { title: string; items: NeedsLookItem[] })
 
 export function CorpusSeriesReview({ suggestions }: { suggestions: CorpusSeriesSuggestion[] }) {
   const review = useReviewCorpusSeriesSuggestion()
+  const [view, setView] = useState<'corrections' | 'removals' | 'all'>(() =>
+    suggestions.some((suggestion) => suggestion.proposalAction !== 'remove')
+      ? 'corrections'
+      : 'removals',
+  )
+  const [query, setQuery] = useState('')
+  const counts = useMemo(
+    () => ({
+      corrections: suggestions.filter((suggestion) => suggestion.proposalAction !== 'remove')
+        .length,
+      removals: suggestions.filter((suggestion) => suggestion.proposalAction === 'remove').length,
+    }),
+    [suggestions],
+  )
+  const ordered = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase()
+    return suggestions
+      .filter((suggestion) => {
+        if (view === 'corrections' && suggestion.proposalAction === 'remove') return false
+        if (view === 'removals' && suggestion.proposalAction !== 'remove') return false
+        if (!normalizedQuery) return true
+        return [
+          suggestion.title,
+          suggestion.author,
+          suggestion.currentSeries,
+          suggestion.proposedSeries,
+        ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery))
+      })
+      .sort((left, right) => {
+        const action =
+          Number(right.proposalAction === 'remove') - Number(left.proposalAction === 'remove')
+        return action || left.title.localeCompare(right.title) || left.id.localeCompare(right.id)
+      })
+  }, [query, suggestions, view])
   if (!suggestions.length) return null
-  const ordered = [...suggestions].sort((left, right) => {
-    const action =
-      Number(right.proposalAction === 'remove') - Number(left.proposalAction === 'remove')
-    return action || left.title.localeCompare(right.title) || left.id.localeCompare(right.id)
-  })
   return (
     <section className="mt-6">
       <h2
@@ -141,6 +170,52 @@ export function CorpusSeriesReview({ suggestions }: { suggestions: CorpusSeriesS
         only when the proposed series and position belong to this work. Shared corrections flow to
         eligible automatic library defaults; reader and import choices stay unchanged.
       </p>
+      <div className="mb-3 grid gap-2 sm:grid-cols-[auto_minmax(14rem,1fr)] sm:items-end">
+        <div>
+          <div
+            role="group"
+            aria-label="Filter corpus series reviews"
+            className="flex flex-wrap gap-2"
+          >
+            {(
+              [
+                ['corrections', 'Corrections', counts.corrections],
+                ['removals', 'Removal reviews', counts.removals],
+                ['all', 'All', suggestions.length],
+              ] as const
+            ).map(([value, label, count]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={view === value}
+                onClick={() => setView(value)}
+                className="skin-control min-h-11 border border-line px-3 py-2 text-[12px] font-semibold text-ink"
+                style={{ background: view === value ? 'var(--chip)' : 'var(--field)' }}
+              >
+                {label} · {count}
+              </button>
+            ))}
+          </div>
+        </div>
+        <label className="block text-[11px] font-semibold uppercase tracking-[0.1em] text-muted">
+          Search reviews
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Title, author, or series"
+            className="mt-1 min-h-11 w-full rounded-[var(--radius-control)] border border-line bg-[var(--field)] px-3 py-2 text-[13px] font-normal normal-case tracking-normal text-ink placeholder:text-muted"
+          />
+        </label>
+      </div>
+      <p className="mb-2 text-[11px] text-muted" aria-live="polite">
+        Showing {ordered.length} of {suggestions.length} pending reviews.
+      </p>
+      {!ordered.length && (
+        <Surface tone="bare" radius="control" pad={3} className="mb-2 border border-line">
+          <p className="text-[12px] text-muted">No pending reviews match this view.</p>
+        </Surface>
+      )}
       <ul className="space-y-2">
         {ordered.map((suggestion) => (
           <Surface as="li" key={suggestion.id} tone="card" radius="card" pad={3}>
