@@ -28,6 +28,11 @@ const withExtras = (e: Partial<ImportExportResult['extras']>): ImportExportResul
 })
 
 describe('ImportSummary copy', () => {
+  it('presents the legacy import profile with the current product name', () => {
+    expect(summaryHeadline({ ...base, profile: 'reverie' })).toBe(
+      'Detected your Midniht export — brought in 40 new, and folded 3 into what you had.',
+    )
+  })
   it('headline states what the import did', () => {
     expect(summaryHeadline(base)).toBe(
       'Detected your generic export — brought in 40 new, and folded 3 into what you had.',

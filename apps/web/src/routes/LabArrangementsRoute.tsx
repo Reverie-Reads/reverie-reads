@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createRoute } from '@tanstack/react-router'
-import { SKINS, type ResolvedMode, type SkinId } from '@reverie/core'
+import { APP_NAME, SKINS, type ResolvedMode, type SkinId } from '@reverie/core'
 import { rootRoute } from './RootRoute'
 import { SkinAtmosphereCanvas } from '../components/SkinAtmosphereCanvas'
 import { Surface } from '../components/Surface'
 import { Frame, ProgressMeter, SectionHeader, SignatureRing } from '../components/Structure'
 import { NavigationGlyph } from '../components/NavigationGlyph'
-import { ReverieMark } from '../components/ReverieMark'
+import { MidnihtMark } from '../components/MidnihtMark'
 import { CoverImage } from '../components/CoverImage'
 import { UtilityGlyph } from '../components/UtilityGlyph'
 import { GUEST_CATALOG } from '../auth/landing/guest/catalog'
@@ -191,9 +191,9 @@ function DesktopRail({ config }: { config: ArrangementConfig }) {
   return (
     <aside className="flex w-[174px] flex-none flex-col border-r border-line px-3 py-4">
       <div className="flex items-center gap-2 px-2 text-ink">
-        <ReverieMark className="h-6 w-6" />
+        <MidnihtMark className="h-6 w-6" />
         <span className="text-[15px]" style={{ fontFamily: 'var(--font-display)' }}>
-          Reverie
+          {APP_NAME}
         </span>
       </div>
       <button
@@ -216,7 +216,7 @@ function DesktopRail({ config }: { config: ArrangementConfig }) {
           </button>
         )
       })}
-      <p className="skin-label mb-1 mt-5 px-2 text-[9px] text-muted">The rest of Reverie</p>
+      <p className="skin-label mb-1 mt-5 px-2 text-[9px] text-muted">The rest of {APP_NAME}</p>
       {secondary.map((item) => (
         <button
           key={item.id}

@@ -110,7 +110,7 @@ describe('public cover fetch boundary', () => {
       .mockResolvedValueOnce(new Response('image', { status: 200 }))
     const result = await fetchPublicRemote(
       'https://covers.example/start',
-      { headers: { Accept: 'image/*', 'User-Agent': 'Reverie cover support' } },
+      { headers: { Accept: 'image/*', 'User-Agent': 'Midniht cover support' } },
       { resolveDns: publicResolver, fetcher, isAllowedUrl: allowAll },
     )
     expect(result.finalUrl).toBe('https://covers.example/final')
@@ -118,7 +118,7 @@ describe('public cover fetch boundary', () => {
     expect(fetcher).toHaveBeenCalledTimes(2)
     expect(fetcher.mock.calls[1]?.[1]).toMatchObject({
       redirect: 'manual',
-      headers: { Accept: 'image/*', 'User-Agent': 'Reverie cover support' },
+      headers: { Accept: 'image/*', 'User-Agent': 'Midniht cover support' },
     })
   })
 

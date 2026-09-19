@@ -4,8 +4,7 @@
  * and cover-URL helpers.
  */
 
-/** The product name. Kept in one place so a rename touches a single line. */
-export const APP_NAME = 'Reverie'
+export * from './brand'
 
 export * from './types'
 export * from './partialDate'

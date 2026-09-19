@@ -1,4 +1,4 @@
-import { parseDiscoverySession, DISCOVERY_SAVED_LIMIT } from '@reverie/core'
+import { APP_NAME, parseDiscoverySession, DISCOVERY_SAVED_LIMIT } from '@reverie/core'
 import { nextListSortOrderFor, ORDER_STEP as LIST_ORDER_STEP } from './lists'
 import { nextItemPositionFor, ITEM_POSITION_STEP } from './listItems'
 import {
@@ -671,6 +671,7 @@ export async function buildBackup(): Promise<string> {
 
   return JSON.stringify({
     v: CURRENT_BACKUP_VERSION,
+    // Stable format identifier: existing exports and older clients use this value.
     app: 'reverie',
     exportedAt: new Date().toISOString(),
     // The file's own completeness check — see BackupCounts. Written LAST in spirit: every number
@@ -841,10 +842,10 @@ function parseBackupFile(json: string): BackupShape {
   try {
     parsed = JSON.parse(json)
   } catch {
-    throw new Error('That file isn’t readable JSON. Choose a Reverie backup ending in .json.')
+    throw new Error(`That file isn’t readable JSON. Choose a ${APP_NAME} backup ending in .json.`)
   }
   if (!isRecord(parsed) || !Array.isArray(parsed.books)) {
-    throw new Error('That file doesn’t look like a Reverie backup.')
+    throw new Error(`That file doesn’t look like a ${APP_NAME} backup.`)
   }
   const data = parsed as unknown as BackupShape
 

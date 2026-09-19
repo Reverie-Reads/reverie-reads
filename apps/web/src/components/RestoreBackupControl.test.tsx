@@ -112,18 +112,18 @@ describe('RestoreBackupControl', () => {
     fireEvent.change(screen.getByTestId('restore-backup-file'), {
       target: { files: [backupFile()] },
     })
-    expect(await screen.findByText(/newer data Reverie cannot restore/)).toBeVisible()
+    expect(await screen.findByText(/newer data Midniht cannot restore/)).toBeVisible()
     expect(screen.getByRole('button', { name: 'Restore this backup' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
     mocks.inspectBackup.mockImplementationOnce(() => {
-      throw new Error('That file doesn’t look like a Reverie backup.')
+      throw new Error('That file doesn’t look like a Midniht backup.')
     })
     rerender(<RestoreBackupControl currentBookCount={5} onRestored={vi.fn()} />)
     fireEvent.change(screen.getByTestId('restore-backup-file'), {
       target: { files: [backupFile('nope')] },
     })
-    expect(await screen.findByRole('alert')).toHaveTextContent('doesn’t look like a Reverie backup')
+    expect(await screen.findByRole('alert')).toHaveTextContent('doesn’t look like a Midniht backup')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 

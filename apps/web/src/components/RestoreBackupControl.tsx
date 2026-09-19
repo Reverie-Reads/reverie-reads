@@ -1,3 +1,4 @@
+import { APP_NAME } from '@reverie/core'
 import { useRef, useState } from 'react'
 import { inspectBackup, restoreBackup, type BackupPreview } from '../data/importExport'
 import { Modal } from './Modal'
@@ -68,7 +69,7 @@ export function RestoreBackupControl({
       setPending({ fileName: file.name, json, preview: inspectBackup(json) })
     } catch (error) {
       setPending(null)
-      setIssue(error instanceof Error ? error.message : 'Reverie couldn’t read that backup.')
+      setIssue(error instanceof Error ? error.message : `${APP_NAME} couldn’t read that backup.`)
     }
   }
 
@@ -81,7 +82,7 @@ export function RestoreBackupControl({
       setPending(null)
       onRestored(result)
     } catch (error) {
-      setIssue(error instanceof Error ? error.message : 'Reverie couldn’t restore that backup.')
+      setIssue(error instanceof Error ? error.message : `${APP_NAME} couldn’t restore that backup.`)
     } finally {
       setRestoring(false)
     }
@@ -152,7 +153,7 @@ export function RestoreBackupControl({
                 {afterCount?.toLocaleString()}
               </p>
               <p className="mt-2 text-[13px] leading-relaxed text-muted">
-                Reverie will add {countLabel(preview.counts.activeBooks, 'book')} to the{' '}
+                {APP_NAME} will add {countLabel(preview.counts.activeBooks, 'book')} to the{' '}
                 {countLabel(currentBookCount, 'book')} already here. Existing books stay in place,
                 and matching books are not merged during a restore.
               </p>
@@ -192,7 +193,7 @@ export function RestoreBackupControl({
             ) : (
               <Surface radius="card" tone="field" pad={3}>
                 <p className="text-[12.5px] leading-relaxed text-ink">
-                  This older backup predates completeness records. Reverie can restore it, but
+                  This older backup predates completeness records. {APP_NAME} can restore it, but
                   cannot confirm whether the original download included every record.
                 </p>
               </Surface>
@@ -208,8 +209,8 @@ export function RestoreBackupControl({
             {incompatible && (
               <Surface radius="card" tone="field" pad={3}>
                 <p className="text-[12.5px] font-semibold leading-relaxed text-ink" role="alert">
-                  This backup contains newer data Reverie cannot restore yet. Update the app before
-                  trying again.
+                  This backup contains newer data {APP_NAME} cannot restore yet. Update the app
+                  before trying again.
                   {preview.unknownSections.length > 0
                     ? ` Unrecognized: ${preview.unknownSections.join(', ')}.`
                     : ''}

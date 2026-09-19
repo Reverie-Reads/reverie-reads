@@ -18,13 +18,12 @@ export function ReadingRoomPreview({
   useEffect(() => loadSkinFont(skin), [skin])
   return (
     <SkinPreviewContext.Provider value={skin}>
-      <div className="rv-reverie-window" data-skin={skin} data-mode={mode}>
-        <div aria-hidden className="rv-reverie-window-mist" />
+      <div className="rv-reading-window" data-skin={skin} data-mode={mode}>
         <div
           data-skin={skin}
           data-mode={mode}
           data-testid="room-example"
-          className={`rv-reverie-window-surface relative isolate overflow-hidden bg-bg0 text-ink ${className}`}
+          className={`rv-reading-window-surface relative isolate overflow-hidden bg-bg0 text-ink ${className}`}
           style={{ fontFamily: 'var(--font-sans)' }}
         >
           <SkinAtmosphereCanvas skin={skin} mode={mode} />

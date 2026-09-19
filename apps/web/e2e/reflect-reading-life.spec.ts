@@ -196,7 +196,7 @@ test('Reflect turns persisted reading history into an explorable private retrosp
     await expect(retrospective).toContainText('Most-read voice')
     await expect(retrospective).toContainText('Iona Vale')
     await expect(retrospective).toContainText(
-      'Reverie does not create a public score or share card',
+      'Midniht does not create a public score or share card',
     )
     await page.screenshot({
       path: testInfo.outputPath('reflect-desktop.png'),

@@ -1,5 +1,5 @@
 import type * as XLSXNS from 'xlsx'
-import { REVERIE_TEMPLATE_COLUMNS } from '@reverie/core'
+import { APP_NAME, REVERIE_TEMPLATE_COLUMNS } from '@reverie/core'
 
 /**
  * The canonical Reverie import template (.xlsx) — built deterministically from the core column profile
@@ -35,9 +35,9 @@ export const TEMPLATE_EXAMPLE_ROWS: readonly (readonly string[])[] = [
 ]
 
 const GUIDE_LINES: readonly string[] = [
-  'Reverie — import template',
+  `${APP_NAME} — import template`,
   '',
-  'Fill in the “My Library” tab, one book per row, then import it in Reverie (Settings → Import,',
+  `Fill in the “My Library” tab, one book per row, then import it in ${APP_NAME} (Settings → Import,`,
   'or during first-run setup). Save as .xlsx or .csv — both import the same way.',
   '',
   'Columns:',
@@ -52,7 +52,7 @@ const GUIDE_LINES: readonly string[] = [
   '  in hand, just not yours to keep); No marks a wishlist book (want it, don’t own it yet).',
   '',
   'The rows in “My Library” are examples — delete them and add your own.',
-  'Re-importing is safe: Reverie matches and merges, it never makes duplicates.',
+  `Re-importing is safe: ${APP_NAME} matches and merges, it never makes duplicates.`,
 ]
 
 /** Build the workbook from the core column profile. Shared by the generator and the parity test. */

@@ -2,6 +2,7 @@ import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
+  APP_NAME,
   authorOf,
   formatPartialDate,
   MONTH_ABBR,
@@ -488,7 +489,7 @@ export function ReflectView({
         <Breakdown
           eyebrow="Moods"
           title="What the books left with you."
-          description="Moods you assigned yourself. Reverie never infers how a book made you feel."
+          description={`Moods you assigned yourself. ${APP_NAME} never infers how a book made you feel.`}
           emptyCopy="No reading moods are attached to these books yet."
           entries={summary.moods}
           open={open}
@@ -735,7 +736,7 @@ export function ReflectView({
               </blockquote>
             )}
             <p className="reflect-private-note">
-              Kept here for you. Reverie does not create a public score or share card from this
+              Kept here for you. {APP_NAME} does not create a public score or share card from this
               view.
             </p>
             <div className="reflect-story-actions">

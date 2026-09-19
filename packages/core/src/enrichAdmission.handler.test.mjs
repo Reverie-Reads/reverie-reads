@@ -294,5 +294,5 @@ it('sends the identified Open Library headers on edition and each contributor fe
   const requests = calls.filter((c) => c.url.hostname === 'openlibrary.org')
   expect(requests.map((c) => c.url.pathname)).toEqual([`/isbn/${ISBN}.json`, '/authors/OL1A.json'])
   for (const c of requests)
-    expect(new Headers(c.init.headers).get('user-agent')).toMatch(/Reverie.*@/)
+    expect(new Headers(c.init.headers).get('user-agent')).toMatch(/Midniht.*@/)
 })

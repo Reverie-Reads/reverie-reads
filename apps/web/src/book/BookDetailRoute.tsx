@@ -3,6 +3,7 @@ import { Link, createRoute, useNavigate } from '@tanstack/react-router'
 import { StartReadingTour } from '../guidance/BookTour'
 import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 import {
+  APP_NAME,
   authorOf,
   beginReadingPatch,
   isBookRead,
@@ -767,7 +768,7 @@ export function BookDetailScreen() {
           onChange={(v) => updateBook.mutate({ id: book.id, patch: { rating: v } })}
         />
         <p className="mt-1 text-[11.5px] text-muted">
-          Your rating only — Reverie never shows an averaged score.
+          Your rating only — {APP_NAME} never shows an averaged score.
         </p>
         {/* Audiobook-vs-print: shown only when two or more formats carry rated reads. Most recent
           rated read per format — the display rule and its reasons live on latestRatingByFormat. */}

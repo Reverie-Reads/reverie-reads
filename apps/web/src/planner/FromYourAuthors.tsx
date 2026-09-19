@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState, type FormEvent } from 'react'
-import { splitName, type Book } from '@reverie/core'
+import { APP_NAME, splitName, type Book } from '@reverie/core'
 import {
   parseReleasePub,
   releaseDateLabel,
@@ -180,7 +180,7 @@ function TrackRelease({ suggestedAuthor }: { suggestedAuthor?: string }) {
               <p className="plan-eyebrow">A note from elsewhere</p>
               <h3>Add it to your horizon</h3>
               <p>
-                A year is enough. Reverie keeps the date as flexible as the information you have.
+                A year is enough. {APP_NAME} keeps the date as flexible as the information you have.
               </p>
             </div>
             <div className="release-track-fields">
@@ -362,7 +362,7 @@ export function FromYourAuthors({ books }: { books: Book[] }) {
       <ReleaseSection title="Newly arrived" sub="Released in the last six months" list={recent} />
       <ReleaseSection
         title="Dates taking shape"
-        sub="The source gives a year or month, so Reverie keeps the day open"
+        sub={`The source gives a year or month, so ${APP_NAME} keeps the day open`}
         list={uncertain}
       />
 

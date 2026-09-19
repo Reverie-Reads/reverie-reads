@@ -1391,6 +1391,14 @@ describe('a backup cannot silently lose rows — paging, and the file’s own co
 })
 
 describe('restore preflight', () => {
+  it('keeps the legacy backup identity readable after the Midniht rename', async () => {
+    const json = await buildBackup()
+    expect(JSON.parse(json).app).toBe('reverie')
+    const preview = inspectBackup(json)
+    currentUser = NEW_OWNER
+    await restoreBackup(json)
+    expect(db.books.filter((book) => book.owner_id === NEW_OWNER)).toHaveLength(preview.counts.books)
+  })
   it('reports the actual records in a verified backup without touching the account', async () => {
     Object.assign(db.books[0]!, {
       fave: true,

@@ -19,9 +19,9 @@ parts, smooth the whole path, or remove the short wavy hair. The tiny exports re
 the approved full mark; a separately simplified favicon would require another design
 decision. Existing exploration files remain intact in `design/brand-exploration`.
 
-The landing uses the full-color SVG and the existing preview illustration. It does
-not replace the installed app's manifest or identity yet. The public name is Midniht;
-the authenticated app remains Reverie pending a separate migration.
+The landing, account screens, and app navigation share the full-color SVG. The owner
+approved the full Midniht identity migration on September 19, including install icons,
+the manifest, downloads, and shared-link metadata. The approved art remains unchanged.
 
 Reproduce with `python3 apps/web/scripts/package-midniht-brand.py` in an environment
 with Pillow, pypdfium2 and macOS Georgia. The script reuses the canonical masters;

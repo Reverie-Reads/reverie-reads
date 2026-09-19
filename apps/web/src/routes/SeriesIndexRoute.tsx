@@ -348,7 +348,7 @@ export function SeriesIndexScreen() {
             <p className="mt-2 max-w-[60ch] text-[13.5px] leading-relaxed text-muted">
               {scope === 'personal'
                 ? 'Browse your confirmed series, see what you have in hand, and arrange each reading order.'
-                : 'Browse reviewed series identities and reading-order slots shared across Reverie.'}
+                : `Browse reviewed series identities and reading-order slots shared across ${APP_NAME}.`}
             </p>
           </ReadingTips>
         </div>

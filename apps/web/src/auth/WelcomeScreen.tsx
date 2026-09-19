@@ -1,3 +1,4 @@
+import { APP_NAME } from '@reverie/core'
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { supabase } from '../lib/supabase'
@@ -197,7 +198,7 @@ export function WelcomeScreen() {
           You’re in
         </h1>
         <p className="mt-3 text-[14px] leading-relaxed text-muted">
-          Your email is confirmed and your account is ready. Welcome to Reverie.
+          Your email is confirmed and your account is ready. Welcome to {APP_NAME}.
         </p>
         <EnterButton />
       </Card>

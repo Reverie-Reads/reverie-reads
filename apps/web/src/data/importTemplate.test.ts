@@ -24,23 +24,27 @@ import { xlsxToCsv } from './xlsxAdapter'
 // Regenerate the committed asset: `pnpm --filter web gen:template` (sets UPDATE_TEMPLATE, rewrites it).
 
 // Vitest runs with the package root (apps/web) as cwd.
-const ASSET = `${process.cwd()}/public/Reverie_Import_Template.xlsx`
+const ASSET = `${process.cwd()}/public/Midniht_Import_Template.xlsx`
+// Old bookmarks still download a valid, current template without changing its import schema.
+const LEGACY_ASSET = `${process.cwd()}/public/Reverie_Import_Template.xlsx`
 
 const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean =>
   a.length === b.length && a.every((v, i) => v === b[i])
 
-describe('Reverie import template (generated from the core profile)', () => {
+describe('Midniht import template (generated from the core profile)', () => {
   it('committed asset is byte-for-byte the generator output', () => {
     const bytes = importTemplateBytes(XLSX)
     if (process.env.UPDATE_TEMPLATE) {
       writeFileSync(ASSET, bytes)
+      writeFileSync(LEGACY_ASSET, bytes)
       return // regeneration run (gen:template) — write, don't assert
     }
     const committed = readFileSync(ASSET)
     expect(
       bytesEqual(committed, bytes),
-      'public/Reverie_Import_Template.xlsx is stale — run `pnpm --filter web gen:template`',
+      'public/Midniht_Import_Template.xlsx is stale — run `pnpm --filter web gen:template`',
     ).toBe(true)
+    expect(bytesEqual(readFileSync(LEGACY_ASSET), bytes)).toBe(true)
   })
 
   it('first sheet header is exactly the canonical column profile', () => {

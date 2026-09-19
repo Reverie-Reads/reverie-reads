@@ -1,6 +1,6 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { SERIES_STATUS_LABELS } from '@reverie/core'
+import { APP_NAME, SERIES_STATUS_LABELS } from '@reverie/core'
 import { Surface } from '../components/Surface'
 import { useCorpusSeriesCatalog } from '../data/corpusSeriesCatalog'
 
@@ -32,8 +32,8 @@ export function SharedSeriesCatalogBrowser() {
             Shared catalog
           </h2>
           <p className="mt-1 max-w-[64ch] text-[12.5px] leading-relaxed text-muted">
-            Reviewed series identities and reading-order slots shared across Reverie. This does not
-            change your personal series choices.
+            Reviewed series identities and reading-order slots shared across {APP_NAME}. This does
+            not change your personal series choices.
           </p>
         </div>
         <p className="text-[11px] text-muted">

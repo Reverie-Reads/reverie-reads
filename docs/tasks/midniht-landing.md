@@ -17,6 +17,9 @@ landing page from the latest `design/brand-exploration/midniht-preview` design.
 
 ## Boundaries
 
+The landing-only boundaries below record the first release. The owner subsequently approved
+the domain move and full app identity migration; see `midniht-identity.md` for the current scope.
+
 The owner authorized publishing the landing on September 19 after the cover and
 scroll fixes. The authenticated app, manifest,
 installed icons and account pages remain Reverie. The existing canonical domain

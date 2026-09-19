@@ -1,10 +1,14 @@
-/** Public landing identity; the authenticated app keeps its existing name during migration. */
+import { APP_NAME } from '@reverie/core'
+import { MidnihtMark } from '../../components/MidnihtMark'
+
+/** Landing typography with the same identity as the installed app. */
 export function MidnihtWordmark() {
   return (
     <span className="midniht-wordmark">
-      <img src="/midniht/midniht-mark.svg" width="48" height="48" alt="" />
+      <MidnihtMark className="h-12 w-12" />
       <span>
-        midniht<span className="midniht-wordmark-dot">.</span>
+        {APP_NAME.toLowerCase()}
+        <span className="midniht-wordmark-dot">.</span>
       </span>
     </span>
   )

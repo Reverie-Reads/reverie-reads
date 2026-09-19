@@ -12,7 +12,7 @@ import { PowerGlyph } from './PowerGlyph'
 import { PlusGlyph } from './PlusGlyph'
 import { isHouseholdAddContext } from './appShellScope'
 import { NavigationGlyph } from './NavigationGlyph'
-import { ReverieMark } from './ReverieMark'
+import { MidnihtMark } from './MidnihtMark'
 import { navigationLabelForPath, type NavigationItem } from './navigation'
 import { useProfile } from '../data/profile'
 import { ReadingTipsProvider } from './ReadingTips'
@@ -137,7 +137,7 @@ function Sidebar({
     >
       {/* Brand */}
       {/* The CHROME (chunk-4 composed screens): the brand block names the ROOM, not the widget —
-          "Reverie · The standing invitation / The night office / Up too late…" — and wears the
+          "Midniht · The standing invitation / The night office / Up too late…" — and wears the
           skin's chrome material as a rail beneath (`.rv-chrome`, per-skin rules in skin-kit.css). */}
       <Link
         to="/"
@@ -148,7 +148,7 @@ function Sidebar({
           className="rv-nav-monogram grid h-[38px] w-[38px] shrink-0 place-items-center text-[18px] italic"
           style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
         >
-          <ReverieMark className="h-6 w-6" />
+          <MidnihtMark className="h-8 w-8" />
         </span>
         {!collapsed && (
           <span className="min-w-0 flex-1">
@@ -271,7 +271,7 @@ function MobileBar({ pathname }: { pathname: string }) {
           className="rv-mobile-wordmark flex items-center gap-2 text-[24px] italic leading-[1.2] text-ink"
           style={{ fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '0.5px' }}
         >
-          <ReverieMark className="h-6 w-6" />
+          <MidnihtMark className="h-8 w-8" />
           {APP_NAME}
         </span>
         <span

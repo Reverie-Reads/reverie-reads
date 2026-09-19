@@ -1,16 +1,17 @@
-/* Reverie service worker — offline app shell, nothing clever.
+/* Midniht service worker — offline app shell, nothing clever.
  *
  * Strategy per request class:
  *   - navigations        → network-first, falling back to the cached shell ('/'). The shell is
  *     never served cache-first, so a deploy is picked up on the next online visit.
  *   - same-origin /assets/ → cache-first. Vite content-hashes these, so a cached copy is
  *     immutable by construction; new builds reference new URLs.
+ *   - approved brand mark → cache-first, versioned with this shell cache, for offline navigation.
  *   - everything else    → untouched. Supabase/API traffic must NEVER be cached here — stale
  *     library data is worse than no offline support.
  *
  * Bump CACHE when the precache list or strategies change; activate sweeps old versions.
  */
-const CACHE = 'reverie-shell-v2'
+const CACHE = 'midniht-shell-v3'
 const SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -18,6 +19,7 @@ const SHELL = [
   '/icon-192.png',
   '/icon-512.png',
   '/icon-maskable-512.png',
+  '/midniht/midniht-mark.svg',
 ]
 
 self.addEventListener('install', (event) => {
@@ -57,7 +59,10 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
+  if (
+    url.origin === self.location.origin &&
+    (url.pathname.startsWith('/assets/') || url.pathname === '/midniht/midniht-mark.svg')
+  ) {
     event.respondWith(
       caches.match(req).then(
         (hit) =>

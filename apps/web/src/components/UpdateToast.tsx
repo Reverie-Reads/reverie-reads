@@ -1,3 +1,4 @@
+import { APP_NAME } from '@reverie/core'
 import { useEffect, useState } from 'react'
 import { applyUpdate, initUpdateWatch } from '../lib/updates'
 import { Surface } from './Surface'
@@ -28,7 +29,7 @@ export function UpdateToast() {
         raised
         className="flex items-center gap-3 py-2 pl-4 pr-2 text-[13px] text-ink"
       >
-        A new version of Reverie is ready
+        A new version of {APP_NAME} is ready
         <button
           type="button"
           onClick={() => void applyUpdate()}

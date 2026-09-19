@@ -1,4 +1,4 @@
-import { isBookRead, type Book } from '@reverie/core'
+import { APP_NAME, isBookRead, type Book } from '@reverie/core'
 
 export const MILESTONES = ['books', 'reading', 'finished', 'planned'] as const
 export type Milestone = (typeof MILESTONES)[number]
@@ -198,7 +198,7 @@ export const GUIDE_CHAPTERS: readonly GuideChapter[] = [
     summary: 'The same library, in a room that feels like yours.',
     steps: [
       'Preview the nine rooms in Appearance and choose Day, Night or System. A room never restricts the genres you can read.',
-      'Use Arrange Reverie in Settings to choose your dock and Home modules. Your saved priorities stay close even in the gentle path.',
+      `Use Arrange ${APP_NAME} in Settings to choose your dock and Home modules. Your saved priorities stay close even in the gentle path.`,
       'Open Walkthroughs and guidance in Settings to change pace, replay a walkthrough or show every destination.',
     ],
     links: [

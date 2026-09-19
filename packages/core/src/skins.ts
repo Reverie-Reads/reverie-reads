@@ -5,7 +5,7 @@ import { NEUTRAL_LABELS, TRYST_LABELS, type FieldLabels } from './labels'
 // signature (star density + divider motif), and the field labels it features. Skin and light/dark
 // are INDEPENDENT axes. Adding a genre later = one entry here + a token block in tokens.css.
 
-// Note: 'tryst' is the romance skin's id. "Reverie" is the umbrella app name (APP_NAME); the
+// Note: 'tryst' is the romance skin's id. "Midniht" is the umbrella app name (APP_NAME); the
 // romance skin took the other cleared finalist, Tryst. Same gothic-NOLA palettes/fonts/divider.
 export type SkinId =
   | 'tryst'

@@ -170,7 +170,7 @@ async function seed(c: Client, referenceIsbn?: string): Promise<string> {
   return (row as { id: string }).id
 }
 
-/** The catalog answer, stubbed. Search requires a title; the cover may be absent because Reverie's
+/** The catalog answer, stubbed. Search requires a title; the cover may be absent because Midniht's
  *  designed placeholder is a valid presentation for a real catalog result. */
 const RESULTS = [
   {

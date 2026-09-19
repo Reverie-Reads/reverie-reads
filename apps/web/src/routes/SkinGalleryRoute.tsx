@@ -3,6 +3,7 @@ import { SkinAtmosphereCanvas } from '../components/SkinAtmosphereCanvas'
 import { useEffect, useMemo, type CSSProperties } from 'react'
 import { createRoute } from '@tanstack/react-router'
 import {
+  APP_NAME,
   SKINS,
   SKIN_LIST,
   type AdaptiveBundle,
@@ -301,7 +302,7 @@ function SkinGalleryScreen() {
       <PageHeader
         eyebrow="Choose your atmosphere"
         title="Genre rooms"
-        description="Each skin changes the objects, rhythm, typography, and voice of Reverie. Color is only the beginning."
+        description={`Each skin changes the objects, rhythm, typography, and voice of ${APP_NAME}. Color is only the beginning.`}
         descriptionIsTip
       />
 

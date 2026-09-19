@@ -1,6 +1,6 @@
-# Reverie design system
+# Midniht design system
 
-Reverie is one living library expressed through nine reading rooms. Content, navigation, and
+Midniht is one living library expressed through nine reading rooms. Content, navigation, and
 interaction semantics remain stable; typography, material, geometry, atmosphere, and voice change
 with the active skin. A skin is an interface language, not a color swap.
 
@@ -9,11 +9,11 @@ The shipping token values live in `packages/core/src/skins.ts` and
 `docs/reference/SKIN_CHARACTER_CONTRACT.md`. Design-tool exports, when present, are references; the
 shipped app is authoritative.
 
-## The Reverie brand
+## The Midniht brand
 
 The front door is a personal library after the world quiets down: midnight ink, parchment, and
 aged-brass light. Newsreader at 500, with restrained genuine italic emphasis, supplies the display voice; Hanken Grotesk keeps navigation and body copy
-plain and welcoming. The open-book wordmark belongs to Reverie across genres. Tryst retains its
+plain and welcoming. The approved reader-and-moon mark belongs to Midniht across genres. Tryst retains its
 own romance identity inside the product.
 
 Midnight & Lamplight uses `#10121c` ink, `#d7bc88` aged brass, and `#f1eadc` parchment.
@@ -22,8 +22,9 @@ in each direction. Only the decorative layer's opacity and transform animate; te
 room previews stay steady. The browser runs the animation without a JavaScript frame loop.
 Hidden tabs pause it; reduced motion and unsupported browsers retain a still light.
 
-Brand tokens live in `apps/web/src/styles/brand.css`. They scope the landing page and account
-screens independently of the reader's saved skin. Product examples have their own complete
+Account-screen brand tokens live in `apps/web/src/styles/brand.css`; the formal landing uses
+`apps/web/src/styles/midniht.css` and JavaScript Canvas stars (white at night, midnight blue in
+day mode, still under reduced motion). Both are independent of the reader's saved skin. Product examples have their own complete
 skin/mode scopes, including structural components and backgrounds. One room selection updates
 every example without changing the visitor's saved appearance or sample reading choices.
 The landing examples share a temporary guest library with real book selection, bounded CSV intake,
@@ -32,11 +33,13 @@ state in memory and label any planned configuration explicitly. Catalog facts ar
 history is fictional until the visitor supplies it. Do not use production account screenshots or
 private reader seed data. Guest book covers must not emit visitor titles to error telemetry.
 
-Install icons, favicons, and share images use the same open-book mark and Midnight & Lamplight
-palette as the public front door. Raster assets are generated reproducibly by
-`apps/web/scripts/generate-brand-assets.mjs`; the dedicated maskable icon keeps the complete mark
-inside the platform safe area. Social cards use curated public fixtures and typographic cover art,
-never provider cover files or private reader data.
+Install icons, favicons, and share images use the approved full-color reader-and-moon mark from
+`design/midniht/brand-kit`, including its short wavy hair and cleaned joins. The publication script
+`apps/web/scripts/generate-brand-assets.mjs` copies the approved exports byte-for-byte, recording
+hashes instead of redrawing them. The maskable icon keeps the complete mark inside its safe area.
+Do not smooth, simplify, or recolor the approved geometry without a new design decision.
+Preview cards retain ordinary rounded borders and a soft background glow, without the arched
+outline that previously crossed their content.
 
 The brand promise is “A personal library that feels like home.” Explain that through concrete
 actions: keep your books together, remember your reading, and find something you want to read.

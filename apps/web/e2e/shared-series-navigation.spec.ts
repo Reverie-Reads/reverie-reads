@@ -107,7 +107,7 @@ test('a non-administrator opens every shared series slot by ID and returns to th
     await page.getByRole('button', { name: /enter your library/i }).click({ timeout: 20000 })
     await expect(page.getByRole('main')).toBeVisible({ timeout: 20000 })
     await page.goto('/series')
-    await page.getByRole('button', { name: 'Reverie catalog', exact: true }).click()
+    await page.getByRole('button', { name: 'Midniht catalog', exact: true }).click()
     await page.getByRole('searchbox', { name: 'Find a series' }).fill(name)
     const card = page.getByTestId('shared-series-card').filter({ hasText: 'Catalog chapter 1' })
     await expect(card.getByText('+2 more slots')).toBeVisible()
@@ -136,7 +136,7 @@ test('a non-administrator opens every shared series slot by ID and returns to th
     await expect(page.getByRole('heading', { name: 'Catalog chapter 8' })).toBeVisible()
     await page.getByRole('link', { name: 'Back to shared catalog' }).click()
     await expect(
-      page.getByRole('button', { name: 'Reverie catalog', exact: true }),
+      page.getByRole('button', { name: 'Midniht catalog', exact: true }),
     ).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByRole('heading', { name: 'Shared catalog', exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'My series', exact: true }).click()

@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { type SkinId, type ResolvedMode } from '@reverie/core'
+import { APP_NAME, type SkinId, type ResolvedMode } from '@reverie/core'
 import { ChunkBoundary } from '../components/ChunkBoundary'
 import { GuestLibrary } from './landing/guest/GuestLibrary'
 import { GuestLibraryProvider } from './landing/guest/GuestLibraryProvider'
@@ -27,7 +27,7 @@ function Nav({
   return (
     <nav aria-label="Landing" className="midniht-nav">
       <div className="midniht-wrap midniht-nav-row">
-        <Link to="/" aria-label="Midniht home">
+        <Link to="/" aria-label={`${APP_NAME} home`}>
           <MidnihtWordmark />
         </Link>
         <div className="midniht-desktop-links">

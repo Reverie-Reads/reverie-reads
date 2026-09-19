@@ -1,3 +1,4 @@
+import { APP_NAME } from './brand'
 import { normalizeIsbn } from './match'
 
 // Buy-link layer. Attribution is a config-driven strategy so the money routing can flip later
@@ -137,14 +138,14 @@ export function revenueCopy(config: AttributionSource): RevenueCopy {
   if (mode === 'affiliate') {
     return {
       tag: 'Affiliate links',
-      body: `${routing} Your purchases support independent bookstores, and Reverie earns a small commission on some links.`,
-      footer: 'Buy links support indie bookstores · Reverie earns a small commission.',
+      body: `${routing} Your purchases support independent bookstores, and ${APP_NAME} earns a small commission on some links.`,
+      footer: `Buy links support indie bookstores · ${APP_NAME} earns a small commission.`,
     }
   }
   return {
     tag: 'We earn nothing',
-    body: `${routing} Your purchases support independent bookstores, and Reverie takes no cut.`,
-    footer: 'Buy links support indie bookstores · Reverie earns nothing.',
+    body: `${routing} Your purchases support independent bookstores, and ${APP_NAME} takes no cut.`,
+    footer: `Buy links support indie bookstores · ${APP_NAME} earns nothing.`,
   }
 }
 
@@ -162,9 +163,9 @@ export function buyDisclosure(config: BuyConfig): string {
   // plain links, so claiming a commission beneath them would be false in the reader's favour but
   // false all the same.
   if (effectiveMode(config) === 'affiliate') {
-    return 'These are affiliate links — Reverie may earn a small commission, and indie bookstores still get their share.'
+    return `These are affiliate links — ${APP_NAME} may earn a small commission, and indie bookstores still get their share.`
   }
   return config.store
-    ? `Shopping ${config.store.name} directly supports them; the Bookshop.org and Libro.fm links support indie bookstores generally. Reverie earns nothing.`
-    : 'Bookshop.org and Libro.fm fund independent bookstores. Reverie earns nothing on these links.'
+    ? `Shopping ${config.store.name} directly supports them; the Bookshop.org and Libro.fm links support indie bookstores generally. ${APP_NAME} earns nothing.`
+    : `Bookshop.org and Libro.fm fund independent bookstores. ${APP_NAME} earns nothing on these links.`
 }
