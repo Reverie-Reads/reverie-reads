@@ -4,6 +4,7 @@ export function MidnihtMark({ className = 'h-8 w-8' }: { className?: string }) {
     <img
       aria-hidden="true"
       alt=""
+      draggable={false}
       src="/midniht/midniht-mark.svg"
       width="48"
       height="48"

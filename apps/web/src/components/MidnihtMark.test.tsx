@@ -16,6 +16,8 @@ describe('Midniht identity', () => {
     expect(image).toHaveAttribute('src', '/midniht/midniht-mark.svg')
     expect(image).toHaveAttribute('alt', '')
     expect(image).toHaveAttribute('aria-hidden', 'true')
+    expect(image).toHaveAttribute('draggable', 'false')
+    expect(image.draggable).toBe(false)
     expect(container.querySelector('svg')).toBeNull()
   })
 
