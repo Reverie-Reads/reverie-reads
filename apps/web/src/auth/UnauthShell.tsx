@@ -14,7 +14,7 @@ export function UnauthShell() {
   const [localOnly] = useState(takeLocalSignOutNotice)
   return (
     <div className="gold-brand">
-      <BrandAtmosphere />
+      {pathname.startsWith('/auth') && <BrandAtmosphere />}
       {/* Held to the copy standard: it must not imply the reader is signed out anywhere but here.
           They were offline, so the server was never told; other devices are untouched.
 

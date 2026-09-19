@@ -182,7 +182,7 @@ export function GuestAddBooks() {
         <div className="space-y-4">
           <p className="text-sm leading-relaxed text-muted">
             Try a Goodreads, StoryGraph, or Reverie export. Up to 50 books and 1 MB. The file is
-            read in this tab; its contents are not sent to Reverie. Your demo holds up to 60 books.
+            read in this tab; its contents are not sent to a server. Your demo holds up to 60 books.
           </p>
           <a
             className={`${quiet} inline-flex items-center`}

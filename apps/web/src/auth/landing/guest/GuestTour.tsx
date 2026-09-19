@@ -61,7 +61,7 @@ export function GuestTour({ onShow }: { onShow: (step: TourStep) => void }) {
     return (
       <aside
         id="guest-tour"
-        aria-label="A short tour of Reverie"
+        aria-label="A short tour of your library"
         className="skin-card mb-5 flex flex-col gap-3 border border-line bg-[color:var(--card-solid)] p-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
@@ -86,7 +86,7 @@ export function GuestTour({ onShow }: { onShow: (step: TourStep) => void }) {
   return (
     <aside
       id="guest-tour"
-      aria-label="A short tour of Reverie"
+      aria-label="A short tour of your library"
       className="skin-card mb-5 border border-line bg-[color:var(--card-solid)] p-4"
     >
       <div aria-live="polite" aria-atomic="true">

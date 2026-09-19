@@ -1,0 +1,3 @@
+# Preserve the accepted Illustrator/PDF masters byte-for-byte.
+*.ai binary
+*.pdf binary

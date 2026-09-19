@@ -1,15 +1,17 @@
 import { expect, test } from './support/fixtures'
 
-// The signed-out front door is now the Reverie brand landing + a password/social auth screen
+// The signed-out front door is the Midniht brand landing + a password/social auth screen
 // (the magic-link screen is gone). The a11y sweep's seeded signInWithPassword exercises the same
 // password path these screens use.
 
 test('signed-out landing shows the personal-library front door', async ({ page }) => {
   await page.goto('/')
   await expect(
-    page.getByRole('heading', { name: 'Find your next read in your own library.' }),
+    page.getByRole('heading', { name: 'The quiet place your stories return to.' }),
   ).toBeVisible()
-  await expect(page.locator('#top').getByRole('link', { name: 'Start your library' })).toBeVisible()
+  await expect(
+    page.locator('#midniht-content').getByRole('link', { name: 'Start your library' }),
+  ).toBeVisible()
 })
 
 // Reverie's Newsreader display face belongs to the brand; the sample rooms keep their own fonts.
