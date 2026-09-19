@@ -38,7 +38,7 @@ describe('offline Midniht mark', () => {
     fetch.mockRejectedValue(new Error('offline'))
     const response = request('/midniht/midniht-mark.svg')
     expect(response).toHaveBeenCalledOnce()
-    await expect(response.mock.calls[0][0]).resolves.toBe(cached)
+    await expect(response.mock.calls[0]![0]).resolves.toBe(cached)
     expect(fetch).not.toHaveBeenCalled()
   })
 
@@ -48,7 +48,7 @@ describe('offline Midniht mark', () => {
     const fresh = { ok: true, clone: () => ({ body: 'approved mark' }) }
     fetch.mockResolvedValue(fresh)
     const response = request('/midniht/midniht-mark.svg')
-    await expect(response.mock.calls[0][0]).resolves.toBe(fresh)
+    await expect(response.mock.calls[0]![0]).resolves.toBe(fresh)
     expect(fetch).toHaveBeenCalledOnce()
   })
 
