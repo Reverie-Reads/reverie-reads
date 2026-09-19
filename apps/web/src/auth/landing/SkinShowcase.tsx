@@ -44,8 +44,8 @@ export function SkinShowcase({
             Find a room that feels like you.
           </h2>
           <p className="max-w-[58ch] text-base leading-relaxed text-muted">
-            The same books, a different place to settle in. Each room is a private reverie: choose
-            one to change the live preview below and every example above. Your room never limits the
+            The same books, a different place to settle in. Each room is a quiet retreat: choose one
+            to change the live preview below and every example above. Your room never limits the
             genres you can read.
           </p>
         </div>

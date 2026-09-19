@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
+  APP_NAME,
   contributorsFromAuthors,
   formatAuthors,
   makeSeriesClaim,
@@ -668,7 +669,7 @@ function AddForm({
               <GoogleBooksResultLink result={hit} />
             </div>
             <p className="mt-2 text-[12px] text-muted">
-              Reverie will keep the book details and look for a cover that can stay with your
+              {APP_NAME} will keep the book details and look for a cover that can stay with your
               library.
             </p>
           </div>
@@ -1336,7 +1337,7 @@ function HouseholdAddForm({
             <GoogleBooksResultLink result={hit} />
           </div>
           <p className="mt-2 text-[12px] text-muted">
-            Reverie will keep the book details and look for a cover that can stay with the shared
+            {APP_NAME} will keep the book details and look for a cover that can stay with the shared
             library.
           </p>
         </div>

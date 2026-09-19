@@ -31,7 +31,7 @@ describe('bookstore directory request boundary', () => {
     )
   })
 
-  it('identifies Reverie and accepts only a shaped JSON response', async () => {
+  it('identifies Midniht and accepts only a shaped JSON response', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ elements: [{ type: 'node', id: 1 }] }), {
         status: 200,
@@ -49,8 +49,8 @@ describe('bookstore directory request boundary', () => {
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
-          Referer: 'https://reveriereads.app/indie',
-          'User-Agent': expect.stringContaining('reveriereads.app'),
+          Referer: 'https://midniht.app/indie',
+          'User-Agent': expect.stringContaining('midniht.app'),
         }),
       }),
     )

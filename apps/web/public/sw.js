@@ -1,4 +1,4 @@
-/* Reverie service worker — offline app shell, nothing clever.
+/* Midniht service worker — offline app shell, nothing clever.
  *
  * Strategy per request class:
  *   - navigations        → network-first, falling back to the cached shell ('/'). The shell is
@@ -10,7 +10,7 @@
  *
  * Bump CACHE when the precache list or strategies change; activate sweeps old versions.
  */
-const CACHE = 'reverie-shell-v2'
+const CACHE = 'midniht-shell-v3'
 const SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -18,6 +18,7 @@ const SHELL = [
   '/icon-192.png',
   '/icon-512.png',
   '/icon-maskable-512.png',
+  '/midniht/midniht-mark.svg',
 ]
 
 self.addEventListener('install', (event) => {

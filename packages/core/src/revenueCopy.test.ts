@@ -12,7 +12,7 @@ import {
 //
 // `VITE_BUY_ATTRIBUTION_MODE=affiliate` is a one-line environment change with no code review
 // attached — it can be set in the Vercel dashboard by someone who never opens this repo. If the
-// landing's "Reverie takes no cut" were a hardcoded string, that flip would publish a lie about
+// landing's "Midniht takes no cut" were a hardcoded string, that flip would publish a lie about
 // money on the public page and nothing would fail. So the copy is a function of the mode, and
 // these tests are the thing that fails if the two ever drift apart.
 

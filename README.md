@@ -1,6 +1,6 @@
-# Reverie
+# Midniht
 
-Reverie is a personal book library. It tracks the books you own and read behind a
+Midniht is a personal book library. It tracks the books you own and read behind a
 skinnable, genre-neutral interface — nine distinct "skins" (romance, fantasy, sci-fi,
 horror, mystery, literary, cozy, nonfiction, YA) that reskin the whole app to the shelf
 you're in. Its guiding idea: **your own taste should drive discovery**, so the app ranks

@@ -6,7 +6,7 @@ not a to-do list. Keep this file updated as the project evolves.
 
 ## What this is
 
-Reverie — a personal library app behind a skinnable, **genre-neutral** interface: nine
+Midniht — a personal library app behind a skinnable, **genre-neutral** interface: nine
 distinct skins (romance, fantasy, sci-fi, horror, mystery, literary, cozy, nonfiction, YA)
 that reskin the whole app to the shelf you're in. It handles intensity levels, tropes, moods,
 series gaps, rereads, per-format ownership, cover sourcing, offline caching, and a book-club
@@ -1163,14 +1163,15 @@ several defects have been "fixed" in code paths no reader can reach.
 
 ## Decisions still needing the owner (use these defaults until told otherwise)
 
-1. **Public landing — Midniht (owner, September 19).** The accepted vector and export kit
+1. **Product identity — Midniht (owner, September 19).** The accepted vector and export kit
    live in `design/midniht/brand-kit`; the public landing uses `styles/midniht.css` and
    JavaScript Canvas stars. Its light/dark setting is independent of sample rooms and saved
-   reader preferences. Do not change auth, installed-app identity, domains, or database names
-   as a side effect of this landing work. See `docs/tasks/midniht-landing.md`.
-   **Authenticated app name — Reverie pending the separate migration.** No longer a
-   placeholder. Keep reading it from `APP_NAME` in `@reverie/core` (never hardcode);
-   `docs/reference/TRADEMARK.md` stays as history.
+   reader preferences. The owner has now approved the rename across the authenticated app,
+   installation assets, downloads, and public metadata, not only the landing. Read the name from
+   `APP_NAME` in `@reverie/core` (never hardcode). Preserve legacy storage keys, backup format
+   identifiers, package namespaces, and working contact addresses; a visual rename must not
+   reset reader data or invent a mailbox. `midniht.app` is the public canonical domain.
+   See `docs/tasks/midniht-identity.md`; `docs/reference/TRADEMARK.md` stays as history.
 2. **Household model — DECIDED (owner, 2026-08-23): linked personal libraries with a
    filterable household view.** Accounts keep separate libraries and all writes remain personal.
    V1's cross-account path is read-only and explicitly omits ratings, read state, notes,

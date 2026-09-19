@@ -221,7 +221,7 @@ function SettingsScreen() {
     a.href = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`
     // Local, not UTC — see localDate.ts. Same class as the log-a-read default: cosmetic here
     // (a filename, not stored data), but wrong for the same reason near midnight west of UTC.
-    a.download = `reverie-backup-${todayLocalDate()}.json`
+    a.download = `${APP_NAME.toLowerCase()}-backup-${todayLocalDate()}.json`
     a.click()
   }
 
@@ -241,7 +241,7 @@ function SettingsScreen() {
       const csv = await buildLibraryCsv()
       const a = document.createElement('a')
       a.href = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`
-      a.download = `reverie-library-${todayLocalDate()}.csv`
+      a.download = `${APP_NAME.toLowerCase()}-library-${todayLocalDate()}.csv`
       a.click()
     } catch (e) {
       setStatus(`Couldn’t export the CSV: ${(e as Error).message}`)
@@ -714,7 +714,7 @@ function SettingsScreen() {
           </label>
         </Section>
 
-        <Section title="Arrange Reverie">
+        <Section title={`Arrange ${APP_NAME}`}>
           <ArrangementEditor />
         </Section>
 
@@ -1064,7 +1064,7 @@ function SettingsScreen() {
             tags, series, contributors, read status). The shape is detected automatically; matches
             fold into existing books, so re-importing is safe. Starting from scratch?{' '}
             <a
-              href="/Reverie_Import_Template.xlsx"
+              href="/Midniht_Import_Template.xlsx"
               download
               className="font-semibold underline decoration-dotted underline-offset-2"
               style={{ color: 'var(--accent-ink)' }}

@@ -14,7 +14,7 @@ test('signed-out landing shows the personal-library front door', async ({ page }
   ).toBeVisible()
 })
 
-// Reverie's Newsreader display face belongs to the brand; the sample rooms keep their own fonts.
+// Midniht's Newsreader display face belongs to the brand; the sample rooms keep their own fonts.
 // The mechanism (served vs. dead stylesheet, both directions) is covered once in e2e/fonts.spec.ts;
 // the all-nine-skins matrix lives in src/skin/fontConfig.test.ts.
 test('the landing asks for Newsreader and applies it to the display face', async ({ page }) => {

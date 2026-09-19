@@ -1,3 +1,4 @@
+import { APP_NAME } from '@reverie/core'
 import { Link } from '@tanstack/react-router'
 import { GUIDE_CHAPTERS } from '../guidance/model'
 import { BrandAtmosphere } from './BrandAtmosphere'
@@ -14,7 +15,7 @@ export function PublicGuide() {
         </a>
         <header className="border-b border-line">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5">
-            <Link to="/" aria-label="Reverie home">
+            <Link to="/" aria-label={`${APP_NAME} home`}>
               <Wordmark />
             </Link>
             <Link

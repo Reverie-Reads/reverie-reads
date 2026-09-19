@@ -99,8 +99,8 @@ export async function fetchBookstoreDirectory(
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/x-www-form-urlencoded',
-          Referer: 'https://reveriereads.app/indie',
-          'User-Agent': 'Reverie/1.0 (indie bookstore finder; https://reveriereads.app)',
+          Referer: 'https://midniht.app/indie',
+          'User-Agent': 'Midniht/1.0 (indie bookstore finder; https://midniht.app)',
         },
         body,
       })

@@ -1,3 +1,4 @@
+import { APP_NAME } from '@reverie/core'
 import type { ImportExportResult } from '../data/importLibrary'
 
 // Pure copy builders for the post-import summary (docs/archive/task-import-quality.md §4) — kept out of the
@@ -14,7 +15,8 @@ export function summaryHeadline(r: ImportExportResult): string {
     parts.length > 2
       ? `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`
       : parts.join(', and ')
-  return `Detected your ${r.profile} export — ${joined}.`
+  const source = r.profile === 'reverie' ? APP_NAME : r.profile
+  return `Detected your ${source} export — ${joined}.`
 }
 
 /** Plain-language notice lines, in priority order — the honest bulk-empty + placement facts. */
@@ -45,7 +47,7 @@ export function summaryNotices(r: ImportExportResult): string[] {
   if (r.ignoredGlobalOrder > 0)
     lines.push(
       `${r.ignoredGlobalOrder} ${plural(r.ignoredGlobalOrder, 'row')} carried a global reading order. ` +
-        `Reverie doesn't use that column — series order comes from each book's position in its series.`,
+        `${APP_NAME} doesn't use that column — series order comes from each book's position in its series.`,
     )
   if (e.tropeLikeShelves.length > 0)
     lines.push(

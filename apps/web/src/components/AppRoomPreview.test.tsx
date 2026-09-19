@@ -8,7 +8,7 @@ describe('AppRoomPreview', () => {
 
     expect(
       screen.getByRole('img', {
-        name: 'A miniature Reverie library with its skin-specific navigation and cover shelf',
+        name: 'A miniature Midniht library with its skin-specific navigation and cover shelf',
       }),
     ).toBeInTheDocument()
     expect(container.querySelector('.rv-nav-surface')).not.toBeNull()

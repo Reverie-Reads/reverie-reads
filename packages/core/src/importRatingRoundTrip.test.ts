@@ -8,7 +8,7 @@ import { makeBook } from './book.fixture'
  * The half-star round trip — the assertion that matters after #287: rate 4.5 in the app, export,
  * re-import, and it must come back 4.5, not 5. Three Math.round calls on the import path predated
  * half stars and inflated every half up; these tests drive the two REAL entry points the app calls
- * (parseImport for the Reverie-template shape, importCsv for Goodreads/StoryGraph), not the parser
+ * (parseImport for the Midniht-template shape, importCsv for Goodreads/StoryGraph), not the parser
  * alone — the parser was never the thing anyone doubted.
  *
  * The fixture grid: 0 (unrated), 0.5 (the smallest half), 3.75 (StoryGraph rates in QUARTER stars
@@ -20,7 +20,7 @@ import { makeBook } from './book.fixture'
 const TEMPLATE_HEAD = 'Title,Author,ISBN,Status,Rating,Date Read,Tags,Owned'
 const row = (title: string, rating: string) => `${title},Ann Author,,Read,${rating},2026-01-01,,Yes`
 
-describe('Reverie template path (parseImport → rowToImported)', () => {
+describe('Midniht template path (parseImport → rowToImported)', () => {
   it('half and quarter stars survive: 0.5 stays, 3.75 snaps to 4, 4.5 STAYS 4.5', () => {
     const csv = [
       TEMPLATE_HEAD,

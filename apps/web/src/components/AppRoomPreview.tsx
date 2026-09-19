@@ -1,4 +1,5 @@
-import { ReverieMark } from './ReverieMark'
+import { APP_NAME } from '@reverie/core'
+import { MidnihtMark } from './MidnihtMark'
 import { NavigationGlyph } from './NavigationGlyph'
 import { NAVIGATION_GROUPS } from './navigation'
 
@@ -23,13 +24,15 @@ export function AppRoomPreview({ className = '' }: { className?: string }) {
   return (
     <div
       role="img"
-      aria-label="A miniature Reverie library with its skin-specific navigation and cover shelf"
+      aria-label={`A miniature ${APP_NAME} library with its skin-specific navigation and cover shelf`}
       className={`overflow-hidden border border-line bg-bg0 ${className}`}
       style={{ borderRadius: 'var(--radius-card)' }}
     >
       <div className="flex h-8 items-center justify-between border-b border-line bg-card px-2.5">
         <span className="skin-label text-[10px] leading-none text-muted">Library room</span>
-        <span className="text-[10px] leading-none text-muted">reverie · library</span>
+        <span className="text-[10px] leading-none text-muted">
+          {APP_NAME.toLowerCase()} · library
+        </span>
       </div>
 
       <div aria-hidden className="grid min-h-[128px] grid-cols-[62px_1fr]">
@@ -38,7 +41,7 @@ export function AppRoomPreview({ className = '' }: { className?: string }) {
             className="rv-nav-monogram grid h-6 w-6 place-items-center text-[10px] italic"
             style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
           >
-            <ReverieMark className="h-4 w-4" />
+            <MidnihtMark className="h-4 w-4" />
           </span>
           <div className="rv-nav-group mt-2 flex flex-col gap-1">
             {firstGroup.items.slice(0, 4).map((item) => (

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { createRoute, Link } from '@tanstack/react-router'
 import {
+  APP_NAME,
   authorOf,
   choosePlaceholderCoverPatch,
   coverCandidates,
@@ -231,7 +232,7 @@ function CoverStudioDetail({
                   {!book.cover
                     ? 'Your room’s placeholder'
                     : stored
-                      ? 'Saved in Reverie'
+                      ? `Saved in ${APP_NAME}`
                       : 'Linked image'}
                 </dd>
               </div>

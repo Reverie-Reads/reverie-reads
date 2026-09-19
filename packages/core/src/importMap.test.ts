@@ -170,7 +170,7 @@ describe('possession on import', () => {
   const word = (r: { incoming: Partial<Book> }) =>
     possessionState({ ...possessionPatch('unset'), ...r.incoming })
 
-  it('Reverie Owned column: yes/blank → owned, borrow → borrowed, no → wishlist', () => {
+  it('Midniht Owned column: yes/blank → owned, borrow → borrowed, no → wishlist', () => {
     const csv = [
       'Title,Author,ISBN,Status,Rating,Date Read,Tags,Owned',
       'Kept,Ana Huang,,Read,5,2025-01-02,,Yes',

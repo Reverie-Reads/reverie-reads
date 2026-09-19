@@ -1,4 +1,5 @@
 import {
+  APP_NAME,
   beginReadingPatch,
   isStrong,
   matchBook,
@@ -234,7 +235,7 @@ export function guestImport(text: string): { rows: Incoming[]; warning?: string 
   const grid = parseCSV(text)
   if (grid.length < 2)
     throw new Error(
-      'That file has no book rows. Try the sample CSV or a Goodreads, StoryGraph, or Reverie export.',
+      `That file has no book rows. Try the sample CSV or a Goodreads, StoryGraph, or ${APP_NAME} export.`,
     )
   if (grid.length > 51)
     throw new Error('Choose a CSV with up to 50 book rows for this guest library.')

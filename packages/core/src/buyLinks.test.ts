@@ -55,7 +55,7 @@ describe('buildBuyLinks', () => {
 
 describe('buyDisclosure', () => {
   it('states the app earns nothing in store mode and names the store', () => {
-    expect(buyDisclosure(base)).toContain('Reverie earns nothing')
+    expect(buyDisclosure(base)).toContain('Midniht earns nothing')
     expect(buyDisclosure({ ...base, store: { name: 'Powell’s' } })).toContain('Powell’s')
   })
 

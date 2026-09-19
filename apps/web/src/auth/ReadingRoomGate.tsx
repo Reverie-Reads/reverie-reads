@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { DEFAULT_SKIN } from '@reverie/core'
+import { APP_NAME, DEFAULT_SKIN } from '@reverie/core'
 import { BrandAtmosphere } from './BrandAtmosphere'
 import { Wordmark } from './Wordmark'
 import { Button } from '../components/Button'
@@ -41,7 +41,7 @@ export function ReadingRoomGate({ children }: { children: ReactNode }) {
             </h1>
             <p className="mt-5 max-w-sm text-[15px] leading-7 text-muted">
               We couldn’t load your saved appearance. Your library is unchanged. Try again, or open
-              with Reverie’s default room for now.
+              with {APP_NAME}’s default room for now.
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <Button onClick={appearance.retry}>Try again</Button>

@@ -232,7 +232,8 @@ function OnboardingFlow() {
           Come in at your own pace.
         </h1>
         <p className="mb-6 mt-4 text-[16px] leading-relaxed text-muted">
-          A personal library should feel comfortable from the first book. Choose how much of Reverie
+          A personal library should feel comfortable from the first book. Choose how much of{' '}
+          {APP_NAME}
           you would like to meet today. You can change this any time.
         </p>
         <GuidanceChoice
@@ -274,7 +275,7 @@ function OnboardingFlow() {
             Adding your guest library…
           </h2>
           <p className="mt-2 text-[14px] leading-relaxed text-muted">
-            Reverie is checking every title against the books already in your account.
+            {APP_NAME} is checking every title against the books already in your account.
           </p>
           <div
             className="skin-meter mx-auto mt-6 h-1.5 w-[min(320px,80%)] overflow-hidden"
@@ -342,7 +343,7 @@ function OnboardingFlow() {
               Unfinished notes need your choice
             </h3>
             <p className="mt-2 text-[14px] leading-relaxed text-muted">
-              Reverie stores private notes with finished reading records. These drafts came from
+              {APP_NAME} stores private notes with finished reading records. These drafts came from
               books still in progress, so they were not converted into finished reads. Copy any text
               you want to keep before continuing.
             </p>
@@ -438,14 +439,14 @@ function OnboardingFlow() {
           <p className="mt-4 text-[14px] leading-relaxed text-ink">
             {guestSummary.draftNotes} unfinished{' '}
             {guestSummary.draftNotes === 1 ? 'note will' : 'notes will'} stay in this browser for
-            review. Reverie will never disguise a draft as a finished reading record.
+            review. {APP_NAME} will never disguise a draft as a finished reading record.
           </p>
         )}
         {guestErr && (
           <div role="alert" className="mt-4 text-[14px] leading-relaxed text-ink">
             <p>
-              The transfer stopped. Some books may already be saved; Reverie will check them again
-              safely when you retry.
+              The transfer stopped. Some books may already be saved; {APP_NAME} will check them
+              again safely when you retry.
             </p>
             <p className="mt-1 text-muted">{guestErr}</p>
           </div>
@@ -655,7 +656,7 @@ function OnboardingFlow() {
         <p className="mt-4 text-[14px] leading-relaxed text-muted">
           Need a starting file?{' '}
           <a
-            href="/Reverie_Import_Template.xlsx"
+            href="/Midniht_Import_Template.xlsx"
             download
             className="font-semibold underline decoration-dotted underline-offset-2 text-[color:var(--accent-ink)]"
           >

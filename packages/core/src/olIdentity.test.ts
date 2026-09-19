@@ -104,7 +104,7 @@ describe('the OL identity itself', () => {
     const m = /export const OL_UA = '([^']+)'/.exec(src)
     expect(m, 'OL_UA must be a single-quoted string constant').toBeTruthy()
     const ua = m![1]!
-    expect(ua).toMatch(/^Reverie \(reveriereads\.app; [^@\s]+@[^@\s]+\.[a-z]+\)$/)
+    expect(ua).toMatch(/^Midniht \(midniht\.app; [^@\s]+@[^@\s]+\.[a-z]+\)$/)
     expect(ua).toContain('contact@reveriereads.app')
   })
 

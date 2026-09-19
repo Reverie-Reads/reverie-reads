@@ -75,7 +75,7 @@ test('the app loads its self-hosted brand stylesheet, and the real face arrives'
       () =>
         page.evaluate(
           ({ family, fontStyle, fontWeight }) =>
-            document.fonts.check(`${fontStyle} ${fontWeight} 16px '${family}'`, 'Reverie'),
+            document.fonts.check(`${fontStyle} ${fontWeight} 16px '${family}'`, 'Midniht'),
           { family: BRAND_DISPLAY, ...renderedFace },
         ),
       {

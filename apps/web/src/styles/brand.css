@@ -111,12 +111,12 @@ html.gold-brand[data-appearance-pending] body {
 
 /* Landing examples open like soft-edged glimpses into the reader's chosen room. The atmospheric
    halo belongs to the page around the preview; the product surface within stays crisp and usable. */
-.rv-reverie-window {
+.rv-reading-window {
   position: relative;
   isolation: isolate;
   padding: clamp(8px, 1.4vw, 18px);
 }
-.rv-reverie-window::before {
+.rv-reading-window::before {
   content: '';
   position: absolute;
   z-index: -2;
@@ -128,7 +128,7 @@ html.gold-brand[data-appearance-pending] body {
   filter: blur(28px);
   opacity: 0.17;
 }
-.rv-reverie-window::after {
+.rv-reading-window::after {
   content: '';
   position: absolute;
   z-index: -1;
@@ -137,17 +137,7 @@ html.gold-brand[data-appearance-pending] body {
   background: radial-gradient(ellipse 82% 18% at 50% 0%, var(--gold), transparent 78%);
   opacity: 0.12;
 }
-.rv-reverie-window-mist {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  border-radius: 46% 54% 30px 32px / 8% 10% 30px 32px;
-  pointer-events: none;
-  box-shadow:
-    inset 0 1px color-mix(in srgb, var(--gold) 28%, transparent),
-    inset 0 0 34px color-mix(in srgb, var(--vignette) 18%, transparent);
-}
-.rv-reverie-window-surface {
+.rv-reading-window-surface {
   border: 1px solid color-mix(in srgb, var(--gold) 24%, transparent);
   border-radius: clamp(20px, 3vw, 34px);
   box-shadow:
@@ -168,21 +158,20 @@ html.gold-brand[data-appearance-pending] body {
 }
 
 @media (max-width: 1024px) {
-  .rv-reverie-window::before {
+  .rv-reading-window::before {
     inset-inline: 0;
     clip-path: inset(-48px 0);
   }
 }
 
 @media (max-width: 480px) {
-  .rv-reverie-window {
+  .rv-reading-window {
     padding-inline: 2px;
   }
-  .rv-reverie-window::before {
+  .rv-reading-window::before {
     inset-inline: -2%;
   }
-  .rv-reverie-window-surface,
-  .rv-reverie-window-mist {
+  .rv-reading-window-surface {
     border-radius: 20px;
   }
 }

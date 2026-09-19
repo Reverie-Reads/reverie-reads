@@ -1,16 +1,29 @@
 {
-  "generatedBy": "apps/web/scripts/generate-brand-assets.mjs",
-  "palette": {
-    "midnight": "#10121c",
-    "brass": "#d7bc88",
-    "parchment": "#f1eadc"
-  },
-  "sourceMark": "favicon.svg",
+  "source": "design/midniht/brand-kit",
   "files": [
+    "favicon.svg",
+    "favicon.ico",
     "icon-192.png",
     "icon-512.png",
     "icon-maskable-512.png",
     "apple-touch-icon.png",
+    "midniht/midniht-mark.svg",
+    "midniht/midniht-mark-192.png",
+    "midniht/midniht-mark-512.png",
+    "midniht/midniht-share-1200x630.png",
     "reverie-next-read-share.png"
-  ]
+  ],
+  "sha256": {
+    "favicon.svg": "9fb8b111a2fd9758fc6f00166832542878f4268e38746bfe5d249fe3ac3a0593",
+    "favicon.ico": "7de9ac1ac77ba38445fcd8f6e4935001c5bda260a9e5ca54392f36259c10b213",
+    "icon-192.png": "00928f873f8c8c978186c20306a5cd9ffd36584426a5fe4ebc42243e76f14971",
+    "icon-512.png": "2d710b1b8e722e09e1223b316e2b427c1d905e14fa4ca8f2bad9a4f0b509388e",
+    "icon-maskable-512.png": "d24aa12dcbdf6d68e0e4bad8adfb99ea136ca82444a012932155fc1e8a957166",
+    "apple-touch-icon.png": "d0a6191d1c8425d614704b0457a44e81f87daf89d34b6b5a94c1e972d2a2129f",
+    "midniht/midniht-mark.svg": "9fb8b111a2fd9758fc6f00166832542878f4268e38746bfe5d249fe3ac3a0593",
+    "midniht/midniht-mark-192.png": "00928f873f8c8c978186c20306a5cd9ffd36584426a5fe4ebc42243e76f14971",
+    "midniht/midniht-mark-512.png": "2d710b1b8e722e09e1223b316e2b427c1d905e14fa4ca8f2bad9a4f0b509388e",
+    "midniht/midniht-share-1200x630.png": "feec71dad0f4557231e1a8a4af4d9cb43d9498f57f2794caf71bf3082da3673a",
+    "reverie-next-read-share.png": "feec71dad0f4557231e1a8a4af4d9cb43d9498f57f2794caf71bf3082da3673a"
+  }
 }

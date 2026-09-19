@@ -25,8 +25,8 @@ const cors = {
 // Nominatim pointed at a stranger (the same defect class as the contact-less OL header fixed in
 // #134: an identification claim that identifies nothing we answer for). GEO_CONTACT still
 // overrides for a richer value (an email).
-const CONTACT = Deno.env.get('GEO_CONTACT') ?? 'https://reveriereads.app'
-const UA = `Reverie/1.0 (indie bookstore finder; ${CONTACT})`
+const CONTACT = Deno.env.get('GEO_CONTACT') ?? 'https://midniht.app'
+const UA = `Midniht/1.0 (indie bookstore finder; ${CONTACT})`
 // The former single upstream currently returns 406 to the production Edge region. Public
 // Overpass instances are explicitly best-effort, so use the current global alternative first and
 // keep a second sequential fallback. An owner can replace the list without a client release.
@@ -92,7 +92,7 @@ async function fetchUpstream(url: string, init?: RequestInit): Promise<unknown> 
         signal: AbortSignal.timeout(10_000),
         headers: {
           'User-Agent': UA,
-          Referer: 'https://reveriereads.app/indie',
+          Referer: 'https://midniht.app/indie',
           Accept: 'application/json',
           ...(init?.headers ?? {}),
         },

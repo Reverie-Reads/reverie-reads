@@ -1,11 +1,11 @@
 import { APP_NAME } from '@reverie/core'
-import { ReverieMark } from '../components/ReverieMark'
+import { MidnihtMark } from '../components/MidnihtMark'
 
-/** A quiet open-book mark belongs to every kind of reader; individual rooms keep their motifs. */
+/** The approved reader-and-moon mark; individual rooms keep their own motifs. */
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={`flex items-center gap-2.5 ${className ?? ''}`}>
-      <ReverieMark className="h-7 w-7 text-[color:var(--gold)]" />
+      <MidnihtMark className="h-9 w-9" />
       <span
         className="text-[24px] leading-[1.2] text-ink"
         style={{ fontFamily: 'var(--font-display)', fontWeight: 500, letterSpacing: '-.3px' }}

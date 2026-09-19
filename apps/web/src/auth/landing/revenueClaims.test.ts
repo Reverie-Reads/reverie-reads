@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 // Closes the loop on the revenue-copy guard.
 //
 // packages/core/src/revenueCopy.test.ts proves revenueCopy() tells the truth in both attribution
-// modes. That is worth nothing if the landing page goes back to hardcoding "Reverie takes no cut"
+// modes. That is worth nothing if the landing page goes back to hardcoding "Midniht takes no cut"
 // next to it — the copy would render regardless of mode and the core test would still pass. So this
 // asserts the landing sources its money claims from revenueCopy() and states none of its own.
 

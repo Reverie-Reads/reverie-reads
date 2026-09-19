@@ -1,5 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { splitName, type Incoming, type PossessionState, possessionPatch } from '@reverie/core'
+import {
+  APP_NAME,
+  splitName,
+  type Incoming,
+  type PossessionState,
+  possessionPatch,
+} from '@reverie/core'
 import { CoverImage } from '../../../components/CoverImage'
 import { GUEST_CATALOG, catalogIncoming } from './catalog'
 import { useGuestLibrary } from './context'
@@ -181,7 +187,7 @@ export function GuestAddBooks() {
       {tab === 'csv' && (
         <div className="space-y-4">
           <p className="text-sm leading-relaxed text-muted">
-            Try a Goodreads, StoryGraph, or Reverie export. Up to 50 books and 1 MB. The file is
+            Try a Goodreads, StoryGraph, or {APP_NAME} export. Up to 50 books and 1 MB. The file is
             read in this tab; its contents are not sent to a server. Your demo holds up to 60 books.
           </p>
           <a

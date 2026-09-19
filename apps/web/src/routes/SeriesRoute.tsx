@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
 import {
+  APP_NAME,
   entryState,
   isPossessed,
   isStandardSeriesVolume,
@@ -172,7 +173,7 @@ function SeriesScreen() {
               <p className="mt-3 text-[14px] leading-relaxed text-muted">
                 {legacyBooks.length} {legacyBooks.length === 1 ? 'book names' : 'books name'} this
                 series, but that older library text has not been confirmed as structured membership.
-                Review it once before Reverie uses it for order, progress, or gaps.
+                Review it once before {APP_NAME} uses it for order, progress, or gaps.
               </p>
               <ul className="mt-3 divide-y divide-line border border-line">
                 {legacyBooks.map((book) => (

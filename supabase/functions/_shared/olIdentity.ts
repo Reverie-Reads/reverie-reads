@@ -11,7 +11,7 @@
 // keeps spending the 3/s budget the header no longer buys. The pacing table and this header must
 // tell the same story, and a constant cannot drift per-environment. Owner-chosen address
 // (2026-08-03): contact@reveriereads.app.
-export const OL_UA = 'Reverie (reveriereads.app; contact@reveriereads.app)'
+export const OL_UA = 'Midniht (midniht.app; contact@reveriereads.app)'
 
 /** Headers for an Open Library request — the identity header plus whatever the call site needs. */
 export const olHeaders = (extra?: Record<string, string>): Record<string, string> => ({

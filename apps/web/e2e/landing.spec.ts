@@ -59,7 +59,7 @@ test.describe('signed-out landing', () => {
     )
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
       'content',
-      'https://reveriereads.app/midniht/midniht-share-1200x630.png',
+      'https://midniht.app/midniht/midniht-share-1200x630.png',
     )
 
     const shareSize = await page.evaluate(async () => {
@@ -85,9 +85,12 @@ test.describe('signed-out landing', () => {
         icons: Array<{ src: string; sizes: string; purpose: string }>
       }
       const favicon = await fetch('/favicon.svg').then((response) => response.text())
-      return { manifest, favicon }
+      const mark = await fetch('/midniht/midniht-mark.svg').then((response) => response.text())
+      return { manifest, favicon, mark }
     })
     expect(identityAssets.manifest).toMatchObject({
+      name: 'Midniht',
+      short_name: 'Midniht',
       background_color: '#10121c',
       theme_color: '#10121c',
     })
@@ -97,8 +100,15 @@ test.describe('signed-out landing', () => {
       type: 'image/png',
       purpose: 'maskable',
     })
-    expect(identityAssets.favicon).toContain('Reverie open-book mark')
-    expect(identityAssets.favicon).not.toContain('<circle')
+    expect(identityAssets.favicon).toBe(identityAssets.mark)
+    expect(identityAssets.favicon.match(/<path /g)).toHaveLength(12)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      'https://midniht.app/',
+    )
+    await expect(page.locator('.rv-reverie-window-mist, .rv-reading-window-mist')).toHaveCount(0)
+    const preview = page.getByTestId('room-example').first()
+    await expect(preview).toHaveCSS('border-top-style', 'solid')
   })
 
   test('the short tour moves through real guest-library views without changing reader data', async ({

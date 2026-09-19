@@ -11,12 +11,7 @@ const display = { fontFamily: 'var(--font-display)', fontWeight: 600 } as const
 
 // Money language remains derived from the exact configuration that creates the live purchase
 // links. If attribution changes, the landing changes with it instead of leaving a stale promise.
-const configuredMoney = revenueCopy(buyConfig())
-const MONEY = {
-  ...configuredMoney,
-  body: configuredMoney.body.replaceAll(APP_NAME, 'Midniht'),
-  footer: configuredMoney.footer.replaceAll(APP_NAME, 'Midniht'),
-}
+const MONEY = revenueCopy(buyConfig())
 
 const PRACTICAL = [
   {
@@ -208,7 +203,7 @@ function Privacy() {
               A library is personal. The product should know that.
             </h2>
             <p className="mt-5 max-w-[43ch] text-[15px] leading-relaxed text-muted">
-              Midniht is built around explicit boundaries: what is yours, what belongs to the
+              {APP_NAME} is built around explicit boundaries: what is yours, what belongs to the
               household, and what you deliberately share.
             </p>
           </div>
@@ -338,8 +333,8 @@ export default function LandingBelowFold({
             Your next read may already be waiting.
           </h2>
           <p className="mx-auto mt-5 max-w-[50ch] text-[15px] leading-relaxed text-muted">
-            Start with one title or bring the shelves you already have. Midniht runs in your browser
-            and installs as an app whenever you are ready.
+            Start with one title or bring the shelves you already have. {APP_NAME} runs in your
+            browser and installs as an app whenever you are ready.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
@@ -395,7 +390,9 @@ export default function LandingBelowFold({
             className="mx-auto flex max-w-[1180px] flex-col gap-1 px-6 py-5 text-[12px] sm:flex-row sm:items-center sm:justify-between"
             style={{ color: 'var(--faint)' }}
           >
-            <span>© {new Date().getFullYear()} Midniht. Made for readers.</span>
+            <span>
+              © {new Date().getFullYear()} {APP_NAME}. Made for readers.
+            </span>
             <span>{MONEY.footer}</span>
           </div>
         </div>
