@@ -204,6 +204,9 @@ test('welcome starts live guidance only after saving and the written guide remai
   test.setTimeout(90_000)
   const account = await freshReader(page)
   try {
+    await expect(
+      page.getByText('Choose how much of Midniht you would like to meet today.', { exact: false }),
+    ).toBeVisible()
     await page.route('**/rest/v1/rpc/update_reader_guidance', (route) =>
       route.fulfill({ status: 503, json: { message: 'Test connection interrupted' } }),
     )

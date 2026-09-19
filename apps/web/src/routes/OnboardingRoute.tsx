@@ -233,8 +233,7 @@ function OnboardingFlow() {
         </h1>
         <p className="mb-6 mt-4 text-[16px] leading-relaxed text-muted">
           A personal library should feel comfortable from the first book. Choose how much of{' '}
-          {APP_NAME}
-          you would like to meet today. You can change this any time.
+          {APP_NAME} you would like to meet today. You can change this any time.
         </p>
         <GuidanceChoice
           pending={updateGuidance.isPending}
