@@ -418,8 +418,8 @@ export function GuestLibrary({
               Keep this little library?
             </h4>
             <p className="text-sm leading-relaxed text-muted">
-              Reverie will hold a private copy in this browser for seven days, then ask before
-              adding anything to your account.
+              We will hold a private copy in this browser for seven days, then ask before adding
+              anything to your account.
             </p>
             <ul className="grid grid-cols-2 gap-2 text-sm text-ink sm:grid-cols-3">
               <li>{handoffSummary.books} books</li>
@@ -432,8 +432,8 @@ export function GuestLibrary({
               <p className="text-sm leading-relaxed text-ink">
                 {handoffSummary.draftNotes} unfinished{' '}
                 {handoffSummary.draftNotes === 1 ? 'note has' : 'notes have'} no reading-record home
-                yet. Reverie will keep the text in this browser and show it during review, but will
-                not turn it into a finished read.
+                yet. We will keep the text in this browser and show it during review, but will not
+                turn it into a finished read.
               </p>
             )}
             <p className="text-xs leading-relaxed text-muted">
@@ -442,8 +442,8 @@ export function GuestLibrary({
             </p>
             {handoffError && (
               <p role="alert" className="text-sm text-ink">
-                This browser would not let Reverie hold the transfer. Your guest library is still
-                here on this page.
+                This browser would not hold the transfer. Your guest library is still here on this
+                page.
               </p>
             )}
             <div className="flex flex-wrap gap-2">

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { APP_NAME, revenueCopy } from '@reverie/core'
 import { buyConfig } from '../../lib/buyConfig'
-import { Wordmark } from '../Wordmark'
+import { MidnihtWordmark } from './MidnihtWordmark'
 import { GuestReadingRecord } from './guest/GuestReadingRecord'
 import { SkinShowcase, type SkinShowcaseProps } from './SkinShowcase'
 import { ReadingRoomPreview, RoomCaption } from './ReadingRoomPreview'
@@ -11,7 +11,12 @@ const display = { fontFamily: 'var(--font-display)', fontWeight: 600 } as const
 
 // Money language remains derived from the exact configuration that creates the live purchase
 // links. If attribution changes, the landing changes with it instead of leaving a stale promise.
-const MONEY = revenueCopy(buyConfig())
+const configuredMoney = revenueCopy(buyConfig())
+const MONEY = {
+  ...configuredMoney,
+  body: configuredMoney.body.replaceAll(APP_NAME, 'Midniht'),
+  footer: configuredMoney.footer.replaceAll(APP_NAME, 'Midniht'),
+}
 
 const PRACTICAL = [
   {
@@ -133,7 +138,7 @@ function ProofStrip({ children }: { children: Array<[string, string]> }) {
 
 function PracticalLedger() {
   return (
-    <section id="features" className="band-light scroll-mt-20">
+    <section id="features" className="scroll-mt-20">
       <div className="mx-auto max-w-[1180px] px-6 py-20 sm:py-28">
         <div className="grid gap-8 border-b border-line pb-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
           <div>
@@ -203,7 +208,7 @@ function Privacy() {
               A library is personal. The product should know that.
             </h2>
             <p className="mt-5 max-w-[43ch] text-[15px] leading-relaxed text-muted">
-              Reverie is built around explicit boundaries: what is yours, what belongs to the
+              Midniht is built around explicit boundaries: what is yours, what belongs to the
               household, and what you deliberately share.
             </p>
           </div>
@@ -333,7 +338,7 @@ export default function LandingBelowFold({
             Your next read may already be waiting.
           </h2>
           <p className="mx-auto mt-5 max-w-[50ch] text-[15px] leading-relaxed text-muted">
-            Start with one title or bring the shelves you already have. Reverie runs in your browser
+            Start with one title or bring the shelves you already have. Midniht runs in your browser
             and installs as an app whenever you are ready.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -354,7 +359,7 @@ export default function LandingBelowFold({
               search={{ mode: 'signin' }}
               className="skin-control flex h-12 items-center border border-line px-7 text-[15px] font-semibold text-ink"
             >
-              Return to Reverie
+              Return to your library
             </Link>
           </div>
         </div>
@@ -363,7 +368,7 @@ export default function LandingBelowFold({
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-[1180px] flex-col gap-6 px-6 py-10 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-[36ch]">
-            <Wordmark />
+            <MidnihtWordmark />
             <p className="mt-2 text-[13px] leading-relaxed text-muted">
               Find your next read in your own library. Stay for the room that feels like yours.
             </p>
@@ -375,6 +380,9 @@ export default function LandingBelowFold({
               ['Your library', '#features'],
               ['Privacy', '#privacy'],
               ['Library guide', '/guide'],
+              ['Privacy policy', '/privacy'],
+              ['Terms', '/terms'],
+              ['Support', '/support'],
             ].map(([label, href]) => (
               <a key={href} href={href} className="text-muted hover:text-ink">
                 {label}
@@ -387,9 +395,7 @@ export default function LandingBelowFold({
             className="mx-auto flex max-w-[1180px] flex-col gap-1 px-6 py-5 text-[12px] sm:flex-row sm:items-center sm:justify-between"
             style={{ color: 'var(--faint)' }}
           >
-            <span>
-              © {new Date().getFullYear()} {APP_NAME}. Made for readers.
-            </span>
+            <span>© {new Date().getFullYear()} Midniht. Made for readers.</span>
             <span>{MONEY.footer}</span>
           </div>
         </div>

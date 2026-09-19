@@ -1163,7 +1163,12 @@ several defects have been "fixed" in code paths no reader can reach.
 
 ## Decisions still needing the owner (use these defaults until told otherwise)
 
-1. **App name — DECIDED (owner, 2026-07): Reverie is the name.** No longer a
+1. **Public landing — Midniht (owner, September 19).** The accepted vector and export kit
+   live in `design/midniht/brand-kit`; the public landing uses `styles/midniht.css` and
+   JavaScript Canvas stars. Its light/dark setting is independent of sample rooms and saved
+   reader preferences. Do not change auth, installed-app identity, domains, or database names
+   as a side effect of this landing work. See `docs/tasks/midniht-landing.md`.
+   **Authenticated app name — Reverie pending the separate migration.** No longer a
    placeholder. Keep reading it from `APP_NAME` in `@reverie/core` (never hardcode);
    `docs/reference/TRADEMARK.md` stays as history.
 2. **Household model — DECIDED (owner, 2026-08-23): linked personal libraries with a

@@ -62,10 +62,13 @@ describe('guest library handoff', () => {
     expect(handoff.books[0]!.incoming.cover).toBe('')
   })
 
-  it('keeps the exact-edition Open Library cover used by the sample library', () => {
+  it('keeps the owner-selected local covers used by the sample library', () => {
     const state = initialGuestState()
     const handoff = createGuestHandoff(state, { skin: 'folio', mode: 'light' })
-    expect(handoff.books[0]!.incoming.cover).toContain('covers.openlibrary.org/b/isbn/')
+    expect(handoff.books[0]!.incoming.cover).toBe('/landing-covers/jane-eyre-9780141329741.webp')
+    expect(handoff.books[1]!.incoming.cover).toBe(
+      '/landing-covers/left-hand-of-darkness-9780143111597.webp',
+    )
   })
 
   it('expires and removes stale or malformed browser data', () => {

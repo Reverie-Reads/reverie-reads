@@ -51,7 +51,7 @@ export function SkinShowcase({
         </div>
         <div
           role="tablist"
-          aria-label="Reverie reading rooms"
+          aria-label="Reading rooms"
           className="mt-8 grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-9"
         >
           {SKIN_LIST.map((room) => {

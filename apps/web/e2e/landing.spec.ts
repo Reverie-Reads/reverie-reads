@@ -31,7 +31,7 @@ test.describe('signed-out landing', () => {
     await page.goto('/')
 
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Find your next read in your own library.' }),
+      page.getByRole('heading', { level: 1, name: 'The quiet place your stories return to.' }),
     ).toBeVisible()
     await expect(page.getByTestId('guest-library-compact')).toBeVisible()
     await expect(page.getByTestId('guest-library-full')).toBeAttached()
@@ -47,19 +47,19 @@ test.describe('signed-out landing', () => {
       'href',
       '/auth?mode=signup',
     )
-    await expect(page.getByRole('link', { name: 'Return to Reverie' })).toHaveAttribute(
+    await expect(page.getByRole('link', { name: 'Return to your library' })).toHaveAttribute(
       'href',
       '/auth?mode=signin',
     )
 
-    await expect(page).toHaveTitle('Reverie — Find your next read in your own library')
+    await expect(page).toHaveTitle('Midniht — A place for your reading life')
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       'content',
       /books you own or have borrowed/i,
     )
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
       'content',
-      'https://reveriereads.app/reverie-next-read-share.png',
+      'https://reveriereads.app/midniht/midniht-share-1200x630.png',
     )
 
     const shareSize = await page.evaluate(async () => {
@@ -70,7 +70,7 @@ test.describe('signed-out landing', () => {
           once: true,
         })
       })
-      image.src = '/reverie-next-read-share.png'
+      image.src = '/midniht/midniht-share-1200x630.png'
       await loaded
       return { width: image.naturalWidth, height: image.naturalHeight }
     })
@@ -113,7 +113,7 @@ test.describe('signed-out landing', () => {
     await page.goto('/')
 
     const demo = page.getByTestId('guest-library-compact')
-    const tour = demo.getByRole('complementary', { name: 'A short tour of Reverie' })
+    const tour = demo.getByRole('complementary', { name: 'A short tour of your library' })
     const clickVisible = async (target: Locator) => {
       const bounds = await target.boundingBox()
       expect(bounds).not.toBeNull()
@@ -188,61 +188,73 @@ test.describe('signed-out landing', () => {
     }
   })
 
-  test('reduced motion keeps the page still without removing its story', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await page.goto('/')
-
-    await expect(
-      page.getByRole('heading', { name: 'Find a room that feels like you.' }),
-    ).toBeAttached()
-    const light = page.getByTestId('brand-lamplight')
-    await expect(light).toHaveCount(1)
-    expect(await light.evaluate((el) => el.getAnimations().length)).toBe(0)
-    const animations = await page.locator('.rv-anim').evaluateAll((nodes) =>
-      nodes.map((node) => ({
-        name: getComputedStyle(node).animationName,
-        duration: getComputedStyle(node).animationDuration,
-      })),
-    )
-    expect(animations.every(({ name, duration }) => name === 'none' || duration === '0s')).toBe(
-      true,
-    )
-  })
-
-  test('lamplight moves gently behind steady text and stops when reduced motion is requested', async ({
+  test('JavaScript stars twinkle, pause, and honor reduced motion without moving text', async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 })
     await page.emulateMedia({ reducedMotion: 'no-preference' })
     await page.goto('/')
-    const light = page.getByTestId('brand-lamplight')
+    const canvas = page.getByTestId('midniht-stars')
     const heading = page.getByTestId('landing-display-heading')
-    await expect(heading).toBeVisible()
+    await expect(canvas).toHaveAttribute('data-renderer', 'javascript-canvas')
+    await expect(canvas).toHaveAttribute('data-animation', 'running')
     await page.evaluate(() => document.fonts.ready)
-    const before = await heading.boundingBox()
-    await expect
-      .poll(() => light.evaluate((el) => el.getAnimations()[0]?.playState))
-      .toBe('running')
-    const transform = await light.evaluate((el) => getComputedStyle(el).transform)
-    await expect
-      .poll(() => light.evaluate((el) => getComputedStyle(el).transform))
-      .not.toBe(transform)
-    expect(
-      await light.evaluate((el) => Number(el.getAnimations()[0]?.effect?.getTiming().duration)),
-    ).toBeGreaterThanOrEqual(10000)
-    expect(await heading.boundingBox()).toEqual(before)
+    const bounds = await heading.boundingBox()
+    const pixels = () => canvas.evaluate((node) => (node as HTMLCanvasElement).toDataURL())
+    const before = await pixels()
+    await expect.poll(pixels).not.toBe(before)
+    expect(await heading.boundingBox()).toEqual(bounds)
+    await page.getByRole('button', { name: 'Pause stars', exact: true }).click()
+    await expect(canvas).toHaveAttribute('data-animation', 'static')
+    const still = await pixels()
+    await page.waitForTimeout(150)
+    expect(await pixels()).toBe(still)
+    await page.getByRole('button', { name: 'Play stars', exact: true }).click()
+    await expect(canvas).toHaveAttribute('data-animation', 'running')
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    await expect.poll(() => light.evaluate((el) => el.getAnimations().length)).toBe(0)
-    expect(await light.evaluate((el) => getComputedStyle(el).transform)).toBe('none')
-    const demo = page.getByTestId('guest-library-compact')
-    await demo.getByRole('button', { name: 'Next read', exact: true }).click()
-    await demo.getByRole('button', { name: 'Save for later' }).click()
-    await expect(demo.getByTestId('guest-notice')).toContainText('saved for later')
+    await expect(canvas).toHaveAttribute('data-animation', 'static')
+    await expect(page.getByRole('button', { name: 'Stars still · reduced motion' })).toBeDisabled()
+    const reduced = await pixels()
+    await page.waitForTimeout(150)
+    expect(await pixels()).toBe(reduced)
+    expect(await heading.boundingBox()).toEqual(bounds)
+    expect(await canvas.evaluate((node) => node.getAnimations().length)).toBe(0)
+  })
+
+  test('landing day and night change stars and colors without changing the sample room', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/')
+    const main = page.locator('.midniht-landing')
+    const room = page.getByTestId('room-example').first()
+    const canvas = page.getByTestId('midniht-stars')
+    const darkPixels = await canvas.evaluate((node) => (node as HTMLCanvasElement).toDataURL())
+    await page.getByRole('button', { name: 'Light mode', exact: true }).click()
+    await expect(main).toHaveAttribute('data-midniht-mode', 'light')
+    await expect(room).toHaveAttribute('data-mode', 'light')
+    expect(
+      await canvas.evaluate((node) =>
+        getComputedStyle(node).getPropertyValue('--midniht-star').trim(),
+      ),
+    ).toBe('#14243d')
+    expect(await canvas.evaluate((node) => (node as HTMLCanvasElement).toDataURL())).not.toBe(
+      darkPixels,
+    )
+    await page.getByRole('button', { name: 'Dark mode', exact: true }).click()
+    await expect(main).toHaveAttribute('data-midniht-mode', 'dark')
+    await expect(room).toHaveAttribute('data-skin', 'folio')
+    expect(
+      await canvas.evaluate((node) =>
+        getComputedStyle(node).getPropertyValue('--midniht-star').trim(),
+      ),
+    ).toBe('#ffffff')
   })
 
   test('the nine-room atlas changes the complete product stage and its mode', async ({ page }) => {
     await page.goto('/')
 
-    const rooms = page.getByRole('tablist', { name: 'Reverie reading rooms' })
+    const rooms = page.getByRole('tablist', { name: 'Reading rooms' })
     await expect(rooms.getByRole('tab')).toHaveCount(9)
 
     await rooms.getByRole('tab', { name: /Gaslight/i }).click()

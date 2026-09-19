@@ -8,14 +8,20 @@ test('the sample library uses large cover sources and saves only after consent',
   const covers = demo.locator('img')
 
   await expect(covers).toHaveCount(2)
-  await expect(covers.nth(0)).toHaveAttribute(
-    'src',
-    'https://covers.openlibrary.org/b/isbn/9780141441146-L.jpg?default=false',
-  )
+  await expect(covers.nth(0)).toHaveAttribute('src', '/landing-covers/jane-eyre-9780141329741.webp')
   await expect(covers.nth(1)).toHaveAttribute(
     'src',
-    'https://covers.openlibrary.org/b/isbn/9780441478125-L.jpg?default=false',
+    '/landing-covers/left-hand-of-darkness-9780143111597.webp',
   )
+  await expect
+    .poll(() =>
+      covers.evaluateAll((images) =>
+        images.every(
+          (image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
+        ),
+      ),
+    )
+    .toBe(true)
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('reverie.guest-handoff.v1')))
     .toBeNull()

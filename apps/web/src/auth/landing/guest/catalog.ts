@@ -1,7 +1,7 @@
 import { splitName, type Book, type Incoming } from '@reverie/core'
 
-/** Public bibliographic facts from the landing's catalog examples. Each cover is the exact-ISBN
- * Open Library path for the edition carried into the guest handoff. No reader seed, account,
+/** Public bibliographic facts from the landing's catalog examples. Covers are owner-selected
+ * local artwork or exact-ISBN Open Library paths for the handoff edition. No reader seed, account,
  * private notes, or provider credentials are used. */
 export const GUEST_CATALOG = [
   {
@@ -9,16 +9,16 @@ export const GUEST_CATALOG = [
     title: 'Jane Eyre',
     author: 'Charlotte Brontë',
     genre: 'literary',
-    isbn: '9780141441146',
-    cover: 'https://covers.openlibrary.org/b/isbn/9780141441146-L.jpg?default=false',
+    isbn: '9780141329741',
+    cover: '/landing-covers/jane-eyre-9780141329741.webp',
   },
   {
     key: 'left-hand-of-darkness',
     title: 'The Left Hand of Darkness',
     author: 'Ursula K. Le Guin',
     genre: 'sci-fi',
-    isbn: '9780441478125',
-    cover: 'https://covers.openlibrary.org/b/isbn/9780441478125-L.jpg?default=false',
+    isbn: '9780143111597',
+    cover: '/landing-covers/left-hand-of-darkness-9780143111597.webp',
   },
   {
     key: 'frankenstein',
