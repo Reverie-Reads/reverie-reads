@@ -274,7 +274,7 @@ async function hardcoverBrowse(now: Date): Promise<ReleaseHit[]> {
   for (const [from, to, direction] of [
     [after, today, 'desc'],
     [tomorrow, before, 'asc'],
-  ]) {
+  ] as const) {
     if (!(await globalBudget('hardcover', envInt('HARDCOVER_RATE_MAX', 60), 60)))
       throw new Error('Hardcover budget unavailable')
     const query = `query ReleaseEditions($from: date!, $to: date!) {
@@ -316,7 +316,7 @@ async function prhBrowse(now: Date): Promise<ReleaseHit[]> {
   for (const [from, to, direction] of [
     [after, today, 'desc'],
     [tomorrow, before, 'asc'],
-  ]) {
+  ] as const) {
     const payload = (await prhJson('/domains/PRH.US/titles', {
       onSaleFrom: date(from),
       onSaleTo: date(to),
