@@ -5,11 +5,8 @@ import { authFailure } from './support/authError'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
 import { ok, okUser } from './support/ok'
 
-// Discover search e2e (docs/archive/task-discover-search.md): search field → results (deduped against the
-// library, "On your shelf" for owned) → add owned / add-to-shelf unowned, and the shelf picker's
-// "search everywhere" seam adding the same way. The `search` + `enrich` edge functions are STUBBED
-// so the run is deterministic and offline; the real Hardcover+Google backend is exercised in the
-// eyeball. A dedicated throwaway user keeps the seed + a11y sweep untouched.
+// Discover's guided, curated and catalog views must remain local/server-backed. Only the
+// explicit release view invokes the releases Edge Function; no view calls provider APIs directly.
 
 const SUPABASE_URL = 'http://127.0.0.1:55321'
 const ANON =
@@ -99,13 +96,15 @@ async function signIn(page: Page, session: { access_token: string; refresh_token
  * Fonts are not in this spec's filter — they are self-hosted since #288 (same-origin, with their
  * own dist guard), so a font request could never legitimately match a third-party origin anyway.
  */
-test('Discover mount makes no third-party catalog request', async ({ page }) => {
+test('Discover sections keep catalog providers behind the server and only releases request the feed', async ({
+  page,
+}) => {
   test.setTimeout(120_000)
   const c = await client()
   await signIn(page, c.session)
 
   const thirdParty: string[] = []
-  const releaseRequests: string[] = []
+  const releaseRequests: unknown[] = []
   page.on('request', (r) => {
     const u = r.url()
     // CATALOG endpoints only — the subject of this PR. Cover IMAGES (covers.openlibrary.org,
@@ -113,17 +112,21 @@ test('Discover mount makes no third-party catalog request', async ({ page }) => 
     // handling (the suite-wide image stub exists because of it); the curated fn-down shelf
     // legitimately renders such covers, and this spec must not conflate an <img> load with a
     // catalog query. First draft used bare `openlibrary\.org` and tripped on exactly that.
-    if (/www\.googleapis\.com\/books|openlibrary\.org\/search|api\.hardcover\.app/i.test(u))
+    if (
+      /www\.googleapis\.com\/books|openlibrary\.org\/search|api\.hardcover\.app|api\.penguinrandomhouse\.com/i.test(
+        u,
+      )
+    )
       thirdParty.push(u)
-    if (u.includes('/functions/v1/releases')) releaseRequests.push(u)
+    if (u.includes('/functions/v1/releases')) releaseRequests.push(r.postDataJSON())
   })
   // Cover CDNs stubbed for determinism (offline CI), same as discover-curated.spec.ts.
   await page.route('**covers.openlibrary.org/**', (r) => r.fulfill({ status: 404, body: '' }))
   await page.route('**books.google.com/books/content**', (r) =>
     r.fulfill({ status: 404, body: '' }),
   )
-  // Keep a failing route as a tripwire. Guided and genre Discover now use the reviewed local shelf
-  // plus the shared catalog, so they should not invoke the former release-feed provider at all.
+  // A tripwire for the non-release sections, and an explicit error response when the reader
+  // chooses the release view. The client must never bypass it with a direct provider call.
   await page.route('**/functions/v1/releases**', (r) => r.fulfill({ status: 500, json: {} }))
 
   await page.goto('/discover')
@@ -133,15 +136,27 @@ test('Discover mount makes no third-party catalog request', async ({ page }) => 
   await page.waitForTimeout(3000) // Detect any request initiated by the guided entry screen.
   expect(thirdParty, 'The guided entry screen reached a third-party catalog.').toEqual([])
 
-  // Choose a genre explicitly so the reviewed shelf renders; the former release-feed request must
-  // remain absent here as well as on the guided entry screen.
-  await page.goto('/discover?browse=true&genre=fantasy')
+  // Choose the curated view and a genre explicitly; no live release request belongs here.
+  await page.goto('/discover?browse=true&view=picks&genre=fantasy')
   await expect(
     page.getByRole('button', { name: 'View details for Fourth Wing', exact: true }).last(),
   ).toBeVisible()
   await page.waitForTimeout(3000) // Let any forbidden provider request initiate.
 
-  expect(releaseRequests, 'Discover called the retired release-feed provider.').toEqual([])
+  await page
+    .getByRole('navigation', { name: 'Discover sections' })
+    .getByRole('link', { name: 'Shared catalog', exact: true })
+    .click()
+  await expect(page.getByRole('heading', { name: 'Shared catalog', exact: true })).toBeVisible()
+  await page.waitForTimeout(1000)
+  expect(releaseRequests, 'A non-release view invoked the releases endpoint.').toEqual([])
+
+  await page
+    .getByRole('navigation', { name: 'Discover sections' })
+    .getByRole('link', { name: 'New & upcoming', exact: true })
+    .click()
+  await expect(page.getByRole('alert')).toContainText('couldn’t be refreshed')
+  expect(releaseRequests).toEqual([{ mode: 'browse' }])
   expect(
     thirdParty,
     'Discover reached a third-party catalog from the browser. Route it through an Edge Function — ' +
