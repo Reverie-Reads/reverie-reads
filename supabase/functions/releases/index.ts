@@ -1,6 +1,8 @@
 // The cached external-data layer (owner-approved releases run). One upstream lookup serves every
-// reader via the global releases_cache (enrichment_cache's sibling; 24h TTL). Two modes:
+// reader via the global releases_cache (enrichment_cache's sibling; 24h TTL). Three modes:
 //
+//   { mode: 'browse' }  bounded recent + upcoming edition selection, with provider status.
+//       → { hits: ReleaseHit[], checkedAt, providers }
 //   { mode: 'authors', names: string[] }  per-author recent + upcoming books (Hardcover edition
 //       discovery, optional PRH confirmation). Cached names return instantly; at most
 //       a few upstream author fetches per request —
@@ -19,6 +21,9 @@ import { captureEdgeError } from '../_shared/observe.ts'
 import { envInt } from '../_shared/ratelimit.ts'
 import { blendCuratedPool, tierDiscoverShelf } from './curated.ts'
 import {
+  browseDates,
+  collectReleaseBrowse,
+  type ReleaseBrowse,
   hardcoverEditionToRelease,
   mergeAuthorReleases,
   prhTitleToRelease,
@@ -257,6 +262,82 @@ async function fetchAuthor(name: string): Promise<Hit[]> {
   return mergeAuthorReleases(own, Date.now())
 }
 
+/** Date-bounded discovery across the existing providers, independent of a reader's authors.
+ * Separate recent/future requests prevent a dense past window from hiding upcoming books. */
+async function hardcoverBrowse(now: Date): Promise<ReleaseHit[]> {
+  const { today, tomorrow, after, before } = browseDates(now)
+  const auth = hardcoverAuth()
+  if (!auth) throw new Error('Hardcover unavailable')
+  const endpoint = 'https://api.hardcover.app/v1/graphql'
+  const checkedAt = now.toISOString()
+  const result: ReleaseHit[] = []
+  for (const [from, to, direction] of [
+    [after, today, 'desc'],
+    [tomorrow, before, 'asc'],
+  ]) {
+    if (!(await globalBudget('hardcover', envInt('HARDCOVER_RATE_MAX', 60), 60)))
+      throw new Error('Hardcover budget unavailable')
+    const query = `query ReleaseEditions($from: date!, $to: date!) {
+      editions(where: {
+        release_date: { _gte: $from, _lte: $to }
+        _or: [{ language: { code2: { _eq: "en" } } }, { language_id: { _is_null: true } }]
+      }, order_by: [{ release_date: ${direction} }, { id: asc }], limit: 80) {
+        id isbn_13 isbn_10 edition_format physical_format release_date release_year cached_image
+        image { url } publisher { name } reading_format { format } country { code2 }
+        book {
+          id title slug release_date release_year description cached_image image { url }
+          contributions(order_by: [{ id: asc }]) { author { name } }
+        }
+      }
+    }`
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { Authorization: auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { from, to } }),
+      signal: AbortSignal.timeout(3500),
+    })
+    if (!res.ok) throw new SourceHttpError(res.status, endpoint)
+    const body = (await res.json()) as { data?: { editions?: unknown[] }; errors?: unknown[] }
+    if (body.errors?.length || !Array.isArray(body.data?.editions))
+      throw new Error('Hardcover release response unavailable')
+    result.push(
+      ...body.data.editions
+        .map((row) => hardcoverEditionToRelease(row, checkedAt))
+        .filter((hit): hit is ReleaseHit => hit !== null),
+    )
+  }
+  return result
+}
+
+async function prhBrowse(now: Date): Promise<ReleaseHit[]> {
+  const { today, tomorrow, after, before } = browseDates(now)
+  const date = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(8, 10)}/${iso.slice(0, 4)}`
+  const result: ReleaseHit[] = []
+  for (const [from, to, direction] of [
+    [after, today, 'desc'],
+    [tomorrow, before, 'asc'],
+  ]) {
+    const payload = (await prhJson('/domains/PRH.US/titles', {
+      onSaleFrom: date(from),
+      onSaleTo: date(to),
+      rows: '50',
+      sort: 'onsale',
+      dir: direction,
+      returnEmptyLists: 'true',
+    })) as { data?: { titles?: unknown[] } } | null
+    if (!Array.isArray(payload?.data?.titles)) throw new Error('Publisher releases unavailable')
+    for (const row of payload.data.titles) {
+      const author =
+        typeof (row as { author?: unknown })?.author === 'string'
+          ? (row as { author: string }).author
+          : ''
+      const hit = prhTitleToRelease(row, author, now.toISOString())
+      if (hit) result.push({ ...hit, release: { ...hit.release, territory: 'US' } })
+    }
+  }
+  return result
+}
+
 /** Compatibility shelf for clients deployed before Discover became local. */
 function fetchDiscoverShelf(genre: string): Hit[] {
   const pool = blendCuratedPool(genre, [])
@@ -284,6 +365,25 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    if (body.mode === 'browse') {
+      const now = new Date()
+      const key = `release-browse:v1:${now.toISOString().slice(0, 10)}:${Boolean(hardcoverAuth())}:${Boolean(PRH_KEY)}`
+      const cached = (await cacheGet(key)) as ReleaseBrowse | null
+      if (cached) return json(cached)
+      const result = await collectReleaseBrowse(
+        {
+          hardcover: hardcoverAuth() ? () => hardcoverBrowse(now) : undefined,
+          prh: PRH_KEY ? () => prhBrowse(now) : undefined,
+        },
+        now,
+      )
+      if (!Object.values(result.providers).includes('ready'))
+        return json({ ...result, error: 'Release sources are unavailable' }, 503)
+      // A failed provider is not a successful empty shelf. Do not cache incomplete fetches.
+      if (!Object.values(result.providers).includes('unavailable')) await cacheSet(key, result)
+      return json(result)
+    }
+
     if (body.mode === 'authors') {
       const names = (Array.isArray(body.names) ? body.names : [])
         .filter((n): n is string => typeof n === 'string' && !!n.trim())

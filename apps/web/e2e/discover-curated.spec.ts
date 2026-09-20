@@ -1,16 +1,12 @@
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
 import { ok, okUser } from './support/ok'
 
-// Curated Discover injection (docs/tasks/task-discover-curated-candidates.md): the four starved
-// categories carry curated candidates in the pool; the five left on live query must NOT. The live
-// window is stubbed EMPTY and the releases fn stubbed DOWN, so what renders is exactly the curated
-// injection through the client fallback path — the same core blend the fn mirrors. An in-scope
-// genre shows curated titles; an out-of-scope genre falls through to the honest empty state, which
-// is this branch's scope-creep guard rendered on a real screen.
+// Curated picks are an explicitly separate, bundled shelf. Supported genres have reviewed
+// candidates; unsupported genres show an honest empty state without live-release backfill.
 
 const SUPABASE_URL = 'http://127.0.0.1:55321'
 const ANON =
@@ -23,7 +19,7 @@ const PASSWORD = 'discover-curated-e2e-password'
 test.describe.configure({ mode: 'serial' })
 
 type Client = {
-  sb: ReturnType<typeof createClient>
+  sb: SupabaseClient
   session: { access_token: string; refresh_token: string }
   uid: string
 }
@@ -95,7 +91,7 @@ test('an in-scope genre surfaces curated titles through the same shelf; out-of-s
   const c = await client()
   await stub(page)
   await signIn(page, c.session)
-  await page.goto('/discover?browse=true')
+  await page.goto('/discover?browse=true&view=picks')
 
   const chips = page.getByRole('group', { name: 'Browse a genre' })
   await chips.waitFor({ timeout: 20_000 })
@@ -115,7 +111,9 @@ test('an in-scope genre surfaces curated titles through the same shelf; out-of-s
   // Horror (left on live query): the pool is untouched, so an empty window is an empty shelf —
   // the scope-creep guard. The empty state must show and no curated title may leak in.
   await chips.getByText('Horror', { exact: true }).click()
-  await expect(page.getByText(/the smaller shelves run thin/)).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText(/Try another genre or explore the shared catalog/)).toBeVisible({
+    timeout: 20_000,
+  })
   await expect(page.getByText('The Thursday Murder Club')).toHaveCount(0)
   await expect(page.getByText('The Only Good Indians')).toHaveCount(0)
 })

@@ -22,6 +22,14 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 
 ## P0 — trust and release blockers
 
+- [ ] **Discover release separation:** on phone and desktop, switch between For you, New & upcoming,
+      Curated picks and Shared catalog. Each section should be clearly different from the personal
+      library, including with reading tips off. In New & upcoming, verify one recent and one future
+      book against its linked source (date, edition, ISBN, country). New books only must not present
+      a dated reprint as a first publication. Include other editions once; check source labels and
+      checked time. Open details without adding, then open Add to wishlist and return; preserve the
+      selected release window. A failed source should offer retry, not pretend there are no books.
+
 - [ ] **Account boundary:** create or use a disposable account; sign in, sign out, sign back in,
       and confirm another account's books, notes, plans, household data, and arrangements never
       appear.

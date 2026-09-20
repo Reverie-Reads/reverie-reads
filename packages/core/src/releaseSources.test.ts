@@ -72,7 +72,7 @@ describe('release source normalization', () => {
 
   it('rejects a PRH contributor mismatch and maps an exact author', () => {
     const payload = {
-      isbn: '9780140067484',
+      isbn: 9780140067484,
       title: 'The Puzzle Palace',
       author: 'James Bamford',
       onsale: '2026-11-03',

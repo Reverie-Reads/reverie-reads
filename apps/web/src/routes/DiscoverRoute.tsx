@@ -16,7 +16,8 @@ import {
 import { rootRoute } from './RootRoute'
 import { useBooks } from '../data/books'
 import { useLists } from '../data/lists'
-import { useVoice } from '../skin/labels'
+import { ReleaseBrowse } from '../components/discovery/ReleaseBrowse'
+import { releaseDateLabel } from '../data/releases'
 import { useDebouncedValue } from '../hooks/useDebouncedValue'
 import { useSearchEverywhere, useAddFromSearch } from '../data/search'
 import { Chip } from '../components/Chip'
@@ -117,6 +118,37 @@ function Card({
           )}
         </div>
       </button>
+      {hit.release && (
+        <div className="mt-3 text-sm leading-relaxed text-muted">
+          <p className="font-semibold text-ink">{releaseDateLabel(hit.pub)}</p>
+          <p>
+            {hit.release.kind === 'new_work'
+              ? 'First publication'
+              : hit.release.kind === 'new_edition'
+                ? 'New edition'
+                : 'Edition release'}
+          </p>
+          <p>
+            {[hit.release.formats?.join(' · '), hit.release.territory].filter(Boolean).join(' · ')}
+          </p>
+          <p>
+            {hit.release.sourceUrl ? (
+              <a
+                href={hit.release.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-4"
+              >
+                {hit.release.source === 'prh' ? 'Publisher catalog' : 'Hardcover'}
+              </a>
+            ) : hit.release.source === 'prh' ? (
+              'Publisher catalog'
+            ) : (
+              'Hardcover'
+            )}
+          </p>
+        </div>
+      )}
       <div className="mt-auto flex flex-wrap gap-2 pt-3">
         <button
           type="button"
@@ -139,6 +171,9 @@ function Card({
                   work: hit.corpusWorkId,
                   title: hit.title,
                   author: author || undefined,
+                  authors: hit.authors,
+                  source: hit.release?.source === 'hardcover' ? 'hardcover' : hit.source,
+                  sourceUrl: hit.release?.sourceUrl ?? hit.sourceUrl,
                   isbn: hit.isbn || undefined,
                   cover: hit.cover || undefined,
                   pub: hit.pub || undefined,
@@ -248,7 +283,6 @@ function SearchSection({
   books: Book[]
   onOpen: (hit: DiscoverHit) => void
 }) {
-  const voice = useVoice()
   const q = useSearchEverywhere(query)
   const sections = partitionSearchResults(q.data ?? [])
   const resultCount = sections.catalog.length + sections.google.length
@@ -278,7 +312,7 @@ function SearchSection({
       )}
       {q.isSuccess && resultCount === 0 && (
         <Surface radius="card" tone="bare" pad={5} className="text-center">
-          <p className="text-[14px] text-ink">{voice.miss}</p>
+          <p className="text-[14px] text-ink">No matches for this search yet.</p>
           <p className="mt-1 text-[12.5px] text-muted">Try a title, an author, or an ISBN.</p>
         </Surface>
       )}
@@ -324,9 +358,9 @@ function SearchSection({
 }
 
 function DiscoverCatalog() {
-  const voice = useVoice()
   const search = discoverRoute.useSearch()
   const navigate = useNavigate()
+  const view = search.view ?? 'catalog'
   const genre = search.genre ?? ''
   const { data: books } = useBooks()
   const owned = ownedKeys(books ?? [])
@@ -349,7 +383,7 @@ function DiscoverCatalog() {
   const q = useQuery({
     queryKey: ['discover', genreKey(genre)],
     queryFn: ({ signal }) => fetchDiscover(genre, signal),
-    enabled: Boolean(genre),
+    enabled: Boolean(genre) && view === 'picks',
     staleTime: 1000 * 60 * 60 * 6, // a browse shelf, not a feed — a handful of calls per session
     retry: 1,
   })
@@ -369,7 +403,10 @@ function DiscoverCatalog() {
   const [corpusQ, setCorpusQ] = useState('')
   const [corpusTag, setCorpusTag] = useState('')
   const corpusQDebounced = useDebouncedValue(corpusQ, 400)
-  const corpus = useWorksBrowse({ genre: gkey, tag: corpusTag.trim(), q: corpusQDebounced })
+  const corpus = useWorksBrowse(
+    { genre: gkey, tag: corpusTag.trim(), q: corpusQDebounced },
+    view === 'catalog',
+  )
   const corpusHits = (corpus.data?.pages ?? []).flat().map((work) => workToHit(work))
   const corpusVisible = hideImported ? corpusHits.filter((h) => !isOwned(h, owned)) : corpusHits
   const [batchIndex, setBatchIndex] = useState(0)
@@ -401,7 +438,7 @@ function DiscoverCatalog() {
       if (!scores) throw new Error('taste unavailable')
       return scores
     },
-    enabled: batch.length > 0,
+    enabled: batch.length > 0 && view === 'picks',
     staleTime: 1000 * 60 * 60 * 6,
     retry: 0,
   })
@@ -471,163 +508,77 @@ function DiscoverCatalog() {
       {/* ── the taste-ranked browse rail (empty search) ── */}
       {!searching && (
         <>
-          <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Browse a genre">
-            <Chip
-              active={!genre}
-              onClick={() =>
-                void navigate({
-                  to: '/discover',
-                  search: { ...search, browse: true, genre: undefined },
-                  replace: true,
-                })
-              }
-            >
-              All genres
-            </Chip>
-            {GENRES.map((g) => (
+          {view !== 'releases' && (
+            <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Browse a genre">
               <Chip
-                key={g.key}
-                active={g.key === genreKey(genre)}
+                active={!genre}
                 onClick={() =>
                   void navigate({
                     to: '/discover',
-                    search: { ...search, browse: true, genre: g.key },
+                    search: { ...search, browse: true, genre: undefined },
                     replace: true,
                   })
                 }
               >
-                {g.label}
+                All genres
               </Chip>
-            ))}
-          </div>
+              {GENRES.map((g) => (
+                <Chip
+                  key={g.key}
+                  active={g.key === genreKey(genre)}
+                  onClick={() =>
+                    void navigate({
+                      to: '/discover',
+                      search: { ...search, browse: true, genre: g.key },
+                      replace: true,
+                    })
+                  }
+                >
+                  {g.label}
+                </Chip>
+              ))}
+            </div>
+          )}
 
-          {/* ── the corpus browse — LEADS. A growing shared catalog: "show more" APPENDS the next
-              twenty (useInfiniteQuery), deliberately unlike the external shelf's batchOf() below,
-              which CYCLES a fixed cached pool and replaces twenty with the next twenty. Same page
-              size, opposite accumulation; both sit on this screen, so the difference is stated. */}
-          <section aria-label="Browse the catalog" className="mb-8">
-            <h2 className="mb-2 text-xl font-semibold leading-snug text-ink">The shared shelves</h2>
-            <ReadingTips>
+          {/* Catalog pagination appends; curated picks cycle their separate fixed pool. */}
+          {view === 'catalog' && (
+            <section aria-label="Browse the catalog" className="mb-8">
+              <h2 className="mb-2 text-xl font-semibold leading-snug text-ink">Shared catalog</h2>
               <p className="mb-4 text-sm leading-relaxed text-muted">
-                Browse what’s here, or search above for a particular book. Your own books are marked
+                Books in the shared catalog, beyond your personal library. Your own books are marked
                 so you can return to them.
               </p>
-            </ReadingTips>
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <input
-                type="search"
-                value={corpusQ}
-                onChange={(e) => setCorpusQ(e.target.value)}
-                placeholder="Filter the catalog — title or author…"
-                aria-label="Filter the catalog by title or author"
-                data-testid="corpus-filter"
-                className="skin-field min-h-11 min-w-[180px] flex-1 border border-line px-3 text-[13px] text-ink outline-none"
-                style={{ background: 'var(--field)' }}
-              />
-              <input
-                type="text"
-                value={corpusTag}
-                onChange={(e) => setCorpusTag(e.target.value)}
-                placeholder="Tag…"
-                aria-label="Filter the catalog by tag"
-                data-testid="corpus-tag-filter"
-                className="skin-field min-h-11 w-32 border border-line px-3 text-[13px] text-ink outline-none"
-                style={{ background: 'var(--field)' }}
-              />
-              <Chip
-                active={hideImported}
-                onClick={() => setHideImported((v) => !v)}
-                title="Hide books already in your library"
-              >
-                Hide what I have
-              </Chip>
-            </div>
-
-            {corpus.isPending && (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" aria-hidden>
-                {Array.from({ length: 8 }, (_, i) => (
-                  <div key={i} className="flex flex-col gap-2">
-                    <div
-                      className="aspect-[2/3] rounded-[8px] border border-line"
-                      style={{ background: 'var(--card)' }}
-                    />
-                    <div className="h-3 w-3/4 rounded" style={{ background: 'var(--card)' }} />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {corpus.isError && (
-              <div
-                role="alert"
-                className="mb-4 rounded-[var(--radius-card)] border border-line bg-card p-4 text-sm text-muted"
-              >
-                <p>The shared catalog couldn’t be loaded.</p>
-                <button
-                  className="min-h-11 text-ink underline"
-                  onClick={() => void corpus.refetch()}
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <input
+                  type="search"
+                  value={corpusQ}
+                  onChange={(e) => setCorpusQ(e.target.value)}
+                  placeholder="Filter the catalog — title or author…"
+                  aria-label="Filter the catalog by title or author"
+                  data-testid="corpus-filter"
+                  className="skin-field min-h-11 min-w-[180px] flex-1 border border-line px-3 text-[13px] text-ink outline-none"
+                  style={{ background: 'var(--field)' }}
+                />
+                <input
+                  type="text"
+                  value={corpusTag}
+                  onChange={(e) => setCorpusTag(e.target.value)}
+                  placeholder="Tag…"
+                  aria-label="Filter the catalog by tag"
+                  data-testid="corpus-tag-filter"
+                  className="skin-field min-h-11 w-32 border border-line px-3 text-[13px] text-ink outline-none"
+                  style={{ background: 'var(--field)' }}
+                />
+                <Chip
+                  active={hideImported}
+                  onClick={() => setHideImported((v) => !v)}
+                  title="Hide books already in your library"
                 >
-                  Try again
-                </button>
+                  Hide what I have
+                </Chip>
               </div>
-            )}
-            {corpus.isSuccess && corpusVisible.length === 0 && (
-              <p
-                className="px-2 py-8 text-center text-[13.5px] text-muted"
-                data-testid="corpus-empty"
-              >
-                {corpusHits.length > 0
-                  ? 'Everything here is already on your shelf.'
-                  : 'The catalog has nothing for this filter yet — it fills in as libraries are shared.'}
-              </p>
-            )}
 
-            {(corpusVisible.length > 0 || corpus.hasNextPage) && (
-              <>
-                <div
-                  className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
-                  data-testid="corpus-grid"
-                >
-                  {corpusVisible.map((h) => (
-                    <Card
-                      key={`${h.title}|${h.authors[0] ?? ''}`}
-                      hit={h}
-                      onOpen={() => setPreview(h)}
-                      owned={isOwned(h, owned)}
-                      book={personalBookForHit(h, books ?? [])}
-                    />
-                  ))}
-                </div>
-                {corpus.hasNextPage && (
-                  <div className="mt-4 text-center">
-                    <button
-                      type="button"
-                      data-testid="corpus-show-more"
-                      onClick={() => void corpus.fetchNextPage()}
-                      disabled={corpus.isFetchingNextPage}
-                      className="skin-control border border-line px-5 py-2 text-[13px] font-semibold text-ink disabled:opacity-50"
-                      style={{ background: 'var(--chip)' }}
-                    >
-                      {corpus.isFetchingNextPage ? 'Fetching…' : 'Show more'}
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </section>
-
-          {!genre ? (
-            <p className="text-[14px] text-muted">
-              Choose a genre to see new and notable books from the wider shelves.
-            </p>
-          ) : (
-            <>
-              {/* ── the external shelf — secondary now that the corpus leads ── */}
-              <h2 className="skin-label mb-3 text-[12px] uppercase tracking-[0.18em] text-muted">
-                New and notable from the wider shelves
-              </h2>
-
-              {q.isPending && (
+              {corpus.isPending && (
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" aria-hidden>
                   {Array.from({ length: 8 }, (_, i) => (
                     <div key={i} className="flex flex-col gap-2">
@@ -636,101 +587,224 @@ function DiscoverCatalog() {
                         style={{ background: 'var(--card)' }}
                       />
                       <div className="h-3 w-3/4 rounded" style={{ background: 'var(--card)' }} />
-                      <div className="h-3 w-1/2 rounded" style={{ background: 'var(--card)' }} />
                     </div>
                   ))}
                 </div>
               )}
 
-              {q.isError && (
-                <Surface radius="card" tone="bare" pad={5} className="text-center">
-                  <p className="text-[14px] text-ink">
-                    The wider shelves aren’t answering right now.
-                  </p>
-                  <p className="mt-1 text-[12.5px] text-muted">
-                    Usually a rate limit — it clears on its own.
-                  </p>
+              {corpus.isError && (
+                <div
+                  role="alert"
+                  className="mb-4 rounded-[var(--radius-card)] border border-line bg-card p-4 text-sm text-muted"
+                >
+                  <p>The shared catalog couldn’t be loaded.</p>
                   <button
-                    type="button"
-                    onClick={() => void q.refetch()}
-                    className="skin-control mt-3 border border-line px-4 py-1.5 text-[13px] font-semibold text-ink"
-                    style={{ background: 'var(--chip)' }}
+                    className="min-h-11 text-ink underline"
+                    onClick={() => void corpus.refetch()}
                   >
                     Try again
                   </button>
-                </Surface>
+                </div>
+              )}
+              {corpus.isSuccess && corpusVisible.length === 0 && (
+                <p
+                  className="px-2 py-8 text-center text-[13.5px] text-muted"
+                  data-testid="corpus-empty"
+                >
+                  {corpusHits.length > 0
+                    ? 'Everything here is already on your shelf.'
+                    : 'The catalog has nothing for this filter yet — it fills in as libraries are shared.'}
+                </p>
               )}
 
-              {q.isSuccess && q.data.length === 0 && (
-                <Surface radius="card" tone="bare" pad={5} className="text-center">
-                  <p className="text-[14px] text-ink">{voice.miss}</p>
-                  <p className="mt-1 text-[12.5px] text-muted">
-                    Try another genre — the smaller shelves run thin some weeks.
-                  </p>
-                </Surface>
-              )}
-
-              {q.isSuccess && q.data.length > 0 && (
+              {(corpusVisible.length > 0 || corpus.hasNextPage) && (
                 <>
-                  <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
-                    {/* the Hide-what-I-have chip lives in the corpus filter row above; one preference,
-                    one control, both sections obey it */}
-                    {/* Only offered when there IS another batch. A single-batch shelf — the curated
-                    fn-down path, a thin genre, or an older deployed fn still returning 12 — shows
-                    no control rather than a button that re-renders the same twenty. */}
-                    {batches > 1 && (
+                  <div
+                    className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+                    data-testid="corpus-grid"
+                  >
+                    {corpusVisible.map((h) => (
+                      <Card
+                        key={`${h.title}|${h.authors[0] ?? ''}`}
+                        hit={h}
+                        onOpen={() => setPreview(h)}
+                        owned={isOwned(h, owned)}
+                        book={personalBookForHit(h, books ?? [])}
+                      />
+                    ))}
+                  </div>
+                  {corpus.hasNextPage && (
+                    <div className="mt-4 text-center">
                       <button
                         type="button"
-                        data-testid="discover-new-batch"
-                        onClick={() => setBatchIndex((i) => i + 1)}
-                        className="skin-control-quiet border border-line px-3 py-1.5 text-[12.5px] text-ink"
+                        data-testid="corpus-show-more"
+                        onClick={() => void corpus.fetchNextPage()}
+                        disabled={corpus.isFetchingNextPage}
+                        className="skin-control border border-line px-5 py-2 text-[13px] font-semibold text-ink disabled:opacity-50"
                         style={{ background: 'var(--chip)' }}
                       >
-                        New batch{' '}
-                        <span className="skin-numeral text-muted">
-                          {(batchIndex % batches) + 1}/{batches}
-                        </span>
+                        {corpus.isFetchingNextPage ? 'Fetching…' : 'Show more'}
                       </button>
-                    )}
-                  </div>
-                  {rank.data && (
-                    <p className="mb-3 text-[12px] text-muted">
-                      Closest to your taste first — learned from the books you love.
-                    </p>
-                  )}
-                  {ordered.length === 0 ? (
-                    // Reachable only with the toggle on: the pool had hits, the reader owns all of them.
-                    <p
-                      className="px-2 py-10 text-center text-[14px] text-muted"
-                      data-testid="discover-all-owned"
-                    >
-                      You already have everything on this shelf. Turn off “Hide what I have” to see
-                      it.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                      {ordered.map(({ hit: h, taste }) => (
-                        <Card
-                          key={`${h.isbn}|${h.title}`}
-                          hit={h}
-                          onOpen={() => setPreview(h)}
-                          owned={isOwned(h, owned)}
-                          book={personalBookForHit(h, books ?? [])}
-                          taste={taste}
-                          anchors={anchors}
-                        />
-                      ))}
                     </div>
                   )}
                 </>
               )}
-            </>
+            </section>
           )}
 
-          <p className="mt-6 text-[12px]" style={{ color: 'var(--faint, var(--muted))' }}>
-            Sourced from the wider catalog — indie and KU releases can lag here. Your own shelves
-            always know better.
-          </p>
+          {view === 'releases' && (
+            <ReleaseBrowse
+              period={search.window ?? 'recent'}
+              newWorksOnly={!search.editions}
+              onPeriod={(window) =>
+                void navigate({ to: '/discover', search: { ...search, window }, replace: true })
+              }
+              onNewWorks={() =>
+                void navigate({
+                  to: '/discover',
+                  search: { ...search, editions: !search.editions || undefined },
+                  replace: true,
+                })
+              }
+              renderCard={(h) => (
+                <Card
+                  key={JSON.stringify([
+                    h.isbn,
+                    h.title,
+                    h.authors,
+                    h.pub,
+                    h.release?.formats,
+                    h.release?.territory,
+                  ])}
+                  hit={h}
+                  onOpen={() => setPreview(h)}
+                  owned={isOwned(h, owned)}
+                  book={personalBookForHit(h, books ?? [])}
+                />
+              )}
+            />
+          )}
+
+          {view === 'picks' &&
+            (!genre ? (
+              <p className="text-[14px] text-muted">
+                Choose a genre to explore curated picks, including older favorites.
+              </p>
+            ) : (
+              <>
+                {/* The bundled shelf remains available as explicitly curated backlist. */}
+                <h2 className="skin-label mb-3 text-[12px] uppercase tracking-[0.18em] text-muted">
+                  Curated picks
+                </h2>
+
+                <p className="mb-4 text-sm leading-relaxed text-muted">
+                  A selected shelf of books worth exploring, including backlist. For current
+                  publication dates, visit New & upcoming.
+                </p>
+                <div className="mb-4">
+                  <Chip active={hideImported} onClick={() => setHideImported((v) => !v)}>
+                    Hide what I have
+                  </Chip>
+                </div>
+                {q.isPending && (
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" aria-hidden>
+                    {Array.from({ length: 8 }, (_, i) => (
+                      <div key={i} className="flex flex-col gap-2">
+                        <div
+                          className="aspect-[2/3] rounded-[8px] border border-line"
+                          style={{ background: 'var(--card)' }}
+                        />
+                        <div className="h-3 w-3/4 rounded" style={{ background: 'var(--card)' }} />
+                        <div className="h-3 w-1/2 rounded" style={{ background: 'var(--card)' }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {q.isError && (
+                  <Surface radius="card" tone="bare" pad={5} className="text-center">
+                    <p className="text-[14px] text-ink">
+                      The wider shelves aren’t answering right now.
+                    </p>
+                    <p className="mt-1 text-[12.5px] text-muted">
+                      Usually a rate limit — it clears on its own.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void q.refetch()}
+                      className="skin-control mt-3 border border-line px-4 py-1.5 text-[13px] font-semibold text-ink"
+                      style={{ background: 'var(--chip)' }}
+                    >
+                      Try again
+                    </button>
+                  </Surface>
+                )}
+
+                {q.isSuccess && q.data.length === 0 && (
+                  <Surface radius="card" tone="bare" pad={5} className="text-center">
+                    <p className="text-[14px] text-ink">No curated picks for this genre yet.</p>
+                    <p className="mt-1 text-[12.5px] text-muted">
+                      Try another genre or explore the shared catalog.
+                    </p>
+                  </Surface>
+                )}
+
+                {q.isSuccess && q.data.length > 0 && (
+                  <>
+                    <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+                      {/* the Hide-what-I-have chip lives in the corpus filter row above; one preference,
+                    one control, both sections obey it */}
+                      {/* Only offered when there IS another batch. A single-batch shelf — the curated
+                    fn-down path, a thin genre, or an older deployed fn still returning 12 — shows
+                    no control rather than a button that re-renders the same twenty. */}
+                      {batches > 1 && (
+                        <button
+                          type="button"
+                          data-testid="discover-new-batch"
+                          onClick={() => setBatchIndex((i) => i + 1)}
+                          className="skin-control-quiet border border-line px-3 py-1.5 text-[12.5px] text-ink"
+                          style={{ background: 'var(--chip)' }}
+                        >
+                          New batch{' '}
+                          <span className="skin-numeral text-muted">
+                            {(batchIndex % batches) + 1}/{batches}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                    {rank.data && (
+                      <p className="mb-3 text-[12px] text-muted">
+                        Closest to your taste first — learned from the books you love.
+                      </p>
+                    )}
+                    {ordered.length === 0 ? (
+                      // Reachable only with the toggle on: the pool had hits, the reader owns all of them.
+                      <p
+                        className="px-2 py-10 text-center text-[14px] text-muted"
+                        data-testid="discover-all-owned"
+                      >
+                        You already have everything on this shelf. Turn off “Hide what I have” to
+                        see it.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                        {ordered.map(({ hit: h, taste }) => (
+                          <Card
+                            key={`${h.isbn}|${h.title}`}
+                            hit={h}
+                            onOpen={() => setPreview(h)}
+                            owned={isOwned(h, owned)}
+                            book={personalBookForHit(h, books ?? [])}
+                            taste={taste}
+                            anchors={anchors}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            ))}
         </>
       )}
       {preview && (
@@ -746,25 +820,47 @@ function DiscoverCatalog() {
 
 export function DiscoverScreen() {
   const search = discoverRoute.useSearch()
-  return search.browse || search.genre || search.query ? (
+  const browsing = Boolean(search.view || search.browse || search.genre || search.query)
+  const active = browsing ? (search.view ?? 'catalog') : 'guided'
+  return (
     <>
-      <div className="mx-auto max-w-5xl px-4 pt-6">
-        <Link
-          to="/discover"
-          search={{}}
-          className="inline-flex min-h-11 items-center text-sm text-ink underline"
-        >
-          ← Guided discovery
-        </Link>
-      </div>
-      <DiscoverCatalog />
+      <nav
+        aria-label="Discover sections"
+        className="mx-auto flex w-full max-w-5xl flex-wrap gap-2 px-4 pt-6 sm:px-6"
+      >
+        {(
+          [
+            ['guided', 'For you'],
+            ['releases', 'New & upcoming'],
+            ['picks', 'Curated picks'],
+            ['catalog', 'Shared catalog'],
+          ] as const
+        ).map(([view, label]) => (
+          <Link
+            key={view}
+            to="/discover"
+            search={view === 'guided' ? {} : { ...search, browse: true, view, query: undefined }}
+            aria-current={active === view ? 'page' : undefined}
+            className="skin-control inline-flex min-h-11 items-center border px-4 py-2 text-sm font-semibold"
+            style={{
+              background: active === view ? 'var(--accent-fill)' : 'var(--chip)',
+              color: active === view ? 'var(--on-primary)' : 'var(--ink)',
+              borderColor: active === view ? 'transparent' : 'var(--chip-border)',
+            }}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+      {browsing ? <DiscoverCatalog key={search.view ?? 'catalog'} /> : <DiscoverExperience />}
     </>
-  ) : (
-    <DiscoverExperience />
   )
 }
 
 export interface DiscoverSearch {
+  view?: 'releases' | 'picks' | 'catalog'
+  window?: 'recent' | 'upcoming'
+  editions?: boolean
   genre?: string
   query?: string
   browse?: boolean
@@ -780,6 +876,9 @@ export const discoverRoute = createRoute({
   // Fails CLOSED for both params — a non-string (a doubled query string arrives as an array)
   // resolves to undefined rather than throwing the screen away.
   validateSearch: (s: Record<string, unknown>): DiscoverSearch => ({
+    view: s.view === 'releases' || s.view === 'picks' || s.view === 'catalog' ? s.view : undefined,
+    window: s.window === 'upcoming' ? 'upcoming' : undefined,
+    editions: s.editions === true || s.editions === 'true' ? true : undefined,
     browse: s.browse === true || s.browse === 'true' ? true : undefined,
     saved: s.saved === true || s.saved === 'true' ? true : undefined,
     session:

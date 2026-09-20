@@ -43,7 +43,7 @@ export function DiscoverBookPreview({
           <dl className="mt-4 grid gap-3 text-sm leading-relaxed">
             {hit.pub && (
               <div>
-                <dt className="text-muted">Published</dt>
+                <dt className="text-muted">{hit.release ? 'Release date' : 'Published'}</dt>
                 <dd className="text-ink">{hit.pub}</dd>
               </div>
             )}
@@ -144,8 +144,8 @@ export function DiscoverBookPreview({
               authors: hit.authors,
               isbn: hit.isbn || undefined,
               cover: hit.cover || undefined,
-              source: hit.source,
-              sourceUrl: hit.sourceUrl,
+              source: hit.release?.source === 'hardcover' ? 'hardcover' : hit.source,
+              sourceUrl: hit.release?.sourceUrl ?? hit.sourceUrl,
               pub: hit.pub || undefined,
               want: true,
               discoverSession,

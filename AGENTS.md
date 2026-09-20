@@ -101,6 +101,12 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   tokens; the **e2e axe sweep** runs four (`tryst`, `grimoire`, `aphelion`, `marrow`) × both
   modes. A new component's contrast belongs in a registry-keyed core test — that is the layer
   that is exhaustive.
+- **Discover separates releases, curation and the shared catalog.** New & upcoming uses bounded
+  date-window requests to existing release providers; Curated picks may contain backlist. Neither
+  is the reader's personal library. Never backfill a current-release shelf with older curated
+  books or infer first publication from a matching year. Keep edition date, source, territory and
+  uncertainty visible, distinguish source failure from successful emptiness, and require the normal
+  deliberate Add flow. See `docs/tasks/discover-release-views.md`.
 - **Reader guidance controls presentation, never access.** New readers choose a gentle introduction,
   the full walkthrough or independent exploration. Account-scoped `profiles.guidance` is authoritative;
   a device-wide onboarding flag cannot skip another account's welcome. Milestones are bounded,

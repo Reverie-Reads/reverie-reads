@@ -419,10 +419,10 @@ rules are checked before any connector is enabled, and a technical refusal remai
 
 ## Future / upcoming releases
 
-There is **no reliable free feed of upcoming romance** — indie/KU release dates live as Amazon
-pre-orders and author newsletters, and Goodreads (which did author-follow + new-release alerts)
-closed its API. The viable model is **follow the authors you already own and check for their next
-book** (`scripts/fetch_upcoming.mjs`).
+Release coverage is incomplete across genres, publishers and territories. The app follows
+library authors through the existing release horizon and offers a separate bounded **New & upcoming**
+selection in Discover. Its older bundled recommendations are explicitly **Curated picks**, never a
+current-release fallback. See [Discover release views](../tasks/discover-release-views.md).
 
 | Source                   | Reliability /5    | Cost                         | How to get upcoming dates                                                                                                                    |
 | ------------------------ | ----------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
