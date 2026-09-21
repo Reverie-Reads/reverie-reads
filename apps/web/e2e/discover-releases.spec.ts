@@ -189,3 +189,138 @@ test('release failure offers recovery instead of claiming an empty shelf', async
   await expect(page.getByText(/One release source is unavailable/)).toBeVisible()
   await expect(page.getByText(/No releases match/)).toBeVisible()
 })
+
+for (const { width, changeFormat } of [
+  { width: 1280, changeFormat: false },
+  { width: 390, changeFormat: false },
+  { width: 1280, changeFormat: true },
+]) {
+  test(`selected release saves one wanted edition and returns to the same window at ${width}px (change format: ${changeFormat})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 })
+    const c = await client()
+    const title = 'Edition Handoff Journey'
+    await ok(
+      c.sb.from('books').delete().eq('owner_id', c.uid).eq('title', title),
+      'clear handoff fixture',
+    )
+    const sourceUrl = 'https://hardcover.app/books/edition-handoff-journey'
+    const pub = new Date(Date.now() + 20 * 864e5).toISOString().slice(0, 10)
+    const release = {
+      title,
+      authors: ['Nell Writer', 'Tariq Writer'],
+      isbn: '9798991234504',
+      pub,
+      cover: '',
+      release: {
+        source: 'hardcover',
+        precision: 'day',
+        sourceUrl,
+        publisher: 'Example Press',
+        formats: width === 1280 ? ['Hardback'] : ['Collectors edition'],
+        checkedAt: new Date().toISOString(),
+      },
+    }
+    await page.route('**/functions/v1/enrich', (r) => r.fulfill({ json: {} }))
+    await page.route('**/functions/v1/covers**', (r) => r.fulfill({ status: 422, json: {} }))
+    await page.route('**/functions/v1/embed', (r) =>
+      r.fulfill({ json: { hasTaste: false, scores: [] } }),
+    )
+    await page.route('**/functions/v1/releases', (r) =>
+      r.fulfill({
+        json: {
+          hits: [release],
+          providers: { hardcover: 'ready', prh: 'not_configured' },
+          checkedAt: new Date().toISOString(),
+        },
+      }),
+    )
+    const rows = async () => {
+      const result = await c.sb.from('books').select('*').eq('owner_id', c.uid).eq('title', title)
+      if (result.error) throw result.error
+      return result.data
+    }
+    try {
+      await signIn(page, c.session)
+      await page.goto('/discover?view=releases&window=upcoming&editions=true')
+      await page.getByRole('button', { name: `View details for ${title}`, exact: true }).click()
+      await page
+        .getByRole('dialog')
+        .getByRole('link', { name: 'Add to wishlist', exact: true })
+        .click()
+      await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(title)
+      await expect(page.getByLabel('Publication date', { exact: true })).toHaveValue(pub)
+      await expect(page.getByLabel('Edition format', { exact: true })).toHaveValue(
+        width === 1280 ? 'Hardcover' : '',
+      )
+      await expect(
+        page.getByRole('link', { name: 'Release listing ↗', exact: true }),
+      ).toHaveAttribute('href', sourceUrl)
+      await expect(page.getByText(`ISBN ${release.isbn}`, { exact: true })).toBeVisible()
+      expect(await rows()).toHaveLength(0)
+      await page.reload()
+      await expect(page.getByLabel('Publication date', { exact: true })).toHaveValue(pub)
+      expect(await rows()).toHaveLength(0)
+      if (changeFormat) {
+        await page.getByLabel('Edition format', { exact: true }).selectOption('Paperback')
+        await expect(page.getByRole('status')).toContainText('no longer match this release')
+      }
+      await page.screenshot({
+        path: test.info().outputPath(`edition-draft-${width}.png`),
+        fullPage: true,
+      })
+      await page.locator('[data-book-tour="book-save"]').click()
+      await expect(page.getByRole('heading', { name: 'Added — finish the details' })).toBeVisible()
+      const saved = await rows()
+      expect(saved).toHaveLength(1)
+      expect(saved[0]).toMatchObject({
+        isbn: changeFormat ? null : release.isbn,
+        ...(changeFormat ? { pub_y: null, pub_m: null, pub_d: null } : {}),
+        ownership: 'unowned',
+        wishlist: true,
+        borrowed: false,
+        read_status: 'unset',
+        progress: 0,
+        owned_physical: null,
+      })
+      expect(saved[0].copy_inventory.copies).toHaveLength(1)
+      expect(saved[0].copy_inventory.copies[0].state).toBe('wishlist')
+      expect(saved[0].copy_inventory.editions[0]).toMatchObject({
+        isbn: changeFormat ? '' : release.isbn,
+        published: changeFormat ? '' : pub,
+        publisher: changeFormat ? '' : 'Example Press',
+        ...(!changeFormat ? { sourceUrl } : {}),
+        format: changeFormat ? 'paperback' : width === 1280 ? 'hardcover' : 'unknown',
+      })
+      await page.getByRole('link', { name: 'Open your book', exact: true }).click()
+      await expect(page.getByRole('button', { name: 'Manage copies', exact: true })).toBeVisible()
+      if (changeFormat) {
+        expect(saved[0].copy_inventory.editions[0]).not.toHaveProperty('sourceUrl')
+        await expect(
+          page.getByRole('link', { name: 'Release listing ↗', exact: true }),
+        ).toHaveCount(0)
+      } else {
+        await expect(
+          page.getByRole('link', { name: 'Release listing ↗', exact: true }),
+        ).toHaveAttribute('href', sourceUrl)
+      }
+      const authors = await c.sb
+        .from('book_authors')
+        .select('authors(name)')
+        .eq('book_id', saved[0].id)
+      if (authors.error) throw authors.error
+      expect(JSON.stringify(authors.data)).toContain('Nell Writer')
+      expect(JSON.stringify(authors.data)).toContain('Tariq Writer')
+      await page.goBack()
+      await page.getByRole('link', { name: 'Return to releases', exact: true }).click()
+      await expect(page).toHaveURL(/window=upcoming/)
+      await expect(page).toHaveURL(/editions=true/)
+    } finally {
+      await ok(
+        c.sb.from('books').delete().eq('owner_id', c.uid).eq('title', title),
+        'remove handoff fixture',
+      )
+    }
+  })
+}

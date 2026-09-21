@@ -22,6 +22,8 @@ export interface LibraryEdition {
   published: string
   pages: number | null
   cover: string
+  /** Optional reader-retained release listing; never catalog verification. */
+  sourceUrl?: string
 }
 export interface LibraryCopy {
   id: string
@@ -55,6 +57,28 @@ export function validEditionCover(value: string): boolean {
   try {
     const url = new URL(value)
     return url.protocol === 'https:' && !!url.hostname && !url.username && !url.password
+  } catch {
+    return false
+  }
+}
+export function validEditionSourceUrl(value: string): boolean {
+  if (!value) return true
+  try {
+    const url = new URL(value)
+    return (
+      value.length <= 2048 &&
+      /^https:\/\/(hardcover[.]app|www[.]penguinrandomhouse[.]com)\/books\/[^/?#@\s]+(?:\/[^/?#@\s]+)*\/?$/.test(
+        value,
+      ) &&
+      url.protocol === 'https:' &&
+      !url.username &&
+      !url.password &&
+      !url.port &&
+      !url.search &&
+      !url.hash &&
+      ['hardcover.app', 'www.penguinrandomhouse.com'].includes(url.hostname) &&
+      /^\/books\/[^/?#@\s]+(?:\/[^/?#@\s]+)*\/?$/.test(url.pathname)
+    )
   } catch {
     return false
   }
@@ -102,6 +126,8 @@ export function parseCopyInventory(value: unknown): CopyInventory | null {
       !validEditionDate(e.published) ||
       !text(e.cover, 2048) ||
       !validEditionCover(e.cover) ||
+      (e.sourceUrl !== undefined &&
+        (!text(e.sourceUrl, 2048) || !validEditionSourceUrl(e.sourceUrl))) ||
       !(
         e.pages === null ||
         (typeof e.pages === 'number' &&
@@ -111,9 +137,17 @@ export function parseCopyInventory(value: unknown): CopyInventory | null {
       ) ||
       Object.keys(e).some(
         (k) =>
-          !['id', 'label', 'format', 'isbn', 'publisher', 'published', 'pages', 'cover'].includes(
-            k,
-          ),
+          ![
+            'id',
+            'label',
+            'format',
+            'isbn',
+            'publisher',
+            'published',
+            'pages',
+            'cover',
+            'sourceUrl',
+          ].includes(k),
       )
     )
       return null

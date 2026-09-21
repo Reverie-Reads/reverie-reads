@@ -858,3 +858,11 @@ column. Household summaries get aggregate flags; private copy labels/locations a
 household RPCs. Backup v10 restores inventory after annotations to preserve sharing consent.
 Legacy merges are blocked for configured inventories; no historical duplicate rows are collapsed.
 See `../tasks/library-editions-copies.md`.
+
+### Private edition release references
+
+An edition in `books.copy_inventory` may retain an optional `sourceUrl` for an allowlisted Hardcover
+or Penguin Random House book page. It is reader-visible provenance, not shared catalog verification.
+The inventory remains version 1 with an optional field; backup v11 records the compatibility boundary.
+Explicit release Add inserts the one edition/copy with the new parent book atomically. No migration
+creates historical copy records. See `../tasks/discover-release-edition-handoff.md`.

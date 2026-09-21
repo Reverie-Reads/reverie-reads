@@ -165,6 +165,12 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Goodreads/StoryGraph CSV importer, and the spoiler-gating rule (`comment.unit <=
 myProgress`). Move them into `packages/core` with tests.
 - Copy stays sentence case, plain verbs, no filler; empty states invite action.
+- **Release handoffs select an edition, not a work-search ISBN.** Discover's bounded release draft
+  must agree with the complete outer identity, ISBN and date. Keep the ordinary Hardcover work-search
+  guard. Unknown formats remain unknown; changing identity or a known format detaches inherited
+  edition facts. Explicit Add saves one inventory atomically with a new book; duplicate matches
+  require review rather than losing copy details. Release source URLs stay private references, never
+  catalog authority. Backup v11 carries them. See `docs/tasks/discover-release-edition-handoff.md`.
 - **Single-book Add keeps a retry identity.** Pending submissions and duplicate decisions share
   one synchronous guard. A failed attempt keeps its draft and original duplicate action. Retrying
   checks its exact reader-owned insertion UUID first; an already saved or removed row is never

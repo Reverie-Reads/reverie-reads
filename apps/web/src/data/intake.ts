@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import {
   applyFieldPicks,
+  parseCopyInventory,
   decideIntake,
   emptyDate,
   fromFirstLast,
@@ -48,6 +49,7 @@ export function incomingToBook(inc: Incoming): Book {
   const subgenre = inc.subgenre ?? ''
   return {
     id: '',
+    ...(inc.copyInventory ? { copyInventory: inc.copyInventory } : {}),
     corpusWorkId: inc.corpusWorkId,
     title: inc.title,
     first: inc.first ?? '',
@@ -110,9 +112,10 @@ export async function insertNewBook(
   newBookId?: string,
 ): Promise<{ id: string; book: Book }> {
   const book = incomingToBook(inc)
+  if (inc.copyInventory != null && !parseCopyInventory(inc.copyInventory)) throw new Error('Invalid edition details. Nothing was added.')
   const { data, error } = await supabase
     .from('books')
-    .insert({ ...toBookRow(book), owner_id: ownerId, title: book.title, ...(newBookId ? { id: newBookId } : {}) })
+    .insert({ ...toBookRow(book), ...(inc.copyInventory ? { copy_inventory: inc.copyInventory } : {}), owner_id: ownerId, title: book.title, ...(newBookId ? { id: newBookId } : {}) })
     .select('id')
     .single()
   if (error) throw error
@@ -131,6 +134,7 @@ export async function foldIn(
   ownerId: string,
   picks?: MergeFieldPicks,
 ): Promise<ImportMergeResult> {
+  if (inc.copyInventory) throw new Error('Open the existing book to manage its editions and copies, or keep both records.')
   // `applyFieldPicks` starts from mergeImport's own patch, so with no picks — the one-click path,
   // and every import row — this is byte-identical to what it wrote before the picker existed.
   const result = { ...mergeImport(existing, inc), patch: applyFieldPicks(existing, inc, picks) }
@@ -173,7 +177,7 @@ export async function applyIncoming(
 ): Promise<IntakeResult> {
   const m = matchBook(inc, library)
   const verdict = m.strength !== 'none' ? (opts.verdicts?.get(verdictLookupKey(m.book.id, inc)) ?? null) : null
-  const decision = decideIntake(m.strength, {
+  const decision = inc.copyInventory && m.strength !== 'none' ? 'review' : decideIntake(m.strength, {
     autoMergeStrong: opts.autoMergeStrong ?? true,
     verdict,
     fuzzyMode: opts.fuzzy,

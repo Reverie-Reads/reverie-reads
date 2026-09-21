@@ -168,3 +168,11 @@ it('does not put borrowed audio on Owned audiobook when the paperback is owned',
   }
   expect(onUnmarkedShelf(book({ copyInventory: mixed, ...inventoryPossession(mixed) }))).toBe(true)
 })
+
+it('retains optional release links without treating them as covers', () => {
+  const value = inventory()
+  value.editions[0]!.sourceUrl = 'https://hardcover.app/books/edition-handoff'
+  expect(parseCopyInventory(value)).toEqual(value)
+  value.editions[0]!.sourceUrl = 'https://hardcover.app.evil.test/books/title'
+  expect(parseCopyInventory(value)).toBeNull()
+})

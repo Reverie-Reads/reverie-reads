@@ -1,5 +1,6 @@
+import { discoverAddSearch } from '../lib/releaseHandoff'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { discoveryRelationship, splitName, type Book } from '@reverie/core'
 import { Modal } from './Modal'
 import { CoverImage } from './CoverImage'
@@ -20,6 +21,7 @@ export function DiscoverBookPreview({
   discoverSession?: string
   onClose: () => void
 }) {
+  const releaseContext = useRouterState({ select: (state) => state.location.search })
   const author = hit.authors.join(', ')
   const { first, last } = splitName(hit.authors[0] ?? '')
   const details = useQuery({
@@ -137,19 +139,7 @@ export function DiscoverBookPreview({
         ) : (
           <Link
             to="/add"
-            search={{
-              work: hit.corpusWorkId,
-              title: hit.title,
-              author: hit.authors[0] || undefined,
-              authors: hit.authors,
-              isbn: hit.isbn || undefined,
-              cover: hit.cover || undefined,
-              source: hit.release?.source === 'hardcover' ? 'hardcover' : hit.source,
-              sourceUrl: hit.release?.sourceUrl ?? hit.sourceUrl,
-              pub: hit.pub || undefined,
-              want: true,
-              discoverSession,
-            }}
+            search={discoverAddSearch(hit, discoverSession, releaseContext)}
             className="skin-control skin-btn-primary inline-flex min-h-11 items-center px-4 text-sm font-semibold"
           >
             Add to wishlist

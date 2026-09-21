@@ -26,7 +26,7 @@ import { persistContributors } from './contributors'
 // Restore is already a staged, multi-request operation, so run these sequentially and fail at the
 // first rejected batch instead of creating a burst of ownership-trigger work.
 const RESTORE_OWNERSHIP_BATCH_SIZE = 100
-const CURRENT_BACKUP_VERSION = 10
+const CURRENT_BACKUP_VERSION = 11
 
 async function currentUserId(): Promise<string> {
   const { data } = await supabase.auth.getUser()
@@ -465,7 +465,7 @@ export function seriesRulingRows(
 }
 
 /**
- * Serialize the WHOLE account to a JSON backup (v10): books (incl. genre/tags/intensity/owned
+ * Serialize the WHOLE account to a JSON backup (v11): books (incl. genre/tags/intensity/owned
  * formats), per-book contributors, assigned tropes (with emphasis) and moods, reads, lists +
  * memberships, the user's reviews, merge verdicts, followed/muted authors,
  * the reader's REFUSALS (removed series slots and dismissed trope suggestions), and the profile
