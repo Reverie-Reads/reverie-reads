@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SKIN_VOICE, type SkinId } from '@reverie/core'
 
 const state = vi.hoisted(() => ({
-  search: {} as { genre?: string; query?: string; browse?: boolean },
+  search: {} as { genre?: string; query?: string; browse?: boolean; view?: 'picks' | 'catalog' },
   skin: 'tryst' as SkinId,
   browse: vi.fn(),
   fetchDiscover: vi.fn(async () => []),
@@ -23,6 +23,10 @@ vi.mock('../skin/labels', () => ({
   useVoice: () => SKIN_VOICE[state.skin],
 }))
 vi.mock('../data/books', () => ({ useBooks: () => ({ data: [] }) }))
+vi.mock('../data/search', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../data/search')>()),
+  useSearchEverywhere: () => ({ data: [], isSuccess: true }),
+}))
 vi.mock('../data/works', () => ({
   useWorksBrowse: (filters: unknown) => {
     state.browse(filters)
@@ -59,6 +63,13 @@ function mount() {
 }
 
 describe('Discover content is independent of appearance', () => {
+  it('keeps an empty explicit search distinct from an empty curated shelf', () => {
+    state.search = { view: 'picks', query: 'missing book' }
+    mount()
+    expect(screen.getByText('No matches for this search yet.')).toBeInTheDocument()
+    expect(screen.queryByText('No curated picks for this genre yet.')).not.toBeInTheDocument()
+  })
+
   it('catalog browse opens the full corpus without fetching a skin-selected genre and stays neutral after a room change', async () => {
     const view = mount()
     expect(screen.getByRole('button', { name: 'All genres' })).toHaveAttribute(
@@ -66,7 +77,8 @@ describe('Discover content is independent of appearance', () => {
       'true',
     )
     expect(state.browse).toHaveBeenLastCalledWith({ genre: '', tag: '', q: '' })
-    expect(screen.getByText(/Choose a genre to see new and notable books/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Shared catalog' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Curated picks' })).not.toBeInTheDocument()
     state.skin = 'grimoire'
     view.rerender()
     await waitFor(() =>
@@ -80,6 +92,7 @@ describe('Discover content is independent of appearance', () => {
   })
 
   it('records an explicit genre even when it matches the room and retains it after changing rooms', async () => {
+    state.search = { browse: true, view: 'picks' }
     const view = mount()
     fireEvent.click(screen.getByRole('button', { name: 'Romance' }))
     view.rerender()
@@ -95,7 +108,7 @@ describe('Discover content is independent of appearance', () => {
   })
 
   it('honors a deep-linked genre and lets the reader deliberately return to All genres', async () => {
-    state.search = { genre: 'mystery' }
+    state.search = { genre: 'mystery', view: 'picks' }
     const view = mount()
     await waitFor(() =>
       expect(state.fetchDiscover).toHaveBeenCalledWith('mystery', expect.any(AbortSignal)),

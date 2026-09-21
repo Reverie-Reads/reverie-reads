@@ -242,9 +242,10 @@ const fetchWorksPage = (f: WorksFilters, page: number): Promise<WorkRow[]> => {
  * accumulation — the comment exists because the two sit near each other in DiscoverRoute and the
  * difference is a decision, not an accident.
  */
-export function useWorksBrowse(filters: WorksFilters) {
+export function useWorksBrowse(filters: WorksFilters, enabled = true) {
   return useInfiniteQuery({
     queryKey: ['works-browse', filters.genre, filters.tag, filters.q],
+    enabled,
     queryFn: ({ pageParam }) => fetchWorksPage(filters, pageParam),
     initialPageParam: 0,
     getNextPageParam: (lastPage, pages) =>

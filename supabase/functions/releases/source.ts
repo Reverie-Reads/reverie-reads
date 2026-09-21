@@ -76,7 +76,7 @@ interface PrhTitle {
 
 const string = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
 const cleanIsbn = (value: unknown): string =>
-  string(value)
+  (typeof value === 'number' && Number.isSafeInteger(value) ? String(value) : string(value))
     .replace(/[^0-9Xx]/g, '')
     .toUpperCase()
 const norm = (value: string): string =>
@@ -149,11 +149,14 @@ export function hardcoverEditionToRelease(
   const firstPub =
     string(book?.release_date) ||
     (Number.isInteger(Number(book?.release_year)) ? String(book?.release_year) : '')
-  const kind: ReleaseKind | undefined = firstPub
-    ? pub.slice(0, firstPub.length) === firstPub
+  const firstBounds = bounds(firstPub)
+  const editionBounds = bounds(pub)
+  const kind: ReleaseKind | undefined =
+    releaseDatePrecision(firstPub) === 'day' && firstPub === pub
       ? 'new_work'
-      : 'new_edition'
-    : undefined
+      : firstBounds && editionBounds && firstBounds.last < editionBounds.first
+        ? 'new_edition'
+        : undefined
   const slug = string(book?.slug)
   return {
     title,
@@ -294,4 +297,98 @@ export function mergeAuthorReleases(hits: readonly ReleaseHit[], now: number): R
     })
   }
   return merged.sort((a, b) => compareRank(a, b, now)).slice(0, 25)
+}
+
+// A bounded, date-based selection. It is not a complete publishing calendar.
+
+export type ReleaseProviderState = 'ready' | 'unavailable' | 'not_configured'
+export interface ReleaseBrowse {
+  hits: ReleaseHit[]
+  checkedAt: string
+  providers: { hardcover: ReleaseProviderState; prh: ReleaseProviderState }
+}
+
+/** UTC dates are publishing-calendar dates, not instants in the reader's timezone. */
+export function browseDates(now: Date) {
+  const today = now.toISOString().slice(0, 10)
+  const start = new Date(`${today}T00:00:00Z`)
+  const end = new Date(start)
+  const next = new Date(start)
+  next.setUTCDate(next.getUTCDate() + 1)
+  start.setUTCDate(start.getUTCDate() - 90)
+  end.setUTCDate(end.getUTCDate() + 183)
+  return {
+    today,
+    tomorrow: next.toISOString().slice(0, 10),
+    after: start.toISOString().slice(0, 10),
+    before: end.toISOString().slice(0, 10),
+  }
+}
+
+/** Keep selected editions intact. A matching title is not permission to mix ISBN-bound fields. */
+export function selectReleaseBrowse(hits: ReleaseHit[], now: Date): ReleaseHit[] {
+  const { today, after, before } = browseDates(now)
+  const seen = new Set<string>()
+  const admitted = hits.filter((hit) => {
+    // This endpoint requests exact dates. Partial dates remain in the author horizon.
+    if (releaseDatePrecision(hit.pub) !== 'day' || hit.pub < after || hit.pub > before) return false
+    const key = hit.isbn
+      ? `${hit.isbn}|${hit.pub}|${hit.release.territory ?? ''}`
+      : JSON.stringify([
+          hit.title,
+          hit.authors,
+          hit.pub,
+          hit.release.formats,
+          hit.release.territory,
+        ])
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  // Reserve the bounded selection for evidenced new books before filling with other editions.
+  // Otherwise a dense batch of today's reprints could leave the default view empty.
+  const select = (rows: ReleaseHit[], compare: (a: ReleaseHit, b: ReleaseHit) => number) =>
+    rows
+      .sort(
+        (a, b) =>
+          Number(b.release.kind === 'new_work') - Number(a.release.kind === 'new_work') ||
+          compare(a, b),
+      )
+      .slice(0, 40)
+      .sort(compare)
+  return [
+    ...select(
+      admitted.filter((h) => h.pub <= today),
+      (a, b) => b.pub.localeCompare(a.pub),
+    ),
+    ...select(
+      admitted.filter((h) => h.pub > today),
+      (a, b) => a.pub.localeCompare(b.pub),
+    ),
+  ]
+}
+
+export async function collectReleaseBrowse(
+  sources: { hardcover?: () => Promise<ReleaseHit[]>; prh?: () => Promise<ReleaseHit[]> },
+  now: Date,
+): Promise<ReleaseBrowse> {
+  const providers: ReleaseBrowse['providers'] = {
+    hardcover: 'not_configured',
+    prh: 'not_configured',
+  }
+  const results = await Promise.all(
+    (['hardcover', 'prh'] as const).map(async (name) => {
+      const load = sources[name]
+      if (!load) return []
+      try {
+        const hits = await load()
+        providers[name] = 'ready'
+        return hits
+      } catch {
+        providers[name] = 'unavailable'
+        return []
+      }
+    }),
+  )
+  return { hits: selectReleaseBrowse(results.flat(), now), providers, checkedAt: now.toISOString() }
 }
