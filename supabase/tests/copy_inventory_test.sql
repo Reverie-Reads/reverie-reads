@@ -47,5 +47,8 @@ set local role anon;
 select throws_ok($$select public.save_copy_inventory('f9600000-0000-4000-8000-000000000010',1,'{}')$$,'42501',null,'anonymous role denied by ACL');
 reset role;
 select ok(not has_function_privilege('service_role','public.save_copy_inventory(uuid,integer,jsonb)','execute'),'service role has no unintended RPC grant');
+select is(public.valid_copy_inventory(jsonb_set(current_setting('test.inventory')::jsonb,'{editions,0,sourceUrl}','"https://hardcover.app/books/copies-test"')),true,'release source link accepted');
+select is(public.valid_copy_inventory(jsonb_set(current_setting('test.inventory')::jsonb,'{editions,0,sourceUrl}','"https://hardcover.app.evil.test/books/copies-test"')),false,'source lookalike rejected');
+select is(public.valid_copy_inventory(jsonb_set(current_setting('test.inventory')::jsonb,'{editions,0,sourceUrl}','"https://hardcover.app/books/copies-test?token=private"')),false,'source query data rejected');
 select * from finish();
 rollback;

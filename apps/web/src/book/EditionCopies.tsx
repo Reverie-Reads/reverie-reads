@@ -94,6 +94,16 @@ export function EditionCopies({ book }: { book: Book }) {
                     .filter(Boolean)
                     .join(' · ')}
                 </p>
+                {edition.sourceUrl && (
+                  <a
+                    href={edition.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex min-h-11 items-center text-[13px] text-ink underline"
+                  >
+                    Release listing ↗
+                  </a>
+                )}
                 <ul className="mt-2 space-y-1 text-[13px] text-ink">
                   {inventory.copies
                     .filter((c) => c.editionId === edition.id)
@@ -149,7 +159,7 @@ function CopyEditor({ book, onClose }: { book: Book; onClose: () => void }) {
     if (saving.current) return
     if (!parseCopyInventory(draft)) {
       setError(
-        'Check ISBNs, publication dates (YYYY, YYYY-MM or YYYY-MM-DD), page counts (1–20,000) and HTTPS cover links. Google Books images cannot be saved as edition covers.',
+        'Check ISBNs, publication dates (YYYY, YYYY-MM or YYYY-MM-DD), page counts (1–20,000) and HTTPS cover links. Google Books images cannot be saved as edition covers. Release links must be Hardcover or Penguin Random House book pages.',
       )
       return
     }
@@ -273,6 +283,21 @@ function CopyEditor({ book, onClose }: { book: Book; onClose: () => void }) {
                       }
                     />
                   </Field>
+                  <div className="sm:col-span-2">
+                    <Field label="Release listing (optional)">
+                      <input
+                        className={field}
+                        type="url"
+                        maxLength={2048}
+                        value={edition.sourceUrl ?? ''}
+                        onChange={(e) => editionChange(edition.id, { sourceUrl: e.target.value })}
+                      />
+                    </Field>
+                    <p className="mt-1 text-[12px] text-muted">
+                      Hardcover or Penguin Random House book page. A reference link, not
+                      verification of edited details.
+                    </p>
+                  </div>
                   <div className="sm:col-span-2">
                     <Field label="Cover image link (HTTPS)">
                       <input

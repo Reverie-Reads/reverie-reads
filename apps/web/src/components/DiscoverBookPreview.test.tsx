@@ -9,6 +9,7 @@ vi.mock('../lib/discoveryDetails', async (original) => ({
   fetchDiscoveryDetails: details,
 }))
 vi.mock('@tanstack/react-router', () => ({
+  useRouterState: () => ({}),
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
 }))
 vi.mock('./Modal', () => ({

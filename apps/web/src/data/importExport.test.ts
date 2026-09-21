@@ -809,7 +809,7 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
     }
   })
 
-  it('exports v10 with taxonomy, structured series authority, and the account arrangement', async () => {
+  it('exports v11 with taxonomy, structured series authority, and the account arrangement', async () => {
     const parsed = JSON.parse(await buildBackup()) as {
       v: number
       tropes: Record<string, { name: string; emphasis: string }[]>
@@ -818,7 +818,7 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
       profile: Record<string, unknown>
     }
     expect(parsed.profile.guidance).toEqual({ version: 1, mode: 'gentle', setupComplete: true, milestones: ['books'], revealed: ['share'], tour: 'plan' })
-    expect(parsed.v).toBe(10)
+    expect(parsed.v).toBe(11)
     expect((parsed.tropes['book-a'] ?? []).map((t) => t.name).sort()).toEqual(['Dragons With Opinions', 'Enemies to Lovers'])
     expect(parsed.moods['book-a']).toEqual([{ name: 'Devastating' }])
     expect(parsed.author_follows).toHaveLength(2)
@@ -1416,7 +1416,7 @@ describe('restore preflight', () => {
     const preview = inspectBackup(json)
 
     expect(preview).toMatchObject({
-      version: 10,
+      version: 11,
       isNewerVersion: false,
       integrity: 'verified',
       restoresProfile: true,
@@ -1474,7 +1474,7 @@ describe('restore preflight', () => {
 
   it('identifies sections from a newer backup so the UI can block a lossy restore', async () => {
     const parsed = JSON.parse(await buildBackup()) as Record<string, unknown>
-    parsed.v = 11
+    parsed.v = 12
     ;(parsed.counts as Record<string, number>).reading_quotes = 1
     parsed.reading_quotes = [{ text: 'A future section' }]
 
@@ -1513,6 +1513,7 @@ describe('edition and copy inventory backup', () => {
   it('restores all copies, IDs and private locations onto the receiving book', async () => {
     const edition = newEdition('hardcover')
     edition.label = 'Signed anniversary edition'
+    edition.sourceUrl = 'https://hardcover.app/books/edition-handoff'
     const one = { ...newCopy(edition.id, 'owned'), location: 'Private study' }
     const two = newCopy(edition.id, 'borrowed')
     const inventory = { version: 1, editions: [edition], copies: [one, two] }

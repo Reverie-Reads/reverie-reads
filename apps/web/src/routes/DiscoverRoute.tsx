@@ -1,8 +1,9 @@
+import { discoverAddSearch } from '../lib/releaseHandoff'
 import { LibraryStatus } from '../components/LibraryStatus'
 import { SearchSaveNotice } from '../components/SearchSaveNotice'
 import { ReadingTips } from '../components/ReadingTips'
 import { useEffect, useMemo, useState } from 'react'
-import { createRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createRoute, Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
   coverStateSuffix,
@@ -80,6 +81,7 @@ function Card({
   anchors?: TasteAnchors | null
 }) {
   const navigate = useNavigate()
+  const releaseContext = useRouterState({ select: (state) => state.location.search })
   const author = hit.authors[0] ?? ''
   const year = hit.pub.slice(0, 4)
   const { first, last } = splitName(author)
@@ -167,19 +169,7 @@ function Card({
             onClick={() =>
               void navigate({
                 to: '/add',
-                search: {
-                  work: hit.corpusWorkId,
-                  title: hit.title,
-                  author: author || undefined,
-                  authors: hit.authors,
-                  source: hit.release?.source === 'hardcover' ? 'hardcover' : hit.source,
-                  sourceUrl: hit.release?.sourceUrl ?? hit.sourceUrl,
-                  isbn: hit.isbn || undefined,
-                  cover: hit.cover || undefined,
-                  pub: hit.pub || undefined,
-                  // Discover is a wanting context — the add form defaults to the wishlist option.
-                  want: true,
-                },
+                search: discoverAddSearch(hit, undefined, releaseContext),
               })
             }
             className="skin-control border border-line px-3 py-1 text-[12px] font-semibold text-ink"

@@ -1,3 +1,4 @@
+import { parseReleaseHandoff, releaseFormat, type ReleaseHandoff } from '../lib/releaseHandoff'
 import { useEffect, useRef, useState } from 'react'
 import { createRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
@@ -6,6 +7,10 @@ import {
   formatAuthors,
   makeSeriesClaim,
   normalizeIsbn,
+  newEdition,
+  newCopy,
+  validEditionCover,
+  inventoryPossession,
   parseNumericField,
   PAGE_COUNT,
   parsePubDate,
@@ -102,6 +107,7 @@ interface SearchHit {
  * prefill is worth; the tags stay on the corpus row for whoever wires the refine step to it.
  */
 interface Picked extends Partial<SearchHit> {
+  edition?: ReleaseHandoff
   corpusWorkId?: string
   series?: string
   position?: string
@@ -348,7 +354,16 @@ function AddForm({
     // reader had chosen it. types.ts is explicit — "'' = not chosen yet — the edit form prompts,
     // never guesses" — and this form was guessing.
     genre: hit.genre ?? '',
-    format: 'Paperback' as string,
+    format: hit.edition
+      ? {
+          paperback: 'Paperback',
+          hardcover: 'Hardcover',
+          ebook: 'eBook',
+          audiobook: 'Audiobook',
+          physical: 'Physical',
+          unknown: '',
+        }[hit.edition.format]
+      : ('Paperback' as string),
     readStatus: 'unset' as Book['readStatus'],
     // Release cards and the manual horizon form carry flexible precision into Add. Keeping this
     // editable lets the reader correct a catalog date before it becomes their own record.
@@ -378,6 +393,18 @@ function AddForm({
   // value (or never touched) -> false, so later corpus corrections remain default-only.
   const seriesEdited = useRef(false)
   const [seriesClaim] = useState<SeriesClaim>(hit.seriesClaim ?? { origin: 'unknown' })
+  const [editionIds] = useState(() => ({ edition: crypto.randomUUID(), copy: crypto.randomUUID() }))
+  const releaseFieldsEdited = useRef({ pub: false, pages: false })
+  const selectedFormat = releaseFormat([form.format])
+  const releaseMatches =
+    !!hit.edition &&
+    workKeyOf({ title: form.title, last: formatAuthors(contribs) }) ===
+      workKeyOf({
+        title: hit.edition.title,
+        last: formatAuthors(contributorsFromAuthors(hit.edition.authors)),
+      }) &&
+    (hit.edition.format === 'unknown' || selectedFormat === hit.edition.format)
+
   // Distinct contributor names across the library, for the editor's autocomplete.
   const authorSuggestions = [
     ...new Set((books ?? []).flatMap((b) => b.contributors.map((c) => c.name)).filter(Boolean)),
@@ -391,6 +418,7 @@ function AddForm({
   const [enriching, setEnriching] = useState(false)
   const set = (k: keyof typeof form, v: string) => {
     setForm((p) => ({ ...p, [k]: v }))
+    if (k === 'pub' || k === 'pages') releaseFieldsEdited.current[k] = true
     if (k === 'position') setPositionError(null)
     if (k === 'pub') setPublicationError(null)
     if (k === 'pages') setPagesError(null)
@@ -416,7 +444,7 @@ function AddForm({
       author:
         contribs.find((c) => c.role === 'author' || c.role === 'co_author')?.name ||
         contribs[0]?.name,
-      isbn: hit.isbn,
+      isbn: hit.edition && !releaseMatches ? '' : hit.isbn,
     })
     setEnriching(false)
     if (requestedIdentity !== currentIdentity.current) {
@@ -494,7 +522,13 @@ function AddForm({
     // wishlist add they sit latent (bookOwnedFormats suppresses them until the book is in hand),
     // so flipping to Owned later lands with the right copy already marked.
     const owned: Owned = {
-      physical: f.includes('hardcover') ? 'hardcover' : isEbook || isAudio ? false : 'paperback',
+      physical: f.includes('hardcover')
+        ? 'hardcover'
+        : f.includes('paperback')
+          ? 'paperback'
+          : f === 'physical' || f === 'special edition'
+            ? true
+            : false,
       ebook: isEbook,
       audiobook: isAudio,
     }
@@ -504,6 +538,30 @@ function AddForm({
       title: hit.title ?? '',
       last: formatAuthors(contributorsFromAuthors(hit.authors ?? [])),
     })
+    const edition = hit.edition
+      ? {
+          ...newEdition(selectedFormat),
+          id: editionIds.edition,
+          isbn: releaseMatches ? (hit.isbn ?? '') : '',
+          published: releaseMatches || releaseFieldsEdited.current.pub ? form.pub.trim() : '',
+          publisher: releaseMatches ? hit.edition.publisher : '',
+          pages: releaseMatches || releaseFieldsEdited.current.pages ? parsedPages.value : null,
+          cover: validEditionCover(cover) ? cover : '',
+          ...(releaseMatches ? { sourceUrl: hit.edition.sourceUrl } : {}),
+        }
+      : null
+    const inventory = edition
+      ? {
+          version: 1 as const,
+          editions: [edition],
+          copies: [
+            {
+              ...newCopy(edition.id, possession),
+              id: editionIds.copy,
+            },
+          ],
+        }
+      : null
     const book: Partial<Book> & { title: string } = {
       // A corpus pick is a binding, not a suggestion to carry across arbitrary title/author edits.
       // Clearing it here lets the database resolve the edited bibliography (ISBN first, then the
@@ -538,12 +596,19 @@ function AddForm({
       ...possessionPatch(possession),
       owned,
       cover,
-      isbn: hit.isbn ?? '',
+      isbn: hit.edition && !releaseMatches ? '' : (hit.isbn ?? ''),
       format: form.format,
       readStatus: form.readStatus,
       source: 'Owned',
-      pub: parsedPub,
-      pages: parsedPages.value,
+      pub:
+        hit.edition && !releaseMatches && !releaseFieldsEdited.current.pub
+          ? parsePub('')
+          : parsedPub,
+      pages:
+        hit.edition && !releaseMatches && !releaseFieldsEdited.current.pages
+          ? null
+          : parsedPages.value,
+      ...(inventory ? { copyInventory: inventory, ...inventoryPossession(inventory) } : {}),
     }
     // Dedup on intake: a strong match folds into the existing record instead of duplicating.
     // With auto-merge off, a match comes back for an inline decision instead.
@@ -662,6 +727,31 @@ function AddForm({
           </div>
         </div>
 
+        {hit.edition && (
+          <Surface tone="field" radius="card" pad={3} className="mt-3 text-sm leading-relaxed">
+            <p className="font-semibold text-ink">Selected release edition</p>
+            <p className="text-muted">
+              The date below belongs to this edition, not necessarily the book’s first publication.
+              Review it before saving.
+            </p>
+            <a
+              href={hit.edition.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-11 items-center text-ink underline"
+            >
+              Release listing ↗
+            </a>
+            {releaseMatches && hit.isbn && <p className="break-all text-ink">ISBN {hit.isbn}</p>}
+            {!releaseMatches && (
+              <p role="status" className="text-ink">
+                The title, authors or format no longer match this release. Its ISBN, publisher and
+                source will be left out; enter a date or page count yourself to keep those details.
+              </p>
+            )}
+          </Surface>
+        )}
+
         {hit.source === 'google' && hit.sourceUrl && (
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-3">
@@ -748,11 +838,14 @@ function AddForm({
             ))}
           </select>
           <select
+            aria-label="Edition format"
             value={form.format}
             onChange={(e) => set('format', e.target.value)}
             className={inputClass}
             style={inputStyle}
           >
+            <option value="">Format unknown</option>
+            <option value="Physical">Physical</option>
             {FORMATS.map((s) => (
               <option key={s}>{s}</option>
             ))}
@@ -913,19 +1006,29 @@ function AddForm({
             {dup.existingAuthor ? ` · ${dup.existingAuthor}` : ''}.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void resolveDup('merge')}
-              disabled={
-                saveState.busy ||
-                !!saveState.recoveredBookId ||
-                (saveState.failedAction !== null && saveState.failedAction !== 'merge')
-              }
-              className="skin-control min-h-11 px-3 py-1.5 text-[12.5px] font-semibold text-on-primary"
-              style={{ background: 'var(--accent-fill)' }}
-            >
-              {saveState.failedAction === 'merge' ? 'Try merging again' : 'Merge into it'}
-            </button>
+            {hit.edition ? (
+              <Link
+                to="/book/$bookId"
+                params={{ bookId: dup.existingId }}
+                className="skin-control min-h-11 px-3 py-2 text-ink underline"
+              >
+                Open existing book to manage copies
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void resolveDup('merge')}
+                disabled={
+                  saveState.busy ||
+                  !!saveState.recoveredBookId ||
+                  (saveState.failedAction !== null && saveState.failedAction !== 'merge')
+                }
+                className="skin-control min-h-11 px-3 py-1.5 text-[12.5px] font-semibold text-on-primary"
+                style={{ background: 'var(--accent-fill)' }}
+              >
+                {saveState.failedAction === 'merge' ? 'Try merging again' : 'Merge into it'}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => void resolveDup('keep_both')}
@@ -1677,6 +1780,19 @@ function AddScreen() {
         </div>
       )}
 
+      {prefill.releaseWindow && (
+        <Link
+          to="/discover"
+          search={{
+            view: 'releases',
+            window: prefill.releaseWindow,
+            editions: prefill.releaseEditions,
+          }}
+          className="my-4 inline-flex min-h-11 items-center text-ink underline"
+        >
+          Return to releases
+        </Link>
+      )}
       {prefill.discoverSession && (
         <Link
           to="/discover"
@@ -1706,19 +1822,33 @@ function AddScreen() {
             returnLabel={
               bookTour.status !== 'off' && bookTour.bookId
                 ? 'Return to your library'
-                : prefill.discoverSession
-                  ? 'Return to your shortlist'
-                  : 'Return to your library'
+                : prefill.releaseWindow
+                  ? 'Return to releases'
+                  : prefill.discoverSession
+                    ? 'Return to your shortlist'
+                    : 'Return to your library'
             }
             onAdded={() =>
               bookTour.status !== 'off' && bookTour.bookId
                 ? void navigate({ to: '/library', search: {} })
-                : prefill.discoverSession
-                  ? void navigate({ to: '/discover', search: { session: prefill.discoverSession } })
-                  : void navigate({
-                      to: '/library',
-                      search: destination === 'both' ? { scope: 'household' } : {},
+                : prefill.releaseWindow
+                  ? void navigate({
+                      to: '/discover',
+                      search: {
+                        view: 'releases',
+                        window: prefill.releaseWindow,
+                        editions: prefill.releaseEditions,
+                      },
                     })
+                  : prefill.discoverSession
+                    ? void navigate({
+                        to: '/discover',
+                        search: { session: prefill.discoverSession },
+                      })
+                    : void navigate({
+                        to: '/library',
+                        search: destination === 'both' ? { scope: 'household' } : {},
+                      })
             }
           />
         ))}
@@ -1734,6 +1864,9 @@ const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim
  *  valid everywhere (no required `search` prop). */
 interface AddPrefill {
   discoverSession?: string
+  edition?: ReleaseHandoff
+  releaseWindow?: 'recent' | 'upcoming'
+  releaseEditions?: boolean
   /** add to the collective household library without creating a personal book */
   scope?: 'household'
   /** exact shared-work identity when the pick came from the Reverie corpus */
@@ -1753,20 +1886,40 @@ interface AddPrefill {
 
 export function pickedFromAddPrefill(prefill: AddPrefill): Picked | null {
   if (!prefill.title) return null
+  const candidate = parseReleaseHandoff(prefill.edition)
+  const authors = prefill.authors?.length ? prefill.authors : prefill.author ? [prefill.author] : []
+  const edition =
+    candidate &&
+    candidate.title === prefill.title &&
+    JSON.stringify(candidate.authors) === JSON.stringify(authors) &&
+    (candidate.isbn
+      ? normalizeIsbn(candidate.isbn) === normalizeIsbn(prefill.isbn ?? '')
+      : !prefill.isbn) &&
+    candidate.pub === (prefill.pub ?? '')
+      ? candidate
+      : undefined
   return {
     corpusWorkId: prefill.work,
     title: prefill.title,
     authors: prefill.authors?.length ? prefill.authors : prefill.author ? [prefill.author] : [],
     cover: prefill.source === 'google' && !prefill.work ? '' : (prefill.cover ?? ''),
-    source: prefill.source,
-    sourceUrl: prefill.sourceUrl,
-    isbn: prefill.source === 'hardcover' && !prefill.work ? '' : (prefill.isbn ?? ''),
-    pub: prefill.source === 'hardcover' && !prefill.work ? '' : (prefill.pub ?? ''),
+    source: edition ? (edition.source === 'hardcover' ? 'hardcover' : undefined) : prefill.source,
+    edition,
+    sourceUrl: edition?.sourceUrl ?? prefill.sourceUrl,
+    isbn:
+      edition?.isbn ??
+      (prefill.source === 'hardcover' && !prefill.work ? '' : (prefill.isbn ?? '')),
+    pub:
+      edition?.pub ?? (prefill.source === 'hardcover' && !prefill.work ? '' : (prefill.pub ?? '')),
   }
 }
 
 export const validateAddSearch = (s: Record<string, unknown>): AddPrefill => {
   const out: AddPrefill = {}
+  if ('edition' in s) out.edition = parseReleaseHandoff(s.edition)
+  if (s.releaseWindow === 'recent' || s.releaseWindow === 'upcoming')
+    out.releaseWindow = s.releaseWindow
+  if (s.releaseEditions === true || s.releaseEditions === 'true') out.releaseEditions = true
   if (
     typeof s.discoverSession === 'string' &&
     /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(s.discoverSession)
