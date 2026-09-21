@@ -1,3 +1,4 @@
+import type { CopyInventory } from './copyInventory'
 // Domain types — the client-side shapes the prototype's logic operates on
 // (docs/reference/DATA_MODEL.md §1). Step 4 maps these to/from the relational rows in §2.
 
@@ -122,6 +123,10 @@ export interface SeriesClaim {
 }
 
 export interface Book {
+  /** Absent until the reader explicitly sets up individual editions and copies. */
+  copyInventory?: CopyInventory | null
+  copyInventoryRevision?: number
+
   id: string
   /** Shared-corpus identity. Optional only for pre-migration backups and in-memory fixtures. */
   corpusWorkId?: string

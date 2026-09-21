@@ -178,6 +178,15 @@ myProgress`). Move them into `packages/core` with tests.
   matches. Keep the entered query available for explicit retry or manual entry; a newer search,
   manual choice or route exit cancels the older request so late results cannot replace the current
   task. Short queries explain the minimum rather than pretending to have searched.
+- **Individual copies are explicit personal inventory.** A nullable `books.copy_inventory` v1
+  document holds private edition and copy IDs. Null is legacy/unconfigured, never an empty inventory.
+  Setup is a reviewed draft; do not backfill quantities or assign a multi-format book's ISBN to all
+  editions. `save_copy_inventory` uses a row lock, expected revision and read-only identical retry.
+  Its trigger projects aggregate possession for existing shelves/household rules; old possession
+  controls cannot overwrite a configured inventory. Keep reading history on the parent book.
+  Backup v10 validates and restores inventory after historical annotations, never before household
+  consent protections. Duplicate merging refuses configured inventories before destructive work.
+  See `docs/tasks/library-editions-copies.md`.
 - **Possession is five independent flags, and every shelf is a derived view.** `ownership` is
   `'owned' | 'unowned'` (default `unowned`) and answers only _do you own a copy_. `borrowed`
   and `wishlist` are **flags beside it, not values inside it** — all combinations are legal

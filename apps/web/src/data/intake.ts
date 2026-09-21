@@ -134,6 +134,14 @@ export async function foldIn(
   // `applyFieldPicks` starts from mergeImport's own patch, so with no picks — the one-click path,
   // and every import row — this is byte-identical to what it wrote before the picker existed.
   const result = { ...mergeImport(existing, inc), patch: applyFieldPicks(existing, inc, picks) }
+  // A CSV/Add record is not a new physical copy. The explicit inventory owns possession.
+  if (existing.copyInventory) {
+    delete result.patch.ownership
+    delete result.patch.borrowed
+    delete result.patch.wishlist
+    delete result.patch.owned
+    result.changed = Object.keys(result.patch).length > 0 || result.newReads.length > 0
+  }
   if (Object.keys(result.patch).length) {
     const { error } = await supabase.from('books').update(toBookRow(result.patch)).eq('id', existing.id)
     if (error) throw error

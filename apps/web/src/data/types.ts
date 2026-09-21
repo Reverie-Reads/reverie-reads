@@ -2,6 +2,9 @@
 // Mapped to/from the @reverie/core domain types in mappers.ts.
 
 export interface BookRow {
+  copy_inventory?: unknown
+  copy_inventory_revision?: number
+
   id: string
   owner_id: string
   corpus_work_id: string

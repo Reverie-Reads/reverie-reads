@@ -43,6 +43,7 @@ import { usePerformMerge } from '../data/mergeBooks'
 import { maybeChainPrompt } from '../lib/chainPrompt'
 import { ContributorEditor } from './ContributorEditor'
 import { OwnedCopies } from './OwnedCopies'
+import { EditionCopies } from './EditionCopies'
 import { MoodPicker } from '../components/MoodPicker'
 import { useLabels } from '../skin/labels'
 import { readableWriteError } from '../lib/writeErrors'
@@ -605,14 +606,18 @@ export function EditDetails({
         <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
           Your copies
         </span>
-        <OwnedCopies
-          possession={possessionState(book)}
-          owned={book.owned}
-          onChange={(owned) => updateBook.mutate({ id: book.id, patch: { owned } })}
-          onPossessionChange={(next) =>
-            updateBook.mutate({ id: book.id, patch: possessionPatch(next) })
-          }
-        />
+        {book.copyInventory ? (
+          <EditionCopies book={book} />
+        ) : (
+          <OwnedCopies
+            possession={possessionState(book)}
+            owned={book.owned}
+            onChange={(owned) => updateBook.mutate({ id: book.id, patch: { owned } })}
+            onPossessionChange={(next) =>
+              updateBook.mutate({ id: book.id, patch: possessionPatch(next) })
+            }
+          />
+        )}
       </div>
       <div className="mt-3">
         <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
@@ -999,9 +1004,19 @@ export function MergeDialog({
   const [q, setQ] = useState('')
   const [loser, setLoser] = useState<Book | null>(null)
   const candidates = allBooks
-    .filter((b) => b.id !== book.id)
+    .filter((b) => b.id !== book.id && !b.copyInventory)
     .filter((b) => `${b.title} ${authorOf(b)}`.toLowerCase().includes(q.toLowerCase()))
     .slice(0, 25)
+
+  if (book.copyInventory)
+    return (
+      <Modal title="Keep editions and copies together" onClose={onClose}>
+        <p className="text-[14px] leading-relaxed text-ink">
+          This book has individual editions and copies. Duplicate merging is unavailable so those
+          records stay intact. Use Your editions &amp; copies to manage its collection.
+        </p>
+      </Modal>
+    )
 
   if (loser)
     return (

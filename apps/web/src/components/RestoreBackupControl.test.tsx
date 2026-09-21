@@ -18,6 +18,8 @@ const preview = (patch: Partial<BackupPreview> = {}): BackupPreview => ({
   unknownSections: [],
   restoresProfile: true,
   counts: {
+    editions: 0,
+    copies: 0,
     books: 2,
     activeBooks: 2,
     removedBooks: 0,

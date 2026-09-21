@@ -56,6 +56,7 @@ import { Modal } from '../components/Modal'
 import { CoverSheet } from '../components/CoverSheet'
 import { useCoverBackfill } from '../data/coverBackfill'
 import { OwnedCopies } from './OwnedCopies'
+import { EditionCopies } from './EditionCopies'
 import { ReviewsPanel } from './ReviewsPanel'
 import { MoreLikeThis } from './MoreLikeThis'
 import { workKeyFor } from '../data/reviews'
@@ -640,16 +641,21 @@ export function BookDetailScreen() {
           className="mb-4 text-[20px] font-semibold text-ink"
           style={{ fontFamily: 'var(--font-display)' }}
         >
-          Your copy
+          Your editions & copies
         </h2>
         {/* your copies (per-format ownership) */}
         <div className="mt-6">
-          <OwnedCopies
-            possession={possessionState(book)}
-            owned={book.owned}
-            onChange={setOwned}
-            onPossessionChange={setPossession}
-          />
+          {!book.copyInventory && (
+            <OwnedCopies
+              possession={possessionState(book)}
+              owned={book.owned}
+              onChange={setOwned}
+              onPossessionChange={setPossession}
+            />
+          )}
+          <div className="mt-3">
+            <EditionCopies book={book} />
+          </div>
         </div>
 
         {book.ownership === 'owned' ? (
