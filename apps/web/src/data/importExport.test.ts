@@ -1,3 +1,4 @@
+import { newEdition, newCopy } from '@reverie/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { tombstoneRows } from './importExport'
 import type { BackupSeriesEntryRow } from './importExport'
@@ -808,7 +809,7 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
     }
   })
 
-  it('exports v8 with taxonomy, structured series authority, and the account arrangement', async () => {
+  it('exports v10 with taxonomy, structured series authority, and the account arrangement', async () => {
     const parsed = JSON.parse(await buildBackup()) as {
       v: number
       tropes: Record<string, { name: string; emphasis: string }[]>
@@ -817,7 +818,7 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
       profile: Record<string, unknown>
     }
     expect(parsed.profile.guidance).toEqual({ version: 1, mode: 'gentle', setupComplete: true, milestones: ['books'], revealed: ['share'], tour: 'plan' })
-    expect(parsed.v).toBe(9)
+    expect(parsed.v).toBe(10)
     expect((parsed.tropes['book-a'] ?? []).map((t) => t.name).sort()).toEqual(['Dragons With Opinions', 'Enemies to Lovers'])
     expect(parsed.moods['book-a']).toEqual([{ name: 'Devastating' }])
     expect(parsed.author_follows).toHaveLength(2)
@@ -1260,7 +1261,7 @@ describe('a backup cannot silently lose rows — paging, and the file’s own co
     const parsed = JSON.parse(await buildBackup()) as Record<string, unknown>
     const bookkeeping = new Set(['v', 'app', 'exportedAt', 'counts', 'profile'])
     const sections = Object.keys(parsed).filter((k) => !bookkeeping.has(k))
-    expect(Object.keys(parsed.counts as object).sort()).toEqual(sections.sort())
+    expect(Object.keys(parsed.counts as object).sort()).toEqual([...sections, 'editions', 'copies'].sort())
   })
 
   it('counts what the FILE carries, not what the query returned — they are not the same number', async () => {
@@ -1280,7 +1281,9 @@ describe('a backup cannot silently lose rows — paging, and the file’s own co
     const size = (v: unknown): number =>
       Array.isArray(v) ? v.length : Object.values(v as Record<string, unknown[]>).reduce((n, a) => n + a.length, 0)
     for (const [section, declared] of Object.entries(counts))
-      expect(size(parsed[section]), `counts.${section} must describe the payload`).toBe(declared)
+      expect(section === 'editions' || section === 'copies'
+        ? (parsed.books as { copy_inventory?: { editions: unknown[]; copies: unknown[] } }[]).reduce((n, b) => n + (b.copy_inventory?.[section].length ?? 0), 0)
+        : size(parsed[section]), `counts.${section} must describe the payload`).toBe(declared)
   })
 
   it('refuses a file whose payload lost rows, and writes NOTHING before refusing', async () => {
@@ -1413,7 +1416,7 @@ describe('restore preflight', () => {
     const preview = inspectBackup(json)
 
     expect(preview).toMatchObject({
-      version: 9,
+      version: 10,
       isNewerVersion: false,
       integrity: 'verified',
       restoresProfile: true,
@@ -1471,7 +1474,7 @@ describe('restore preflight', () => {
 
   it('identifies sections from a newer backup so the UI can block a lossy restore', async () => {
     const parsed = JSON.parse(await buildBackup()) as Record<string, unknown>
-    parsed.v = 10
+    parsed.v = 11
     ;(parsed.counts as Record<string, number>).reading_quotes = 1
     parsed.reading_quotes = [{ text: 'A future section' }]
 
@@ -1503,4 +1506,48 @@ describe('saved discoveries in reader backups', () => {
     await expect(restoreBackup(JSON.stringify(file))).rejects.toThrow('unreadable shortlist')
     expect(access.some(a => a.mode !== 'select')).toBe(false)
   })
+})
+
+
+describe('edition and copy inventory backup', () => {
+  it('restores all copies, IDs and private locations onto the receiving book', async () => {
+    const edition = newEdition('hardcover')
+    edition.label = 'Signed anniversary edition'
+    const one = { ...newCopy(edition.id, 'owned'), location: 'Private study' }
+    const two = newCopy(edition.id, 'borrowed')
+    const inventory = { version: 1, editions: [edition], copies: [one, two] }
+    db.books[0]!.copy_inventory = inventory
+    db.books[0]!.copy_inventory_revision = 42
+    const exported = await buildBackup()
+    expect(JSON.parse(exported).books[0].copy_inventory).toEqual(inventory)
+    wipeToFreshAccount()
+    await restoreBackup(exported)
+    expect(db.books.find(b => b.title === 'Fourth Wing')).toMatchObject({ owner_id: NEW_OWNER, copy_inventory: inventory })
+    expect(db.books.find(b => b.title === 'Fourth Wing')).not.toHaveProperty('copy_inventory_revision')
+    expect(db.books).toHaveLength(2)
+    const inserts = access.filter(a => a.table === 'books' && a.mode === 'insert')
+    expect(inserts.every(a => a.values?.every(row => !('copy_inventory' in row)))).toBe(true)
+    const inventoryWrite = access.findIndex(a => a.table === 'books' && a.mode === 'update' && a.values?.some(row => 'copy_inventory' in row))
+    const historicalTropes = access.findIndex(a => a.table === 'book_tropes' && a.mode === 'upsert')
+    expect(historicalTropes).toBeGreaterThanOrEqual(0)
+    expect(inventoryWrite).toBeGreaterThan(historicalTropes)
+  })
+  it('refuses an orphan copy before any account query or write', async () => {
+    const exported = JSON.parse(await buildBackup())
+    exported.books[0].copy_inventory = { version: 1, editions: [], copies: [newCopy(crypto.randomUUID())] }
+    access = []
+    expect(() => inspectBackup(JSON.stringify(exported))).toThrow('unreadable editions or copies')
+    await expect(restoreBackup(JSON.stringify(exported))).rejects.toThrow('unreadable editions or copies')
+    expect(access).toEqual([])
+  })
+})
+
+
+it('detects lost copy records even when every book survives the backup', async () => {
+  const edition = newEdition('hardcover')
+  db.books[0]!.copy_inventory = { version: 1, editions: [edition], copies: [newCopy(edition.id, 'owned'), newCopy(edition.id, 'owned')] }
+  const file = JSON.parse(await buildBackup())
+  expect(inspectBackup(JSON.stringify(file)).counts).toMatchObject({ books: 2, editions: 1, copies: 2 })
+  file.books[0].copy_inventory.copies.pop()
+  expect(() => inspectBackup(JSON.stringify(file))).toThrow('copies: expected 2, found 1')
 })

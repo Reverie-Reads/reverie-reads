@@ -836,3 +836,25 @@ It defaults to true, uses the existing owner-only profile update policy, and tra
 backup. A backup without this optional field preserves the current preference. Turning it off
 never hides controls, essential information, or the explicitly opened library guide. See
 `../tasks/optional-reading-tips.md`.
+
+## Personal edition and copy inventory
+
+`books.copy_inventory` is null until explicit reader setup, then an atomic version-1 document with
+`editions[]` and `copies[]`. Edition fields: UUID `id`, `label`, `format` (paperback, hardcover,
+physical, ebook, audiobook, unknown), `isbn`, `publisher`, partial ISO `published`, nullable `pages`,
+and HTTPS `cover`. Copy fields: UUID `id`, `editionId`, `state` (owned, borrowed, wishlist, unset),
+`label`, and private `location`. Multiple copies may refer to the same edition. No uniqueness on
+ISBN is implied, and a special edition may lack an ISBN. Limits are 100 editions and 500 copies.
+
+`copy_inventory_revision` is server-managed. `save_copy_inventory` checks the active book owner,
+locks its row, and refuses a stale differing document. Its identical retry returns the saved row.
+Validation/projection applies to direct owner writes and restore too. Broad possession fields
+become a compatibility projection for configured books; both paperback and hardback project as
+physical `yes`. Per-edition detail remains intact. Parent ISBN, cover, reading history and plans
+are not rewritten by inventory saves. An empty inventory clears possession but keeps the book.
+
+Existing owner RLS, account deletion, personal Realtime and offline caching apply to this book
+column. Household summaries get aggregate flags; private copy labels/locations are not added to
+household RPCs. Backup v10 restores inventory after annotations to preserve sharing consent.
+Legacy merges are blocked for configured inventories; no historical duplicate rows are collapsed.
+See `../tasks/library-editions-copies.md`.

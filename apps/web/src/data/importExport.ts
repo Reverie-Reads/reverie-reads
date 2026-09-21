@@ -1,3 +1,4 @@
+import { parseCopyInventory } from '@reverie/core'
 import { APP_NAME, parseDiscoverySession, DISCOVERY_SAVED_LIMIT } from '@reverie/core'
 import { nextListSortOrderFor, ORDER_STEP as LIST_ORDER_STEP } from './lists'
 import { nextItemPositionFor, ITEM_POSITION_STEP } from './listItems'
@@ -25,7 +26,7 @@ import { persistContributors } from './contributors'
 // Restore is already a staged, multi-request operation, so run these sequentially and fail at the
 // first rejected batch instead of creating a burst of ownership-trigger work.
 const RESTORE_OWNERSHIP_BATCH_SIZE = 100
-const CURRENT_BACKUP_VERSION = 9
+const CURRENT_BACKUP_VERSION = 10
 
 async function currentUserId(): Promise<string> {
   const { data } = await supabase.auth.getUser()
@@ -464,7 +465,7 @@ export function seriesRulingRows(
 }
 
 /**
- * Serialize the WHOLE account to a JSON backup (v9): books (incl. genre/tags/intensity/owned
+ * Serialize the WHOLE account to a JSON backup (v10): books (incl. genre/tags/intensity/owned
  * formats), per-book contributors, assigned tropes (with emphasis) and moods, reads, lists +
  * memberships, the user's reviews, merge verdicts, followed/muted authors,
  * the reader's REFUSALS (removed series slots and dismissed trope suggestions), and the profile
@@ -505,6 +506,8 @@ export interface BackupPreview {
   restoresProfile: boolean
   counts: {
     books: number
+    editions: number
+    copies: number
     activeBooks: number
     removedBooks: number
     reads: number
@@ -524,6 +527,13 @@ export interface BackupPreview {
     plannedBooks: number
     favoriteBooks: number
   }
+}
+
+function inventoryCounts(books: readonly BookRow[]): { editions: number; copies: number } {
+  return books.reduce((sum, book) => {
+    const inventory = parseCopyInventory(book.copy_inventory)
+    return { editions: sum.editions + (inventory?.editions.length ?? 0), copies: sum.copies + (inventory?.copies.length ?? 0) }
+  }, { editions: 0, copies: 0 })
 }
 
 export async function buildBackup(): Promise<string> {
@@ -680,6 +690,7 @@ export async function buildBackup(): Promise<string> {
     counts: {
       discovery_sessions: discoveries.length,
       books: books.length,
+      ...inventoryCounts(books),
       contributors: nested(contributorsByBook),
       tropes: nested(tropes),
       moods: nested(moods),
@@ -743,6 +754,7 @@ export function countMismatches(data: BackupShape): string[] {
   const actual: Record<string, number> = {
     discovery_sessions: (data.discovery_sessions ?? []).length,
     books: (data.books ?? []).length,
+    ...inventoryCounts(data.books ?? []),
     contributors: nested(data.contributors ?? {}),
     tropes: nested(data.tropes ?? {}),
     moods: nested(data.moods ?? {}),
@@ -879,6 +891,11 @@ function parseBackupFile(json: string): BackupShape {
     }
   }
 
+  for (const book of data.books) {
+    if (book.copy_inventory != null && !parseCopyInventory(book.copy_inventory))
+      throw new Error('That backup contains unreadable editions or copies. Nothing was restored.')
+  }
+
   const mismatches = countMismatches(data)
   if (mismatches.length)
     throw new Error(
@@ -902,6 +919,7 @@ export function inspectBackup(json: string): BackupPreview {
   const actual = {
     discovery_sessions: (data.discovery_sessions ?? []).length,
     books: data.books.length,
+    ...inventoryCounts(data.books),
     contributors: nested(data.contributors ?? {}),
     tropes: nested(data.tropes ?? {}),
     moods: nested(data.moods ?? {}),
@@ -920,6 +938,8 @@ export function inspectBackup(json: string): BackupPreview {
     ...nestedSections,
     'merge_verdicts',
     'series_merge_decisions',
+    'editions',
+    'copies',
   ])
   const unknownSections = Object.keys(data.counts ?? {})
     .filter((section) => !knownSections.has(section))
@@ -936,6 +956,8 @@ export function inspectBackup(json: string): BackupPreview {
     restoresProfile: isRecord(data.profile),
     counts: {
       books: actual.books,
+      editions: actual.editions,
+      copies: actual.copies,
       activeBooks: books.filter((book) => !book.removed_at).length,
       removedBooks: books.filter((book) => Boolean(book.removed_at)).length,
       reads: actual.reads,
@@ -1356,6 +1378,8 @@ export async function restoreBackup(
       added_at: _a,
       updated_at: _u,
       plan_date: _planDate,
+      copy_inventory: _inventory,
+      copy_inventory_revision: _inventoryRevision,
       ...rest
     } = b
     const { data: created, error } = await supabase
@@ -1369,7 +1393,7 @@ export async function restoreBackup(
     if (error) throw error
     const newId = (created as { id: string }).id
     bookIdMap.set(b.id, newId)
-    if (b.ownership === 'owned') restoredOwnedBookIds.push(newId)
+    if (b.ownership === 'owned' && b.copy_inventory == null) restoredOwnedBookIds.push(newId)
     // Restore the book's full contributor list (v4) via the owner-scoped RPC.
     const contribs = data.contributors?.[b.id]
     if (contribs?.length) {
@@ -1474,6 +1498,16 @@ export async function restoreBackup(
       .update({ ownership: 'owned' })
       .in('id', batch)
       .eq('owner_id', ownerId)
+    if (error) throw error
+  }
+
+  // Restore inventories AFTER annotations, just like ownership above. Projecting an owned copy
+  // on the initial insert would publish historical annotations to a household without consent.
+  for (const book of data.books) {
+    if (book.copy_inventory == null) continue
+    const { error } = await supabase.from('books')
+      .update({ copy_inventory: book.copy_inventory })
+      .eq('id', bookIdMap.get(book.id)!).eq('owner_id', ownerId)
     if (error) throw error
   }
 

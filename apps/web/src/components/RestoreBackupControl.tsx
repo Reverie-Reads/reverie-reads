@@ -170,6 +170,8 @@ export function RestoreBackupControl({
               <h3 className="text-[14px] font-semibold text-ink">In this backup</h3>
               <dl className="mt-2 grid grid-cols-2 gap-x-5 rounded-[var(--radius-card)] border border-line px-3 sm:grid-cols-3">
                 <PreviewCount label="Books" value={preview.counts.books} />
+                <PreviewCount label="Editions" value={preview.counts.editions ?? 0} />
+                <PreviewCount label="Copy records" value={preview.counts.copies ?? 0} />
                 <PreviewCount label="Reading records" value={preview.counts.reads} />
                 <PreviewCount label="Saved notes" value={preview.counts.notes} />
                 <PreviewCount label="Shelves" value={preview.counts.lists} />

@@ -106,8 +106,9 @@ describe('book detail reading journey', () => {
       within(memory).getByRole('link', { name: 'View your full reading history' }),
     ).toHaveAttribute('href', '#personal-read-log')
     expect(
-      memory.compareDocumentPosition(screen.getByRole('region', { name: 'Your copy' })) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      memory.compareDocumentPosition(
+        screen.getByRole('region', { name: 'Your editions & copies' }),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
     expect(state.mutate).not.toHaveBeenCalled()
   })
@@ -149,13 +150,21 @@ describe('book detail reading journey', () => {
 
   it('groups the preserved controls and saves progress only after confirmation', () => {
     render(<BookDetailScreen />)
-    for (const name of ['Your copy', 'Your reading', 'Series and plans', 'More about this book']) {
+    for (const name of [
+      'Your editions & copies',
+      'Your reading',
+      'Series and plans',
+      'More about this book',
+    ]) {
       expect(screen.getByRole('region', { name })).toBeInTheDocument()
     }
     expect(
-      within(screen.getByRole('region', { name: 'Your copy' })).getByRole('radiogroup', {
-        name: 'Ownership',
-      }),
+      within(screen.getByRole('region', { name: 'Your editions & copies' })).getByRole(
+        'radiogroup',
+        {
+          name: 'Ownership',
+        },
+      ),
     ).toBeInTheDocument()
     expect(
       within(screen.getByRole('region', { name: 'More about this book' })).getByRole('button', {

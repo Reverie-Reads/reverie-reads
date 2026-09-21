@@ -1,5 +1,7 @@
 import {
   isContributorRole,
+  parseCopyInventory,
+  inventoryPossession,
   isCoreGenreValue,
   withoutGenres,
   sortBookTropes,
@@ -33,11 +35,14 @@ function toContributors(row: BookRow): Contributor[] {
 
 /** Relational book row -> domain Book. `reads` are loaded separately (see data/reads.ts). */
 export function toBook(row: BookRow): Book {
+  const inventory = parseCopyInventory(row.copy_inventory)
   const contributors = toContributors(row)
   // Prefer the normalized primary author; fall back to the back-compat first/last columns.
   const primary = contributors.length ? toFirstLast(contributors) : { first: row.author_first ?? '', last: row.author_last ?? '' }
   return {
     id: row.id,
+    copyInventory: inventory,
+    copyInventoryRevision: row.copy_inventory_revision ?? 0,
     corpusWorkId: row.corpus_work_id,
     title: row.title,
     first: primary.first,
@@ -114,6 +119,7 @@ export function toBook(row: BookRow): Book {
     readingPosition: row.reading_position,
     readingNowHidden: row.reading_now_hidden ?? false,
     addedTs: Date.parse(row.added_at) || 0,
+    ...(inventory ? inventoryPossession(inventory) : {}),
   }
 }
 

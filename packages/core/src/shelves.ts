@@ -69,8 +69,22 @@ const FORMAT_SHELF: Record<OwnedFormat, ShelfKey> = {
  * `bookOwnedFormats` keeps its `isPossessed` gate for cards and the detail screen: those answer
  * "which formats do you have in hand", which is a different question and still the right one there.
  */
+function ownedShelfFormats(b: Book): OwnedFormat[] {
+  if (!b.copyInventory) return ownedFormats(b.owned)
+  const ownedIds = new Set(
+    b.copyInventory.copies.filter((copy) => copy.state === 'owned').map((copy) => copy.editionId),
+  )
+  const formats = new Set<OwnedFormat>()
+  for (const edition of b.copyInventory.editions) {
+    if (!ownedIds.has(edition.id) || edition.format === 'unknown') continue
+    formats.add(
+      edition.format === 'ebook' || edition.format === 'audiobook' ? edition.format : 'physical',
+    )
+  }
+  return [...formats]
+}
 export const onFormatShelf = (b: Book, fmt: OwnedFormat): boolean =>
-  isOwnedBook(b) && ownedFormats(b.owned).includes(fmt)
+  isOwnedBook(b) && ownedShelfFormats(b).includes(fmt)
 
 /**
  * Owned, with no format recorded.
@@ -81,7 +95,7 @@ export const onFormatShelf = (b: Book, fmt: OwnedFormat): boolean =>
  * answers "what do I own". The split is only honest if everything owned lands somewhere.
  */
 export const onUnmarkedShelf = (b: Book): boolean =>
-  isOwnedBook(b) && ownedFormats(b.owned).length === 0
+  isOwnedBook(b) && ownedShelfFormats(b).length === 0
 
 /**
  * The Read shelf when DNF is NOT split out: anything the reader has engaged with, abandoned books
