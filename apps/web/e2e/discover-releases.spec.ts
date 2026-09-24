@@ -394,9 +394,11 @@ test('a selected release can be reviewed and added to an existing personal book'
 
     const editor = page.getByRole('dialog', { name: 'Add edition to existing book' })
     await expect(editor).toBeVisible()
-    await expect(editor.getByRole('group', { name: 'Edition 1' })).toBeVisible()
-    await expect(editor.getByRole('group', { name: 'Edition 2' })).toBeVisible()
-    await expect(editor.getByDisplayValue(sourceUrl)).toBeVisible()
+    await expect(editor.getByRole('region', { name: 'Edition 1' })).toBeVisible()
+    const selectedEdition = editor.getByRole('region', { name: 'Edition 2' })
+    await expect(selectedEdition).toBeVisible()
+    await selectedEdition.getByText('Edition details', { exact: true }).click()
+    await expect(selectedEdition.getByLabel('Release listing (optional)')).toHaveValue(sourceUrl)
     await editor.getByRole('button', { name: 'Add edition & copy' }).click()
 
     await expect(page.getByRole('heading', { name: 'Edition added', exact: true })).toBeVisible()
