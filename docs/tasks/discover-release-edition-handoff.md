@@ -22,7 +22,8 @@ book without changing it, or explicitly keep a separate book entry. The existing
 the revision-checked copy editor: configured inventories are cloned; legacy possession becomes the
 same explicit setup draft; and an unidentified legacy wanted copy may be identified by the selected
 release instead of fabricating a second copy. Nothing changes until the reader saves, and the path
-never merges books or reading histories.
+never merges books or reading histories. A release preview keeps the ordinary “Open your book”
+action and adds an explicit “Add this edition” handoff when that work is already in the library.
 
 The bounded return link preserves the release window and edition filter. Ordinary shortlist and
 reading-walkthrough return behavior stays intact.

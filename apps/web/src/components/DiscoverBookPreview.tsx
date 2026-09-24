@@ -129,13 +129,26 @@ export function DiscoverBookPreview({
             original details.
           </p>
         ) : book ? (
-          <Link
-            to="/book/$bookId"
-            params={{ bookId: book.id }}
-            className="skin-control skin-btn-primary inline-flex min-h-11 items-center px-4 text-sm font-semibold"
-          >
-            Open your book
-          </Link>
+          <>
+            {hit.release && (
+              <Link
+                to="/add"
+                search={discoverAddSearch(hit, discoverSession, releaseContext)}
+                className="skin-control skin-btn-primary inline-flex min-h-11 items-center px-4 text-sm font-semibold"
+              >
+                Add this edition
+              </Link>
+            )}
+            <Link
+              to="/book/$bookId"
+              params={{ bookId: book.id }}
+              className={`skin-control inline-flex min-h-11 items-center px-4 text-sm font-semibold ${
+                hit.release ? 'skin-btn-secondary' : 'skin-btn-primary'
+              }`}
+            >
+              Open your book
+            </Link>
+          </>
         ) : (
           <Link
             to="/add"

@@ -386,7 +386,7 @@ test('a selected release can be reviewed and added to an existing personal book'
     await page.getByRole('button', { name: `View details for ${title}`, exact: true }).click()
     await page
       .getByRole('dialog')
-      .getByRole('link', { name: 'Add to wishlist', exact: true })
+      .getByRole('link', { name: 'Add this edition', exact: true })
       .click()
     await page.locator('[data-book-tour="book-save"]').click()
     await expect(page.getByText(`You may already have ${title}`)).toBeVisible()
