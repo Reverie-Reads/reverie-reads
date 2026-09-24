@@ -6,6 +6,7 @@ import {
   newEdition,
   parseCopyInventory,
   prepareCopyInventory,
+  prepareCopyInventoryWithIncoming,
   validEditionDate,
   type CopyInventory,
 } from './copyInventory'
@@ -150,6 +151,87 @@ describe('individual edition/copy inventory', () => {
     expect(draft).toEqual(existing)
     draft.copies[0]!.state = 'wishlist'
     expect(existing.copies[0]!.state).toBe('owned')
+  })
+  it('adds a discovered edition beside a legacy owned copy without losing possession', () => {
+    const release = newEdition('hardcover')
+    release.isbn = '9780143117841'
+    release.publisher = 'Example Press'
+    release.published = '2026-09-24'
+    release.sourceUrl = 'https://hardcover.app/books/a-library-book'
+    const wanted = newCopy(release.id, 'wishlist')
+
+    const value = prepareCopyInventoryWithIncoming(
+      book({ isbn: '', pub: { y: null, m: null, d: null }, pages: null }),
+      { version: 1, editions: [release], copies: [wanted] },
+    )
+
+    expect(value.editions).toHaveLength(2)
+    expect(value.copies.map((copy) => copy.state)).toEqual(['owned', 'wishlist'])
+    expect(value.editions[1]).toMatchObject({
+      format: 'hardcover',
+      isbn: '9780143117841',
+      sourceUrl: 'https://hardcover.app/books/a-library-book',
+    })
+    expect(inventoryPossession(value)).toMatchObject({ ownership: 'owned', wishlist: true })
+  })
+  it('identifies an unconfigured legacy wishlist instead of inventing another copy', () => {
+    const release = newEdition('ebook')
+    release.publisher = 'Example Press'
+    release.sourceUrl = 'https://hardcover.app/books/a-library-book'
+    const wanted = newCopy(release.id, 'wishlist')
+
+    const value = prepareCopyInventoryWithIncoming(
+      book({
+        ownership: 'unowned',
+        wishlist: true,
+        owned: { physical: false, ebook: false, audiobook: false },
+        isbn: '',
+        pub: { y: null, m: null, d: null },
+        pages: null,
+      }),
+      { version: 1, editions: [release], copies: [wanted] },
+    )
+
+    expect(value.editions).toHaveLength(1)
+    expect(value.copies).toHaveLength(1)
+    expect(value.editions[0]).toMatchObject({
+      format: 'ebook',
+      publisher: 'Example Press',
+      sourceUrl: 'https://hardcover.app/books/a-library-book',
+    })
+    expect(value.copies[0]).toMatchObject({ state: 'wishlist', editionId: value.editions[0]!.id })
+  })
+  it('reuses one ISBN edition, fills only blanks and keeps distinct copies', () => {
+    const current = newEdition('unknown')
+    current.isbn = '9780143117841'
+    current.label = 'Reader label'
+    const saved: CopyInventory = {
+      version: 1,
+      editions: [current],
+      copies: [newCopy(current.id, 'owned')],
+    }
+    const release = newEdition('hardcover')
+    release.isbn = '978-0-1431-1784-1'
+    release.publisher = 'Example Press'
+    release.sourceUrl = 'https://hardcover.app/books/a-library-book'
+
+    const value = prepareCopyInventoryWithIncoming(book({ copyInventory: saved }), {
+      version: 1,
+      editions: [release],
+      copies: [newCopy(release.id, 'wishlist')],
+    })
+
+    expect(value.editions).toHaveLength(1)
+    expect(value.editions[0]).toMatchObject({
+      id: current.id,
+      label: 'Reader label',
+      format: 'hardcover',
+      publisher: 'Example Press',
+      sourceUrl: 'https://hardcover.app/books/a-library-book',
+    })
+    expect(value.copies).toHaveLength(2)
+    expect(value.copies[1]).toMatchObject({ editionId: current.id, state: 'wishlist' })
+    expect(saved.editions[0]).toMatchObject({ format: 'unknown', publisher: '' })
   })
 })
 

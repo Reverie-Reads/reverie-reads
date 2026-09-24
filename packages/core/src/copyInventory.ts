@@ -260,3 +260,125 @@ export function prepareCopyInventory(book: Book): CopyInventory {
   }
   return result
 }
+
+function unidentifiedEdition(edition: LibraryEdition): boolean {
+  return (
+    edition.format === 'unknown' &&
+    !edition.label &&
+    !edition.isbn &&
+    !edition.publisher &&
+    !edition.published &&
+    edition.pages === null &&
+    !edition.cover &&
+    !edition.sourceUrl
+  )
+}
+
+function fillEditionBlanks(current: LibraryEdition, incoming: LibraryEdition): LibraryEdition {
+  return {
+    ...current,
+    label: current.label || incoming.label,
+    format: current.format === 'unknown' ? incoming.format : current.format,
+    isbn: current.isbn || incoming.isbn,
+    publisher: current.publisher || incoming.publisher,
+    published: current.published || incoming.published,
+    pages: current.pages ?? incoming.pages,
+    cover: current.cover || incoming.cover,
+    ...(current.sourceUrl
+      ? { sourceUrl: current.sourceUrl }
+      : incoming.sourceUrl
+        ? { sourceUrl: incoming.sourceUrl }
+        : {}),
+  }
+}
+
+/**
+ * Build the explicit review draft used when Discover finds an edition for a book already in the
+ * reader's library. Existing configured inventories are cloned. Legacy possession flags remain a
+ * reviewable setup draft, and one unidentified legacy copy may be identified by the incoming
+ * edition instead of fabricating a second copy. No caller should persist this without showing the
+ * normal editions-and-copies editor first.
+ */
+export function prepareCopyInventoryWithIncoming(
+  book: Book,
+  incomingValue: CopyInventory,
+): CopyInventory {
+  const incoming = parseCopyInventory(incomingValue)
+  if (!incoming) throw new Error('The selected edition details are invalid.')
+
+  const draft = prepareCopyInventory(book)
+  const legacyDraft = !book.copyInventory
+  const editionIds = new Map<string, string>()
+  const consumedLegacyCopies = new Set<string>()
+
+  if (legacyDraft) {
+    for (const copy of incoming.copies) {
+      const candidate = draft.copies.find((existingCopy) => {
+        if (consumedLegacyCopies.has(existingCopy.id) || existingCopy.state !== copy.state)
+          return false
+        const edition = draft.editions.find((item) => item.id === existingCopy.editionId)
+        return !!edition && unidentifiedEdition(edition)
+      })
+      if (!candidate) continue
+      const edition = incoming.editions.find((item) => item.id === copy.editionId)
+      if (!edition) throw new Error('The selected edition details are invalid.')
+      draft.editions = draft.editions.map((item) =>
+        item.id === candidate.editionId ? { ...structuredClone(edition), id: item.id } : item,
+      )
+      editionIds.set(edition.id, candidate.editionId)
+      consumedLegacyCopies.add(candidate.id)
+    }
+  }
+
+  for (const edition of incoming.editions) {
+    if (editionIds.has(edition.id)) continue
+    const normalized = edition.isbn ? normalizeIsbn(edition.isbn) : null
+    const isbnMatches = normalized
+      ? draft.editions.filter((item) => normalizeIsbn(item.isbn) === normalized)
+      : []
+    if (isbnMatches.length === 1) {
+      const match = isbnMatches[0]!
+      draft.editions = draft.editions.map((item) =>
+        item.id === match.id ? fillEditionBlanks(item, edition) : item,
+      )
+      editionIds.set(edition.id, match.id)
+      continue
+    }
+    const collision = draft.editions.find((item) => item.id === edition.id)
+    if (collision) {
+      if (JSON.stringify(collision) !== JSON.stringify(edition))
+        throw new Error('The selected edition conflicts with an existing edition.')
+      editionIds.set(edition.id, collision.id)
+      continue
+    }
+    draft.editions.push(structuredClone(edition))
+    editionIds.set(edition.id, edition.id)
+  }
+
+  for (const copy of incoming.copies) {
+    if (consumedLegacyCopies.size) {
+      const replacement = [...consumedLegacyCopies].find((id) => {
+        const current = draft.copies.find((item) => item.id === id)
+        return current?.state === copy.state && current.editionId === editionIds.get(copy.editionId)
+      })
+      if (replacement) {
+        consumedLegacyCopies.delete(replacement)
+        continue
+      }
+    }
+    const editionId = editionIds.get(copy.editionId)
+    if (!editionId) throw new Error('The selected edition details are invalid.')
+    const next = { ...structuredClone(copy), editionId }
+    const collision = draft.copies.find((item) => item.id === next.id)
+    if (collision) {
+      if (JSON.stringify(collision) !== JSON.stringify(next))
+        throw new Error('The selected copy conflicts with an existing copy.')
+      continue
+    }
+    draft.copies.push(next)
+  }
+
+  if (!parseCopyInventory(draft))
+    throw new Error('The selected edition cannot be added to this copy collection.')
+  return draft
+}

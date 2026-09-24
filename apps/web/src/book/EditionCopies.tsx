@@ -132,11 +132,29 @@ export function EditionCopies({ book }: { book: Book }) {
     </Surface>
   )
 }
-function CopyEditor({ book, onClose }: { book: Book; onClose: () => void }) {
-  const [draft, setDraft] = useState<CopyInventory>(() => prepareCopyInventory(book))
+export function CopyEditor({
+  book,
+  onClose,
+  initialInventory,
+  title = 'Editions & copies',
+  intro,
+  submitLabel = 'Save editions & copies',
+  onSaved,
+}: {
+  book: Book
+  onClose: () => void
+  initialInventory?: CopyInventory
+  title?: string
+  intro?: string
+  submitLabel?: string
+  onSaved?: (saved: Book) => void | Promise<void>
+}) {
+  const [draft, setDraft] = useState<CopyInventory>(() =>
+    initialInventory ? structuredClone(initialInventory) : prepareCopyInventory(book),
+  )
   const [revision] = useState(book.copyInventoryRevision ?? 0)
   const [error, setError] = useState('')
-  const [dirty, setDirty] = useState(false)
+  const [dirty, setDirty] = useState(!!initialInventory)
   const [confirmClose, setConfirmClose] = useState(false)
   const saving = useRef(false)
   const save = useSaveCopyInventory(book.id)
@@ -166,7 +184,8 @@ function CopyEditor({ book, onClose }: { book: Book; onClose: () => void }) {
     saving.current = true
     setError('')
     try {
-      await save.mutateAsync({ inventory: draft, revision })
+      const saved = await save.mutateAsync({ inventory: draft, revision })
+      await onSaved?.(saved)
       onClose()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not save. Your draft is still here.')
@@ -175,11 +194,12 @@ function CopyEditor({ book, onClose }: { book: Book; onClose: () => void }) {
     }
   }
   return (
-    <Modal title="Editions & copies" wide onClose={requestClose}>
+    <Modal title={title} wide onClose={requestClose}>
       <p className="mb-4 text-[14px] leading-relaxed text-muted">
-        {!book.copyInventory
-          ? 'Your old format choices did not record quantities. Review these suggested entries, including which edition is owned, borrowed or wanted, before saving.'
-          : 'Keep each edition and copy here. Reading progress, notes and history stay with this book.'}
+        {intro ??
+          (!book.copyInventory
+            ? 'Your old format choices did not record quantities. Review these suggested entries, including which edition is owned, borrowed or wanted, before saving.'
+            : 'Keep each edition and copy here. Reading progress, notes and history stay with this book.')}
       </p>
       <form
         onSubmit={(e) => {
@@ -434,7 +454,7 @@ function CopyEditor({ book, onClose }: { book: Book; onClose: () => void }) {
           )}
           <div className="flex flex-wrap gap-2 border-t border-line pt-4">
             <button type="submit" className={control}>
-              {save.isPending ? 'Saving…' : 'Save editions & copies'}
+              {save.isPending ? 'Saving…' : submitLabel}
             </button>
             <button type="button" className={control} onClick={requestClose}>
               Cancel

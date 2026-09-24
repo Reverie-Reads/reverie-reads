@@ -16,9 +16,13 @@ Opening Add, reloading, leaving, or opening a preview performs no save. The read
 creates one personal book and its one edition/copy document in the same insert. Wishlist remains
 unowned and unread; edition format is retained in inventory without implying possession. Stable
 edition/copy IDs and the existing single-Add insertion identity survive retries. A duplicate match
-requires review rather than silently folding away the incoming inventory. The reader can open the
-existing book to manage its copies or explicitly keep a separate book entry. Adding another edition
-to an existing record directly from Discover remains a separate extension.
+requires review rather than silently folding away the incoming inventory. The reader can review the
+selected release alongside the existing book's editions and copies, save it there, open the existing
+book without changing it, or explicitly keep a separate book entry. The existing-book path reuses
+the revision-checked copy editor: configured inventories are cloned; legacy possession becomes the
+same explicit setup draft; and an unidentified legacy wanted copy may be identified by the selected
+release instead of fabricating a second copy. Nothing changes until the reader saves, and the path
+never merges books or reading histories.
 
 The bounded return link preserves the release window and edition filter. Ordinary shortlist and
 reading-walkthrough return behavior stays intact.
@@ -39,6 +43,8 @@ source links are included in export/restore and remain absent from shared househ
 - Unit boundaries: release versus work search; complete identity and ISBN/date matching; unsupported
   formats; unsafe/lookalike/provider-mismatched links; impossible dates; malformed inventory rejection.
 - Intake: new copy saved with the book in one insert; duplicate reviews never discard inventory.
+- Existing-book handoff: review before save; preserve legacy possession and reading state; reuse an
+  exact ISBN edition without overwriting reader-entered details; reject stale inventory revisions.
 - Backup round-trip includes source URLs; database accepts legitimate links and refuses lookalikes.
 - Browser: desktop and phone Discover → preview → Add → reload without save → explicit wishlist save
   → reopen inventory; exact ISBN/date/source/full authors retained, unknown format remains unknown,

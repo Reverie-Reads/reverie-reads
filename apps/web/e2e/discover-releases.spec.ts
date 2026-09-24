@@ -324,3 +324,113 @@ for (const { width, changeFormat } of [
     }
   })
 }
+
+test('a selected release can be reviewed and added to an existing personal book', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  const c = await client()
+  const id = 'f9700000-0000-4000-8000-000000000010'
+  const title = 'Existing Edition Journey'
+  const sourceUrl = 'https://hardcover.app/books/existing-edition-journey'
+  const pub = new Date(Date.now() + 20 * 864e5).toISOString().slice(0, 10)
+  await ok(c.sb.from('books').delete().eq('id', id), 'clear existing-edition fixture')
+  await ok(
+    c.sb.from('books').insert({
+      id,
+      owner_id: c.uid,
+      title,
+      author_first: 'Nell',
+      author_last: 'Writer',
+      ownership: 'owned',
+      owned_physical: 'paperback',
+      read_status: 'Reading',
+      progress: 30,
+      rating: 4,
+    }),
+    'insert existing-edition fixture',
+  )
+  await page.route('**/functions/v1/enrich', (route) => route.fulfill({ json: {} }))
+  await page.route('**/functions/v1/covers**', (route) => route.fulfill({ status: 422, json: {} }))
+  await page.route('**/functions/v1/embed', (route) =>
+    route.fulfill({ json: { hasTaste: false, scores: [] } }),
+  )
+  await page.route('**/functions/v1/releases', (route) =>
+    route.fulfill({
+      json: {
+        hits: [
+          {
+            title,
+            authors: ['Nell Writer'],
+            isbn: '9798991234504',
+            pub,
+            cover: '',
+            release: {
+              source: 'hardcover',
+              precision: 'day',
+              sourceUrl,
+              publisher: 'Example Press',
+              formats: ['Hardback'],
+              checkedAt: new Date().toISOString(),
+            },
+          },
+        ],
+        providers: { hardcover: 'ready', prh: 'not_configured' },
+        checkedAt: new Date().toISOString(),
+      },
+    }),
+  )
+  try {
+    await signIn(page, c.session)
+    await page.goto('/discover?view=releases&window=upcoming&editions=true')
+    await page.getByRole('button', { name: `View details for ${title}`, exact: true }).click()
+    await page
+      .getByRole('dialog')
+      .getByRole('link', { name: 'Add to wishlist', exact: true })
+      .click()
+    await page.locator('[data-book-tour="book-save"]').click()
+    await expect(page.getByText(`You may already have ${title}`)).toBeVisible()
+    await page.getByRole('button', { name: 'Add edition to existing book' }).click()
+
+    const editor = page.getByRole('dialog', { name: 'Add edition to existing book' })
+    await expect(editor).toBeVisible()
+    await expect(editor.getByRole('group', { name: 'Edition 1' })).toBeVisible()
+    await expect(editor.getByRole('group', { name: 'Edition 2' })).toBeVisible()
+    await expect(editor.getByDisplayValue(sourceUrl)).toBeVisible()
+    await editor.getByRole('button', { name: 'Add edition & copy' }).click()
+
+    await expect(page.getByRole('heading', { name: 'Edition added', exact: true })).toBeVisible()
+    const saved = await c.sb
+      .from('books')
+      .select('copy_inventory,ownership,wishlist,read_status,progress,rating')
+      .eq('id', id)
+      .single()
+    if (saved.error) throw saved.error
+    expect(saved.data).toMatchObject({
+      ownership: 'owned',
+      wishlist: true,
+      read_status: 'Reading',
+      progress: 30,
+      rating: 4,
+    })
+    expect(saved.data.copy_inventory.editions).toHaveLength(2)
+    expect(saved.data.copy_inventory.copies.map((copy: { state: string }) => copy.state)).toEqual([
+      'owned',
+      'wishlist',
+    ])
+    expect(saved.data.copy_inventory.editions[1]).toMatchObject({
+      format: 'hardcover',
+      isbn: '9798991234504',
+      published: pub,
+      publisher: 'Example Press',
+      sourceUrl,
+    })
+    await page.getByRole('link', { name: 'Open your book', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Manage copies', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'Release listing ↗', exact: true }),
+    ).toHaveAttribute('href', sourceUrl)
+  } finally {
+    await ok(c.sb.from('books').delete().eq('id', id), 'remove existing-edition fixture')
+  }
+})
