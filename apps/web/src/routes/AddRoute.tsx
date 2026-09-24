@@ -12,6 +12,7 @@ import {
   validEditionCover,
   inventoryPossession,
   parseNumericField,
+  prepareCopyInventoryWithIncoming,
   PAGE_COUNT,
   parsePubDate,
   possessionPatch,
@@ -58,6 +59,7 @@ import { CoverImage } from '../components/CoverImage'
 import { CoverSheet } from '../components/CoverSheet'
 import { TropePicker } from '../components/TropePicker'
 import { ContributorEditor } from '../book/ContributorEditor'
+import { CopyEditor } from '../book/EditionCopies'
 import {
   FORMATS,
   OWNERSHIP_LABELS,
@@ -161,24 +163,28 @@ function RefineAdded({
   householdWarning,
   onDone,
   returnLabel,
+  editionAdded = false,
 }: {
   bookId: string
   householdWarning?: string | null
   onDone: () => void
   returnLabel: string
+  editionAdded?: boolean
 }) {
   const labels = useLabels()
   const { data: books, isFetching, isError, fetchStatus, refetch } = useBooks()
   const book = books?.find((b) => b.id === bookId)
   // This screen only mounts after a confirmed save. Loading is not a loaded-book observation.
-  useBookTourObservation(book ? 'saved' : 'saved-loading', bookId)
+  useBookTourObservation(editionAdded ? null : book ? 'saved' : 'saved-loading', bookId)
   const [dialog, setDialog] = useState<'cover' | 'trope' | null>(null)
 
   if (!book) {
     return (
       <Surface radius="panel" tone="card" pad={3} className="mt-4" data-book-tour-region>
         <div data-book-tour="book-load">
-          <h2 className="text-[16px] font-semibold text-ink">Your book was saved</h2>
+          <h2 className="text-[16px] font-semibold text-ink">
+            {editionAdded ? 'The edition was saved' : 'Your book was saved'}
+          </h2>
           {householdWarning && (
             <p role="status" className="mt-2 text-[13px] text-accent-ink">
               {householdWarning}
@@ -226,6 +232,46 @@ function RefineAdded({
 
   const [g0, g1] = subgenreGradient(book.subgenre, book.genre)
   const tropeCount = book.tropes.length
+
+  if (editionAdded) {
+    return (
+      <Surface radius="panel" tone="card" pad={3} className="mt-4">
+        {householdWarning ? (
+          <p role="status" className="mb-3 text-[12.5px] text-accent-ink">
+            {householdWarning}
+          </p>
+        ) : null}
+        <h2
+          className="text-[16px] italic text-ink"
+          style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
+        >
+          Edition added
+        </h2>
+        <p className="mb-3 mt-1 text-[13px] text-muted">
+          The selected release is now recorded with {book.title}. Open the book to manage its
+          copies, or return to releases.
+        </p>
+        <Link
+          to="/book/$bookId"
+          params={{ bookId }}
+          className="mt-4 flex min-h-11 w-full items-center justify-center skin-control px-4 text-center text-[14px] font-semibold"
+          style={{
+            background: 'linear-gradient(135deg, var(--primary), var(--gold))',
+            color: 'var(--on-primary)',
+          }}
+        >
+          Open your book
+        </Link>
+        <button
+          type="button"
+          onClick={onDone}
+          className="mt-2 min-h-11 w-full text-[14px] text-ink underline"
+        >
+          {returnLabel}
+        </button>
+      </Surface>
+    )
+  }
 
   return (
     <Surface radius="panel" tone="card" pad={3} className="mt-4" data-book-tour-region>
@@ -334,6 +380,13 @@ function AddForm({
   const [dup, setDup] = useState<ReviewCandidate | null>(null)
   // Once the record is created we hand off to the refine step (cover + tropes) instead of leaving.
   const [addedId, setAddedId] = useState<string | null>(null)
+  const [addedExistingEdition, setAddedExistingEdition] = useState(false)
+  const [editionTarget, setEditionTarget] = useState<{
+    book: Book
+    inventory: NonNullable<Book['copyInventory']>
+  } | null>(null)
+  const [editionTargetBusy, setEditionTargetBusy] = useState(false)
+  const [editionTargetError, setEditionTargetError] = useState<string | null>(null)
   useBookTourObservation(addedId ? null : 'details')
   const [householdWarning, setHouseholdWarning] = useState<string | null>(null)
   const [contribs, setContribs] = useState<Contributor[]>(
@@ -634,7 +687,7 @@ function AddForm({
     })
   }
 
-  async function finishSavedBook(bookId: string) {
+  async function finishSavedBook(bookId: string, existingEdition = false) {
     if (addToHousehold) {
       try {
         await addPersonalBooksToHousehold.mutateAsync([bookId])
@@ -644,7 +697,31 @@ function AddForm({
         )
       }
     }
+    setAddedExistingEdition(existingEdition)
     setAddedId(bookId)
+  }
+
+  async function reviewEditionWithExistingBook() {
+    if (!dup?.incoming.copyInventory || editionTargetBusy) return
+    setEditionTargetBusy(true)
+    setEditionTargetError(null)
+    try {
+      const fresh = await refreshBooks({ throwOnError: true })
+      const existing = fresh.data?.find((book) => book.id === dup.existingId)
+      if (!existing) throw new Error('The matching book is unavailable')
+      setEditionTarget({
+        book: existing,
+        inventory: prepareCopyInventoryWithIncoming(existing, dup.incoming.copyInventory),
+      })
+    } catch (cause) {
+      setEditionTargetError(
+        cause instanceof Error
+          ? cause.message
+          : 'The existing copies could not be loaded. Nothing was changed.',
+      )
+    } finally {
+      setEditionTargetBusy(false)
+    }
   }
 
   async function resolveDup(action: 'merge' | 'keep_both') {
@@ -670,6 +747,7 @@ function AddForm({
         householdWarning={householdWarning}
         onDone={onAdded}
         returnLabel={returnLabel}
+        editionAdded={addedExistingEdition}
       />
     )
 
@@ -1007,13 +1085,24 @@ function AddForm({
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {hit.edition ? (
-              <Link
-                to="/book/$bookId"
-                params={{ bookId: dup.existingId }}
-                className="skin-control min-h-11 px-3 py-2 text-ink underline"
-              >
-                Open existing book to manage copies
-              </Link>
+              <>
+                <button
+                  type="button"
+                  onClick={() => void reviewEditionWithExistingBook()}
+                  disabled={editionTargetBusy || saveState.busy || !!saveState.recoveredBookId}
+                  className="skin-control min-h-11 px-3 py-1.5 text-[12.5px] font-semibold text-on-primary"
+                  style={{ background: 'var(--accent-fill)' }}
+                >
+                  {editionTargetBusy ? 'Loading copies…' : 'Add edition to existing book'}
+                </button>
+                <Link
+                  to="/book/$bookId"
+                  params={{ bookId: dup.existingId }}
+                  className="skin-control min-h-11 px-3 py-2 text-ink underline"
+                >
+                  Open existing book
+                </Link>
+              </>
             ) : (
               <button
                 type="button"
@@ -1051,7 +1140,28 @@ function AddForm({
               Cancel
             </button>
           </div>
+          {editionTargetError && (
+            <p role="alert" className="mt-2 text-[13px] text-ink">
+              {editionTargetError}
+            </p>
+          )}
         </Surface>
+      )}
+
+      {editionTarget && (
+        <CopyEditor
+          book={editionTarget.book}
+          initialInventory={editionTarget.inventory}
+          title="Add edition to existing book"
+          intro="Review the selected release with your existing editions and copies. Nothing changes until you save. Reading progress, notes and history stay with the book."
+          submitLabel="Add edition & copy"
+          onClose={() => setEditionTarget(null)}
+          onSaved={async (saved) => {
+            setEditionTarget(null)
+            setDup(null)
+            await finishSavedBook(saved.id, true)
+          }}
+        />
       )}
 
       {saveState.error && (
