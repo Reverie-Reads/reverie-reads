@@ -51,7 +51,7 @@
   color: var(--ink);
 }
 .midniht-wrap {
-  width: min(1240px, calc(100% - 96px));
+  width: calc(100% - 96px);
   margin-inline: auto;
 }
 .midniht-landing a:focus-visible,
@@ -222,6 +222,8 @@
 .midniht-hero-art {
   margin: 0;
   min-width: 0;
+  width: min(100%, 760px);
+  justify-self: end;
 }
 .midniht-art-window {
   position: relative;
@@ -304,6 +306,7 @@
   margin-block: 16px;
 }
 .midniht-promises article > p:last-child {
+  max-width: 60ch;
   font-size: 16px;
   line-height: 1.7;
   color: var(--muted);
@@ -387,6 +390,7 @@
   .midniht-hero-art {
     width: min(100%, 500px);
     margin-inline: auto;
+    justify-self: center;
   }
   .midniht-section-heading {
     display: block;

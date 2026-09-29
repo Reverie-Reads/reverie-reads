@@ -192,7 +192,7 @@ function PlannerScreen() {
   const openBook = (id: string) => void navigate({ to: '/book/$bookId', params: { bookId: id } })
 
   return (
-    <section className="mx-auto w-full max-w-[1180px] px-4 py-6 sm:px-6 lg:py-8">
+    <section className="mx-auto w-full px-4 py-6 sm:px-6 lg:py-8 2xl:px-12">
       <div className="mb-3 flex justify-end empty:hidden">
         <StartPlannerTour quiet />
       </div>

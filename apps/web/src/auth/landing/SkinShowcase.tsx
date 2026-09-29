@@ -32,7 +32,7 @@ export function SkinShowcase({
   const skin = SKINS[active]
   return (
     <section id="skins" className="scroll-mt-24 border-y border-line py-16 sm:py-24">
-      <div className="mx-auto max-w-[1280px] px-5 sm:px-8">
+      <div className="midniht-wrap">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">
           Nine reading rooms
         </p>

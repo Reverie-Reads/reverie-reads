@@ -1,9 +1,13 @@
 .discover-experience {
   width: 100%;
-  max-width: 1120px;
   margin: 0 auto;
   padding: 36px 24px 64px;
   color: var(--ink);
+}
+@media (min-width: 1536px) {
+  .discover-experience {
+    padding-inline: 48px;
+  }
 }
 .discover-experience :is(button, input, a) {
   -webkit-tap-highlight-color: transparent;

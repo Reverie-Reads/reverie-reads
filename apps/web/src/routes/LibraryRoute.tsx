@@ -234,7 +234,7 @@ function PersonalLibraryScreen() {
   const center = (
     <div
       data-book-tour="reading-library"
-      className="mx-auto min-w-0 w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+      className="mx-auto min-w-0 w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 2xl:px-12"
     >
       <LibraryHeader
         scope="personal"

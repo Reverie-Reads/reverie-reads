@@ -332,7 +332,7 @@ export function SeriesIndexScreen() {
   )
 
   return (
-    <section className="mx-auto w-full max-w-[1180px] px-4 py-6 sm:px-6 lg:py-8">
+    <section className="mx-auto w-full px-4 py-6 sm:px-6 lg:py-8 2xl:px-12">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5">
         <div>
           <p className="skin-label text-[10.5px]" style={{ color: 'var(--accent-ink)' }}>
@@ -436,7 +436,7 @@ export function SeriesIndexScreen() {
                   >
                     {section.name}
                   </h2>
-                  <ul className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <ul className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 min-[2200px]:grid-cols-5">
                     {section.rows.map((row) => {
                       const management = managementById.get(row.series.id)
                       if (!management) return null

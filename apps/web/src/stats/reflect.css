@@ -1,5 +1,5 @@
 .reflect {
-  width: min(100%, 1180px);
+  width: 100%;
   margin: 0 auto;
   padding: clamp(32px, 5vw, 72px) clamp(20px, 4vw, 52px) 88px;
   color: var(--ink);
