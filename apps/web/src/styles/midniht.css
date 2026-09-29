@@ -247,6 +247,12 @@
   color: var(--muted);
   margin-top: 10px;
 }
+.midniht-art-credit {
+  display: block;
+  max-width: 56ch;
+  margin: 5px auto 0;
+  font: 400 13px/1.5 var(--font-sans);
+}
 .midniht-stars {
   position: absolute;
   inset: 0;
