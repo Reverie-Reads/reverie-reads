@@ -59,3 +59,21 @@ provide durable account/workspace-scoped draft and image storage; prove phone/co
 owner review/budget permissions. A local synthetic-video decode proves decoding integration, not
 real-camera performance. Production release additionally needs the repository's full fresh-database
 browser suite. No migration or production deployment is part of this change.
+
+### Local verification, September 29, 2026
+
+- Full unit/workflow suite passed: 2,944 core tests, 1,121 web tests, two compiled workflow tests,
+  plus the series-source trial suite. Four additional decoder-selection tests passed separately.
+- Typecheck, lint, formatting and production build passed. The build's local-URL warning comes
+  from the committed demo environment; this was not a production deployment.
+- Chromium at 390px decoded real EAN-13 pixel fixtures through the actual JavaScript decoder using
+  a canvas video stream. Consecutive captures, held-frame suppression, explicit repeat confirmation,
+  distinct copy IDs, JSON export, camera release and the field-research handoff passed.
+- A blank synthetic frame was used to test closing a live camera: restarting on an already
+  captured ISBN correctly opens the repeat decision immediately. The synthetic source must repaint
+  to produce frames, unlike an actual camera; an initially static fixture was corrected.
+- The scan/repeat dialog passed axe WCAG A/AA checks in all nine skins × both modes. Additional
+  320/768/1440px layouts had no horizontal overflow.
+- The required full fresh-database e2e attempt was **blocked before tests started**: local Docker
+  returned HTTP 500 inspecting `supabase_db_book-corpus` (`LegacyLocalDbRunningError`). No passing
+  full-app e2e claim is made. Rerun after the local engine is healthy; hardware testing also remains.
