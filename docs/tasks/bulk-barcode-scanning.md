@@ -77,3 +77,15 @@ browser suite. No migration or production deployment is part of this change.
 - The required full fresh-database e2e attempt was **blocked before tests started**: local Docker
   returned HTTP 500 inspecting `supabase_db_book-corpus` (`LegacyLocalDbRunningError`). No passing
   full-app e2e claim is made. Rerun after the local engine is healthy; hardware testing also remains.
+
+### Docker recovery and full app verification, September 29
+
+A normal Docker Desktop restart restored the engine; no permission change or data cleanup was
+required. The local stack was started and reset under `scripts/stack-lock.sh`, then the full suite
+ran with default workers and retries zero: **357 passed, 10 skipped in 33.0 minutes**, exit 0.
+
+At head `e58adff`, GitHub's main browser job completed **303 passed, 6 skipped in 37.1 minutes**,
+but job 109657555883 was cancelled during cleanup by its 42-minute total limit. The workflow now
+allows 50 minutes for setup, tests, reporting and cleanup. Test timeouts, retries, worker count and
+assertions are unchanged. Mobile and accessibility jobs passed. The new commit must still complete
+its own CI; real iOS/Android camera verification remains outstanding.
