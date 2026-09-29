@@ -118,7 +118,9 @@ export function GuestLibrary({
         focusAfterChange.current = true
       }}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+      <div
+        className={`flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4 ${compact ? 'pt-4' : ''}`}
+      >
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-muted">
             Your guest library

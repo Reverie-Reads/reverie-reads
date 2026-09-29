@@ -143,7 +143,13 @@ export function Landing() {
                 alt="A reader with short wavy hair, settled beside library shelves and a luminous moon."
               />
             </div>
-            <figcaption>For the worlds you’re still carrying.</figcaption>
+            <figcaption>
+              For the worlds you’re still carrying.
+              <span className="midniht-art-credit">
+                This hero illustration was AI-generated. We’re seeking a local artist to create
+                original artwork for Midniht.
+              </span>
+            </figcaption>
           </figure>
         </header>
         <section className="midniht-sample midniht-wrap" aria-labelledby="midniht-library-title">

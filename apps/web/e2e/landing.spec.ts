@@ -35,6 +35,9 @@ test.describe('signed-out landing', () => {
     ).toBeVisible()
     await expect(page.getByTestId('guest-library-compact')).toBeVisible()
     await expect(page.getByTestId('guest-library-full')).toBeAttached()
+    await expect(page.locator('.midniht-art-credit')).toHaveText(
+      'This hero illustration was AI-generated. We’re seeking a local artist to create original artwork for Midniht.',
+    )
     for (const heading of [
       'Find a room that feels like you.',
       'Keep what the book leaves with you.',
@@ -195,6 +198,30 @@ test.describe('signed-out landing', () => {
         body: document.body.scrollWidth,
       }))
       expect(width).toEqual({ viewport, root: viewport, body: viewport })
+    }
+  })
+
+  test('the sample library header has balanced space above and below its content', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    const demo = page.getByTestId('guest-library-compact')
+
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+      const gaps = await demo.evaluate((element) => {
+        const caption = element.previousElementSibling!
+        const header = element.firstElementChild!
+        const heading = header.firstElementChild!
+        const actions = header.lastElementChild!
+        return {
+          above: heading.getBoundingClientRect().top - caption.getBoundingClientRect().bottom,
+          below: header.getBoundingClientRect().bottom - actions.getBoundingClientRect().bottom,
+        }
+      })
+      expect(gaps.above).toBeGreaterThanOrEqual(16)
+      expect(gaps.below).toBeGreaterThanOrEqual(16)
+      expect(Math.abs(gaps.above - gaps.below)).toBeLessThanOrEqual(4)
     }
   })
 
