@@ -134,7 +134,7 @@ function ProofStrip({ children }: { children: Array<[string, string]> }) {
 function PracticalLedger() {
   return (
     <section id="features" className="scroll-mt-20">
-      <div className="mx-auto max-w-[1180px] px-6 py-20 sm:py-28">
+      <div className="midniht-wrap py-20 sm:py-28">
         <div className="grid gap-8 border-b border-line pb-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
           <div>
             <Eyebrow>The working library</Eyebrow>
@@ -192,7 +192,7 @@ function PracticalLedger() {
 function Privacy() {
   return (
     <section id="privacy" className="scroll-mt-20">
-      <div className="mx-auto max-w-[1180px] px-6 py-20 sm:py-28">
+      <div className="midniht-wrap py-20 sm:py-28">
         <div className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16">
           <div>
             <Eyebrow>Yours, privately</Eyebrow>
@@ -233,7 +233,7 @@ export default function LandingBelowFold({
   return (
     <>
       <section id="how-it-works" className="scroll-mt-20 border-y border-line">
-        <div className="mx-auto max-w-[1180px] px-6 py-16 sm:py-20">
+        <div className="midniht-wrap py-16 sm:py-20">
           <Eyebrow>Settle into your next book</Eyebrow>
           <h2
             className="mt-3 max-w-[22ch] text-balance text-[clamp(32px,4.7vw,50px)] leading-[1.14] text-ink"
@@ -270,8 +270,8 @@ export default function LandingBelowFold({
         </div>
       </section>
 
-      <section id="keep" className="scroll-mt-20 px-4 py-20 sm:px-6 sm:py-28">
-        <div className="mx-auto max-w-[1240px]">
+      <section id="keep" className="scroll-mt-20 px-4 py-20 sm:px-6 sm:py-28 2xl:px-12">
+        <div className="w-full">
           <ChapterHeader
             number="I"
             eyebrow="As you read"
@@ -316,7 +316,7 @@ export default function LandingBelowFold({
       <Privacy />
 
       <section id="get-started" className="relative border-t border-line">
-        <div className="mx-auto max-w-[1180px] px-6 py-24 text-center sm:py-32">
+        <div className="midniht-wrap py-24 text-center sm:py-32">
           <span
             aria-hidden
             className="mx-auto mb-6 block h-11 w-11 rounded-full"
@@ -361,7 +361,7 @@ export default function LandingBelowFold({
       </section>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-[1180px] flex-col gap-6 px-6 py-10 sm:flex-row sm:items-start sm:justify-between">
+        <div className="midniht-wrap flex flex-col gap-6 py-10 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-[36ch]">
             <MidnihtWordmark />
             <p className="mt-2 text-[13px] leading-relaxed text-muted">
@@ -387,7 +387,7 @@ export default function LandingBelowFold({
         </div>
         <div className="border-t border-line">
           <div
-            className="mx-auto flex max-w-[1180px] flex-col gap-1 px-6 py-5 text-[12px] sm:flex-row sm:items-center sm:justify-between"
+            className="midniht-wrap flex flex-col gap-1 py-5 text-[12px] sm:flex-row sm:items-center sm:justify-between"
             style={{ color: 'var(--faint)' }}
           >
             <span>

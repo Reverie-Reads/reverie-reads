@@ -382,7 +382,7 @@ function CoverStudioPage() {
   const coveredCount = (books ?? []).filter((book) => book.cover).length
 
   return (
-    <section className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <section className="mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8 2xl:px-12">
       <PageHeader
         eyebrow="Your copies, cared for"
         title="Cover Studio"

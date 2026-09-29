@@ -279,7 +279,10 @@ function SearchSection({
   return (
     <div>
       {q.isPending && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" aria-hidden>
+        <div
+          className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]"
+          aria-hidden
+        >
           {Array.from({ length: 8 }, (_, i) => (
             <div key={i} className="flex flex-col gap-2">
               <div
@@ -441,7 +444,7 @@ function DiscoverCatalog() {
     : []
 
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+    <section className="mx-auto w-full px-4 py-6 sm:px-6 2xl:px-12">
       <h1
         className="text-[clamp(30px,4vw,44px)] leading-[1.2] text-ink"
         style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
@@ -569,7 +572,10 @@ function DiscoverCatalog() {
               </div>
 
               {corpus.isPending && (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" aria-hidden>
+                <div
+                  className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]"
+                  aria-hidden
+                >
                   {Array.from({ length: 8 }, (_, i) => (
                     <div key={i} className="flex flex-col gap-2">
                       <div
@@ -610,7 +616,7 @@ function DiscoverCatalog() {
               {(corpusVisible.length > 0 || corpus.hasNextPage) && (
                 <>
                   <div
-                    className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+                    className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]"
                     data-testid="corpus-grid"
                   >
                     {corpusVisible.map((h) => (
@@ -697,7 +703,10 @@ function DiscoverCatalog() {
                   </Chip>
                 </div>
                 {q.isPending && (
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4" aria-hidden>
+                  <div
+                    className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]"
+                    aria-hidden
+                  >
                     {Array.from({ length: 8 }, (_, i) => (
                       <div key={i} className="flex flex-col gap-2">
                         <div
@@ -777,7 +786,7 @@ function DiscoverCatalog() {
                         see it.
                       </p>
                     ) : (
-                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-[repeat(auto-fill,minmax(200px,1fr))]">
                         {ordered.map(({ hit: h, taste }) => (
                           <Card
                             key={`${h.isbn}|${h.title}`}
@@ -816,7 +825,7 @@ export function DiscoverScreen() {
     <>
       <nav
         aria-label="Discover sections"
-        className="mx-auto flex w-full max-w-5xl flex-wrap gap-2 px-4 pt-6 sm:px-6"
+        className="mx-auto flex w-full flex-wrap gap-2 px-4 pt-6 sm:px-6 2xl:px-12"
       >
         {(
           [

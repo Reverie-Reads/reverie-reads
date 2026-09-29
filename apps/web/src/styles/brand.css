@@ -120,7 +120,7 @@ html.gold-brand[data-appearance-pending] body {
   content: '';
   position: absolute;
   z-index: -2;
-  inset: -8% -5%;
+  inset: -8% 0;
   border-radius: 48% 52% 42% 58% / 46% 42% 58% 54%;
   background:
     radial-gradient(ellipse 52% 46% at 82% 18%, var(--glow-a), transparent 78%),
