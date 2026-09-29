@@ -270,8 +270,8 @@ export default function LandingBelowFold({
         </div>
       </section>
 
-      <section id="keep" className="scroll-mt-20 py-20 sm:py-28">
-        <div className="midniht-wrap">
+      <section id="keep" className="scroll-mt-20 px-4 py-20 sm:px-6 sm:py-28 2xl:px-12">
+        <div className="w-full">
           <ChapterHeader
             number="I"
             eyebrow="As you read"
