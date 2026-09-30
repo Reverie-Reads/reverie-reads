@@ -15,11 +15,14 @@ export function BarcodeBatch({
   onChange,
   onReview,
   onNoIsbn,
+  storageNotice = 'Captures stay on this page only; export before leaving or refreshing.',
 }: {
   items: readonly BarcodeCapture[]
   onChange: (items: BarcodeCapture[]) => void
   onReview: (item: BarcodeCapture) => void
   onNoIsbn?: () => void
+  /** The host owns persistence and must describe its actual save status. */
+  storageNotice?: string
 }) {
   const video = useRef<HTMLVideoElement>(null)
   const current = useRef(items)
@@ -114,10 +117,7 @@ export function BarcodeBatch({
 
   return (
     <section className="barcode-batch" aria-label="Bulk barcode capture">
-      <p className="barcode-batch-intro">
-        Scan a stack, then review each book. Captures stay on this page only; export before leaving
-        or refreshing.
-      </p>
+      <p className="barcode-batch-intro">Scan a stack, then review each book. {storageNotice}</p>
       <div className="barcode-camera-actions">
         <button
           type="button"
