@@ -15,6 +15,20 @@ function enter(value: string) {
 }
 beforeEach(() => vi.clearAllMocks())
 describe('bulk scan review list', () => {
+  it('defaults to page-only storage and lets a durable host report its actual save status', () => {
+    const { rerender } = render(<BarcodeBatch items={[]} onChange={vi.fn()} onReview={vi.fn()} />)
+    expect(screen.getByText(/Captures stay on this page only/)).toBeInTheDocument()
+    rerender(
+      <BarcodeBatch
+        items={[]}
+        onChange={vi.fn()}
+        onReview={vi.fn()}
+        storageNotice="Saved on this device. Waiting to sync."
+      />,
+    )
+    expect(screen.queryByText(/Captures stay on this page only/)).not.toBeInTheDocument()
+    expect(screen.getByText(/Saved on this device. Waiting to sync./)).toBeInTheDocument()
+  })
   it('captures typed/wedge input without review or save and rejects invalid input', () => {
     const review = vi.fn()
     render(<Host onReview={review} />)
