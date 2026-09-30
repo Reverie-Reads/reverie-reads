@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   APP_NAME,
+  bookBarcode,
   contributorsFromAuthors,
   formatAuthors,
   makeSeriesClaim,
@@ -20,6 +21,7 @@ import {
   SKINS,
   toFirstLast,
   workKeyOf,
+  type BarcodeCapture,
   type Book,
   type Contributor,
   type Incoming,
@@ -54,6 +56,8 @@ import {
   type SearchResult,
 } from '../lib/search'
 import { useEffectiveSkin, useLabels, useVoice } from '../skin/labels'
+import { BarcodeBatch } from '../components/BarcodeBatch'
+import { Modal } from '../components/Modal'
 import { Chip } from '../components/Chip'
 import { CoverImage } from '../components/CoverImage'
 import { CoverSheet } from '../components/CoverSheet'
@@ -77,15 +81,6 @@ import { delegatedMemberId, type AddDestination } from '../components/addDestina
 import { GoogleBooksAttribution, GoogleBooksResultLink } from '../components/GoogleBooksAttribution'
 import { StartBookTour } from '../guidance/BookTour'
 import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
-
-interface BarcodeDetectorLike {
-  detect(source: CanvasImageSource): Promise<{ rawValue: string }[]>
-}
-declare global {
-  interface Window {
-    BarcodeDetector?: new (opts?: { formats: string[] }) => BarcodeDetectorLike
-  }
-}
 
 interface SearchHit {
   source: 'hardcover' | 'google'
@@ -1641,9 +1636,26 @@ function AddScreen() {
   const { results, searched, busy, issue: searchIssue, search, cancel } = useAddSearch()
   const [picked, setPicked] = useState<Picked | null>(() => pickedFromAddPrefill(prefill))
   useBookTourObservation(picked ? null : !busy && results?.length ? 'choose' : 'search')
-  const [scanStatus, setScanStatus] = useState<string | null>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [scanBatch, setScanBatch] = useState<{ owner: string; items: BarcodeCapture[] }>({
+    owner: '',
+    items: [],
+  })
+  const [activeCapture, setActiveCapture] = useState<string | null>(null)
+  const scanOwner = session?.user.id ?? ''
+  const scanItems = scanBatch.owner === scanOwner ? scanBatch.items : []
+  const changeScans = (items: BarcodeCapture[]) => setScanBatch({ owner: scanOwner, items })
+  const returnToScans = () => {
+    if (!activeCapture || !scanItems.some((item) => item.id === activeCapture)) return false
+    // Called only by the existing confirmed-save continuation; lookup never consumes a capture.
+    changeScans(scanItems.filter((item) => item.id !== activeCapture))
+    setActiveCapture(null)
+    setPicked(null)
+    cancel()
+    setQ('')
+    setScannerOpen(true)
+    return true
+  }
   // Already paged (#350), so the library side of the check is sound above 1,000 rows.
   const { data: books } = useBooks()
   // The ranged term query starts alongside catalog search. Once results arrive, their ISBNs feed
@@ -1656,7 +1668,8 @@ function AddScreen() {
   const catalogTriaged = triageResults(resultSections.catalog, books ?? [], corpus.data)
   const googleTriaged = triageResults(resultSections.google, books ?? [], corpus.data)
 
-  function runSearch(term = q) {
+  function runSearch(term = q, fromCapture = false) {
+    if (!fromCapture) setActiveCapture(null)
     if (term.trim().length >= 3) setPicked(null)
     return search(term)
   }
@@ -1664,56 +1677,6 @@ function AddScreen() {
   function pickBook(book: Picked) {
     cancel()
     setPicked(book)
-  }
-
-  function stopScan() {
-    streamRef.current?.getTracks().forEach((t) => t.stop())
-    streamRef.current = null
-    setScanStatus(null)
-  }
-
-  async function startScan() {
-    if (!window.BarcodeDetector || !navigator.mediaDevices) {
-      setScanStatus(
-        'Barcode scanning isn’t supported in this browser — search by title or ISBN below.',
-      )
-      return
-    }
-    try {
-      setScanStatus('Requesting camera…')
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-      })
-      streamRef.current = stream
-      const video = videoRef.current
-      if (!video) return
-      video.srcObject = stream
-      await video.play()
-      setScanStatus('Point at the barcode on the back cover…')
-      const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a'] })
-      const tick = async () => {
-        if (!streamRef.current) return
-        try {
-          const codes = await detector.detect(video)
-          const isbn = codes[0]?.rawValue?.replace(/[^0-9Xx]/g, '')
-          if (isbn && isbn.length >= 10) {
-            stopScan()
-            setQ(isbn)
-            void runSearch(isbn)
-            return
-          }
-        } catch {
-          /* keep scanning */
-        }
-        setTimeout(() => void tick(), 350)
-      }
-      void tick()
-    } catch (e) {
-      stopScan()
-      setScanStatus(
-        `Camera unavailable (${(e as Error).name || 'blocked'}). Search by title or ISBN below.`,
-      )
-    }
   }
 
   return (
@@ -1768,11 +1731,13 @@ function AddScreen() {
         </button>
         <button
           type="button"
-          onClick={streamRef.current ? stopScan : startScan}
+          onClick={() => setScannerOpen(true)}
+          disabled={!!picked}
+          title={picked ? 'Finish this book review before returning to the scan batch' : undefined}
           className="h-11 skin-control border border-line px-5 text-[14px] font-semibold text-ink"
           style={{ background: 'var(--card)' }}
         >
-          {streamRef.current ? 'Stop' : '📷 Scan'}
+          {scanItems.length ? `Scan books · ${scanItems.length}` : '📷 Scan books'}
         </button>
         {/* A peer of Search and Scan, as the intro copy has always promised. It used to appear ONLY
             in the results-empty branch — so a search that returned the WRONG books (rather than
@@ -1780,7 +1745,9 @@ function AddScreen() {
             force the empty state. The form already accepts a bare { title }. */}
         <button
           type="button"
-          onClick={() => pickBook({ title: q.trim() })}
+          onClick={() =>
+            pickBook({ title: bookBarcode(q) ? '' : q.trim(), isbn: bookBarcode(q) || undefined })
+          }
           className="h-11 skin-control border border-line px-5 text-[14px] font-semibold text-ink"
           style={{ background: 'var(--card)' }}
         >
@@ -1790,17 +1757,26 @@ function AddScreen() {
 
       <div className="mt-3 empty:hidden" data-book-tour-inline="book-search" />
 
-      {scanStatus && (
-        <Surface radius="card" tone="card" pad={2} className="mt-3 text-[13px] text-muted">
-          {scanStatus}
-        </Surface>
+      {scannerOpen && (
+        <Modal title="Scan books" onClose={() => setScannerOpen(false)} wide>
+          <BarcodeBatch
+            key={scanOwner}
+            items={scanItems}
+            onChange={changeScans}
+            onReview={(item) => {
+              setActiveCapture(item.id)
+              setScannerOpen(false)
+              setQ(item.isbn)
+              void runSearch(item.isbn, true)
+            }}
+            onNoIsbn={() => {
+              setActiveCapture(null)
+              setScannerOpen(false)
+              pickBook({ title: '' })
+            }}
+          />
+        </Modal>
       )}
-      <video
-        ref={videoRef}
-        className={`mt-3 w-full rounded-xl ${streamRef.current ? '' : 'hidden'}`}
-        muted
-        playsInline
-      />
 
       {busy && (
         <p role="status" className="mt-4 text-center text-[13px] text-muted">
@@ -1879,7 +1855,12 @@ function AddScreen() {
               {voice.miss}{' '}
               <button
                 type="button"
-                onClick={() => pickBook({ title: q.trim() })}
+                onClick={() =>
+                  pickBook({
+                    title: bookBarcode(q) ? '' : q.trim(),
+                    isbn: bookBarcode(q) || undefined,
+                  })
+                }
                 className="font-semibold text-primary"
               >
                 Add it manually
@@ -1918,11 +1899,12 @@ function AddScreen() {
             hit={picked}
             targetMemberId={targetMemberId}
             targetMemberName={targetMember?.displayName}
-            onAdded={() =>
-              prefill.discoverSession
+            onAdded={() => {
+              if (returnToScans()) return
+              return prefill.discoverSession
                 ? void navigate({ to: '/discover', search: { session: prefill.discoverSession } })
                 : void navigate({ to: '/library', search: { scope: 'household' } })
-            }
+            }}
           />
         ) : (
           <AddForm
@@ -1930,16 +1912,19 @@ function AddScreen() {
             defaultUnowned={!!prefill.want}
             addToHousehold={destination === 'both'}
             returnLabel={
-              bookTour.status !== 'off' && bookTour.bookId
-                ? 'Return to your library'
-                : prefill.releaseWindow
-                  ? 'Return to releases'
-                  : prefill.discoverSession
-                    ? 'Return to your shortlist'
-                    : 'Return to your library'
+              activeCapture && scanItems.some((item) => item.id === activeCapture)
+                ? 'Continue with scanned books'
+                : bookTour.status !== 'off' && bookTour.bookId
+                  ? 'Return to your library'
+                  : prefill.releaseWindow
+                    ? 'Return to releases'
+                    : prefill.discoverSession
+                      ? 'Return to your shortlist'
+                      : 'Return to your library'
             }
-            onAdded={() =>
-              bookTour.status !== 'off' && bookTour.bookId
+            onAdded={() => {
+              if (returnToScans()) return
+              return bookTour.status !== 'off' && bookTour.bookId
                 ? void navigate({ to: '/library', search: {} })
                 : prefill.releaseWindow
                   ? void navigate({
@@ -1959,7 +1944,7 @@ function AddScreen() {
                         to: '/library',
                         search: destination === 'both' ? { scope: 'household' } : {},
                       })
-            }
+            }}
           />
         ))}
 

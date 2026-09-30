@@ -1,0 +1,119 @@
+.barcode-batch {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  color: var(--ink);
+  background: var(--card-solid);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.barcode-batch p {
+  margin: 0;
+  color: var(--ink);
+}
+.barcode-batch button {
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--muted);
+  border-radius: var(--radius-control);
+  background: var(--card-solid);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.barcode-batch button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.barcode-batch button:focus-visible,
+.barcode-batch input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+.barcode-camera-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.barcode-batch video {
+  width: 100%;
+  max-height: 240px;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: var(--bg0);
+}
+.barcode-batch video[hidden] {
+  display: none;
+}
+.barcode-batch form {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.barcode-batch label {
+  display: grid;
+  flex: 1 1 190px;
+  gap: 6px;
+  font-weight: 600;
+}
+.barcode-batch input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--muted);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: var(--field);
+  font: inherit;
+  font-size: 16px;
+}
+.barcode-batch input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+.barcode-repeat {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--muted);
+  border-radius: var(--radius-card);
+  padding: 14px;
+}
+.barcode-batch-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.barcode-batch h3 {
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+.barcode-captures {
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 0 4px;
+}
+.barcode-captures li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.barcode-captures span {
+  display: block;
+  font-size: 12px;
+}

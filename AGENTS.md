@@ -171,6 +171,13 @@ myProgress`). Move them into `packages/core` with tests.
   edition facts. Explicit Add saves one inventory atomically with a new book; duplicate matches
   require review rather than losing copy details. Release source URLs stay private references, never
   catalog authority. Backup v11 carries them. See `docs/tasks/discover-release-edition-handoff.md`.
+- **Bulk barcode capture is a review queue, not a writer.** Reuse `BarcodeBatch` and the core
+  ISBN/frame guards in every mode. Continuous frames cannot imply extra copies; a repeated ISBN
+  requires an explicit separate-copy decision. Capture never chooses a catalog result or changes
+  possession. Stop tracks and invalidate late camera work on pause, close, backgrounding and
+  account changes. Reader captures stay account-separated and page-session-only; export and
+  lifetime notices must remain clear until durable drafts are implemented. See
+  `docs/tasks/bulk-barcode-scanning.md`.
 - **Single-book Add keeps a retry identity.** Pending submissions and duplicate decisions share
   one synchronous guard. A failed attempt keeps its draft and original duplicate action. Retrying
   checks its exact reader-owned insertion UUID first; an already saved or removed row is never

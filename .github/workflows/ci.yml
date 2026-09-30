@@ -237,11 +237,11 @@ jobs:
         include:
           - name: e2e
             project: rest
-            # The full suite reached 278 passing tests in 33.5 minutes on 2026-09-15, then the old
-            # 35-minute ceiling cancelled the job during action cleanup. This is a ceiling, not a
-            # delay: leave bounded room for Playwright reporting and GitHub cleanup without turning
-            # a completely passing suite into a cancelled required check.
-            timeout: 42
+            # PR #608 completed 303 tests (6 skipped) in 37.1 minutes on 2026-09-29,
+            # then the 42-minute job ceiling cancelled cleanup after setup + the suite.
+            # Keep bounded room for setup, reporting and cleanup. Test timeouts, retries,
+            # worker count and assertions are unchanged; this is not a required wait.
+            timeout: 50
             artifact: playwright-traces
           - name: e2e-a11y
             project: a11y

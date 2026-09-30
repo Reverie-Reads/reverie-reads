@@ -74,3 +74,4 @@ export * from './mergeFieldPicker'
 export * from './discovery'
 
 export * from './copyInventory'
+export * from './barcodeBatch'
