@@ -177,6 +177,29 @@ activate product selection, change onboarding/navigation, register Collector scr
 - The profile cache retains the raw document under the existing account boundary. No device-wide
   product choice, inferred grant, duplicate book, or Collector-only Reader dock key is introduced.
 
-Next: product registration and entry using these contracts. Keep Collector unavailable for signup
-until the private minimum Free capture-to-collection journey is ready. Migration and private overlay
-sync require the normal reviewed release process; this document does not authorize deployment.
+## Second implementation slice: explicit product entry
+
+Settings now links to `/start`, a neutral, account-keyed entry screen backed by a build registry.
+Reader is the only public registration. A build registration names a delivered product and its Home
+route; it is never entitlement or workspace authority. The registry is a declared extension contract
+for private registration after the minimum Free journey is usable, not a working Collector signup.
+
+- Choice is deliberate. An existing completed Reader choice opens Reader without a write. A new
+  choice uses the current revision and completes only after the account-bound save succeeds.
+- Choosing Reader preserves every enabled product and opaque presentation document. An unavailable
+  Collector choice also offers **Open Reader for now**, which navigates without changing preferences.
+- Unreadable/newer preferences and profile failures offer a no-write Reader escape. They do not
+  fabricate a default document or clear the stored choice. Conflicts require explicit reload and a
+  new decision; uncertain-response retry retains the original revision/document.
+- Entry lives outside room hydration, behind the existing verified-session/callback ordering. It
+  loads its own owner-scoped snapshot instead of trusting the global profile cache. Late results
+  after leaving the screen cannot navigate or invalidate another account's profile.
+- Existing sign-in, OAuth, guest handoff, Reader welcome, appearance and direct routes remain as
+  they were. This staged slice does not automatically redirect Home/authentication to product entry,
+  replace Reader navigation/guidance, or add a global switch that could interrupt an open editor.
+
+Next: private sync, then product shell/onboarding registration and the minimum Collector Free
+journey. Automatic entry/remembered-product routing and draft-aware switching must land together
+with usable destinations and their browser acceptance matrix. Keep Collector unavailable for signup
+until that journey is ready. Migration and private overlay sync use the normal reviewed release
+process; this document does not authorize deployment.

@@ -2,7 +2,7 @@ import { CatalogReviewNav } from '../components/catalog/CatalogReviewNav'
 import { useEffect, useRef, useState } from 'react'
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { findDuplicateGroups, planTitleCleanup, richness, type Book } from '@reverie/core'
+import { APP_NAME, findDuplicateGroups, planTitleCleanup, richness, type Book } from '@reverie/core'
 import { rootRoute } from './RootRoute'
 import { useBooks, useUpdateBook } from '../data/books'
 import { useProfile, useUpdateProfile } from '../data/profile'
@@ -518,6 +518,19 @@ function SettingsScreen() {
             stored in your account and follows you across devices — sign in anywhere to see the same
             shelves.
           </p>
+        </Section>
+
+        <Section title={`Your ${APP_NAME} experience`}>
+          <p className="text-[14px] leading-relaxed text-muted">
+            Open an available experience or review your saved choice. Your books stay in one
+            account.
+          </p>
+          <Link
+            to="/start"
+            className="mt-3 inline-flex min-h-11 items-center underline underline-offset-4"
+          >
+            Choose your experience
+          </Link>
         </Section>
 
         <Section title="Walkthroughs and guidance">
