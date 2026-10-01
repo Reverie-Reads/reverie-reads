@@ -520,6 +520,19 @@ function SettingsScreen() {
           </p>
         </Section>
 
+        <Section title={`Your ${APP_NAME} experience`}>
+          <p className="text-[14px] leading-relaxed text-muted">
+            Open an available experience or review your saved choice. Your books stay in one
+            account.
+          </p>
+          <Link
+            to="/start"
+            className="mt-3 inline-flex min-h-11 items-center underline underline-offset-4"
+          >
+            Choose your experience
+          </Link>
+        </Section>
+
         <Section title="Walkthroughs and guidance">
           <p className="text-[14px] leading-relaxed text-muted">
             Change your starting pace, revisit a walkthrough, or explore tools you have not tried

@@ -125,6 +125,13 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   billing grants or workspace roles; older backups preserve the current choice and unsupported root
   documents block restore without losing export/readback. The first slice is inert: do not expose
   Collector signup until its minimum journey and registered entry are ready. See `docs/tasks/account-types.md`.
+- **Product entry is explicit and preferences are not authority.** Settings links to `/start`;
+  the public build registers Reader only. Preserve unavailable/newer product documents and offer
+  a no-write Reader escape. Deliberate changes use the owner-bound revision RPC; a conflict requires
+  reload, never automatic rebase. Keep entry keyed by account and discard departed-screen responses.
+  Do not activate automatic product redirects or a global switch until the destination has a usable
+  Free journey and draft-aware navigation. Reader arrangements/guidance remain independent. See
+  `docs/tasks/account-types.md`.
 - **Reader guidance controls presentation, never access.** New readers choose a gentle introduction,
   the full walkthrough or independent exploration. Account-scoped `profiles.guidance` is authoritative;
   a device-wide onboarding flag cannot skip another account's welcome. Milestones are bounded,

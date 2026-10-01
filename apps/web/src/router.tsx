@@ -1,5 +1,6 @@
 import { createRouter } from '@tanstack/react-router'
 import { rootRoute } from './routes/RootRoute'
+import { startRoute } from './routes/StartRoute'
 import { homeRoute } from './routes/HomeRoute'
 import { libraryRoute } from './routes/LibraryRoute'
 import { shelvesRoute } from './routes/ShelvesRoute'
@@ -36,6 +37,7 @@ import { bookRoute } from './book/BookDetailRoute'
 
 const routeTree = rootRoute.addChildren([
   homeRoute,
+  startRoute,
   libraryRoute,
   shelvesRoute,
   shelfRoute,

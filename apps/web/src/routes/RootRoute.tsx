@@ -81,6 +81,17 @@ function RootLayout() {
     )
   }
 
+  // Product entry uses neutral material and loads its own account-bound preference snapshot.
+  // Email verification and callback handling above still take precedence.
+  if (verified && pathname === '/start')
+    return (
+      <>
+        <Outlet />
+        <UpdateToast />
+        <WriteErrorToast />
+      </>
+    )
+
   // First-run onboarding renders full-screen (skin Sky behind, no app chrome) — it's its own
   // front door into the library, themed live in the skin the reader picks.
   const onboarding = pathname === '/onboarding'
