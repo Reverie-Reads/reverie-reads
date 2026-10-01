@@ -52,6 +52,7 @@ export const USER_OWNED_TABLES: OwnedTable[] = [
   // the structural guard below would fail on a registry entry for a table it cannot find. The
   // production row (1 order, 0 items) is recorded in the S2 migration's own comment, since this
   // file is not the place to keep a fact about data instead of a fact about structure.
+  // Includes portable product presentation; excludes server revision, roles and paid grants.
   { table: 'profiles', owner: 'id', plan: { backup: true } },
 
   // ── taxonomy: assignments travel by NAME, and the vocabulary rows come with them ──

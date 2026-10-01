@@ -53,6 +53,41 @@ describe('Dexie offline persister', () => {
     expect(await persister.restoreClient()).toBeUndefined()
   })
 
+  it('preserves future product documents in the account cache without leaking to another reader', async () => {
+    signedInAs('user-a')
+    const cached = client('products-v1')
+    const document = { version: 9, activeProduct: 'future', presentation: { custom: [1, 2] } }
+    cached.clientState.queries = [
+      {
+        queryKey: ['profile'],
+        queryHash: '["profile"]',
+        state: {
+          data: { id: 'user-a', productPreferences: document, productPreferencesRevision: 7 },
+          dataUpdateCount: 1,
+          dataUpdatedAt: 1,
+          error: null,
+          errorUpdateCount: 0,
+          errorUpdatedAt: 0,
+          fetchFailureCount: 0,
+          fetchFailureReason: null,
+          fetchMeta: null,
+          isInvalidated: false,
+          status: 'success',
+          fetchStatus: 'idle',
+        },
+      },
+    ]
+    const persister = createDexiePersister()
+    await persister.persistClient(cached)
+    expect((await persister.restoreClient())?.clientState.queries[0]?.state.data).toEqual({
+      id: 'user-a',
+      productPreferences: document,
+      productPreferencesRevision: 7,
+    })
+    signedInAs('user-b')
+    expect(await persister.restoreClient()).toBeUndefined()
+  })
+
   it('keeps a Soon plan and its intention inside the personal books mirror', async () => {
     signedInAs('user-a')
     const planned = client('plan-v1')

@@ -38,6 +38,9 @@ export interface Profile {
   /** The reader's versioned navigation priorities and independently ordered Home modules. */
   arrangement: ArrangementConfig
   guidance?: Guidance | null
+  /** Raw portable document: preserve newer product/presentation versions without normalizing. */
+  productPreferences?: unknown
+  productPreferencesRevision?: number
   /** Optional introductions and workflow tips; absent older profile caches keep them visible. */
   showReadingTips?: boolean
 }
@@ -62,6 +65,8 @@ interface ProfileRow {
   shelf_breakdown_dnf: boolean | null
   arrangement: unknown
   guidance: unknown
+  product_preferences?: unknown
+  product_preferences_revision?: number
   show_reading_tips: boolean | null
 }
 
@@ -90,6 +95,8 @@ const toProfile = (row: ProfileRow): Profile => ({
   arrangement: arrangementFromUnknown(row.arrangement),
   guidance: guidanceFromUnknown(row.guidance),
   showReadingTips: row.show_reading_tips !== false,
+  productPreferences: row.product_preferences,
+  productPreferencesRevision: row.product_preferences_revision,
 })
 
 /** The signed-in user's own profile (RLS returns only their row). */
@@ -99,7 +106,8 @@ export function useProfile() {
     queryFn: async (): Promise<Profile | null> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, adaptive_pending, adaptive_dismissed, shelf_breakdown_format, shelf_breakdown_dnf, hide_intensity, arrangement, guidance, show_reading_tips')
+        // Read across staged schema rollout; toProfile is the explicit cache allowlist.
+        .select('*')
         .limit(1)
         .maybeSingle()
       if (error) throw error

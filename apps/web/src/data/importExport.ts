@@ -1,4 +1,4 @@
-import { parseCopyInventory } from '@reverie/core'
+import { parseCopyInventory, readProductPreferences } from '@reverie/core'
 import { APP_NAME, parseDiscoverySession, DISCOVERY_SAVED_LIMIT } from '@reverie/core'
 import { nextListSortOrderFor, ORDER_STEP as LIST_ORDER_STEP } from './lists'
 import { nextItemPositionFor, ITEM_POSITION_STEP } from './listItems'
@@ -21,12 +21,25 @@ import { toBook } from './mappers'
 import { applyIncoming, type ReviewCandidate } from './intake'
 import { loadVerdicts } from './duplicates'
 import { persistContributors } from './contributors'
+import { fetchProductPreferences, saveProductPreferences } from './productPreferences'
 
 // Keep URL-sized PostgREST filters comfortably below the local gateway's request-line limit.
 // Restore is already a staged, multi-request operation, so run these sequentially and fail at the
 // first rejected batch instead of creating a burst of ownership-trigger work.
 const RESTORE_OWNERSHIP_BATCH_SIZE = 100
-const CURRENT_BACKUP_VERSION = 11
+const CURRENT_BACKUP_VERSION = 12
+
+// Explicit portable fields: never export/restore profile IDs, concurrency tokens or service grants.
+// select('*') tolerates staged schemas; only these fields leave buildBackup.
+const PROFILE_BACKUP_FIELDS = [
+  'display_name', 'goal_year', 'goal_target', 'auto_merge_duplicates',
+  'default_store_id', 'default_store_name', 'default_store_website',
+  'skin', 'mode', 'adaptive_skin', 'adaptive_locked', 'arrangement', 'guidance',
+  'show_reading_tips', 'product_preferences',
+] as const
+function portableProfile(row: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(PROFILE_BACKUP_FIELDS.filter(key => key in row).map(key => [key, row[key]]))
+}
 
 async function currentUserId(): Promise<string> {
   const { data } = await supabase.auth.getUser()
@@ -659,10 +672,12 @@ export async function buildBackup(): Promise<string> {
       ),
       supabase
         .from('profiles')
-        .select('display_name, goal_year, goal_target, auto_merge_duplicates, default_store_id, default_store_name, default_store_website, skin, mode, adaptive_skin, adaptive_locked, arrangement, guidance, show_reading_tips')
+        .select('*')
         .eq('id', ownerId)
         .maybeSingle(),
     ])
+
+  if (profile.error) throw profile.error
 
   // Per-book contributors, keyed by (old) book id.
   const contributorsByBook: Record<string, { name: string; role: string; position: number }[]> = {}
@@ -722,7 +737,7 @@ export async function buildBackup(): Promise<string> {
     series_entries: seriesEntries,
     series_tombstones,
     trope_dismissals,
-    profile: profile.data ?? null,
+    profile: profile.data ? portableProfile(profile.data) : null,
   })
   })
 }
@@ -860,6 +875,15 @@ function parseBackupFile(json: string): BackupShape {
     throw new Error(`That file doesn’t look like a ${APP_NAME} backup.`)
   }
   const data = parsed as unknown as BackupShape
+
+  if (data.profile !== undefined && data.profile !== null) {
+    if (!isRecord(data.profile) || Object.keys(data.profile).some(key =>
+      !(PROFILE_BACKUP_FIELDS as readonly string[]).includes(key)))
+      throw new Error('This backup has profile fields this app cannot restore. Nothing was restored.')
+    const preferences = readProductPreferences(data.profile.product_preferences)
+    if (preferences.kind === 'invalid' || preferences.kind === 'unsupported')
+      throw new Error('These product preferences need a compatible app. Keep the original backup. Nothing was restored.')
+  }
 
   if (
     isRecord(data.profile) &&
@@ -1330,6 +1354,18 @@ export async function restoreBackup(
       throw new Error('This restore would exceed 50 saved shortlists. Remove some saved shortlists first. Nothing was restored.')
   }
 
+  // Freeze current revision and save before the first library write. A concurrent device change
+  // refuses the restore rather than silently rebasing over it. Older/null preferences preserve
+  // the current account choice. Presentation extensions travel intact, even in a Reader-only build.
+  const preferences = readProductPreferences(data.profile?.product_preferences)
+  if (preferences.kind === 'supported') {
+    const current = await fetchProductPreferences(ownerId)
+    const currentRead = readProductPreferences(current.document)
+    if (currentRead.kind === 'unsupported' || currentRead.kind === 'invalid')
+      throw new Error('Your current product choices need a compatible app. Nothing was restored.')
+    await saveProductPreferences(ownerId, current.revision, preferences.document)
+  }
+
   // Lists first, mapping old → new ids.
   //
   // sort_order POLICY (the lists sort_order incident): the export has always captured it
@@ -1533,8 +1569,12 @@ export async function restoreBackup(
 
   // Profile: restore appearance + adaptive taste state + goal + arrangement onto the account.
   if (data.profile) {
-    const { error } = await supabase.from('profiles').update(data.profile).eq('id', ownerId)
-    if (error) throw error
+    const row = portableProfile(data.profile)
+    delete row.product_preferences // Only the revision-checked action above may write this field.
+    if (Object.keys(row).length) {
+      const { error } = await supabase.from('profiles').update(row).eq('id', ownerId)
+      if (error) throw error
+    }
   }
 
   return {

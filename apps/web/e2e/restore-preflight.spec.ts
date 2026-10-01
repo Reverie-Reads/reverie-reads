@@ -105,6 +105,27 @@ test('a backup is inspected with real counts and writes only after confirmation'
   test.setTimeout(180_000)
   const c = await client()
   await seed(c)
+  // The first account-contract slice is inert: even a portable Collector preference must keep
+  // today's Reader shell usable. Export and explicit restore exercise the real browser writer.
+  const productDocument = {
+    version: 1,
+    enabledProducts: ['reader', 'collector'],
+    activeProduct: 'collector',
+    initialChoiceComplete: true,
+    presentation: { collector: { version: 7, dock: ['locations', 'trips'] } },
+  }
+  const before = await ok(
+    c.sb.from('profiles').select('product_preferences_revision').eq('id', c.uid).single(),
+    'product revision',
+  )
+  await ok(
+    c.sb.rpc('save_product_preferences', {
+      p_owner_id: c.uid,
+      p_expected_revision: before.product_preferences_revision,
+      p_document: productDocument,
+    }),
+    'product preferences save',
+  )
   try {
     await signIn(page, c.session)
     await page.goto('/settings')
@@ -141,11 +162,36 @@ test('a backup is inspected with real counts and writes only after confirmation'
     await expect(page.getByTestId('restore-backup')).toBeFocused()
     expect(await rowCount(c)).toBe(1)
 
+    // A newer Reader choice is restored only by the explicit backup confirmation, never preview.
+    await ok(
+      c.sb.rpc('save_product_preferences', {
+        p_owner_id: c.uid,
+        p_expected_revision: before.product_preferences_revision + 1,
+        p_document: { ...productDocument, activeProduct: 'reader' },
+      }),
+      'change active product before restore',
+    )
     // The same immutable file is re-inspected, then the explicit confirmation performs the add.
     await chooseBackup(page, path)
     await page.getByRole('button', { name: 'Restore this backup' }).click()
     await expect(page.getByText(/Restored 1 book,/)).toBeVisible({ timeout: 30_000 })
     await expect.poll(() => rowCount(c), { timeout: 30_000 }).toBe(2)
+    const restoredProfile = await ok(
+      c.sb
+        .from('profiles')
+        .select('product_preferences, product_preferences_revision, skin, mode')
+        .eq('id', c.uid)
+        .single(),
+      'restored product preferences',
+    )
+    expect(restoredProfile.product_preferences).toEqual(productDocument)
+    expect(restoredProfile.product_preferences_revision).toBe(
+      before.product_preferences_revision + 3,
+    )
+    expect(restoredProfile.skin).toBe('hearth')
+    expect(restoredProfile.mode).toBe('dark')
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Backup & import' })).toBeVisible()
   } finally {
     await reset(c)
   }

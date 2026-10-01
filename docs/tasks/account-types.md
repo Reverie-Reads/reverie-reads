@@ -156,3 +156,27 @@ grant account capabilities through arbitrary fields.
 
 Implementation uses focused reviewed heads, public-first sync and normal guarded release gates.
 Runtime verification must prove the user's actual journey, not only profile flags or route presence.
+
+## First implementation slice: portable preferences
+
+The account foundation is implemented behind the existing Reader experience. This slice does not
+activate product selection, change onboarding/navigation, register Collector screens, or grant Pro.
+
+- `profiles.product_preferences` stores the versioned portable document; the independently managed
+  revision supports compare-and-swap. The migration locks profiles for its legacy cutoff, initializing
+  exactly the existing accounts to Reader and leaving subsequent profiles unconfigured. It does not
+  touch Reader arrangement, guidance or appearance.
+- The owner-bound `save_product_preferences` action rejects stale differing writes and direct column
+  writes. An identical retry returns the saved revision without incrementing it. Future root versions
+  stay readable/exportable and cannot be overwritten by this writer.
+- Version 12 backups carry product preferences, including opaque independent presentation documents.
+  Older backups preserve the current choice. Restore checks the current revision before library writes;
+  an unsupported root or unknown profile extension blocks restore rather than silently dropping it.
+  Profile IDs, revision tokens and capability/role fields cannot be restored. A restore remains the
+  existing staged operation, not a new transaction covering all library tables.
+- The profile cache retains the raw document under the existing account boundary. No device-wide
+  product choice, inferred grant, duplicate book, or Collector-only Reader dock key is introduced.
+
+Next: product registration and entry using these contracts. Keep Collector unavailable for signup
+until the private minimum Free capture-to-collection journey is ready. Migration and private overlay
+sync require the normal reviewed release process; this document does not authorize deployment.
