@@ -27,6 +27,8 @@ Genre-specific language belongs in a skin, not in the core.
   accounts are deferred. This is the target contract, not implemented signup or billing. Preserve
   existing reader arrangements and free-beta promises. See `docs/tasks/account-types.md`;
   Collector-specific commercial specifications remain in the private overlay.
+  The shared implementation blueprint in that task preserves legacy Reader preferences and Pro
+  compatibility while adding product registration and feature-scoped proof seams.
 - **Book data serves the reader app first (owner, September 9).** A public book-data provider/API
   is a possible later product after the app gains users, not a launch dependency. Keep provider
   comparison #521 draft; plan edition comparison as a Pro reader feature, not an admin-only

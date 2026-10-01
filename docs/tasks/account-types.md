@@ -72,3 +72,87 @@ premium-authored data after access ends and do not grant workspace rights throug
 
 The owner selected the product direction. This document does not grant merge/deploy authorization,
 activate pricing, purchase a provider, invite users or introduce a production migration.
+
+## Implementation blueprint for shared contracts
+
+The owner accepted the working plan. These are proposed interfaces for focused implementation PRs,
+not additions to the current data-model reference, which must continue to describe what is built.
+
+### Profile and entry packet
+
+Add nullable versioned `product_preferences` and server-managed
+`product_preferences_revision` to profiles. Version 1 carries the unique enabled product set,
+active enabled product, initial-choice completion and independent presentation documents. Only
+Reader and Collector are enableable initially. No paid grants, workspace roles or billing data
+belong in this user-editable document. Implement an owner-only revision-checked update RPC with
+read-only identical retry; stale differing edits keep the draft and show a conflict.
+
+Freeze legacy profile IDs at rollout instead of guessing from book counts. Existing accounts
+retain Reader and all current arrangement/guidance/appearance data. New verified accounts without
+a saved choice see two equal choices before product onboarding. A pre-auth choice is a bounded
+session intent, deliberately confirmed for the authenticated account. Save failure retains selection
+and Retry; no default choice is silently written. Record no new subscription or ownership state.
+
+Reuse `data/profile.ts`, `routes/AuthRoute.tsx`, `routes/OnboardingRoute.tsx`,
+`auth/AuthProvider.tsx` and the auth-callback/guest-handoff paths. Preserve confirmation and recovery
+ordering. Do not re-run Reader onboarding for an existing account enabling Collector.
+
+### Product registry and presentation packet
+
+Provide inert public registration seams for product Home, navigation, onboarding/guidance and build
+availability. Public-only builds are complete with Reader registered; a stored but unavailable
+Collector choice is preserved and explained with an explicit Reader escape. Do not offer a broken
+Collector signup path. The private product registers its implementation after the common seams land.
+
+Use proposed `/start` for entry and retain existing Reader routes and `/sourcing` compatibility.
+`RootRoute`, `AppShell`, `router.tsx` and the existing appearance gate resolve the active registered
+product before showing its shell. Product/profile failure offers Retry without claiming book loss.
+Direct routes remain reachable under their existing authorization and do not auto-grant a product.
+
+Keep `profiles.arrangement` and `profiles.guidance` as Reader compatibility documents. The current
+`design/arrangements.ts` parser requires Library in a three-destination dock; do not insert Collector
+keys and then normalize away its layout. Collector gets independent versioned presentation state.
+Custom arrangements win over defaults. Guidance changes presentation only, never access.
+
+Switching products must honor each open draft's existing save/discard/cancel behavior. Do not erase
+pending captures, sign the person out or cancel an acquired copy. Stop departing cameras/tours and
+reject late callbacks using account/run identity. Different authenticated accounts keep the existing
+stronger cache/session clearing boundary. Shared product data is not shared-user authorization.
+
+### Feature proof seam packet
+
+Extend the generic provider/proof seams in `data/proEntitlement.ts` and
+`packages/core/src/proEntitlement.ts` to accept stable feature IDs and use account/feature-scoped
+query keys. Preserve entitled/not_entitled/unavailable. Client proof is presentation, not a write
+guard; private writers/providers repeat authoritative capability and ownership checks.
+
+Keep legacy Reader behavior during staged caller migration. Do not turn the old global Pro result
+into a union of products while Reader-only writers still consume it. The private overlay defines
+the commercial feature mapping and server grants. User preference, cached proof or restored backup
+cannot authorize premium writes or workspace membership.
+
+### Backup and recovery packet
+
+Update `data/importExport.ts`, `ownedTables.ts`, backup preflight and cache tests together. Product
+preferences are portable personal presentation data; service grants and billing authority are not.
+Old backups without the new field preserve the current choice. Unsupported product/presentation
+documents survive readback without destructive normalization. A public build cannot silently drop
+an unhandled private extension during restore. Profile restoration remains owner-scoped and cannot
+grant account capabilities through arbitrary fields.
+
+### Acceptance and release order
+
+1. Land profile/pure contracts, migration/RPC and backup/cache continuity upstream with the feature
+   inert. Read combined deployment history before numbering the migration; do not reserve a number
+   from this blueprint. Keep the data-model reference current only when implementation lands.
+2. Land product registration/entry and preserve public-build completeness. Private sync follows;
+   Collector rollout waits for its usable minimum Free capture-to-collection journey.
+3. Land the generic capability seam; private caller migration preserves legacy Reader grants and
+   explicit shared-feature eligibility. Every direct writer/provider/restore has a scoped test.
+4. Verify new Reader/Collector, existing customized Reader, both, helper, unavailable build,
+   confirmation/OAuth/guest handoff, saved-choice failure, stale edits and account switching.
+5. Verify old/new/unsupported backups, dirty editor switching, fresh-device appearance, camera
+   cancellation, keyboard/reduced motion and registry-backed contrast across all skins/modes.
+
+Implementation uses focused reviewed heads, public-first sync and normal guarded release gates.
+Runtime verification must prove the user's actual journey, not only profile flags or route presence.
