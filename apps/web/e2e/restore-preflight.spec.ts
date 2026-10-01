@@ -145,6 +145,7 @@ test('a backup is inspected with real counts and writes only after confirmation'
     const dialog = page.getByRole('dialog', { name: 'Review your restore' })
     await expect(dialog).toBeVisible()
     await expect(dialog).toContainText('Library after restore')
+    await expect(dialog).toContainText('product choices')
     await expect(dialog).toContainText('add 1 book to the 1 book already here')
     await expect(dialog).toContainText('completeness record matches')
     await expect(dialog.getByText('2', { exact: true }).first()).toBeVisible()
