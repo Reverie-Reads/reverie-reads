@@ -319,11 +319,12 @@ describe('offline provider comparison component', () => {
       note: '',
       sourceUrl: '',
     }
+    const client = new QueryClient()
     render(
-      <>
+      <QueryClientProvider client={client}>
         <CatalogMetadataEditor work={work} onSaved={vi.fn()} onRefresh={vi.fn()} />
         <ProviderComparison {...props} />
-      </>,
+      </QueryClientProvider>,
     )
     fireEvent.change(screen.getByLabelText('Catalog description'), {
       target: { value: 'My unsaved draft' },
@@ -337,5 +338,6 @@ describe('offline provider comparison component', () => {
     expect(screen.getByRole('button', { name: 'Save description' })).toBeDisabled()
     expect(supabase.rpc).not.toHaveBeenCalled()
     expect(supabase.from).not.toHaveBeenCalled()
+    client.clear()
   })
 })
