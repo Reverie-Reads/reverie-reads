@@ -19,6 +19,14 @@ Genre-specific language belongs in a skin, not in the core.
 
 ## Status & your job
 
+- **Reader and Collector are separate initial account types (owner, September 30).** Offer
+  Midniht Reader and Midniht Collector at first entry, each with Free and paid Pro versions.
+  Use one identity with independently enabled products and scoped Pro entitlements; combined
+  paid plans charge shared data/features once plus additional capabilities. Account type never
+  grants workspace or catalog authority. Collector is the current build focus; bookstore-owner
+  accounts are deferred. This is the target contract, not implemented signup or billing. Preserve
+  existing reader arrangements and free-beta promises. See `docs/tasks/account-types.md`;
+  Collector-specific commercial specifications remain in the private overlay.
 - **Book data serves the reader app first (owner, September 9).** A public book-data provider/API
   is a possible later product after the app gains users, not a launch dependency. Keep provider
   comparison #521 draft; plan edition comparison as a Pro reader feature, not an admin-only

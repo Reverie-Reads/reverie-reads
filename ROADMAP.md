@@ -4,6 +4,16 @@ Current product priorities updated 2026-09-10. This file is the ordered project 
 `docs/archive/`; detailed proposals that are not yet active remain in `docs/backlog/`; only work
 actually in flight belongs in `docs/tasks/`.
 
+## Current product direction: Reader and Collector
+
+Owner update September 30: initial entry will offer **Midniht Reader** and **Midniht Collector**,
+each with a Free and paid Pro version. Collector is the current build focus; bookstore-owner
+accounts follow later. One identity may enable both products, with combined paid pricing based
+on shared features plus added capabilities. This is the target contract, not implemented signup
+or billing. Shared account/entry work is specified in
+[account-types.md](docs/tasks/account-types.md); Collector commercial specifications stay in the
+private overlay. Preserve the existing free-beta and reader-data boundaries below.
+
 Priorities mean:
 
 - **P0 — safety/blocker:** finish before the next product change or production-data write.
