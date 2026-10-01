@@ -76,3 +76,4 @@ export * from './discovery'
 
 export * from './copyInventory'
 export * from './barcodeBatch'
+export * from './productPreferences'

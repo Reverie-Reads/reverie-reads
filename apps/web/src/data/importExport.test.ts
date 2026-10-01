@@ -48,6 +48,7 @@ const NEW_OWNER = 'user-new'
 
 let db: Db
 let currentUser = OWNER
+let preferenceConflict = false
 let seq = 0
 const realisticUuid = (n: number): string =>
   `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -324,6 +325,16 @@ vi.mock('../lib/supabase', () => ({
   supabase: {
     auth: { getUser: async () => ({ data: { user: { id: currentUser } } }) },
     from: (table: string) => new Query(table as Table),
+    rpc: async (name: string, args: { p_owner_id: string; p_expected_revision: number; p_document: unknown }) => {
+      if (preferenceConflict) return { error: { code: 'PT409' }, data: null }
+      if (name !== 'save_product_preferences') throw new Error(`Unexpected RPC: ${name}`)
+      const row = db.profiles.find(row => row.id === currentUser && row.id === args.p_owner_id)
+      if (!row) return { error: { code: '42501' }, data: null }
+      if (row.product_preferences_revision !== args.p_expected_revision) return { error: { code: 'PT409' }, data: null }
+      row.product_preferences = structuredClone(args.p_document)
+      row.product_preferences_revision = Number(row.product_preferences_revision) + 1
+      return { data: { document: row.product_preferences, revision: row.product_preferences_revision }, error: null }
+    },
   },
 }))
 // Contributor persistence has its own RPC and its own tests; it is not what these assert.
@@ -423,6 +434,7 @@ function wipeToFreshAccount({ keepCanonical = true } = {}) {
 
 beforeEach(() => {
   seq = 0
+  preferenceConflict = false
   currentUser = OWNER
   access = []
   ignoreRange = false
@@ -809,7 +821,7 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
     }
   })
 
-  it('exports v11 with taxonomy, structured series authority, and the account arrangement', async () => {
+  it('exports v12 with taxonomy, structured series authority, and the account arrangement', async () => {
     const parsed = JSON.parse(await buildBackup()) as {
       v: number
       tropes: Record<string, { name: string; emphasis: string }[]>
@@ -818,7 +830,7 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
       profile: Record<string, unknown>
     }
     expect(parsed.profile.guidance).toEqual({ version: 1, mode: 'gentle', setupComplete: true, milestones: ['books'], revealed: ['share'], tour: 'plan' })
-    expect(parsed.v).toBe(11)
+    expect(parsed.v).toBe(12)
     expect((parsed.tropes['book-a'] ?? []).map((t) => t.name).sort()).toEqual(['Dragons With Opinions', 'Enemies to Lovers'])
     expect(parsed.moods['book-a']).toEqual([{ name: 'Devastating' }])
     expect(parsed.author_follows).toHaveLength(2)
@@ -1416,7 +1428,7 @@ describe('restore preflight', () => {
     const preview = inspectBackup(json)
 
     expect(preview).toMatchObject({
-      version: 11,
+      version: 12,
       isNewerVersion: false,
       integrity: 'verified',
       restoresProfile: true,
@@ -1474,7 +1486,7 @@ describe('restore preflight', () => {
 
   it('identifies sections from a newer backup so the UI can block a lossy restore', async () => {
     const parsed = JSON.parse(await buildBackup()) as Record<string, unknown>
-    parsed.v = 12
+    parsed.v = 13
     ;(parsed.counts as Record<string, number>).reading_quotes = 1
     parsed.reading_quotes = [{ text: 'A future section' }]
 
@@ -1551,4 +1563,75 @@ it('detects lost copy records even when every book survives the backup', async (
   expect(inspectBackup(JSON.stringify(file)).counts).toMatchObject({ books: 2, editions: 1, copies: 2 })
   file.books[0].copy_inventory.copies.pop()
   expect(() => inspectBackup(JSON.stringify(file))).toThrow('copies: expected 2, found 1')
+})
+
+
+describe('product preferences backup v12', () => {
+  const document = { version: 1, enabledProducts: ['reader', 'collector'], activeProduct: 'collector', initialChoiceComplete: true,
+    presentation: { collector: { version: 7, dock: ['locations', 'trips'], custom: { visible: true } } } }
+  it('exports only portable fields and restores independent product documents through the owner RPC', async () => {
+    db.profiles[0]!.product_preferences = document
+    db.profiles[0]!.product_preferences_revision = 82
+    db.profiles[0]!.paid_grant = true
+    const json = await buildBackup()
+    const profile = JSON.parse(json).profile
+    expect(profile.product_preferences).toEqual(document)
+    expect(profile).not.toHaveProperty('paid_grant')
+    expect(profile).not.toHaveProperty('product_preferences_revision')
+    wipeToFreshAccount()
+    db.profiles[0]!.product_preferences = null
+    db.profiles[0]!.product_preferences_revision = 0
+    await restoreBackup(json)
+    expect(db.profiles[0]!.product_preferences).toEqual(document)
+    expect(db.profiles[0]!.product_preferences_revision).toBe(1)
+    expect(db.profiles[0]!.id).toBe(NEW_OWNER)
+    expect(access.filter(a => a.table === 'profiles' && a.mode === 'update')
+      .every(a => !JSON.stringify(a.values).includes('product_preferences'))).toBe(true)
+  })
+  it.each([undefined, null])('preserves current choices when older backup preference is %j', async absent => {
+    db.profiles[0]!.product_preferences = absent
+    const json = await buildBackup()
+    wipeToFreshAccount()
+    db.profiles[0]!.product_preferences = document
+    db.profiles[0]!.product_preferences_revision = 8
+    await restoreBackup(json)
+    expect(db.profiles[0]!.product_preferences).toEqual(document)
+    expect(db.profiles[0]!.product_preferences_revision).toBe(8)
+  })
+  it('exports a future root document unchanged, but refuses restore before writes', async () => {
+    const future = { version: 99, activeProduct: 'future', opaque: [1, 2] }
+    db.profiles[0]!.product_preferences = future
+    const json = await buildBackup()
+    expect(JSON.parse(json).profile.product_preferences).toEqual(future)
+    wipeToFreshAccount()
+    access = []
+    await expect(restoreBackup(json)).rejects.toThrow('compatible app')
+    expect(access).toEqual([])
+  })
+  it('stops before any library write when a simultaneous preference change conflicts', async () => {
+    const json = JSON.stringify({ books: [{ id: 'old', title: 'Keep this draft' }], profile: { product_preferences: document } })
+    db.profiles[0]!.product_preferences = null
+    db.profiles[0]!.product_preferences_revision = 0
+    preferenceConflict = true
+    access = []
+    await expect(restoreBackup(json)).rejects.toEqual({ code: 'PT409' })
+    expect(access.every(a => a.mode === 'select')).toBe(true)
+    expect(db.profiles[0]!.product_preferences).toBeNull()
+  })
+  it('refuses to replace an unsupported receiving account document before library writes', async () => {
+    const json = JSON.stringify({ books: [], profile: { product_preferences: document } })
+    const future = { version: 8, custom: true }
+    db.profiles[0]!.product_preferences = future
+    db.profiles[0]!.product_preferences_revision = 2
+    access = []
+    await expect(restoreBackup(json)).rejects.toThrow('current product choices')
+    expect(access.every(a => a.mode === 'select')).toBe(true)
+    expect(db.profiles[0]!.product_preferences).toEqual(future)
+  })
+  it.each(['id', 'product_preferences_revision', 'paid_grant', 'private_extension'])('rejects a profile %s before any write', async field => {
+    const json = JSON.stringify({ books: [], profile: { [field]: 'unsafe' } })
+    access = []
+    await expect(restoreBackup(json)).rejects.toThrow('profile fields')
+    expect(access).toEqual([])
+  })
 })

@@ -117,6 +117,14 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   books or infer first publication from a matching year. Keep edition date, source, territory and
   uncertainty visible, distinguish source failure from successful emptiness, and require the normal
   deliberate Add flow. See `docs/tasks/discover-release-views.md`.
+- **Product preferences are presentation, never authority.** The nullable profile document and its
+  server revision travel through the owner-bound `save_product_preferences` RPC, not ordinary profile
+  updates. Preserve identical retry and stale-edit conflicts; do not silently rebase. Existing readers
+  retain Reader at the migration cutoff; new profiles remain unconfigured. Reader arrangement/guidance
+  stay separate from opaque product presentation. Backup v12 includes preferences but not revisions,
+  billing grants or workspace roles; older backups preserve the current choice and unsupported root
+  documents block restore without losing export/readback. The first slice is inert: do not expose
+  Collector signup until its minimum journey and registered entry are ready. See `docs/tasks/account-types.md`.
 - **Reader guidance controls presentation, never access.** New readers choose a gentle introduction,
   the full walkthrough or independent exploration. Account-scoped `profiles.guidance` is authoritative;
   a device-wide onboarding flag cannot skip another account's welcome. Milestones are bounded,

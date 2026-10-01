@@ -866,3 +866,30 @@ or Penguin Random House book page. It is reader-visible provenance, not shared c
 The inventory remains version 1 with an optional field; backup v11 records the compatibility boundary.
 Explicit release Add inserts the one edition/copy with the new parent book atomically. No migration
 creates historical copy records. See `../tasks/discover-release-edition-handoff.md`.
+
+## Product preferences
+
+`profiles.product_preferences` is nullable JSON, paired with server-managed nonnegative
+`product_preferences_revision`. Version 1 contains `enabledProducts` (a unique, nonempty set of
+`reader` and/or `collector`), an `activeProduct` within that set, `initialChoiceComplete`, and
+independent versioned documents in `presentation`. This is personal presentation data, never a
+paid-access grant, workspace role, or ownership claim. Reader `arrangement` and `guidance` remain
+separate compatibility documents; Collector presentation is not normalized through their parsers.
+
+Migration `20261103010000` locks profiles while giving existing accounts a completed Reader choice
+at revision 1. Later accounts begin null/revision 0. It preserves appearance, arrangement, guidance,
+books, copies and reading history. Selection and product-specific entry remain inactive in this slice.
+
+`save_product_preferences(owner_id, expected_revision, document)` requires the authenticated owner,
+locks that profile, and compares revisions. An identical retry is read-only; a stale differing draft
+returns HTTP 409. Ordinary profile updates cannot change either column. A newer root document is
+preserved rather than downgraded. Opaque versioned presentation is retained for compatible product
+implementations to interpret. The stored document is bounded to 8 KiB in Postgres JSON text.
+
+Backup v12 exports the raw product document without the revision. Missing/null preferences in older
+backups preserve the receiving account's choice. Compatible restore uses the owner RPC with a freshly
+read revision before library writes; it never restores identity, paid grants or workspace authority.
+Unsupported root documents and unknown profile fields stop restore before any writes. Readback and
+export still preserve those newer product documents. Restore remains a multi-step operation, so a later
+library failure may follow a successfully restored preference. Offline caching retains the raw document
+inside the existing account-isolated profile cache. See `docs/tasks/account-types.md`.
