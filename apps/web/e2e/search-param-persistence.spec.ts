@@ -210,24 +210,48 @@ test.describe('/discover keeps its search text', () => {
   })
 })
 
-test('guided Discover restores its search after a library visit and refresh, and rejects malformed input', async ({
-  page,
-}) => {
-  const c = await client()
-  await signIn(page, c.session)
-  await stub(page)
-  const field = page.getByRole('textbox', { name: 'Search by title, author, or ISBN' })
-  await page.goto('/discover')
-  await field.fill('dragons')
-  await expect.poll(() => new URL(page.url()).searchParams.get('find')).toBe('dragons')
-  await page.goto('/library')
-  await expect(page.locator('main')).toBeVisible()
-  await page.goBack()
-  await expect(field).toHaveValue('dragons')
-  await page.reload()
-  await expect(field).toHaveValue('dragons')
-  await page.goto('/discover?find[]=a&find[]=b')
-  await expect(field).toHaveValue('')
+// Each persistence boundary has its own normal test budget. Combining sign-in, a Library
+// round-trip, refresh and a malformed-URL load made the final assertion inherit the time spent
+// on every previous navigation. Keep real navigation and the default deadline, without retries.
+test.describe('guided Discover keeps its search text', () => {
+  const FIELD = 'Search by title, author, or ISBN'
+
+  test('back-navigation restores the search after a library visit', async ({ page }) => {
+    const c = await client()
+    await signIn(page, c.session)
+    await stub(page)
+    const field = page.getByRole('textbox', { name: FIELD })
+
+    await page.goto('/discover')
+    await field.fill('dragons')
+    await expect.poll(() => new URL(page.url()).searchParams.get('find')).toBe('dragons')
+    await page.goto('/library')
+    await expect(page.locator('main')).toBeVisible()
+    await page.goBack()
+    await expect(field).toHaveValue('dragons')
+  })
+
+  test('refresh restores the search written to the URL', async ({ page }) => {
+    const c = await client()
+    await signIn(page, c.session)
+    await stub(page)
+    const field = page.getByRole('textbox', { name: FIELD })
+
+    await page.goto('/discover')
+    await field.fill('dragons')
+    await expect.poll(() => new URL(page.url()).searchParams.get('find')).toBe('dragons')
+    await page.reload()
+    await expect(field).toHaveValue('dragons')
+  })
+
+  test('malformed find input loads with an empty search', async ({ page }) => {
+    const c = await client()
+    await signIn(page, c.session)
+    await stub(page)
+
+    await page.goto('/discover?find[]=a&find[]=b')
+    await expect(page.getByRole('textbox', { name: FIELD })).toHaveValue('')
+  })
 })
 
 // ── /match · vibeQ ─────────────────────────────────────────────────────────────────────────────
