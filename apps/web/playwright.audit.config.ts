@@ -36,10 +36,13 @@ export default defineConfig({
   // Long by design: the sweep is hundreds of navigations in ONE test, and a timeout mid-sweep
   // would truncate the findings list into something that looks complete and isn't.
   timeout: 45 * 60_000,
-  use: { baseURL: BASE_URL, trace: 'retain-on-failure' },
+  // The discovery sweep saves incremental measurements and screenshots itself. A single trace
+  // across hundreds of full reloads retains tens of thousands of development-module requests.
+  // The ordinary regression suite keeps its per-test traces; this sweep uses the built client.
+  use: { baseURL: BASE_URL, trace: 'off' },
   projects: [{ name: 'audit', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `pnpm dev --port ${PORT} --strictPort`,
+    command: `pnpm build && pnpm preview --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: 120_000,

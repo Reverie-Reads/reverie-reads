@@ -175,8 +175,16 @@ for (const width of [320, 390, 1440]) {
       await page.goto(`/book/${book.id}`)
       await fits(page.getByRole('heading', { level: 1, name: book.title, exact: true }))
       await fits(page.getByRole('button', { name: 'Add to favorites', exact: true }))
-      if (book.title === UNBROKEN)
+      if (book.title === UNBROKEN) {
+        if (width === 320) {
+          const title = await page
+            .getByRole('heading', { level: 1, name: book.title, exact: true })
+            .boundingBox()
+          // Merely fitting horizontally allowed a 24-line title squeezed beside the cover.
+          expect(title!.width).toBeGreaterThan(width / 2)
+        }
         await page.screenshot({ path: info.outputPath(`book-${width}.png`) })
+      }
       await page.goto('/library?scope=household')
       await page
         .getByRole('button', { name: `View ${book.title} in the household library`, exact: true })

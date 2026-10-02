@@ -417,9 +417,9 @@ export function BookDetailScreen() {
       </div>
 
       {/* header */}
-      {/* cover + title share the row even on phones — a stacked w-32 cover left dead space beside it */}
+      {/* Compact phones give the title its own row so long names remain readable. */}
       <div
-        className="skin-panel mt-4 flex gap-4 border border-line p-4 sm:gap-7 sm:p-7"
+        className="skin-panel mt-4 flex gap-4 border border-line p-4 max-[380px]:flex-col sm:gap-7 sm:p-7"
         style={{
           background:
             'linear-gradient(115deg, color-mix(in srgb, var(--primary) 10%, var(--panel-fill)), var(--panel-fill) 48%)',
@@ -453,7 +453,7 @@ export function BookDetailScreen() {
           )}
         </button>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 max-[380px]:w-full">
           <span className="skin-label text-[10px]" style={{ color: 'var(--accent-ink)' }}>
             Book record
           </span>
