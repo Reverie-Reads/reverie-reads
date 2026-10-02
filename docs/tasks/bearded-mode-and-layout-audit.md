@@ -97,7 +97,7 @@ its choices independently of the action row. Rainbow was selected and saved as B
 both shared chrome portraits with no overflow.
 Do not report this as deployed from a study or unit result.
 
-Public draft #616 is open. Its initial full local browser run was deliberately interrupted after the
+Public #616 initially opened as a draft. Its initial full local browser run was deliberately interrupted after the
 owner requested Rainbow: **6 passed, 1 interrupted, 368 unrun**; this is not a full-suite pass.
 That candidate's fresh reset and SQL suite passed (1,973 assertions, 65 files). Restoration then
 timed out waiting for local Storage startup; all three services subsequently became healthy.
@@ -162,7 +162,8 @@ Final Node 22 source gates passed: lint, typechecking, formatting, production bu
 source/typecheck runs were interrupted for the walkthrough fix; these replacement results supersede
 them. A final CSS-only review adjustment protects Planner’s Undo action in landscape, with bounds
 assertions added to its existing persistence test; static/build checks are repeated for that delta.
-The full fresh-database browser gate is still pending for the final committed candidate.
+The full fresh-database browser gate has finished for the final committed candidate; its red result
+and successful development restoration are recorded below.
 
 Physical acceptance remains: install from Safari on a notch/island iPhone, cold-launch from Home
 Screen, rotate, use the actual keyboard in Add/notes, check VoiceOver and larger text, then confirm
@@ -170,6 +171,71 @@ Save/Cancel/navigation clear the status bar and home indicator. Repeat on an iPa
 Simulator is not installed on this host; Playwright WebKit cannot operate Safari's native Share
 sheet or certify installed-iOS viewport/keyboard behavior.
 
-After review and full gates, advance public draft #616 for review. The private app needs its normal reviewed sync
-before production gets this UI. Browser-local persistence is deliberately limited; a later account-
+The owner merged public #616 at source candidate `ca59a24` on October 2, while its full local
+browser run was active. The source merge is confirmed, but its completed local result remains
+unresolved. Hosted CI success does not replace that result. The private app needs its normal
+reviewed sync before production gets this UI. Browser-local persistence is deliberately limited; a later account-
 portable preference requires a separately reviewed compatibility/restore contract.
+
+## Final candidate receipt — October 2, 2026
+
+The frozen source candidate was `ca59a243349cc329d785b0e6e0cc064ef6690003`. No source edits,
+parallel resets, retries or deadline changes were made during its full local run. This receipt
+is documentation only; it does not close the remaining validation work. Public #616 was merged
+by the owner at 21:59:13 UTC (merge commit `2d6b8d16f3a852b36db705ddfadfd07b43034505`).
+Its merged application source is identical to the tested candidate. The validation agent did not
+merge it, and the original branch push guard refused a post-merge documentation update; this
+receipt therefore follows in a separate documentation PR.
+
+| Gate                          | Observed result                                                                                                                                                                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node 22 source suites         | Pass: 3,046 core, 1,226 web, 2 workflow, 498 source-trial and 127 recovery checks.                                                                                                                                                                                        |
+| Static/build and secrets      | Lint, typecheck, formatting, production build and secret scans passed, including the final Planner inset adjustment.                                                                                                                                                      |
+| Fresh local SQL               | Pass: 1,973 assertions across 65 files.                                                                                                                                                                                                                                   |
+| Focused WebKit                | Pass: 7/7 with no retries.                                                                                                                                                                                                                                                |
+| Full local browser            | **Red: 344 passed, 18 failed, 9 skipped, 17 did not run; 388 total, one worker and zero retries, 1.4 hours.**                                                                                                                                                             |
+| WebKit within that full run   | All 12 passed, including the real welcome/Bearded/Add journey and real-record landscape coach.                                                                                                                                                                            |
+| Hosted CI                     | [Run 37062911833](https://github.com/Reverie-Reads/reverie-reads/actions/runs/37062911833) passed all jobs: 312 rest, 17 accessibility and 37 mobile browser checks; 10 declared skips and no failed/flaky summary. SQL: 1,973 assertions/65 files. CI permits one retry. |
+| Local development restoration | Guarded reset and the ordinary 290-book/112-author seed passed. The untracked onboarding PDF was preserved. Auth postflight: health 200 in 34 ms, sign-in passed in 130 ms, identity read passed in 48 ms. Browser exit 1; restoration exit 0.                            |
+
+The shared stack lock was released after restoration. Another audit then acquired it. The
+postflight above establishes the state at handoff, not the state after another workflow uses
+that stack. The validation agent performed no production migration, deployment, merge or automation.
+
+### Preserved local failures
+
+| Project / check                                  | First recorded symptom                                                                                                                                     |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Accessibility — Hearth and Bloom core sweeps (2) | Each exhausted its 90-second total budget after navigating to Appearance. No contrast assertion was reported.                                              |
+| Rest — Add genre under another room              | Added confirmation did not appear; its trace records an Auth identity request returning 504 after 12.35 seconds.                                           |
+| Rest — coverless Add preview                     | Welcome remained “Taking longer than expected”; the case exhausted 30 seconds before reaching Add or its cover assertion.                                  |
+| Rest — Next read into an active read             | `AuthRetryableFetchError` in test-account deletion cleanup. The case remains failed; this is not a clean workflow result.                                  |
+| Rest — independent all-room guidance             | Exhausted 180 seconds while expecting Folio; Umbra and shell placeholders remained.                                                                        |
+| Rest — reading-tips persistence                  | `AuthRetryableFetchError` during test-account creation.                                                                                                    |
+| Rest — reading tips in 18 appearances            | Exhausted 300 seconds during navigation to Settings.                                                                                                       |
+| Rest — empty reading guide into intake           | Exhausted its 30-second budget.                                                                                                                            |
+| Rest — Reflect retrospective                     | The five-second control assertion expired while “Gathering your reading history…” remained visible. Accuracy assertions did not run.                       |
+| Rest — non-numeric publication month             | Exhausted 180 seconds. Following serial cases did not run.                                                                                                 |
+| Mobile — copy inventory                          | The local status command failed in `localAdminKey()` before assertions. That helper suppresses stderr, so the specific service/CLI cause was not captured. |
+| Mobile — unfaved cover toggle at rest            | Exhausted 30 seconds.                                                                                                                                      |
+| Mobile — favorite toggle persistence             | Exhausted 30 seconds.                                                                                                                                      |
+| Mobile — Next read “Show less often”             | Test-account creation returned `AuthRetryableFetchError`, status 504.                                                                                      |
+| Mobile — household loading failures              | `AuthRetryableFetchError` during fixture account-list cleanup; following serial cases did not run.                                                         |
+| Mobile — Add contributor overflow                | Test-account creation returned `AuthRetryableFetchError`, status 504, before the layout check.                                                             |
+| Mobile — placeholder ellipsis                    | Sign-in returned `AuthRetryableFetchError`, status 504; following serial cases did not run.                                                                |
+
+These are 18 failed cases; the two accessibility rows are grouped. The framework separately
+reported 9 skips and 17 unrun cases. Do not substitute the hosted skip count or call the unrun
+cases passed. Traces, contexts and the original summary were preserved in the private local
+validation evidence; they may include test-session credentials and must not be published raw.
+
+Machine load around 29–35 was observed during the run. Authentication failures, loading states
+and exhausted budgets are confirmed symptoms; resource pressure is **not a proven root cause**.
+Next, diagnose local Auth/status/request capacity under the normal stack lock, preserving sanitized
+service and CLI failure details. Repair the demonstrated issue before fresh validation; do not
+raise deadlines, retry the unchanged suite or erase the red receipt. The successful WebKit and
+hosted runs are distinct evidence, not a waiver.
+
+Physical iPhone/iPad installation, native keyboard behavior, VoiceOver and larger text remain
+unperformed and are still tracked in the manual smoke register. No simulated browser result
+completes those items.

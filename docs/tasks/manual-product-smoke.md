@@ -20,6 +20,23 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 | Result                     | pass / pass with findings / blocked |
 | Issue or PR links          |                                     |
 
+## Automated receipt — October 2, 2026
+
+The owner merged public #616 at source candidate `ca59a243349cc329d785b0e6e0cc064ef6690003`.
+Its full local regression remains unresolved: **344 passed, 18 failed, 9 skipped and 17 did not run**
+(one worker, zero retries; 388 total). All 12 WebKit cases within it passed. Hosted CI run
+[37062911833](https://github.com/Reverie-Reads/reverie-reads/actions/runs/37062911833) passed
+366 browser checks with 10 declared skips and no failed/flaky summary; source and SQL gates passed.
+These are separate results. The local development database/290-book seed and Auth postflight
+were restored successfully before handing back the shared lock. This validation performed no
+production rollout; a public source merge does not establish the private deployment state.
+
+The [layout audit](./bearded-mode-and-layout-audit.md#final-candidate-receipt--october-2-2026)
+records all 18 failures and the loading/Auth/status symptoms. Diagnose and repair the demonstrated
+local failure before fresh validation; retain the red run and all unrun cases. The physical
+installed-iPhone, native keyboard, VoiceOver and iPad checks below remain unchecked. Automated
+WebKit uses simulated safe insets and installed-mode signals; it cannot complete native acceptance.
+
 ## P0 — trust and release blockers
 
 - [ ] **Discover release separation:** on phone and desktop, switch between For you, New & upcoming,
