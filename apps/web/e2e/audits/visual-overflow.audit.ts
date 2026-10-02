@@ -465,6 +465,10 @@ function probeSource() {
   for (const el of Array.from(document.querySelectorAll<HTMLElement>('body *'))) {
     const cs = getComputedStyle(el)
     if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') continue
+    const screenReaderOnly = el.closest('.sr-only')
+    // Hidden labels are deliberately clipped. A focused skip link removes its clip and is
+    // measured normally; the class alone must not exempt a revealed, actionable control.
+    if (screenReaderOnly && getComputedStyle(screenReaderOnly).clip !== 'auto') continue
     // Inline boxes report client/scrollWidth of 0 — they have no content box to measure. Skipping
     // them is not a coverage loss: their text overflows through the BLOCK that contains them, which
     // is measured.
@@ -495,7 +499,8 @@ function probeSource() {
         // 1.5em — scrollWidth tracks clientWidth exactly), because the overhang sits outside the
         // padding box, not inside it.
         const clamped = cs.webkitLineClamp !== 'none' && cs.webkitLineClamp !== ''
-        if (cs.textOverflow !== 'ellipsis' && !clamped)
+        // Empty atmosphere/backdrop layers do not contain text that a reader can lose.
+        if (cs.textOverflow !== 'ellipsis' && !clamped && textOf(el))
           out.push({
             kind: 'hard-clip',
             sel: sel(el),
@@ -594,6 +599,7 @@ type Row = {
 }
 
 test('visual overflow audit — sweep and report', async ({ page }) => {
+  page.setDefaultTimeout(20_000)
   const c = await client()
   const fx = await seedFixtures(c)
   await stub(page)
@@ -649,8 +655,10 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
     if (route === '/lab/reading-mode') {
       // This synthetic study deliberately owns its appearance instead of reading the profile.
       // Exercise its real controls so the measured room is the one named in the report.
-      await page.getByLabel('Room', { exact: true }).selectOption(skin)
-      await page.getByLabel('Night', { exact: true }).setChecked(mode === 'dark')
+      const room = page.getByRole('combobox')
+      await expect(room).toHaveCount(1)
+      await room.selectOption(skin)
+      await page.getByRole('checkbox', { name: 'Night', exact: true }).setChecked(mode === 'dark')
     }
     const networkSettled = await page.waitForLoadState('networkidle', { timeout: 15_000 }).then(
       () => true,
