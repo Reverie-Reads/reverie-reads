@@ -271,7 +271,7 @@ for (const { width, changeFormat } of [
         fullPage: true,
       })
       await page.locator('[data-book-tour="book-save"]').click()
-      await expect(page.getByRole('heading', { name: 'Added — finish the details' })).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Your book was saved' })).toBeVisible()
       const saved = await rows()
       expect(saved).toHaveLength(1)
       expect(saved[0]).toMatchObject({
@@ -312,8 +312,9 @@ for (const { width, changeFormat } of [
       if (authors.error) throw authors.error
       expect(JSON.stringify(authors.data)).toContain('Nell Writer')
       expect(JSON.stringify(authors.data)).toContain('Tariq Writer')
+      // Open your book replaces the completed Add entry; one Back returns to the release window.
       await page.goBack()
-      await page.getByRole('link', { name: 'Return to releases', exact: true }).click()
+      await expect(page).toHaveURL(/\/discover\?/)
       await expect(page).toHaveURL(/window=upcoming/)
       await expect(page).toHaveURL(/editions=true/)
     } finally {

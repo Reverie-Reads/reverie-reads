@@ -146,7 +146,7 @@ for (const touch of [false, true]) {
         await expect.poll(() => reads).toBe(beforeRetry + 1)
         gate.release()
         await expect(
-          page.getByRole('heading', { name: 'Added — finish the details' }),
+          page.getByRole('heading', { name: 'Your book was saved' }),
         ).toBeVisible()
         await expect(
           page.getByRole('complementary', { name: 'Live walkthrough' }).getByRole('status'),
@@ -295,7 +295,7 @@ for (const touch of [false, true]) {
         })
         await page.getByRole('button', { name: 'Try saving again', exact: true }).click()
         await expect(
-          page.getByRole('heading', { name: 'Added — finish the details' }),
+          page.getByRole('heading', { name: 'Your book was saved' }),
         ).toBeVisible()
         expect(inserts).toBe(2)
         expect(ids[0]).toBeTruthy()

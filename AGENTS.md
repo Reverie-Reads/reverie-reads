@@ -209,6 +209,14 @@ myProgress`). Move them into `packages/core` with tests.
   account changes. Reader captures stay account-separated and page-session-only; export and
   lifetime notices must remain clear until durable drafts are implemented. See
   `docs/tasks/bulk-barcode-scanning.md`.
+- **Simpler paths apply to every presentation.** Bearded Mode may reduce density, but full UI and
+  Free accounts retain straightforward Add/Edit, recovery and return paths. Add remembers only an
+  observed internal origin in account-keyed page-session memory, with safe direct-link fallbacks;
+  preserve guided/scanned continuation. A saved confirmation does not require optional cover/tag
+  work. Keep an Edit draft mounted beneath its cover picker, close only the top dialog on Escape,
+  and do not force an unrelated genre choice to correct an unclassified book. See
+  `docs/tasks/workflow-streamlining.md`; remembering a URL is not proof that every route-local draft
+  or selection is restored.
 - **Single-book Add keeps a retry identity.** Pending submissions and duplicate decisions share
   one synchronous guard. A failed attempt keeps its draft and original duplicate action. Retrying
   checks its exact reader-owned insertion UUID first; an already saved or removed row is never

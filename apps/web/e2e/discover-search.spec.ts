@@ -567,7 +567,7 @@ for (const surface of ['Discover', 'Add form'] as const) {
         await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
         // Add deliberately stays on its post-save refinement screen until the reader is done.
         await expect(
-          page.getByRole('heading', { name: 'Added — finish the details', exact: true }),
+          page.getByRole('heading', { name: 'Your book was saved', exact: true }),
         ).toBeVisible()
       }
       const saved = async () =>

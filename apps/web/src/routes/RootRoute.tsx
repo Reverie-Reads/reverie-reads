@@ -14,6 +14,7 @@ import { useVoice } from '../skin/labels'
 import { PersonalLibrarySync } from '../components/PersonalLibrarySync'
 import { BookTourProvider } from '../guidance/BookTourProvider'
 import { BookTour } from '../guidance/BookTour'
+import { AddReturnProvider } from '../components/AddReturnContext'
 
 function RootLayout() {
   const { session, loading } = useAuth()
@@ -104,14 +105,16 @@ function RootLayout() {
         <VerifyEmail email={session.user.email} />
       ) : (
         <BookTourProvider key={session.user.id}>
-          {onboarding ? (
-            <Outlet />
-          ) : (
-            <AppShell>
+          <AddReturnProvider>
+            {onboarding ? (
               <Outlet />
-              <BookTour />
-            </AppShell>
-          )}
+            ) : (
+              <AppShell>
+                <Outlet />
+                <BookTour />
+              </AppShell>
+            )}
+          </AddReturnProvider>
         </BookTourProvider>
       )}
       <UpdateToast />

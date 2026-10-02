@@ -1126,13 +1126,7 @@ export function BookDetailScreen() {
           onClose={() => setDialog(null)}
         />
       )}
-      {dialog === 'edit' && (
-        <EditDetails
-          book={book}
-          onClose={() => setDialog(null)}
-          onChangeCover={() => setDialog('cover')}
-        />
-      )}
+      {dialog === 'edit' && <EditDetails book={book} onClose={() => setDialog(null)} />}
       {dialog === 'cover' && <CoverSheet book={book} onClose={() => setDialog(null)} />}
       {dialog === 'progress' && (
         <ReadingProgressDialog

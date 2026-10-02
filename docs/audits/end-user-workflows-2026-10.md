@@ -27,6 +27,11 @@ hardware, or real assistive-technology use. Private product evidence is maintain
 | W13 | P2                  | The sharing reference described prototype storage, obsolete setup steps, and client-only spoilers.                                                                                             | Refresh the reference from shipped source and migrations; remove inaccurate security promises.                                                                                               |
 | W14 | Coverage            | The visual harness had no shared-series fixture and resolved two routes from one file as the same path.                                                                                        | Add the missing fixture, resolve paths by their route declaration, retain interrupted measurements, and record redirects explicitly.                                                         |
 
+| W15 | P2 | Add usually returns to a generic library instead of its launch context, and its saved state implies more work is required. | Account-bound observed entry/return, primary named completion and optional finishing details implemented; browser verification pending. |
+| W16 | P2 | Edit replaces its form when opening the cover picker, losing unsaved details; Escape can close stacked dialogs together. | Keep Edit mounted under Cover, limit Escape to the active dialog, and protect changed/pending forms. Browser verification pending. |
+| W17 | P2 | A title correction to a genre-less book is blocked until the reader assigns an unrelated genre, although Add allows genre-less records. | Remove the unrelated genre prerequisite; retain identity, numeric/date and series validation. Browser verification pending. |
+| W18 | P2 | In-app return can restore a URL without restoring route-local selected-book or planner draft state; remounting a shelf-linked Library can reapply its original shelf. | Source-confirmed follow-up: account-bound view/draft restoration packet. Do not claim that remembering an origin already restores every local control. |
+
 P1 means resolve before relying on the affected product promise. P2 means a material usability,
 recovery, or data-consistency issue. P3 is a lower-risk clarity improvement. A source-confirmed
 follow-up is not represented as an executed end-to-end test.
@@ -69,7 +74,10 @@ genre, cover and publication adoption.
 | Share or join         | Native prompts, minimal acknowledgement and secondary failures can obscure success.                | Use one recoverable form, retain the entered code/draft, and confirm a persisted join or a specific retryable failure. |
 | Copy a code           | Clipboard writing has no visible success/failure acknowledgement.                                  | Show Copied only after success and retain a selectable fallback code on failure. Source-reviewed follow-up.            |
 
-These recommendations are product changes to evaluate, not descriptions of shipped behavior.
+The owner's subsequent direction makes streamlining a shared requirement for both Bearded Mode and
+the full interface. [Workflow implementation plan](../tasks/workflow-streamlining.md) defines the
+common interaction contract, the initial Add/Edit changes, and the remaining packets. Unimplemented
+recommendations here are not descriptions of shipped behavior.
 
 ## Workflow coverage ledger
 
@@ -145,7 +153,7 @@ separately. Browser emulation and provider fixtures do not establish those outco
 ## Recommended implementation order
 
 1. Repair shared-list access and concurrent-write/retry semantics before expanding sharing.
-2. Merge the verified title, recovery, and canvas fixes after the full gates pass.
+2. Review the title, recovery, canvas and Add/Edit return fixes after the full gates pass.
 3. Build on the corrected household sharing explanations with clearer neutral-record destinations and the reading-history label.
 4. Add recovery to club/shared-list secondary reads and test failed joins and lost acknowledgements.
 5. Complete the account-entry/Collector journey against its existing implementation blueprint;

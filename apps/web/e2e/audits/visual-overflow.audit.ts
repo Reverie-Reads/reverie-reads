@@ -565,6 +565,15 @@ function stateSource() {
     mode: d.dataset.mode ?? '',
     display,
     body,
+    loadingMessages: Array.from(
+      document.querySelectorAll<HTMLElement>('h1, h2, p, [role="status"]'),
+    )
+      .filter(
+        (el) =>
+          el.getClientRects().length > 0 &&
+          /^(Loading|Searching|Fetching|Preparing)(?:[ .…]|$)/i.test(el.innerText.trim()),
+      )
+      .map((el) => el.innerText.trim().slice(0, 160)),
     fontsLoaded:
       (display ? document.fonts.check(`16px "${display}"`) : true) &&
       (body ? document.fonts.check(`16px "${body}"`) : true),
@@ -580,6 +589,8 @@ type Row = {
   width: number
   findings: Finding[]
   fontsLoaded: boolean
+  networkSettled: boolean
+  loadingMessages: string[]
 }
 
 test('visual overflow audit — sweep and report', async ({ page }) => {
@@ -619,7 +630,7 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
   if (deferred.length) {
     await page.setViewportSize({ width: 1280, height: HEIGHT })
     await page.goto('/tropes')
-    await page.waitForTimeout(900)
+    await expect(page.locator('a[href^="/tropes/"]').first()).toBeVisible()
     const href = await page.locator('a[href^="/tropes/"]').first().getAttribute('href')
     expect(
       href,
@@ -635,7 +646,11 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
   async function measure(route: string, skin: string, mode: string, width: number) {
     await page.setViewportSize({ width, height: HEIGHT })
     await page.goto(route)
-    await page.waitForTimeout(900) // async content (queries, covers) can change layout width
+    const networkSettled = await page.waitForLoadState('networkidle', { timeout: 15_000 }).then(
+      () => true,
+      () => false,
+    )
+    await page.evaluate(() => document.fonts.ready.then(() => undefined))
     const st = await page.evaluate(stateSource)
     // A measurement taken under the WRONG skin is worse than no measurement — it would be filed
     // against a combination that was never on screen. Refuse it loudly instead.
@@ -653,6 +668,8 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
       width,
       findings,
       fontsLoaded: st.fontsLoaded,
+      networkSettled,
+      loadingMessages: st.loadingMessages,
     })
     // Preserve completed observations if an interrupted development server stops a long sweep.
     writeFileSync(
@@ -767,6 +784,7 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
       byKind.set(k, [...(byKind.get(k) ?? []), r])
 
   const fontMisses = rows.filter((r) => !r.fontsLoaded)
+  const unsettled = rows.filter((r) => !r.networkSettled || r.loadingMessages.length)
   const lines: string[] = [
     '# Visual overflow audit',
     '',
@@ -779,6 +797,7 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
       : '- stage B covered every flagged (route,width) — nothing dropped to the cap',
     only.length ? `- **PARTIAL RUN** — AUDIT_ONLY=${only.join(',')}` : '',
     `- real webfonts: ${rows.length - fontMisses.length}/${rows.length} measurements had both faces loaded`,
+    `- unsettled/loading measurements: ${unsettled.length}; these do not establish the completed screen's layout`,
     '',
   ]
   for (const [kind, rs] of [...byKind].sort((a, b) => b[1].length - a[1].length)) {

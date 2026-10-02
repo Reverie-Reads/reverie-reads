@@ -35,7 +35,11 @@ export function Modal({
     else dialog.setAttribute('open', '')
     panelRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current()
+      const openDialogs = document.querySelectorAll('dialog[open]')
+      if (e.key === 'Escape' && openDialogs.item(openDialogs.length - 1) === dialog) {
+        e.preventDefault()
+        onCloseRef.current()
+      }
     }
     document.addEventListener('keydown', onKey)
     return () => {

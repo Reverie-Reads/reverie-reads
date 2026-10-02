@@ -201,3 +201,81 @@ for (const width of [320, 390, 1440]) {
     await expect(dialog).toHaveCount(0)
   })
 }
+
+for (const width of [390, 1440]) {
+  test(`Add returns to its entry and Edit keeps its draft through cover selection at ${width}px`, async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await page.setViewportSize({ width, height: 900 })
+    await signIn(page)
+    await page.goto('/shelves')
+    const add = page.getByTestId('persistent-add').filter({ visible: true })
+    await add.click()
+    await expect(page.getByRole('button', { name: 'Back to Shelves', exact: true })).toBeVisible()
+    await page.getByRole('radio', { name: /My library only/ }).check()
+    await page.getByRole('button', { name: 'Add manually', exact: true }).click()
+    const title = `A new book from my shelves ${width}`
+    await page.getByPlaceholder('Title', { exact: true }).fill(title)
+    await page.getByRole('button', { name: 'Back to Shelves', exact: true }).click()
+    await page.getByRole('button', { name: 'Keep editing', exact: true }).click()
+    await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(title)
+    await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Your book was saved' })).toBeVisible()
+    await page.getByRole('button', { name: 'Return to Shelves', exact: true }).click()
+    await expect(page).toHaveURL(/\/shelves$/)
+    const saved = await okData(
+      admin.from('books').select('id,title').eq('owner_id', uid).eq('title', title),
+      'return flow saved book',
+    )
+    expect(saved).toHaveLength(1)
+
+    // A small correction must not force unrelated metadata choices on a newly added book.
+    await page.goto(`/book/${saved[0].id}`)
+    await page.getByRole('button', { name: 'Edit details', exact: true }).click()
+    const correction = page.getByRole('dialog', { name: 'Edit details', exact: true })
+    await correction
+      .getByRole('textbox', { name: 'Title', exact: true })
+      .fill(`${title} — corrected`)
+    await correction.getByRole('button', { name: 'Save details', exact: true }).click()
+    await expect(correction).toHaveCount(0)
+    const corrected = await okData(
+      admin
+        .from('books')
+        .select('title,genre,ownership,read_status')
+        .eq('id', saved[0].id)
+        .single(),
+      'unclassified book correction',
+    )
+    expect(corrected).toEqual({
+      title: `${title} — corrected`,
+      genre: '',
+      ownership: 'unowned',
+      read_status: 'unset',
+    })
+
+    await page.goto(`/book/${books[0].id}`)
+    await page.getByRole('button', { name: 'Edit details', exact: true }).click()
+    const edit = page.getByRole('dialog', { name: 'Edit details', exact: true })
+    await edit
+      .getByRole('textbox', { name: 'Title', exact: true })
+      .fill(`My unfinished title ${width}`)
+    await edit.getByRole('button', { name: 'Change cover…', exact: true }).click()
+    const cover = page.getByRole('dialog', { name: 'Cover', exact: true })
+    await expect(cover).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(edit).toBeVisible()
+    await expect(edit.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(
+      `My unfinished title ${width}`,
+    )
+    await edit.getByRole('button', { name: 'Close', exact: true }).click()
+    await page.getByRole('button', { name: 'Keep editing', exact: true }).click()
+    await expect(edit.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(
+      `My unfinished title ${width}`,
+    )
+    await edit.getByRole('button', { name: 'Close', exact: true }).click()
+    await page.getByRole('button', { name: 'Leave changes', exact: true }).click()
+    await expect(edit).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'It', exact: true })).toBeVisible()
+  })
+}
