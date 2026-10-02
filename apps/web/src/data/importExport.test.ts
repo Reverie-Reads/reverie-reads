@@ -1,7 +1,7 @@
 import { newEdition, newCopy } from '@reverie/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { tombstoneRows } from './importExport'
-import type { BackupSeriesEntryRow } from './importExport'
+import type { BackupExtensionProvider, BackupExtensionReferenceSet, BackupSeriesEntryRow } from './importExport'
 
 // A tiny in-memory stand-in for the PostgREST client. It is NOT a PostgREST implementation — it
 // understands exactly the queries importExport.ts issues, and resolves the two embedded selects
@@ -49,6 +49,7 @@ const NEW_OWNER = 'user-new'
 let db: Db
 let currentUser = OWNER
 let preferenceConflict = false
+let inventoryWriteFailure = false
 let seq = 0
 const realisticUuid = (n: number): string =>
   `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`
@@ -235,6 +236,8 @@ class Query implements PromiseLike<{ data: Row[] | Row | null; error: unknown }>
         values: structuredClone(values),
       })),
     })
+    if (inventoryWriteFailure && this.table === 'books' && this.mode === 'update' && this.patch && 'copy_inventory' in this.patch)
+      return { data: null, error: new Error('Inventory write failed'), count: null }
     const table = db[this.table]
     if (this.mode === 'insert' || this.mode === 'upsert') {
       const written: Row[] = (this.pending ?? []).map((r) => ({ id: r.id ?? uuid(), ...r }))
@@ -340,7 +343,7 @@ vi.mock('../lib/supabase', () => ({
 // Contributor persistence has its own RPC and its own tests; it is not what these assert.
 vi.mock('./contributors', () => ({ persistContributors: vi.fn(async () => {}) }))
 
-const { buildBackup, inspectBackup, restoreBackup, seriesTombstones, dismissalsByBook, seriesRulingRows } = await import('./importExport')
+const { buildBackup, inspectBackup, restoreBackup, registerBackupExtensionProvider, seriesTombstones, dismissalsByBook, seriesRulingRows } = await import('./importExport')
 const { BACKED_UP_TABLES, USER_OWNED_TABLES } = await import('./ownedTables')
 
 /** A library with two books, canonical + personal tropes, a mood, and two followed authors. */
@@ -435,6 +438,7 @@ function wipeToFreshAccount({ keepCanonical = true } = {}) {
 beforeEach(() => {
   seq = 0
   preferenceConflict = false
+  inventoryWriteFailure = false
   currentUser = OWNER
   access = []
   ignoreRange = false
@@ -1632,6 +1636,232 @@ describe('product preferences backup v12', () => {
     const json = JSON.stringify({ books: [], profile: { [field]: 'unsafe' } })
     access = []
     await expect(restoreBackup(json)).rejects.toThrow('profile fields')
+    expect(access).toEqual([])
+  })
+})
+
+
+// Extensions test the real staged host restore. Their payload intentionally contains only portable
+// copy evidence, never workspace roles, purchases, source access or owner-issued permissions.
+const extensionCleanups: (() => void)[] = []
+afterEach(() => { extensionCleanups.splice(0).forEach(cleanup => cleanup()) })
+const installExtension = (provider: BackupExtensionProvider) => {
+  extensionCleanups.push(registerBackupExtensionProvider(provider))
+}
+function copyEvidenceFixture() {
+  const edition = newEdition('hardcover')
+  const copy = newCopy(edition.id, 'owned')
+  db.books[0]!.copy_inventory = { version: 1, editions: [edition], copies: [copy] }
+  return { bookId: 'book-a', editionId: edition.id, copyId: copy.id, condition: 'Jacket worn' }
+}
+function copyEvidenceProvider(payload: ReturnType<typeof copyEvidenceFixture>,
+  restore: BackupExtensionProvider['restore'] = async () => ({ copy_notes: 1 }),
+): BackupExtensionProvider {
+  return {
+    id: 'test.copy-notes.v1', restorePhase: 'after-copies',
+    build: async () => payload,
+    counts: () => ({ copy_notes: 1 }),
+    validateReferences(value, references) {
+      const row = value as typeof payload
+      if (!references.bookIds.has(row.bookId) ||
+          !references.editionIdsByBook.get(row.bookId)?.has(row.editionId) ||
+          references.copyEditionIdsByBook.get(row.bookId)?.get(row.copyId) !== row.editionId)
+        throw new Error('Copy evidence does not match the backed-up book and copy')
+    },
+    preflightRestore: async () => {}, restore,
+  }
+}
+
+describe('portable backup extension stages', () => {
+  it('distinguishes null legacy inventory from a configured empty inventory in export references', async () => {
+    db.books[0]!.copy_inventory = null
+    db.books[1]!.copy_inventory = { version: 1, editions: [], copies: [] }
+    let references: BackupExtensionReferenceSet | undefined
+    installExtension({
+      id: 'test.empty.v1', build: async (_owner, refs) => { references = refs; return {} },
+      counts: () => ({}), preflightRestore: async () => {}, restore: async () => ({}),
+    })
+    await buildBackup()
+    expect(references?.bookIds).toEqual(new Set(['book-a', 'book-b']))
+    expect(references?.editionIdsByBook.has('book-a')).toBe(false)
+    expect(references?.copyEditionIdsByBook.has('book-a')).toBe(false)
+    expect(references?.editionIdsByBook.get('book-b')?.size).toBe(0)
+    expect(references?.copyEditionIdsByBook.get('book-b')?.size).toBe(0)
+  })
+
+
+  it.each([NaN, -1, 1.5])('rejects invalid extension counts (%s) on export and restore', async count => {
+    const json = JSON.parse(await buildBackup())
+    const payload = copyEvidenceFixture()
+    const provider = copyEvidenceProvider(payload)
+    provider.counts = () => ({ copy_notes: count })
+    delete provider.validateReferences
+    installExtension(provider)
+    await expect(buildBackup()).rejects.toThrow('invalid copy_notes count')
+    json.extensions = { [provider.id]: payload }
+    access = []
+    await expect(restoreBackup(handMade(json))).rejects.toThrow('invalid copy_notes count')
+    expect(access).toEqual([])
+  })
+
+  it('refuses extension counts that shadow public sections or one another', async () => {
+    const json = JSON.parse(await buildBackup())
+    const payload = copyEvidenceFixture()
+    const provider = copyEvidenceProvider(payload)
+    delete provider.validateReferences
+    provider.counts = () => ({ books: 0 })
+    installExtension(provider)
+    await expect(buildBackup()).rejects.toThrow('same count section: books')
+    json.extensions = { [provider.id]: payload }
+    access = []
+    await expect(restoreBackup(handMade(json))).rejects.toThrow('same count section: books')
+    expect(access).toEqual([])
+    provider.counts = () => ({ copy_notes: 1 })
+    installExtension({ ...provider, id: 'test.another.v1' })
+    await expect(buildBackup()).rejects.toThrow('same count section: copy_notes')
+  })
+
+  it('rejects a damaged extension completeness count before restore requests', async () => {
+    const payload = copyEvidenceFixture()
+    installExtension(copyEvidenceProvider(payload))
+    const parsed = JSON.parse(await buildBackup())
+    parsed.counts.copy_notes = 0
+    access = []
+    expect(() => inspectBackup(JSON.stringify(parsed))).toThrow('copy_notes: expected 0, found 1')
+    await expect(restoreBackup(JSON.stringify(parsed))).rejects.toThrow('incomplete')
+    expect(access).toEqual([])
+  })
+
+
+  it('round-trips copy evidence onto a regenerated book after copies and historical annotations', async () => {
+    const payload = copyEvidenceFixture()
+    let buildReferences: BackupExtensionReferenceSet | undefined
+    const restore = vi.fn<BackupExtensionProvider['restore']>(async (value, context) => {
+      const newId = context.bookIdMap.get(payload.bookId)
+      expect(newId).toBeTruthy()
+      expect(newId).not.toBe(payload.bookId)
+      expect(context.ownerId).toBe(NEW_OWNER)
+      expect(db.books.find(book => book.id === newId)).toMatchObject({
+        copy_inventory: { copies: [{ id: payload.copyId, editionId: payload.editionId }] },
+      })
+      expect(db.book_tropes.some(row => row.book_id === newId)).toBe(true)
+      expect(context.seriesIdMap.get('ser1')).toBeTruthy()
+      expect(context.seriesEntryIdMap.get('se-live')).toBeTruthy()
+      expect(value).toEqual(payload)
+      return { copy_notes: 1 }
+    })
+    const provider = copyEvidenceProvider(payload, restore)
+    provider.build = async (_owner, references) => { buildReferences = references; return payload }
+    installExtension(provider)
+    const json = await buildBackup()
+    expect(buildReferences?.copyEditionIdsByBook.get('book-a')?.get(payload.copyId)).toBe(payload.editionId)
+    expect(buildReferences?.editionIdsByBook.has('book-b')).toBe(false) // legacy is not configured
+    expect(inspectBackup(json).unknownSections).toEqual([])
+    expect(JSON.parse(json).counts.copy_notes).toBe(1)
+    wipeToFreshAccount()
+    expect((await restoreBackup(json)).extensions).toEqual({ 'test.copy-notes.v1': { copy_notes: 1 } })
+    expect(restore).toHaveBeenCalledOnce()
+  })
+
+  it('keeps existing extensions in the earlier stage and preflights all before any writes', async () => {
+    const payload = copyEvidenceFixture()
+    const order: string[] = []
+    const legacy: BackupExtensionProvider = {
+      id: 'test.legacy.v1', build: async () => ({}), counts: () => ({ legacy_notes: 0 }),
+      preflightRestore: async () => {
+        expect(access.every(row => row.mode === 'select')).toBe(true)
+        order.push('legacy-preflight')
+      },
+      restore: async (_value, context) => {
+        expect(context.seriesEntryIdMap.get('se-live')).toBeTruthy()
+        expect(db.books.every(book => book.copy_inventory == null)).toBe(true)
+        order.push('legacy-restore'); return { legacy_notes: 0 }
+      },
+    }
+    installExtension(legacy)
+    const later = copyEvidenceProvider(payload, async () => {
+      order.push('copy-restore'); return { copy_notes: 1 }
+    })
+    later.preflightRestore = async () => {
+      expect(access.every(row => row.mode === 'select')).toBe(true)
+      order.push('copy-preflight')
+    }
+    installExtension(later)
+    const json = await buildBackup()
+    wipeToFreshAccount(); access = []
+    await restoreBackup(json)
+    expect(order).toEqual(['copy-preflight', 'legacy-preflight', 'legacy-restore', 'copy-restore'])
+  })
+
+  it.each(['book', 'copy', 'edition', 'wrong-book'])('rejects %s reference mismatches in preview and restore before requests', async kind => {
+    const payload = copyEvidenceFixture()
+    installExtension(copyEvidenceProvider(payload))
+    const parsed = JSON.parse(await buildBackup())
+    const row = parsed.extensions['test.copy-notes.v1']
+    if (kind === 'book') row.bookId = 'absent'
+    if (kind === 'copy') row.copyId = crypto.randomUUID()
+    if (kind === 'edition') row.editionId = crypto.randomUUID()
+    if (kind === 'wrong-book') row.bookId = 'book-b'
+    access = []
+    expect(() => inspectBackup(JSON.stringify(parsed))).toThrow('does not match')
+    await expect(restoreBackup(JSON.stringify(parsed))).rejects.toThrow('does not match')
+    expect(access).toEqual([])
+  })
+
+  it('rejects a stale evidence export rather than omitting its orphaned copy', async () => {
+    const payload = copyEvidenceFixture()
+    installExtension(copyEvidenceProvider(payload))
+    db.books[0]!.copy_inventory = { version: 1, editions: [], copies: [] }
+    await expect(buildBackup()).rejects.toThrow('does not match')
+    expect(access.every(row => row.mode === 'select')).toBe(true)
+  })
+
+  it('never starts copy-dependent restore after a failed inventory write', async () => {
+    const payload = copyEvidenceFixture()
+    const restore = vi.fn(async () => ({ copy_notes: 1 }))
+    installExtension(copyEvidenceProvider(payload, restore))
+    const json = await buildBackup()
+    wipeToFreshAccount(); inventoryWriteFailure = true
+    await expect(restoreBackup(json)).rejects.toThrow('Inventory write failed')
+    expect(restore).not.toHaveBeenCalled()
+  })
+
+  it('refuses unknown extensions and malformed extension containers before requests', async () => {
+    const parsed = JSON.parse(await buildBackup())
+    for (const extensions of [{ 'not-installed.v1': {} }, [], 'unreadable', null]) {
+      parsed.extensions = extensions
+      access = []
+      expect(() => inspectBackup(JSON.stringify(parsed))).toThrow()
+      await expect(restoreBackup(JSON.stringify(parsed))).rejects.toThrow()
+      expect(access).toEqual([])
+    }
+  })
+
+  it('refuses extension preflight failures before any write', async () => {
+    const payload = copyEvidenceFixture()
+    const provider = copyEvidenceProvider(payload)
+    provider.preflightRestore = async () => { throw new Error('Copy extension unavailable') }
+    installExtension(provider)
+    const json = await buildBackup()
+    wipeToFreshAccount(); access = []
+    await expect(restoreBackup(json)).rejects.toThrow('Copy extension unavailable')
+    expect(access).toEqual([])
+  })
+
+  it('reports a later extension failure without claiming an atomic account restore', async () => {
+    const payload = copyEvidenceFixture()
+    installExtension(copyEvidenceProvider(payload, async () => { throw new Error('Copy note restore failed') }))
+    const json = await buildBackup()
+    wipeToFreshAccount()
+    await expect(restoreBackup(json)).rejects.toThrow('Copy note restore failed')
+    expect(db.books.some(book => book.copy_inventory != null)).toBe(true)
+  })
+
+  it('rejects duplicate book IDs before exporting or restoring ambiguous mappings', async () => {
+    const parsed = JSON.parse(await buildBackup())
+    parsed.books[1].id = parsed.books[0].id
+    access = []
+    await expect(restoreBackup(handMade(parsed))).rejects.toThrow('repeated book IDs')
     expect(access).toEqual([])
   })
 })

@@ -893,3 +893,28 @@ Unsupported root documents and unknown profile fields stop restore before any wr
 export still preserve those newer product documents. Restore remains a multi-step operation, so a later
 library failure may follow a successfully restored preference. Offline caching retains the raw document
 inside the existing account-isolated profile cache. See `docs/tasks/account-types.md`.
+
+## Account backup extensions
+
+The shared backup host supports registered, opaque extension payloads keyed by a stable provider ID
+within the existing `extensions` field. It contains no product-specific table or entitlement logic.
+A build without the provider refuses that archive in preview and before restore requests, rather
+than silently losing the extension. Archives with no extensions keep their existing behavior.
+Provider counts are nonnegative safe integers and cannot replace public counts or another provider's
+section. Malformed extension containers and incomplete manifests fail locally.
+
+Providers may validate their references locally during export, preview and restore. Export receives
+identity sets from the exact book/series rows being serialized. Book-scoped edition IDs and copy-to-
+edition mappings distinguish null legacy inventory from explicitly configured empty inventory;
+a copy UUID alone is not a cross-book identity. Orphaned evidence must block export or restore,
+never quietly disappear. References contain no workspace access, billing grants or revision tokens.
+Server-dependent eligibility remains the provider's restore preflight, before any account write.
+
+Default providers restore after structured series, preserving the existing extension order. A
+copy-dependent provider selects `restorePhase: 'after-copies'`: it runs only after every inventory
+and historical annotation succeeds. All providers receive the original-to-restored book ID map plus
+series and entry maps. Edition/copy UUIDs remain unchanged within the regenerated book; personal
+book UUIDs do not. A failed inventory write prevents the later phase. Restore remains a staged,
+non-atomic account operation: a later extension failure can leave earlier restored rows, and must
+be reported without promising rollback. This contract does not itself add any condition records,
+source handoff, product signup or production migration.
