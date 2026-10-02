@@ -242,7 +242,7 @@ for (const width of [390, 1440]) {
     const corrected = await okData(
       admin
         .from('books')
-        .select('title,genre,ownership,read_status')
+        .select('title,genre,ownership,read_status,series_user_chosen,series_claim')
         .eq('id', saved[0].id)
         .single(),
       'unclassified book correction',
@@ -252,6 +252,8 @@ for (const width of [390, 1440]) {
       genre: '',
       ownership: 'unowned',
       read_status: 'unset',
+      series_user_chosen: false,
+      series_claim: expect.objectContaining({ origin: 'unknown' }),
     })
 
     await page.goto(`/book/${books[0].id}`)

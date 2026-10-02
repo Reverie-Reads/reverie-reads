@@ -47,6 +47,8 @@ journey, on Free and Pro. Paid capability does not include basic usability, reco
   Closing a changed detail form offers a deliberate choice; its pending save keeps the form open.
 - A title/detail correction no longer requires first classifying an unclassified book's genre.
   Title and numeric/date validation, series-change confirmation and sequenced writes still apply.
+  Unchanged series fields do not become a reader-authored membership claim merely because another
+  detail was corrected.
 
 These are branch changes awaiting the recorded browser gates and review. They do not establish that
 all view-local drafts or selections survive every route. Existing filters stored outside a route

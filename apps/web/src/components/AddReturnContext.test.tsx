@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import {
@@ -15,7 +15,8 @@ import { AddReturnProvider } from './AddReturnContext'
 import { useAddReturn } from './addReturn'
 import { DraftExitGuard } from './DraftExitGuard'
 
-function setup(initial = '/library?scope=household', dirty = false) {
+function setup(initial = '/library?scope=household', dirty = false, busy = false) {
+  let finishSave = () => {}
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   function Root() {
     const [account, setAccount] = useState(1)
@@ -45,10 +46,12 @@ function setup(initial = '/library?scope=household', dirty = false) {
     path: '/add',
     component: function Add() {
       const origin = useAddReturn()
+      const [unsaved, setUnsaved] = useState(dirty)
+      finishSave = () => setUnsaved(false)
       return (
         <>
           <h1>Add</h1>
-          {dirty && <DraftExitGuard />}
+          {unsaved && <DraftExitGuard busy={busy} />}
           <input aria-label="Draft title" defaultValue="My unsaved book" />
           <button onClick={origin?.returnToOrigin}>
             {origin?.label ?? 'No remembered origin'}
@@ -68,7 +71,7 @@ function setup(initial = '/library?scope=household', dirty = false) {
   const history = createMemoryHistory({ initialEntries: [initial] })
   const router = createRouter({ routeTree: root.addChildren([library, add, book]), history })
   render(<RouterProvider router={router} />)
-  return { router, history, user: userEvent.setup() }
+  return { router, history, user: userEvent.setup(), finishSave: () => finishSave() }
 }
 
 describe('Add entry and return', () => {
@@ -94,6 +97,19 @@ describe('Add entry and return', () => {
     await user.click(screen.getByRole('link', { name: 'Open saved book' }))
     await user.click(await screen.findByRole('button', { name: 'Leave draft' }))
     await waitFor(() => expect(router.state.location.href).toBe('/book/new-book'))
+  })
+
+  it('cancels an outstanding exit when the save completes and permits a fresh deliberate exit', async () => {
+    const { user, router, finishSave } = setup('/library?scope=household', true, true)
+    await user.click(await screen.findByRole('link', { name: 'Add here' }))
+    await user.click(await screen.findByRole('link', { name: 'Open saved book' }))
+    await screen.findByRole('dialog', { name: 'Saving your book' })
+    expect(screen.queryByRole('button', { name: 'Leave draft' })).toBeNull()
+    await act(async () => finishSave())
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(router.state.location.pathname).toBe('/add')
+    await user.click(screen.getByRole('link', { name: 'Open saved book' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/book/new-book'))
   })
 
   it('forgets the previous account origin and never derives one from a direct-link parameter', async () => {

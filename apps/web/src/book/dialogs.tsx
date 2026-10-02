@@ -378,14 +378,21 @@ export function EditDetails({ book, onClose }: { book: Book; onClose: () => void
           pub: { y: pubY, m: pubM, d: pubD },
         },
       })
-      // Kept adjacent to the book write for readability, not because either depends on the other
-      // — see the save() docstring above.
-      await syncBookSeries.mutateAsync({
-        book,
-        newSeries: f.series,
-        newPosition: pos,
-        newSeriesCount: seriesCount,
-      })
+      // A title/date correction is not an explicit series choice. Calling the membership RPC
+      // with untouched defaults would promote their claim to reader-authored and block later
+      // trusted reconciliation. Only a changed series field belongs in that write path.
+      if (
+        f.series.trim() !== book.series.trim() ||
+        pos !== (book.position === '' ? null : book.position) ||
+        seriesCount !== (book.seriesCount ?? null)
+      ) {
+        await syncBookSeries.mutateAsync({
+          book,
+          newSeries: f.series,
+          newPosition: pos,
+          newSeriesCount: seriesCount,
+        })
+      }
       // Contributors last: the most independent write, through its own RPC (it also refreshes the
       // primary first/last + byline).
       await setContributors.mutateAsync({ bookId: book.id, contributors: contribs })
