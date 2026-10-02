@@ -221,12 +221,15 @@ for (const { width, bearded } of [
     const add = page.getByTestId('persistent-add').filter({ visible: true })
     await add.click()
     await expect(page.getByRole('button', { name: 'Back to Shelves', exact: true })).toBeVisible()
-    await page.getByRole('radio', { name: /My library only/ }).check()
+    // A real click confirms even an already selected default; check() deliberately skips it.
+    const personalDestination = page.getByRole('radio', { name: /My library only/ })
+    await personalDestination.click()
     await page.getByRole('button', { name: 'Add manually', exact: true }).click()
     const title = `A new book from my shelves ${width} ${bearded ? 'bearded' : 'full'}`
     await page.getByPlaceholder('Title', { exact: true }).fill(title)
     await page.getByRole('button', { name: 'Back to Shelves', exact: true }).click()
     await page.getByRole('button', { name: 'Keep editing', exact: true }).click()
+    await expect(personalDestination).toBeChecked()
     await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(title)
     await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Your book was saved' })).toBeVisible()

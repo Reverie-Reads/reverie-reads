@@ -76,6 +76,11 @@ export function AddDestinationPicker({
                 value={choice.value}
                 checked={checked}
                 onChange={() => onChange(choice.value)}
+                onClick={() => {
+                  // Confirming the already displayed default is still a deliberate choice.
+                  // Otherwise a later household response may replace it without another gesture.
+                  if (checked) onChange(choice.value)
+                }}
                 className="mt-0.5"
               />
               <span className="min-w-0">

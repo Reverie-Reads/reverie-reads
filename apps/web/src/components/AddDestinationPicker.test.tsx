@@ -62,6 +62,21 @@ describe('AddDestinationPicker', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: /Household only/ }))
     expect(onChange).toHaveBeenCalledWith('household')
+    expect(onChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('records deliberate confirmation of the selected default before household loading finishes', () => {
+    const onChange = vi.fn()
+    render(
+      <AddDestinationPicker
+        value="mine"
+        onChange={onChange}
+        members={[]}
+        currentReaderId="reader-a"
+      />,
+    )
+    fireEvent.click(screen.getByRole('radio', { name: /My library only/ }))
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('mine')
   })
 
   it('keeps imports to the two destinations that create the reader’s personal rows', () => {

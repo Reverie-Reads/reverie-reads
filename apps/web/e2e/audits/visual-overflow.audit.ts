@@ -646,6 +646,12 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
   async function measure(route: string, skin: string, mode: string, width: number) {
     await page.setViewportSize({ width, height: HEIGHT })
     await page.goto(route)
+    if (route === '/lab/reading-mode') {
+      // This synthetic study deliberately owns its appearance instead of reading the profile.
+      // Exercise its real controls so the measured room is the one named in the report.
+      await page.getByLabel('Room', { exact: true }).selectOption(skin)
+      await page.getByLabel('Night', { exact: true }).setChecked(mode === 'dark')
+    }
     const networkSettled = await page.waitForLoadState('networkidle', { timeout: 15_000 }).then(
       () => true,
       () => false,
