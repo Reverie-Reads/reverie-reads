@@ -1,0 +1,316 @@
+.reading-mode-option[data-selected='true'] {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.reading-mode-option:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+.bearded-sidebar {
+  position: sticky;
+  top: 0;
+  flex-direction: column;
+  gap: 12px;
+  width: 248px;
+  height: 100dvh;
+  overflow-y: auto;
+  padding: 24px 20px;
+  background: var(--card-solid);
+  border-right: 1px solid var(--line);
+}
+.bearded-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: var(--ink);
+}
+.bearded-brand strong {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.2;
+}
+.bearded-brand span {
+  color: var(--muted);
+  font-size: 14px;
+}
+.bearded-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px 16px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.bearded-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+  padding: 12px;
+  border-radius: var(--radius-control);
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ink);
+  text-align: left;
+}
+.bearded-nav-link:hover,
+.bearded-nav-active {
+  background: var(--chip);
+  color: var(--ink);
+}
+.bearded-nav-active {
+  box-shadow: inset 3px 0 var(--ink);
+  font-weight: 650;
+}
+.bearded-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 84px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card-solid);
+}
+.bearded-mobile-dock {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 40;
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--line);
+  background: var(--card-solid);
+}
+.bearded-mobile-dock .bearded-nav-link {
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 68px;
+  padding: 8px 4px;
+  font-size: 13px;
+  text-align: center;
+}
+.bearded-mobile-dock .bearded-nav-active {
+  box-shadow: inset 0 3px var(--ink);
+}
+[data-reading-mode='bearded'] .skin-control,
+[data-reading-mode='bearded'] .skin-field,
+[data-reading-mode='bearded'] summary {
+  min-height: 48px;
+  height: auto;
+  white-space: normal;
+  line-height: 1.5;
+}
+[data-reading-mode='bearded'] .skin-control {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+[data-reading-mode='bearded'] .bearded-add.skin-btn-primary {
+  font-family: var(--font-body);
+}
+[data-reading-mode='bearded'] .skin-field {
+  font-size: 16px;
+}
+[data-reading-mode='bearded'] .skin-label {
+  text-transform: none;
+  letter-spacing: normal;
+}
+.bearded-home {
+  max-width: 880px;
+  margin-inline: auto;
+  padding: 32px 20px;
+  width: 100%;
+}
+.bearded-home h1 {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 44px);
+  line-height: 1.2;
+  color: var(--ink);
+}
+.bearded-home h2 {
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--ink);
+}
+.bearded-task {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 112px;
+  padding: 24px;
+  background: var(--card-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  color: var(--ink);
+}
+.bearded-task strong {
+  display: block;
+  font-size: 21px;
+  line-height: 1.3;
+}
+.bearded-task span {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.bearded-task > svg {
+  flex-shrink: 0;
+}
+.bearded-home a:focus-visible,
+.bearded-nav-link:focus-visible,
+.bearded-add:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+.book-tour-panel[data-reading-mode='bearded'] {
+  width: min(360px, calc(100vw - 24px));
+}
+.book-tour-panel[data-reading-mode='bearded'] button {
+  min-height: 48px;
+  height: auto;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.book-tour-panel[data-reading-mode='bearded'] .book-tour-text {
+  font-size: 16px;
+}
+.book-tour-options {
+  flex-basis: 100%;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.book-tour-options summary {
+  display: list-item;
+  min-height: 48px;
+  padding-top: 12px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.book-tour-options > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-block: 8px;
+}
+.settings-section h2 {
+  font-size: 15px;
+}
+[data-reading-mode='bearded'] .settings-section h2 {
+  font-size: 18px;
+}
+@media (max-width: 699px) {
+  .book-tour-panel[data-reading-mode='bearded'] {
+    width: calc(100vw - 24px);
+  }
+}
+@media (max-width: 359px) {
+  .bearded-mobile-header {
+    flex-wrap: wrap;
+  }
+  .bearded-mobile-header .bearded-add {
+    width: 100%;
+  }
+}
+.beard-chooser-trigger {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 48px;
+  color: var(--ink);
+  cursor: pointer;
+  border-radius: 50%;
+}
+.beard-chooser-trigger:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+.beard-chooser-hint {
+  position: absolute;
+  z-index: 50;
+  top: 100%;
+  right: 0;
+  display: none;
+  width: max-content;
+  max-width: 160px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--card-solid);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.beard-chooser-trigger:hover .beard-chooser-hint,
+.beard-chooser-trigger:focus-visible .beard-chooser-hint {
+  display: block;
+}
+.beard-picker-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 72px;
+  padding: 10px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+}
+.beard-picker-option[data-selected='true'],
+.beard-picker-option:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.beard-color-swatch {
+  display: block;
+  height: 24px;
+  width: 24px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+}
+.beard-picker .skin-control {
+  min-height: 48px;
+  height: auto;
+  font-family: var(--font-body);
+  font-size: 16px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.bearded-mobile-header .beard-chooser-hint {
+  left: 0;
+  right: auto;
+}
+@media (max-width: 359px) {
+  .beard-colors-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.beard-picker-actions {
+  position: sticky;
+  bottom: -20px;
+  z-index: 1;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  background: var(--card-solid);
+}

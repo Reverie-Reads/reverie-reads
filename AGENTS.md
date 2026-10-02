@@ -97,6 +97,17 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
 
 ## Conventions
 
+- **Bearded mode is an optional presentation, not access or an account type.** Its first slice is
+  versioned browser-local state separated by authenticated account. Full interface remains the
+  default. Offer the choice on the first new-reader welcome screen, before pace and room setup.
+  Bearded Mode honors saved priority destinations and Home modules; returning to full restores
+  the unchanged arrangement. Keep room, guidance pace and product
+  registration independent. Preserve route/form state across mode changes, including storage
+  events. Simplify choices without hiding errors, privacy, source qualifications or consequential
+  actions. Other tools remain reachable. The original beard is the default; its optional style/color
+  chooser previews a separate account-bound browser draft and saves only on explicit confirmation.
+  Portrait accents never replace room or interface tokens. See `docs/tasks/bearded-mode-and-layout-audit.md`.
+
 - TypeScript strict; functional components + hooks; small, focused modules.
 - **No hardcoded colors** — use the design tokens (CSS vars / Tailwind theme). There are
   **nine skins**, not two themes: `tryst`, `grimoire`, `aphelion`, `marrow`, `umbra`, `folio`,

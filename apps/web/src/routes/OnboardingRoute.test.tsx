@@ -170,6 +170,9 @@ describe('book-first onboarding', () => {
           }),
       )
       render(<Onboarding />)
+      expect(screen.getByRole('heading', { name: 'Make this your library.' })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+      expect(state.saveGuidance).not.toHaveBeenCalled()
       fireEvent.click(screen.getByRole('button', { name: choice }))
       expect(state.saveGuidance).toHaveBeenCalledWith(
         { mode: 'full', complete: true, tour },
@@ -192,6 +195,7 @@ describe('book-first onboarding', () => {
   it('keeps the gentle import-or-add choice without starting a live tour', () => {
     state.guidance = null
     render(<Onboarding />)
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
     fireEvent.click(screen.getByRole('button', { name: 'Start gently' }))
     expect(state.saveGuidance).toHaveBeenCalledWith(
       { mode: 'gentle', complete: false, tour: 'books' },
@@ -201,47 +205,60 @@ describe('book-first onboarding', () => {
     expect(state.sendTour).not.toHaveBeenCalledWith({ type: 'start' })
   })
 
-  it('reviews an explicit guest handoff before importing and applies its room', async () => {
-    localStorage.setItem(
-      'reverie.guest-handoff.v1',
-      JSON.stringify({
-        version: 1,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + 60_000,
-        skin: 'aphelion',
-        mode: 'dark',
-        dock: ['library', 'next'],
-        books: [
-          { incoming: { title: 'Jane Eyre', first: 'Charlotte', last: 'Brontë', reads: [] } },
-          {
-            incoming: {
-              title: 'The Left Hand of Darkness',
-              first: 'Ursula',
-              last: 'Le Guin',
-              reads: [],
+  it.each([true, false])(
+    'reviews a guest handoff before importing (new reader: %s)',
+    async (isNew) => {
+      if (isNew) state.guidance = null
+      localStorage.setItem(
+        'reverie.guest-handoff.v1',
+        JSON.stringify({
+          version: 1,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 60_000,
+          skin: 'aphelion',
+          mode: 'dark',
+          dock: ['library', 'next'],
+          books: [
+            { incoming: { title: 'Jane Eyre', first: 'Charlotte', last: 'Brontë', reads: [] } },
+            {
+              incoming: {
+                title: 'The Left Hand of Darkness',
+                first: 'Ursula',
+                last: 'Le Guin',
+                reads: [],
+              },
             },
-          },
-        ],
-      }),
-    )
-    render(<Onboarding />)
-    expect(
-      screen.getByRole('heading', { name: 'Bring this little library home.' }),
-    ).toBeInTheDocument()
-    expect(state.guestImport).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Add books and this arrangement' }))
-    expect(await screen.findByRole('heading', { name: 'Your books are here.' })).toBeInTheDocument()
-    expect(state.guestImport).toHaveBeenCalledWith(expect.any(Object), [], { autoMerge: true })
-    expect(state.setSkin).toHaveBeenCalledWith('aphelion')
-    expect(state.setMode).toHaveBeenCalledWith('dark')
-    expect(state.updateProfile).toHaveBeenCalledWith({
-      arrangement: {
-        destinations: ['library', 'match', 'home'],
-        homeModules: ['priority', 'next-read'],
-      },
-    })
-    expect(localStorage.getItem('reverie.guest-handoff.v1')).toBeNull()
-  })
+          ],
+        }),
+      )
+      render(<Onboarding />)
+      if (isNew) {
+        expect(screen.getByRole('heading', { name: 'Make this your library.' })).toBeInTheDocument()
+        expect(screen.getByText(/inspired by the Bearded Bookseller/)).toBeInTheDocument()
+        expect(state.saveGuidance).not.toHaveBeenCalled()
+        expect(state.guestImport).not.toHaveBeenCalled()
+        fireEvent.click(screen.getByRole('button', { name: 'Continue' }))
+      }
+      expect(
+        screen.getByRole('heading', { name: 'Bring this little library home.' }),
+      ).toBeInTheDocument()
+      expect(state.guestImport).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'Add books and this arrangement' }))
+      expect(
+        await screen.findByRole('heading', { name: 'Your books are here.' }),
+      ).toBeInTheDocument()
+      expect(state.guestImport).toHaveBeenCalledWith(expect.any(Object), [], { autoMerge: true })
+      expect(state.setSkin).toHaveBeenCalledWith('aphelion')
+      expect(state.setMode).toHaveBeenCalledWith('dark')
+      expect(state.updateProfile).toHaveBeenCalledWith({
+        arrangement: {
+          destinations: ['library', 'match', 'home'],
+          homeModules: ['priority', 'next-read'],
+        },
+      })
+      expect(localStorage.getItem('reverie.guest-handoff.v1')).toBeNull()
+    },
+  )
 
   it('lets the reader cancel a pending guest handoff without writing', () => {
     localStorage.setItem(

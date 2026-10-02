@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useReadingMode } from '../design/useReadingMode'
 
 const LIBRARY_VIEWS = [
   { key: 'books', label: 'Books', to: '/library' },
@@ -15,7 +16,8 @@ export function LibraryNavigation({
   current: (typeof LIBRARY_VIEWS)[number]['key']
   className?: string
 }) {
-  return (
+  const { mode } = useReadingMode()
+  const navigation = (
     <nav aria-label="My library views" className={`flex flex-wrap gap-2 ${className}`}>
       {LIBRARY_VIEWS.map((view) => {
         const active = view.key === current
@@ -34,5 +36,15 @@ export function LibraryNavigation({
         )
       })}
     </nav>
+  )
+  return mode === 'bearded' ? (
+    <details className={className}>
+      <summary className="min-h-12 cursor-pointer text-[16px] font-medium text-ink">
+        Other ways to view my books
+      </summary>
+      {navigation}
+    </details>
+  ) : (
+    navigation
   )
 }

@@ -41,10 +41,13 @@ import {
 } from '../design/arrangements'
 import { guidanceAllowsPath } from '../guidance/model'
 import { ReadingProgressDialog } from '../components/ReadingProgress'
+import { useReadingMode } from '../design/useReadingMode'
+import { BeardedHome } from '../components/BeardedHome'
 
 const YEAR = new Date().getFullYear()
 
 function HomeScreen() {
+  const { mode } = useReadingMode()
   const navigate = useNavigate()
   const booksQuery = useReaderBooks()
   const { data: books } = booksQuery
@@ -160,6 +163,22 @@ function HomeScreen() {
     month: 'long',
     day: 'numeric',
   }).format(new Date())
+
+  if (mode === 'bearded')
+    return (
+      <BeardedHome
+        books={books}
+        loading={booksQuery.isPending}
+        failed={booksQuery.isError}
+        retry={() => void booksQuery.refetch()}
+        homeModules={
+          profile?.arrangement &&
+          !arrangementsEqual(profile.arrangement, DEFAULT_ARRANGEMENT_PRESET.config)
+            ? profile.arrangement.homeModules
+            : undefined
+        }
+      />
+    )
 
   return (
     <section className="mx-auto w-full px-4 py-6 sm:px-6 lg:py-8 2xl:px-12">

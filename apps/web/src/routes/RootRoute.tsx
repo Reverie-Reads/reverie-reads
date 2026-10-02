@@ -14,6 +14,7 @@ import { useVoice } from '../skin/labels'
 import { PersonalLibrarySync } from '../components/PersonalLibrarySync'
 import { BookTourProvider } from '../guidance/BookTourProvider'
 import { BookTour } from '../guidance/BookTour'
+import { ReadingModeProvider } from '../design/ReadingMode'
 
 function RootLayout() {
   const { session, loading } = useAuth()
@@ -103,16 +104,18 @@ function RootLayout() {
       {!verified ? (
         <VerifyEmail email={session.user.email} />
       ) : (
-        <BookTourProvider key={session.user.id}>
-          {onboarding ? (
-            <Outlet />
-          ) : (
-            <AppShell>
+        <ReadingModeProvider key={session.user.id} accountId={session.user.id}>
+          <BookTourProvider key={session.user.id}>
+            {onboarding ? (
               <Outlet />
-              <BookTour />
-            </AppShell>
-          )}
-        </BookTourProvider>
+            ) : (
+              <AppShell>
+                <Outlet />
+                <BookTour />
+              </AppShell>
+            )}
+          </BookTourProvider>
+        </ReadingModeProvider>
       )}
       <UpdateToast />
       <WriteErrorToast />

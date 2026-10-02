@@ -34,6 +34,7 @@ import { labRoute } from './routes/LabRoute'
 import { labStructureRoute } from './routes/LabStructureRoute'
 import { labArrangementsRoute } from './routes/LabArrangementsRoute'
 import { bookRoute } from './book/BookDetailRoute'
+import { labReadingModeRoute } from './routes/LabReadingModeRoute'
 
 const routeTree = rootRoute.addChildren([
   homeRoute,
@@ -70,6 +71,7 @@ const routeTree = rootRoute.addChildren([
   labRoute,
   labStructureRoute,
   labArrangementsRoute,
+  labReadingModeRoute,
   bookRoute,
 ])
 

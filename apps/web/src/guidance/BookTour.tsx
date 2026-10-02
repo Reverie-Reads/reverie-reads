@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
@@ -7,6 +7,19 @@ import { useJustFinishedStore } from '../lib/chainPrompt'
 import { useBookTour } from './BookTourContext'
 import { BOOK_TOUR_STEPS, bookTourReturnHref, isBookTourLocation } from './bookTourModel'
 import './bookTour.css'
+import { useReadingMode } from '../design/useReadingMode'
+
+function WalkthroughOptions({ children }: { children: ReactNode }) {
+  const { mode } = useReadingMode()
+  return mode === 'bearded' ? (
+    <details className="book-tour-options">
+      <summary>More steps</summary>
+      <div>{children}</div>
+    </details>
+  ) : (
+    <>{children}</>
+  )
+}
 
 /** Visible targets only: the shell can render both desktop and mobile Add controls. */
 function findBookTourTarget(name: string): HTMLElement | null {
@@ -119,6 +132,7 @@ export function StartPlannerTour({ quiet = false }: { quiet?: boolean }) {
 }
 
 export function BookTour() {
+  const { mode } = useReadingMode()
   const { state, send } = useBookTour()
   const finishedBookId = useJustFinishedStore((s) => s.target?.book.id)
   useEffect(() => {
@@ -131,6 +145,22 @@ export function BookTour() {
   const location = useRouterState({ select: (s) => s.location })
   const navigate = useNavigate()
   const step = BOOK_TOUR_STEPS[state.step]
+  const hasOptionalSteps =
+    state.journey === 'planner'
+      ? (!!state.plannerEditorId && state.step !== 'plan-saved') ||
+        ['plan-saved', 'plan-calendar', 'plan-releases'].includes(state.step)
+      : [
+          'next-scope',
+          'next-mood',
+          'next-picks',
+          'next-saved',
+          'read-saved',
+          'read-finished',
+          'read-finish',
+          'read-finish-editor',
+          'read-progress',
+          'read-choose',
+        ].includes(state.step)
   const [target, setTarget] = useState<HTMLElement | null>(null)
   const [modal, setModal] = useState<HTMLElement | null>(null)
   const [missing, setMissing] = useState(false)
@@ -508,6 +538,7 @@ export function BookTour() {
         className="book-tour-panel"
         aria-label="Live walkthrough"
         data-book-tour-panel
+        data-reading-mode={mode}
         data-inline={!!inlineOutlet}
       >
         <div className="book-tour-heading">
@@ -583,82 +614,88 @@ export function BookTour() {
               Show me this step
             </Button>
           )}
-          {active && state.journey === 'planner' && (
-            <>
-              {state.plannerEditorId && state.step !== 'plan-saved' && (
+          {active && (mode !== 'bearded' || hasOptionalSteps) && (
+            <WalkthroughOptions key={state.step}>
+              {active && state.journey === 'planner' && (
                 <>
-                  {state.step === 'plan-timing' && (
-                    <Button variant="secondary" onClick={() => advancePlanner('plan-note')}>
-                      Next: a note
-                    </Button>
+                  {state.plannerEditorId && state.step !== 'plan-saved' && (
+                    <>
+                      {state.step === 'plan-timing' && (
+                        <Button variant="secondary" onClick={() => advancePlanner('plan-note')}>
+                          Next: a note
+                        </Button>
+                      )}
+                      {state.step !== 'plan-save' && (
+                        <Button variant="ghost" onClick={() => advancePlanner('plan-save')}>
+                          Go to saving
+                        </Button>
+                      )}
+                      {state.step !== 'plan-timing' && (
+                        <Button variant="ghost" onClick={() => advancePlanner('plan-timing')}>
+                          Back to timing
+                        </Button>
+                      )}
+                    </>
                   )}
-                  {state.step !== 'plan-save' && (
-                    <Button variant="ghost" onClick={() => advancePlanner('plan-save')}>
-                      Go to saving
-                    </Button>
-                  )}
-                  {state.step !== 'plan-timing' && (
-                    <Button variant="ghost" onClick={() => advancePlanner('plan-timing')}>
-                      Back to timing
+                  {['plan-saved', 'plan-calendar', 'plan-releases'].includes(state.step) && (
+                    <Button variant="secondary" onClick={finish}>
+                      Keep exploring
                     </Button>
                   )}
                 </>
               )}
-              {['plan-saved', 'plan-calendar', 'plan-releases'].includes(state.step) && (
-                <Button variant="secondary" onClick={finish}>
-                  Keep exploring
+              {active && state.journey === 'next-read' && (
+                <>
+                  {state.step === 'next-scope' && (
+                    <Button variant="secondary" onClick={() => advanceNextRead('mood')}>
+                      Next: a mood
+                    </Button>
+                  )}
+                  {['next-scope', 'next-mood'].includes(state.step) && (
+                    <Button variant="ghost" onClick={() => advanceNextRead('picks')}>
+                      Go to my picks
+                    </Button>
+                  )}
+                  {state.step === 'next-picks' && (
+                    <Button variant="ghost" onClick={() => advanceNextRead('scope')}>
+                      Change the selection
+                    </Button>
+                  )}
+                  {state.step === 'next-saved' && (
+                    <Button variant="secondary" onClick={finish}>
+                      Keep browsing
+                    </Button>
+                  )}
+                </>
+              )}
+              {active &&
+                ['read-saved', 'read-finished', 'read-finish', 'read-finish-editor'].includes(
+                  state.step,
+                ) && (
+                  <Button variant="secondary" onClick={finish}>
+                    Continue reading
+                  </Button>
+                )}
+              {active && ['read-progress', 'read-saved'].includes(state.step) && state.bookId && (
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    send({
+                      type: 'reading',
+                      run: state.run,
+                      action: 'offer-finish',
+                      bookId: state.bookId!,
+                    })
+                  }
+                >
+                  When I finish
                 </Button>
               )}
-            </>
+              {active && state.step === 'read-choose' && (
+                <StartBookTour label="Start with a book" />
+              )}
+            </WalkthroughOptions>
           )}
-          {active && state.journey === 'next-read' && (
-            <>
-              {state.step === 'next-scope' && (
-                <Button variant="secondary" onClick={() => advanceNextRead('mood')}>
-                  Next: a mood
-                </Button>
-              )}
-              {['next-scope', 'next-mood'].includes(state.step) && (
-                <Button variant="ghost" onClick={() => advanceNextRead('picks')}>
-                  Go to my picks
-                </Button>
-              )}
-              {state.step === 'next-picks' && (
-                <Button variant="ghost" onClick={() => advanceNextRead('scope')}>
-                  Change the selection
-                </Button>
-              )}
-              {state.step === 'next-saved' && (
-                <Button variant="secondary" onClick={finish}>
-                  Keep browsing
-                </Button>
-              )}
-            </>
-          )}
-          {active &&
-            ['read-saved', 'read-finished', 'read-finish', 'read-finish-editor'].includes(
-              state.step,
-            ) && (
-              <Button variant="secondary" onClick={finish}>
-                Continue reading
-              </Button>
-            )}
-          {active && ['read-progress', 'read-saved'].includes(state.step) && state.bookId && (
-            <Button
-              variant="ghost"
-              onClick={() =>
-                send({
-                  type: 'reading',
-                  run: state.run,
-                  action: 'offer-finish',
-                  bookId: state.bookId!,
-                })
-              }
-            >
-              When I finish
-            </Button>
-          )}
-          {active && state.step === 'read-choose' && <StartBookTour label="Start with a book" />}
           {active && state.step !== 'opened' && (
             <Button
               variant="ghost"

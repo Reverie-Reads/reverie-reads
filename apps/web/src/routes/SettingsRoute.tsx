@@ -1,5 +1,5 @@
 import { CatalogReviewNav } from '../components/catalog/CatalogReviewNav'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { createRoute, Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { findDuplicateGroups, planTitleCleanup, richness, type Book } from '@reverie/core'
@@ -59,15 +59,32 @@ import type { AddDestination } from '../components/addDestination'
 import { ArrangementEditor } from '../components/ArrangementEditor'
 import { RestoreBackupControl } from '../components/RestoreBackupControl'
 import { StartBookTour } from '../guidance/BookTour'
+import { ReadingModeChoice } from '../components/ReadingModeChoice'
+import { ReadingSection } from '../components/ReadingSection'
 import { UtilityGlyph } from '../components/UtilityGlyph'
 
 const YEAR = new Date().getFullYear()
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  keepOpen = false,
+}: {
+  title: string
+  children: React.ReactNode
+  keepOpen?: boolean
+}) {
+  const id = useId()
   return (
     <Surface radius="panel" tone="card" pad={4}>
-      <h2 className="mb-3 text-[15px] font-semibold text-ink">{title}</h2>
-      {children}
+      <ReadingSection
+        id={id}
+        title={title}
+        className="settings-section"
+        alwaysOpen={keepOpen || title === 'Interface' || title === 'Walkthroughs and guidance'}
+      >
+        {children}
+      </ReadingSection>
     </Surface>
   )
 }
@@ -533,6 +550,10 @@ function SettingsScreen() {
           </Link>
         </Section>
 
+        <Section title="Interface">
+          <ReadingModeChoice />
+        </Section>
+
         <Section title="Walkthroughs and guidance">
           <p className="text-[14px] leading-relaxed text-muted">
             Change your starting pace, revisit a walkthrough, or explore tools you have not tried
@@ -731,7 +752,24 @@ function SettingsScreen() {
           <ArrangementEditor />
         </Section>
 
-        <Section title="Library tools">
+        <Section
+          title="Library tools"
+          keepOpen={
+            showDupes ||
+            showSweep ||
+            completing ||
+            tracing ||
+            !!progress ||
+            sharpening ||
+            !!sharpProgress ||
+            sweeping ||
+            !!sweepProgress ||
+            corpusCompleting ||
+            !!corpusStatus ||
+            !!seriesRecoveryRun ||
+            !!seriesRecoveryStatus
+          }
+        >
           <div className="flex flex-wrap gap-2">
             <Link
               to="/covers"
@@ -968,7 +1006,10 @@ function SettingsScreen() {
           )}
         </Section>
 
-        <Section title="Backup & import">
+        <Section
+          title="Backup & import"
+          keepOpen={csvBusy || imported || !!importResult || review.length > 0}
+        >
           <AddDestinationPicker
             value={importDestination}
             onChange={(next) => {
@@ -1165,7 +1206,7 @@ function SettingsScreen() {
           </p>
         </Section>
 
-        <Section title="Delete account">
+        <Section title="Delete account" keepOpen={deleting || deleteText.length > 0}>
           <p className="text-[13px] text-muted">
             Permanently delete your account and <b>all</b> of your data — library, reads, shelves,
             reviews, reading orders, and profile. This cannot be undone. Consider exporting a backup
