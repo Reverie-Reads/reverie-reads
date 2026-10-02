@@ -236,6 +236,11 @@ export function EditDetails({ book, onClose }: { book: Book; onClose: () => void
     pubM: book.pub.m == null ? '' : String(book.pub.m),
     pubD: book.pub.d == null ? '' : String(book.pub.d),
   })
+  const initialSeries = useRef({
+    name: book.series.trim(),
+    position: book.position === '' ? null : book.position,
+    count: book.seriesCount ?? null,
+  })
   // Subgenres are a multi-pick; the first selection leads (it colors the gradient). Picks made
   // under one genre survive a genre switch — nothing is silently dropped.
   const [subs, setSubs] = useState<string[]>(() => bookSubgenres(book))
@@ -267,7 +272,8 @@ export function EditDetails({ book, onClose }: { book: Book; onClose: () => void
     setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: undefined } : prev)) // typing clears its own error
   }
   const oldSeries = book.series.trim()
-  const leavingSeries = !!oldSeries && f.series.trim() !== oldSeries
+  const seriesNameChanged = f.series.trim() !== initialSeries.current.name
+  const leavingSeries = !!oldSeries && seriesNameChanged && f.series.trim() !== oldSeries
   const [confirmingLeave, setConfirmingLeave] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<keyof typeof f, string | undefined>>
@@ -380,11 +386,12 @@ export function EditDetails({ book, onClose }: { book: Book; onClose: () => void
       })
       // A title/date correction is not an explicit series choice. Calling the membership RPC
       // with untouched defaults would promote their claim to reader-authored and block later
-      // trusted reconciliation. Only a changed series field belongs in that write path.
+      // trusted reconciliation. Compare with the opened draft, not a background refresh of the
+      // book: a refreshed shared default is not a change the reader made in this editor.
       if (
-        f.series.trim() !== book.series.trim() ||
-        pos !== (book.position === '' ? null : book.position) ||
-        seriesCount !== (book.seriesCount ?? null)
+        seriesNameChanged ||
+        pos !== initialSeries.current.position ||
+        seriesCount !== initialSeries.current.count
       ) {
         await syncBookSeries.mutateAsync({
           book,
