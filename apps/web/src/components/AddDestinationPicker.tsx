@@ -34,7 +34,8 @@ export function AddDestinationPicker({
     {
       value: 'mine',
       label: 'My library only',
-      detail: 'Creates my personal book. Household members can still see copies I own or borrow.',
+      detail:
+        'Creates my personal book. Owned copies appear in Household; borrowed copies appear only when I share them.',
     },
     ...(!importOnly && householdAvailable
       ? [
