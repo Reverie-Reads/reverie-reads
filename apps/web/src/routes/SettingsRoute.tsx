@@ -60,6 +60,7 @@ import { ArrangementEditor } from '../components/ArrangementEditor'
 import { RestoreBackupControl } from '../components/RestoreBackupControl'
 import { StartBookTour } from '../guidance/BookTour'
 import { ReadingModeChoice } from '../components/ReadingModeChoice'
+import { InstallHelp } from '../components/InstallHelp'
 import { ReadingSection } from '../components/ReadingSection'
 import { UtilityGlyph } from '../components/UtilityGlyph'
 
@@ -552,6 +553,7 @@ function SettingsScreen() {
 
         <Section title="Interface">
           <ReadingModeChoice />
+          <InstallHelp hideWhenInstalled={false} />
         </Section>
 
         <Section title="Walkthroughs and guidance">

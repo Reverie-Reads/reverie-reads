@@ -370,7 +370,7 @@ function MobileTabBar({
           pad={0}
           raised
           className="fixed inset-x-3 z-50 p-2 lg:hidden"
-          style={{ bottom: 'calc(76px + env(safe-area-inset-bottom))' }}
+          style={{ bottom: 'calc(76px + var(--safe-bottom))' }}
         >
           <nav
             className="grid grid-cols-2 gap-1 min-[480px]:grid-cols-3"
@@ -412,7 +412,7 @@ function MobileTabBar({
         aria-label="Primary"
         className="rv-mobile-dock fixed inset-x-0 bottom-0 z-40 backdrop-blur-lg lg:hidden"
         style={{
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingBottom: 'var(--safe-bottom)',
         }}
       >
         <div
@@ -480,7 +480,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <ReadingTipsProvider show={profile?.showReadingTips !== false}>
-      <div className="relative flex min-h-dvh" data-reading-mode={mode}>
+      <div className="app-frame relative flex min-h-dvh" data-reading-mode={mode}>
         <a
           href="#main"
           className="skin-control sr-only px-4 py-2 text-[13px] font-semibold focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50"
@@ -509,7 +509,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             ref={mainRef}
             id="main"
             tabIndex={-1}
-            className="relative z-[1] flex flex-1 flex-col pb-[calc(72px+env(safe-area-inset-bottom))] outline-none lg:pb-0"
+            className="relative z-[1] flex flex-1 flex-col pb-[calc(72px+var(--safe-bottom))] outline-none lg:pb-0"
           >
             {!bearded && <GuidanceTrail />}
             {children}

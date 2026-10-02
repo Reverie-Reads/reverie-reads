@@ -16,7 +16,17 @@ export const BEARD_COLORS = [
   { id: 'silver', label: 'Silver', hair: '--beard-silver', ground: '--beard-charcoal' },
   { id: 'snow', label: 'Snow', hair: '--beard-snow', ground: '--beard-charcoal' },
   { id: 'plum', label: 'Plum', hair: '--beard-plum', ground: '--beard-paper' },
+  { id: 'rainbow', label: 'Rainbow', hair: '--beard-rainbow-red', ground: '--beard-charcoal' },
 ] as const
+export const BEARD_RAINBOW_STOPS = [
+  '--beard-rainbow-red',
+  '--beard-rainbow-orange',
+  '--beard-rainbow-yellow',
+  '--beard-rainbow-green',
+  '--beard-rainbow-blue',
+  '--beard-rainbow-violet',
+] as const
+export const BEARD_RAINBOW_SWATCH = `linear-gradient(135deg, ${BEARD_RAINBOW_STOPS.map((token) => `var(${token})`).join(', ')})`
 export type BeardAppearance = {
   style: (typeof BEARD_STYLES)[number]['id']
   color: (typeof BEARD_COLORS)[number]['id']

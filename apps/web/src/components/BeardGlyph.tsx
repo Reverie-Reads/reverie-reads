@@ -1,5 +1,10 @@
 import { useId, type CSSProperties } from 'react'
-import { BEARD_COLORS, DEFAULT_BEARD, type BeardAppearance } from '../design/beardAppearance'
+import {
+  BEARD_COLORS,
+  BEARD_RAINBOW_STOPS,
+  DEFAULT_BEARD,
+  type BeardAppearance,
+} from '../design/beardAppearance'
 
 const SHAPES: Record<BeardAppearance['style'], string> = {
   classic:
@@ -23,7 +28,9 @@ export function BeardGlyph({
   appearance?: BeardAppearance
 }) {
   const clipId = useId()
+  const gradientId = `${clipId}-rainbow`
   const color = BEARD_COLORS.find((entry) => entry.id === appearance.color) ?? BEARD_COLORS[0]
+  const hairFill = color.id === 'rainbow' ? `url(#${gradientId})` : 'var(--beard-hair)'
   const variables = {
     '--beard-hair': `var(${color.hair})`,
     '--beard-ground': `var(${color.ground})`,
@@ -39,6 +46,24 @@ export function BeardGlyph({
       data-beard-style={appearance.style}
     >
       <defs>
+        {color.id === 'rainbow' && (
+          <linearGradient
+            id={gradientId}
+            gradientUnits="userSpaceOnUse"
+            x1="8"
+            y1="18"
+            x2="72"
+            y2="80"
+          >
+            {BEARD_RAINBOW_STOPS.map((token, index) => (
+              <stop
+                key={token}
+                offset={`${(index / (BEARD_RAINBOW_STOPS.length - 1)) * 100}%`}
+                stopColor={`var(${token})`}
+              />
+            ))}
+          </linearGradient>
+        )}
         <clipPath id={clipId}>
           <path d={SHAPES[appearance.style]} />
         </clipPath>
@@ -46,10 +71,10 @@ export function BeardGlyph({
       {color.id !== 'room' && (
         <rect x="0" y="0" width="80" height="88" rx="36" fill="var(--beard-ground)" />
       )}
-      <path d={SHAPES[appearance.style]} fill="var(--beard-hair)" />
+      <path d={SHAPES[appearance.style]} fill={hairFill} />
       <path
         d="M40 23c-7-6-12-7-17-3-4 3-6 9-11 10 6 6 17 6 28-1 11 7 22 7 28 1-5-1-7-7-11-10-5-4-10-3-17 3Z"
-        fill="var(--beard-hair)"
+        fill={hairFill}
       />
       <path
         d={

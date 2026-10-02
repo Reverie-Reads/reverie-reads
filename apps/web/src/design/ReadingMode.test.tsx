@@ -24,6 +24,20 @@ function Mode() {
 beforeEach(() => localStorage.clear())
 afterEach(() => vi.restoreAllMocks())
 
+function blockStorageWrites() {
+  // jsdom's native Storage proxy keeps methods on its prototype. The Node 26 test fallback
+  // owns them directly; spying on the proxy itself does not intercept writes under CI's Node 22.
+  const storage = window.localStorage
+  const methods = Object.hasOwn(storage, 'setItem')
+    ? storage
+    : (Object.getPrototypeOf(storage) as Storage)
+  const blocked = vi.spyOn(methods, 'setItem').mockImplementation(() => {
+    throw new Error('blocked')
+  })
+  expect(() => storage.setItem('storage-probe', 'unwritten')).toThrow('blocked')
+  return blocked
+}
+
 describe('Reading mode', () => {
   it('keeps an active task and its draft visible when the interface becomes simpler', () => {
     function Task() {
@@ -77,18 +91,16 @@ describe('Reading mode', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Choose your beard' }))
     const dialog = screen.getByRole('dialog', { name: 'Choose your beard' })
     fireEvent.click(within(dialog).getByLabelText('Braided'))
-    fireEvent.click(within(dialog).getByLabelText('Copper'))
+    fireEvent.click(within(dialog).getByLabelText('Rainbow'))
     fireEvent.click(within(dialog).getByRole('button', { name: 'Use this beard' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(readBeardAppearance('one')).toEqual({ style: 'braided', color: 'copper' })
+    expect(readBeardAppearance('one')).toEqual({ style: 'braided', color: 'rainbow' })
     expect(readBeardAppearance('two')).toEqual({ style: 'classic', color: 'room' })
     expect(screen.getByTestId('mode')).toHaveTextContent('standard')
     expect(screen.getByLabelText('Unsent note')).toHaveValue('Keep my note')
   })
   it('keeps a beard draft visible when storage fails and permits an explicit retry', () => {
-    const blocked = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
-      throw new Error('blocked')
-    })
+    const blocked = blockStorageWrites()
     render(
       <ReadingModeProvider accountId="one">
         <ReadingModeChoice />
@@ -182,9 +194,7 @@ describe('Reading mode', () => {
   })
 
   it('keeps the choice usable and explains when storage fails', () => {
-    vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
-      throw new Error('blocked')
-    })
+    blockStorageWrites()
     render(
       <ReadingModeProvider accountId="one">
         <ReadingModeChoice />

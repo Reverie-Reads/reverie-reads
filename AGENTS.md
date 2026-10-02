@@ -143,6 +143,11 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Do not activate automatic product redirects or a global switch until the destination has a usable
   Free journey and draft-aware navigation. Reader arrangements/guidance remain independent. See
   `docs/tasks/account-types.md`.
+- **Edge-to-edge rooms must respect device safe areas.** `styles/safe-area.css` protects shell
+  content and native dialog controls on iOS, including landscape side insets. Keep zoom enabled.
+  Install help is optional at welcome, Settings and the public invitation, not an automatic prompt.
+  Chromium's iPhone descriptor is not WebKit or physical-device proof; the opt-in iOS simulations
+  use explicit safe-area constraints and retain a separate installed-iPhone acceptance checklist.
 - **Reader guidance controls presentation, never access.** New readers choose a gentle introduction,
   the full walkthrough or independent exploration. Account-scoped `profiles.guidance` is authoritative;
   a device-wide onboarding flag cannot skip another account's welcome. Milestones are bounded,

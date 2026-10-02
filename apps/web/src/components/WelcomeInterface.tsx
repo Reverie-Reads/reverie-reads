@@ -2,6 +2,7 @@ import { APP_NAME } from '@reverie/core'
 import { Button } from './Button'
 import { Label } from './Label'
 import { ReadingModeChoice } from './ReadingModeChoice'
+import { InstallHelp } from './InstallHelp'
 
 /** First welcome choice; it changes presentation only, before guidance or any library write. */
 export function WelcomeInterface({ onContinue }: { onContinue: () => void }) {
@@ -20,6 +21,7 @@ export function WelcomeInterface({ onContinue }: { onContinue: () => void }) {
       <Button className="mt-6" onClick={onContinue}>
         Continue
       </Button>
+      <InstallHelp />
     </>
   )
 }

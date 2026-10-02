@@ -6,6 +6,7 @@ import { MidnihtWordmark } from './MidnihtWordmark'
 import { GuestReadingRecord } from './guest/GuestReadingRecord'
 import { SkinShowcase, type SkinShowcaseProps } from './SkinShowcase'
 import { ReadingRoomPreview, RoomCaption } from './ReadingRoomPreview'
+import { InstallHelp } from '../../components/InstallHelp'
 
 const display = { fontFamily: 'var(--font-display)', fontWeight: 600 } as const
 
@@ -357,6 +358,7 @@ export default function LandingBelowFold({
               Return to your library
             </Link>
           </div>
+          <InstallHelp className="mx-auto mt-5 max-w-[50ch]" />
         </div>
       </section>
 

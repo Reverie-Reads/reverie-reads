@@ -366,20 +366,32 @@ test('Bearded Mode comes first, keeps reader priorities and preserves an unsent 
     await beardButton.click()
     const chooser = page.getByRole('dialog', { name: 'Choose your beard', exact: true })
     await chooser.getByText('Braided', { exact: true }).click()
-    await chooser.getByText('Copper', { exact: true }).click()
+    await chooser.getByText('Rainbow', { exact: true }).click()
     await chooser.getByRole('button', { name: 'Use this beard', exact: true }).click()
     await expect(chooser).toHaveCount(0)
     await expect(beardButton.locator('svg')).toHaveAttribute('data-beard-style', 'braided')
-    await expect(beardButton.locator('svg')).toHaveAttribute('data-beard-color', 'copper')
+    await expect(beardButton.locator('svg')).toHaveAttribute('data-beard-color', 'rainbow')
     await expect(page.getByRole('textbox', { name: 'Search for a book' })).toHaveValue(
       'My unsent search',
     )
+    // A short phone scrolls the choices within the sheet; its action row never covers a color.
+    await page.setViewportSize({ width: 320, height: 568 })
+    await beardButton.click()
+    await chooser.getByText('Original', { exact: true }).click()
+    await chooser.getByText('Snow', { exact: true }).click()
+    await chooser.getByText('Rainbow', { exact: true }).click()
+    await chooser.getByRole('button', { name: 'Use this beard', exact: true }).click()
+    await expect(beardButton.locator('svg')).toHaveAttribute('data-beard-color', 'rainbow')
+    await page.setViewportSize({ width: 390, height: 844 })
     await page
       .getByRole('navigation', { name: 'Primary' })
       .getByRole('button', { name: 'More', exact: true })
       .click()
     const menu = page.getByRole('dialog', { name: 'More tools', exact: true })
-    await menu.getByRole('button', { name: 'Use full interface', exact: true }).click()
+    const fullInterface = menu.getByRole('button', { name: 'Use full interface', exact: true })
+    await fullInterface.focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('main')).toBeFocused()
     await expect(page.getByRole('textbox', { name: 'Search for a book' })).toHaveValue(
       'My unsent search',
     )

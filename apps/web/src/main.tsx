@@ -20,6 +20,7 @@ import { router } from './router'
 import './styles/tokens.css'
 import './styles/globals.css'
 import './styles/skin-kit.css'
+import './styles/safe-area.css'
 
 initErrorMonitoring()
 installPreloadErrorReload()

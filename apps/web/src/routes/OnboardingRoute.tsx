@@ -55,7 +55,7 @@ function Stage({ children }: { children: ReactNode }) {
   return (
     <section
       data-reading-mode={mode}
-      className="relative z-[1] flex min-h-dvh flex-col items-center justify-center px-5 py-10"
+      className="welcome-stage relative z-[1] flex min-h-dvh flex-col items-center justify-center px-5 py-10"
     >
       <div className="w-full max-w-[520px]">{children}</div>
     </section>

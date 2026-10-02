@@ -32,8 +32,10 @@ This is a source/component audit; signed-in device acceptance remains a separate
   Settings. The first welcome screen names the Bearded Bookseller, the admins’ local bookstore owner,
   as its inspiration and explains that the simpler layout puts the reader’s priorities first. It is for anyone who prefers fewer choices, with no assumptions about age or ability.
 - The original beard SVG is the default. Hover/focus reveals Choose your beard; tapping opens a
-  native dialog with six styles (Original, Rounded, Full, Trimmed, Goatee, Braided) and eight colors
-  (Room ink, Espresso, Chestnut, Copper, Golden, Silver, Snow, Plum). Preview first; Use this beard
+  native dialog with six styles (Original, Rounded, Full, Trimmed, Goatee, Braided) and nine colors
+  (Room ink, Espresso, Chestnut, Copper, Golden, Silver, Snow, Plum, Rainbow). The rainbow uses a
+  shared six-color palette for its swatch and SVG; its stops and intermediate blends retain contrast.
+  Preview first; Use this beard
   explicitly saves a separate account-bound browser document. Cancel discards the portrait draft.
   Storage failure keeps the dialog and retry available. Existing rooms and interface mode remain
   independent. All portraits keep at least 3:1 contrast on their backing across all nine rooms;
@@ -79,17 +81,95 @@ The replacement full run passed. The final Settings safeguard adds an active-tas
 the final full suites passed with **1,212 web tests**, with the other suite counts unchanged.
 Final lint, typechecking, formatting and production build passed.
 
+Hosted validation of `87f6870` exposed two ineffective storage-failure mocks on Node 22: jsdom keeps
+Storage methods on its prototype, while the Node 26 test fallback owns them directly. The revised
+helper targets the actual method owner and proves that a write throws before exercising the UI.
+All 11 focused mode tests pass on Node 26; full gates for Rainbow and the mock correction are being
+run with CI's Node 22.23.3. No deadline or assertion was relaxed.
+
 The synthetic study was checked at 390px and 320px: no horizontal overflow; Save and Cancel remain
 visible; a narrow phone can scroll the dialog to the remaining colors and save Braided / Copper.
 The original glyph is restored as the default. The all-room contrast checks cover every portrait
 palette choice against its actual backing. These are local study and source checks. Full browser
 validation and signed-in device acceptance must still be recorded for the final candidate.
+The revised nine-color chooser fits at 390px without device insets; shorter safe rectangles scroll
+its choices independently of the action row. Rainbow was selected and saved as Braided, updating
+both shared chrome portraits with no overflow.
 Do not report this as deployed from a study or unit result.
 
-Hold public publication while the separate private backup sync is validating: its marker requires
-the exact public main. Its unrelated local authentication/navigation timeouts remain a real failed
-gate, not a contrast defect and not permission to bypass checks. Coordinate the shared local DB lock.
+Public draft #616 is open. Its initial full local browser run was deliberately interrupted after the
+owner requested Rainbow: **6 passed, 1 interrupted, 368 unrun**; this is not a full-suite pass.
+That candidate's fresh reset and SQL suite passed (1,973 assertions, 65 files). Restoration then
+timed out waiting for local Storage startup; all three services subsequently became healthy.
+The exact private migration history was verified before restoring the 290-book development seed
+and confirming local Auth health. Preserve that interrupted run and restoration record.
+The revised candidate needs its recorded full browser result under the shared database lock.
 
-After review and full gates, publish a public PR. The private app needs its normal reviewed sync
+The first Node 22 Rainbow run passed core checks but was interrupted after two existing
+ReflectScreen cases exceeded their five-second limits under measured host memory pressure. A
+replacement capped unit workers at two, without changing deadlines; it passed core/source-trial/
+recovery before being stopped to address review findings and the owner's added iOS scope. Neither
+interrupted run is a full-source pass. Home now retains its actual Progress/Finish and other open
+forms through a cross-tab mode change; focused regressions verify unsaved values and no writes.
+Modal cleanup returns focus to the stable app main when changing interfaces removes the opener.
+
+## iOS and other devices
+
+The owner requested iOS installation clarity and protection from the front camera/status bar.
+The existing viewport uses `viewport-fit=cover` and a translucent iOS status bar, but the shell
+previously protected mostly its bottom edge. Shared safe-area values now protect initial content,
+sticky desktop rails, both phone docks, the full-interface More tray, native modal sheets and
+side drawers. Planner’s right-aligned Undo message also clears landscape side insets. The room still fills the screen. The beard picker scrolls its choices independently
+of its action row, so a short screen cannot place colors under Save/Cancel.
+
+Installation help is a closed, optional disclosure after the first welcome choice, in Settings >
+Interface, and at the landing page's closing invitation. It suggests the current device but lets
+the reader choose another. iPhone/iPad instructions explain Safari's Share/Page Menu, scrolling
+for Add to Home Screen, Edit Actions, and Open as Web App when offered. Existing installed-app
+views hide the welcome/landing invitation and retain Settings help. Nothing prompts installation
+or changes account data automatically.
+
+Sources: [Apple's Home Screen instructions](https://support.apple.com/guide/iphone/iphea86e5236/ios),
+[WebKit's safe-area guidance](https://webkit.org/blog/7929/designing-websites-for-iphone-x/), and
+[Chrome installation help](https://support.google.com/chrome/answer/9658361).
+
+The existing mobile CI project uses Chromium with an iPhone descriptor. A separate, explicit
+WebKit project now runs the real welcome/Bearded/Add journey, live reading coach, and shared-component layout
+matrix: 320px small phone, 390px notch, 393px island, 844px landscape, and 820px iPad. Its layout
+cases inject named safe-area values to model the occluded edges; those are **simulated constraints,
+not evidence that a physical iPhone reported those insets**. It is opt-in because the existing
+apt-free CI runners install Chromium only; no browser/dependency fallback is introduced.
+
+Run with WebKit installed using `IOS_SIMULATIONS=1 pnpm e2e --project=ios --retries=0` under the
+usual database lock. A full local gate can include it with `IOS_SIMULATIONS=1`; default worker
+count and fresh-database requirements remain unchanged. Record actual results below.
+
+An isolated WebKit preview on the existing study server passed all five device rectangles, including
+selecting/saving Braided + Rainbow, dialog control bounds, and no horizontal overflow. Its request
+allowlist admitted only the study server; it made no shared-database requests. Screenshots were
+visually reviewed for small phone, notch phone and landscape. This is shared-component preview
+proof, not the pending signed-in WebKit/full regression gate.
+
+The checked-in WebKit focus run passed **7/7**: the five device layouts, optional installation help
+(including the simulated standalone signal), and a real personal book’s landscape walkthrough.
+The walkthrough stays inside the safe rectangle and leaves the stored book unchanged. The first
+attempt stopped at test collection because a per-device descriptor included a worker-scoped browser
+option; the project now owns the WebKit worker and cases vary only context options. No test deadline
+or assertion was relaxed.
+
+Final Node 22 source gates passed: lint, typechecking, formatting, production build, **3,046 core,
+1,226 web, 2 workflow, 498 source-trial and 127 recovery checks**. The earlier in-progress iOS
+source/typecheck runs were interrupted for the walkthrough fix; these replacement results supersede
+them. A final CSS-only review adjustment protects Planner’s Undo action in landscape, with bounds
+assertions added to its existing persistence test; static/build checks are repeated for that delta.
+The full fresh-database browser gate is still pending for the final committed candidate.
+
+Physical acceptance remains: install from Safari on a notch/island iPhone, cold-launch from Home
+Screen, rotate, use the actual keyboard in Add/notes, check VoiceOver and larger text, then confirm
+Save/Cancel/navigation clear the status bar and home indicator. Repeat on an iPad. Xcode's iOS
+Simulator is not installed on this host; Playwright WebKit cannot operate Safari's native Share
+sheet or certify installed-iOS viewport/keyboard behavior.
+
+After review and full gates, advance public draft #616 for review. The private app needs its normal reviewed sync
 before production gets this UI. Browser-local persistence is deliberately limited; a later account-
 portable preference requires a separately reviewed compatibility/restore contract.

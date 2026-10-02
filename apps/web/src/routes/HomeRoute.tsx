@@ -164,7 +164,11 @@ function HomeScreen() {
     day: 'numeric',
   }).format(new Date())
 
-  if (mode === 'bearded')
+  // A mode change can arrive from another tab while a Home dialog owns an unsaved draft.
+  // Keep that task and its form mounted until the reader explicitly closes it; then simplify.
+  const homeTaskOpen =
+    finishing || progressing || readingPickerOpen || removing || railPickerFor || railExternalFor
+  if (mode === 'bearded' && !homeTaskOpen)
     return (
       <BeardedHome
         books={books}

@@ -8,6 +8,7 @@ import { useBookTour } from './BookTourContext'
 import { BOOK_TOUR_STEPS, bookTourReturnHref, isBookTourLocation } from './bookTourModel'
 import './bookTour.css'
 import { useReadingMode } from '../design/useReadingMode'
+import { constrainTourPosition, fallbackTourPosition, tourSafeRectangle } from './bookTourBounds'
 
 function WalkthroughOptions({ children }: { children: ReactNode }) {
   const { mode } = useReadingMode()
@@ -350,48 +351,77 @@ export function BookTour() {
       return
     }
     let disposed = false
+    let placementRevision = 0
     const update = () => {
+      const revision = ++placementRevision
       const viewport = window.visualViewport
       const width = viewport?.width ?? window.innerWidth
       const top = viewport?.offsetTop ?? 0
       const height = viewport?.height ?? window.innerHeight
-      floating.toggleAttribute('data-compact', width < 700 && height < 600)
+      const left = viewport?.offsetLeft ?? 0
+      const tokens = getComputedStyle(document.documentElement)
+      const inset = (name: string) =>
+        Math.max(0, Number.parseFloat(tokens.getPropertyValue(name)) || 0)
+      const safe = tourSafeRectangle(
+        { left, top, width, height },
+        {
+          width: document.documentElement.clientWidth || window.innerWidth,
+          height: document.documentElement.clientHeight || window.innerHeight,
+        },
+        {
+          top: inset('--safe-top'),
+          right: inset('--safe-right'),
+          bottom: inset('--safe-bottom'),
+          left: inset('--safe-left'),
+        },
+      )
+      // A body portal sits outside root padding. Bound it before measuring, including the
+      // short landscape/keyboard view; overflow keeps every action reachable without resetting it.
+      Object.assign(floating.style, {
+        maxWidth: `${Math.max(1, safe.right - safe.left - 24)}px`,
+        maxHeight: `${Math.max(1, safe.bottom - safe.top - 24)}px`,
+      })
+      floating.toggleAttribute(
+        'data-compact',
+        (width < 700 || touch) && safe.bottom - safe.top < 600,
+      )
       if (!target || state.status === 'paused' || width < 700) {
-        const left = (viewport?.offsetLeft ?? 0) + 12
-        const panelHeight = floating.getBoundingClientRect().height
         // A step can group related controls, such as cover/tags/Done after saving.
         // Keep that entire working area clear, not just the highlighted button.
         const rect = (target?.closest('[data-book-tour-region]') ?? target)?.getBoundingClientRect()
-        const minY = top + 72
-        const bottomY = Math.max(minY, top + height - panelHeight - 88)
-        let y = bottomY
-        if (rect && rect.bottom > bottomY - 12 && rect.top < bottomY + panelHeight + 12) {
-          const above = rect.top - panelHeight - 16
-          const below = rect.bottom + 16
-          if (above >= minY) y = Math.min(bottomY, above)
-          else if (below <= bottomY) y = Math.max(minY, below)
-          else y = minY
-        }
+        const point = fallbackTourPosition(safe, floating.getBoundingClientRect(), rect)
         Object.assign(floating.style, {
-          left: `${left}px`,
-          top: `${y}px`,
+          left: `${point.x}px`,
+          top: `${point.y}px`,
           visibility: 'visible',
         })
         return
+      }
+      const padding = {
+        left: safe.left - left + 16,
+        top: safe.top - top + 16,
+        right: left + width - safe.right + 16,
+        bottom: top + height - safe.bottom + 16,
       }
       void computePosition(target, floating, {
         strategy: 'fixed',
         placement: 'left-start',
         middleware: [
           offset(18),
-          flip({ fallbackPlacements: ['right-start', 'bottom-start', 'top-start'] }),
+          flip({ fallbackPlacements: ['right-start', 'bottom-start', 'top-start'], padding }),
           // A step can point below the fold. Keep its navigation reachable so the reader
           // can ask the demonstration to bring that target into view.
-          shift({ padding: 16, crossAxis: true }),
+          shift({ padding, crossAxis: true }),
         ],
       }).then(({ x, y }) => {
-        if (!disposed)
-          Object.assign(floating.style, { left: `${x}px`, top: `${y}px`, visibility: 'visible' })
+        if (!disposed && revision === placementRevision) {
+          const point = constrainTourPosition({ x, y }, safe, floating.getBoundingClientRect())
+          Object.assign(floating.style, {
+            left: `${point.x}px`,
+            top: `${point.y}px`,
+            visibility: 'visible',
+          })
+        }
       })
     }
     update()
@@ -409,7 +439,7 @@ export function BookTour() {
       window.visualViewport?.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
     }
-  }, [target, running, state.status, blockedByModal, inlineOutlet])
+  }, [target, running, state.status, blockedByModal, inlineOutlet, touch])
 
   useEffect(
     () => () => {
