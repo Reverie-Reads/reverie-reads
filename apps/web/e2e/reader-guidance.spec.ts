@@ -11,7 +11,7 @@ const anon =
 const localService =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
 
-async function freshReader(page: Page) {
+async function freshReader(page: Page, bearded = false) {
   const admin = createClient(endpoint, localService, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
@@ -35,6 +35,10 @@ async function freshReader(page: Page) {
     `/#access_token=${access_token}&refresh_token=${refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )
   await page.getByRole('button', { name: /enter your library/i }).click({ timeout: 20_000 })
+  await expect(page.getByRole('heading', { name: 'Make this your library.' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Show me around', exact: true })).toHaveCount(0)
+  if (bearded) await page.getByRole('radio', { name: /Bearded Mode/ }).check()
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Come in at your own pace.' })).toBeVisible({
     timeout: 20_000,
   })
@@ -320,6 +324,95 @@ test('independent exploration creates no books and its guide fits every room on 
             fullPage: true,
           })
       }
+  } finally {
+    await account.cleanup()
+  }
+})
+
+test('Bearded Mode comes first, keeps reader priorities and preserves an unsent Add search', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  await page.setViewportSize({ width: 390, height: 844 })
+  const account = await freshReader(page, true)
+  try {
+    expect(await account.guidance()).toBeNull()
+    await expect(
+      page.getByRole('button', { name: 'Show me how to add a book', exact: true }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Explore on my own', exact: true }).click()
+    await expect(page).toHaveURL(/\/library$/)
+    await expect(page.getByRole('complementary', { name: 'Live walkthrough' })).toHaveCount(0)
+    const arrangement = {
+      version: 1,
+      priorityDestinations: ['home', 'library', 'stats'],
+      homeModules: ['year', 'reading', 'priority'],
+    }
+    const saved = await account.reader
+      .from('profiles')
+      .update({ arrangement })
+      .eq('id', account.uid)
+    if (saved.error) throw saved.error
+    await page.reload()
+    const nav = page.getByRole('navigation', { name: 'Primary' })
+    await expect(nav.getByRole('link', { name: 'Stats', exact: true })).toBeVisible()
+    await expect(nav.getByRole('link', { name: 'Next read', exact: true })).toHaveCount(0)
+    await nav.getByRole('link', { name: 'Home', exact: true }).click()
+    await expect(page.getByRole('link', { name: /My reading year/ })).toBeVisible()
+    await page.getByRole('link', { name: 'Add a book', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Search for a book' }).fill('My unsent search')
+    const beardButton = page.getByRole('button', { name: 'Choose your beard', exact: true })
+    await expect(beardButton.locator('svg')).toHaveAttribute('data-beard-style', 'classic')
+    await beardButton.click()
+    const chooser = page.getByRole('dialog', { name: 'Choose your beard', exact: true })
+    await chooser.getByText('Braided', { exact: true }).click()
+    await chooser.getByText('Rainbow', { exact: true }).click()
+    await chooser.getByRole('button', { name: 'Use this beard', exact: true }).click()
+    await expect(chooser).toHaveCount(0)
+    await expect(beardButton.locator('svg')).toHaveAttribute('data-beard-style', 'braided')
+    await expect(beardButton.locator('svg')).toHaveAttribute('data-beard-color', 'rainbow')
+    await expect(page.getByRole('textbox', { name: 'Search for a book' })).toHaveValue(
+      'My unsent search',
+    )
+    // A short phone scrolls the choices within the sheet; its action row never covers a color.
+    await page.setViewportSize({ width: 320, height: 568 })
+    await beardButton.click()
+    await chooser.getByText('Original', { exact: true }).click()
+    await chooser.getByText('Snow', { exact: true }).click()
+    await chooser.getByText('Rainbow', { exact: true }).click()
+    await chooser.getByRole('button', { name: 'Use this beard', exact: true }).click()
+    await expect(beardButton.locator('svg')).toHaveAttribute('data-beard-color', 'rainbow')
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page
+      .getByRole('navigation', { name: 'Primary' })
+      .getByRole('button', { name: 'More', exact: true })
+      .click()
+    const menu = page.getByRole('dialog', { name: 'More tools', exact: true })
+    const fullInterface = menu.getByRole('button', { name: 'Use full interface', exact: true })
+    await fullInterface.focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('main')).toBeFocused()
+    await expect(page.getByRole('textbox', { name: 'Search for a book' })).toHaveValue(
+      'My unsent search',
+    )
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Primary' })
+        .getByRole('link', { name: 'Stats', exact: true }),
+    ).toBeVisible()
+    const current = await account.reader
+      .from('profiles')
+      .select('arrangement')
+      .eq('id', account.uid)
+      .single()
+    if (current.error) throw current.error
+    expect(current.data.arrangement).toEqual(arrangement)
+    const books = await account.reader
+      .from('books')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', account.uid)
+    if (books.error) throw books.error
+    expect(books.count).toBe(0)
   } finally {
     await account.cleanup()
   }

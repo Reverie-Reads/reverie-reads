@@ -61,9 +61,20 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 - [ ] **Accessibility blocker sweep:** keyboard-only sign-in and core navigation, visible focus,
       labels announced once, dialogs trap/restore focus, and no unreadable control in the selected
       room and mode.
+- [ ] **Installed iPhone safe areas:** on a physical notch/Dynamic Island iPhone, launch from Home
+      Screen and rotate both ways. The welcome, full/Bearded navigation, beard chooser, book dialogs
+      and live reading guide must clear the camera/status bar and home indicator. Open the keyboard
+      in Add and a note; fields, Close, Save and guide controls remain reachable. Repeat with larger
+      text and VoiceOver, then on iPad. WebKit simulations do not complete this device check.
 
 ## P1 — core promise and activation
 
+- [ ] **Bearded Mode:** choose it at the first welcome, then save an Original or Rainbow beard.
+      Custom priority links and Home modules remain yours. Other tools, Settings and sign-out stay
+      reachable. Switch back to full from the keyboard; focus lands in the content. Keep an unsaved
+      Home progress/finish form open while changing modes in a second tab: preserve every draft
+      value, and simplify only after the form closes. Confirm separate accounts do not inherit the
+      interface or beard choice. Preferences are remembered in this browser, not yet across devices.
 - [ ] **Live Next read walkthrough:** start on an existing scope and typed mood, then from Settings.
       Move through selection, optional mood and picks without submitting or clearing the draft.
       Open your chosen book and confirm the reading guide follows that exact record. Save a choice
@@ -213,7 +224,11 @@ writes, migrations, function deployment, and deletion remain owner-run operation
 - [ ] **Offline read:** load the library, go offline, reopen cached books and notes, return online,
       and confirm the visible state refreshes without cross-account cache leakage.
 - [ ] **Install:** install the web app on one supported phone and desktop; launch from the icon and
-      verify safe-area spacing, navigation, mode, room, and sign-in persistence.
+      verify safe-area spacing, navigation, mode, room, and sign-in persistence. On iPhone, find the
+      optional Home Screen help at welcome or Settings and follow Safari's Share/Page Menu → Add
+      to Home Screen steps. Once launched from the icon, the welcome/landing invitation disappears
+      while Settings help remains available. Native installation and account continuity need a real
+      device even when the simulated WebKit layout passes.
 - [ ] **Account deletion:** in a disposable account, export first, type the required confirmation,
       delete, and verify sign-in, cached personal content, and shared membership behavior match the
       documented contract.

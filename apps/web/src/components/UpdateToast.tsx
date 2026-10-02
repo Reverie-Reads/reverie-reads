@@ -15,7 +15,7 @@ export function UpdateToast() {
     <div
       role="status"
       className="fixed inset-x-0 z-[60] flex justify-center px-4 lg:bottom-6"
-      style={{ bottom: 'calc(84px + env(safe-area-inset-bottom))' }}
+      style={{ bottom: 'calc(84px + var(--safe-bottom))' }}
     >
       {/* tone="card-solid" replaces the hand-rolled gradient — §7.4's collapse (see AppShell's
           sheet for the numbers; marrow/dark maxΔ=19 vs Modal's authored plate). radius="panel"

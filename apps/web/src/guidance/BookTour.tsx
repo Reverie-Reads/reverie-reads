@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/dom'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
@@ -7,6 +7,20 @@ import { useJustFinishedStore } from '../lib/chainPrompt'
 import { useBookTour } from './BookTourContext'
 import { BOOK_TOUR_STEPS, bookTourReturnHref, isBookTourLocation } from './bookTourModel'
 import './bookTour.css'
+import { useReadingMode } from '../design/useReadingMode'
+import { constrainTourPosition, fallbackTourPosition, tourSafeRectangle } from './bookTourBounds'
+
+function WalkthroughOptions({ children }: { children: ReactNode }) {
+  const { mode } = useReadingMode()
+  return mode === 'bearded' ? (
+    <details className="book-tour-options">
+      <summary>More steps</summary>
+      <div>{children}</div>
+    </details>
+  ) : (
+    <>{children}</>
+  )
+}
 
 /** Visible targets only: the shell can render both desktop and mobile Add controls. */
 function findBookTourTarget(name: string): HTMLElement | null {
@@ -119,6 +133,7 @@ export function StartPlannerTour({ quiet = false }: { quiet?: boolean }) {
 }
 
 export function BookTour() {
+  const { mode } = useReadingMode()
   const { state, send } = useBookTour()
   const finishedBookId = useJustFinishedStore((s) => s.target?.book.id)
   useEffect(() => {
@@ -131,6 +146,22 @@ export function BookTour() {
   const location = useRouterState({ select: (s) => s.location })
   const navigate = useNavigate()
   const step = BOOK_TOUR_STEPS[state.step]
+  const hasOptionalSteps =
+    state.journey === 'planner'
+      ? (!!state.plannerEditorId && state.step !== 'plan-saved') ||
+        ['plan-saved', 'plan-calendar', 'plan-releases'].includes(state.step)
+      : [
+          'next-scope',
+          'next-mood',
+          'next-picks',
+          'next-saved',
+          'read-saved',
+          'read-finished',
+          'read-finish',
+          'read-finish-editor',
+          'read-progress',
+          'read-choose',
+        ].includes(state.step)
   const [target, setTarget] = useState<HTMLElement | null>(null)
   const [modal, setModal] = useState<HTMLElement | null>(null)
   const [missing, setMissing] = useState(false)
@@ -320,48 +351,77 @@ export function BookTour() {
       return
     }
     let disposed = false
+    let placementRevision = 0
     const update = () => {
+      const revision = ++placementRevision
       const viewport = window.visualViewport
       const width = viewport?.width ?? window.innerWidth
       const top = viewport?.offsetTop ?? 0
       const height = viewport?.height ?? window.innerHeight
-      floating.toggleAttribute('data-compact', width < 700 && height < 600)
+      const left = viewport?.offsetLeft ?? 0
+      const tokens = getComputedStyle(document.documentElement)
+      const inset = (name: string) =>
+        Math.max(0, Number.parseFloat(tokens.getPropertyValue(name)) || 0)
+      const safe = tourSafeRectangle(
+        { left, top, width, height },
+        {
+          width: document.documentElement.clientWidth || window.innerWidth,
+          height: document.documentElement.clientHeight || window.innerHeight,
+        },
+        {
+          top: inset('--safe-top'),
+          right: inset('--safe-right'),
+          bottom: inset('--safe-bottom'),
+          left: inset('--safe-left'),
+        },
+      )
+      // A body portal sits outside root padding. Bound it before measuring, including the
+      // short landscape/keyboard view; overflow keeps every action reachable without resetting it.
+      Object.assign(floating.style, {
+        maxWidth: `${Math.max(1, safe.right - safe.left - 24)}px`,
+        maxHeight: `${Math.max(1, safe.bottom - safe.top - 24)}px`,
+      })
+      floating.toggleAttribute(
+        'data-compact',
+        (width < 700 || touch) && safe.bottom - safe.top < 600,
+      )
       if (!target || state.status === 'paused' || width < 700) {
-        const left = (viewport?.offsetLeft ?? 0) + 12
-        const panelHeight = floating.getBoundingClientRect().height
         // A step can group related controls, such as cover/tags/Done after saving.
         // Keep that entire working area clear, not just the highlighted button.
         const rect = (target?.closest('[data-book-tour-region]') ?? target)?.getBoundingClientRect()
-        const minY = top + 72
-        const bottomY = Math.max(minY, top + height - panelHeight - 88)
-        let y = bottomY
-        if (rect && rect.bottom > bottomY - 12 && rect.top < bottomY + panelHeight + 12) {
-          const above = rect.top - panelHeight - 16
-          const below = rect.bottom + 16
-          if (above >= minY) y = Math.min(bottomY, above)
-          else if (below <= bottomY) y = Math.max(minY, below)
-          else y = minY
-        }
+        const point = fallbackTourPosition(safe, floating.getBoundingClientRect(), rect)
         Object.assign(floating.style, {
-          left: `${left}px`,
-          top: `${y}px`,
+          left: `${point.x}px`,
+          top: `${point.y}px`,
           visibility: 'visible',
         })
         return
+      }
+      const padding = {
+        left: safe.left - left + 16,
+        top: safe.top - top + 16,
+        right: left + width - safe.right + 16,
+        bottom: top + height - safe.bottom + 16,
       }
       void computePosition(target, floating, {
         strategy: 'fixed',
         placement: 'left-start',
         middleware: [
           offset(18),
-          flip({ fallbackPlacements: ['right-start', 'bottom-start', 'top-start'] }),
+          flip({ fallbackPlacements: ['right-start', 'bottom-start', 'top-start'], padding }),
           // A step can point below the fold. Keep its navigation reachable so the reader
           // can ask the demonstration to bring that target into view.
-          shift({ padding: 16, crossAxis: true }),
+          shift({ padding, crossAxis: true }),
         ],
       }).then(({ x, y }) => {
-        if (!disposed)
-          Object.assign(floating.style, { left: `${x}px`, top: `${y}px`, visibility: 'visible' })
+        if (!disposed && revision === placementRevision) {
+          const point = constrainTourPosition({ x, y }, safe, floating.getBoundingClientRect())
+          Object.assign(floating.style, {
+            left: `${point.x}px`,
+            top: `${point.y}px`,
+            visibility: 'visible',
+          })
+        }
       })
     }
     update()
@@ -379,7 +439,7 @@ export function BookTour() {
       window.visualViewport?.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
     }
-  }, [target, running, state.status, blockedByModal, inlineOutlet])
+  }, [target, running, state.status, blockedByModal, inlineOutlet, touch])
 
   useEffect(
     () => () => {
@@ -508,6 +568,7 @@ export function BookTour() {
         className="book-tour-panel"
         aria-label="Live walkthrough"
         data-book-tour-panel
+        data-reading-mode={mode}
         data-inline={!!inlineOutlet}
       >
         <div className="book-tour-heading">
@@ -583,82 +644,88 @@ export function BookTour() {
               Show me this step
             </Button>
           )}
-          {active && state.journey === 'planner' && (
-            <>
-              {state.plannerEditorId && state.step !== 'plan-saved' && (
+          {active && (mode !== 'bearded' || hasOptionalSteps) && (
+            <WalkthroughOptions key={state.step}>
+              {active && state.journey === 'planner' && (
                 <>
-                  {state.step === 'plan-timing' && (
-                    <Button variant="secondary" onClick={() => advancePlanner('plan-note')}>
-                      Next: a note
-                    </Button>
+                  {state.plannerEditorId && state.step !== 'plan-saved' && (
+                    <>
+                      {state.step === 'plan-timing' && (
+                        <Button variant="secondary" onClick={() => advancePlanner('plan-note')}>
+                          Next: a note
+                        </Button>
+                      )}
+                      {state.step !== 'plan-save' && (
+                        <Button variant="ghost" onClick={() => advancePlanner('plan-save')}>
+                          Go to saving
+                        </Button>
+                      )}
+                      {state.step !== 'plan-timing' && (
+                        <Button variant="ghost" onClick={() => advancePlanner('plan-timing')}>
+                          Back to timing
+                        </Button>
+                      )}
+                    </>
                   )}
-                  {state.step !== 'plan-save' && (
-                    <Button variant="ghost" onClick={() => advancePlanner('plan-save')}>
-                      Go to saving
-                    </Button>
-                  )}
-                  {state.step !== 'plan-timing' && (
-                    <Button variant="ghost" onClick={() => advancePlanner('plan-timing')}>
-                      Back to timing
+                  {['plan-saved', 'plan-calendar', 'plan-releases'].includes(state.step) && (
+                    <Button variant="secondary" onClick={finish}>
+                      Keep exploring
                     </Button>
                   )}
                 </>
               )}
-              {['plan-saved', 'plan-calendar', 'plan-releases'].includes(state.step) && (
-                <Button variant="secondary" onClick={finish}>
-                  Keep exploring
+              {active && state.journey === 'next-read' && (
+                <>
+                  {state.step === 'next-scope' && (
+                    <Button variant="secondary" onClick={() => advanceNextRead('mood')}>
+                      Next: a mood
+                    </Button>
+                  )}
+                  {['next-scope', 'next-mood'].includes(state.step) && (
+                    <Button variant="ghost" onClick={() => advanceNextRead('picks')}>
+                      Go to my picks
+                    </Button>
+                  )}
+                  {state.step === 'next-picks' && (
+                    <Button variant="ghost" onClick={() => advanceNextRead('scope')}>
+                      Change the selection
+                    </Button>
+                  )}
+                  {state.step === 'next-saved' && (
+                    <Button variant="secondary" onClick={finish}>
+                      Keep browsing
+                    </Button>
+                  )}
+                </>
+              )}
+              {active &&
+                ['read-saved', 'read-finished', 'read-finish', 'read-finish-editor'].includes(
+                  state.step,
+                ) && (
+                  <Button variant="secondary" onClick={finish}>
+                    Continue reading
+                  </Button>
+                )}
+              {active && ['read-progress', 'read-saved'].includes(state.step) && state.bookId && (
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    send({
+                      type: 'reading',
+                      run: state.run,
+                      action: 'offer-finish',
+                      bookId: state.bookId!,
+                    })
+                  }
+                >
+                  When I finish
                 </Button>
               )}
-            </>
+              {active && state.step === 'read-choose' && (
+                <StartBookTour label="Start with a book" />
+              )}
+            </WalkthroughOptions>
           )}
-          {active && state.journey === 'next-read' && (
-            <>
-              {state.step === 'next-scope' && (
-                <Button variant="secondary" onClick={() => advanceNextRead('mood')}>
-                  Next: a mood
-                </Button>
-              )}
-              {['next-scope', 'next-mood'].includes(state.step) && (
-                <Button variant="ghost" onClick={() => advanceNextRead('picks')}>
-                  Go to my picks
-                </Button>
-              )}
-              {state.step === 'next-picks' && (
-                <Button variant="ghost" onClick={() => advanceNextRead('scope')}>
-                  Change the selection
-                </Button>
-              )}
-              {state.step === 'next-saved' && (
-                <Button variant="secondary" onClick={finish}>
-                  Keep browsing
-                </Button>
-              )}
-            </>
-          )}
-          {active &&
-            ['read-saved', 'read-finished', 'read-finish', 'read-finish-editor'].includes(
-              state.step,
-            ) && (
-              <Button variant="secondary" onClick={finish}>
-                Continue reading
-              </Button>
-            )}
-          {active && ['read-progress', 'read-saved'].includes(state.step) && state.bookId && (
-            <Button
-              variant="ghost"
-              onClick={() =>
-                send({
-                  type: 'reading',
-                  run: state.run,
-                  action: 'offer-finish',
-                  bookId: state.bookId!,
-                })
-              }
-            >
-              When I finish
-            </Button>
-          )}
-          {active && state.step === 'read-choose' && <StartBookTour label="Start with a book" />}
           {active && state.step !== 'opened' && (
             <Button
               variant="ghost"
