@@ -468,7 +468,10 @@ function probeSource() {
     const screenReaderOnly = el.closest('.sr-only')
     // Hidden labels are deliberately clipped. A focused skip link removes its clip and is
     // measured normally; the class alone must not exempt a revealed, actionable control.
-    if (screenReaderOnly && getComputedStyle(screenReaderOnly).clip !== 'auto') continue
+    if (screenReaderOnly) {
+      const hiddenStyle = getComputedStyle(screenReaderOnly)
+      if (hiddenStyle.clip !== 'auto' || hiddenStyle.clipPath === 'inset(50%)') continue
+    }
     // Inline boxes report client/scrollWidth of 0 — they have no content box to measure. Skipping
     // them is not a coverage loss: their text overflows through the BLOCK that contains them, which
     // is measured.
