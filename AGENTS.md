@@ -225,6 +225,12 @@ myProgress`). Move them into `packages/core` with tests.
   Backup v10 validates and restores inventory after historical annotations, never before household
   consent protections. Duplicate merging refuses configured inventories before destructive work.
   See `docs/tasks/library-editions-copies.md`.
+- **Backup extensions bind to the exact archive.** Registered providers validate opaque payloads
+  before restore writes; unknown providers block preview and restore. Copy-dependent extensions opt
+  into `after-copies`, after inventories and historical annotations, and use the regenerated book ID
+  map with book-scoped edition/copy IDs. Null legacy inventory remains distinct from configured
+  empty inventory. Never restore workspace authority or silently drop orphaned evidence. See the
+  account backup extension contract in `docs/reference/DATA_MODEL.md`.
 - **Possession is five independent flags, and every shelf is a derived view.** `ownership` is
   `'owned' | 'unowned'` (default `unowned`) and answers only _do you own a copy_. `borrowed`
   and `wishlist` are **flags beside it, not values inside it** — all combinations are legal

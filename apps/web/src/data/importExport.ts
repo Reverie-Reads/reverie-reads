@@ -41,6 +41,55 @@ function portableProfile(row: Record<string, unknown>): Record<string, unknown> 
   return Object.fromEntries(PROFILE_BACKUP_FIELDS.filter(key => key in row).map(key => [key, row[key]]))
 }
 
+/** A private build may append portable account data without teaching the public host its shape.
+ * Providers are registered during app bootstrap, and their preflight runs before restore writes. */
+export interface BackupExtensionReferenceSet {
+  /** IDs in the exact backup, not current account rows. Copies remain scoped to their book. */
+  bookIds: ReadonlySet<string>
+  editionIdsByBook: ReadonlyMap<string, ReadonlySet<string>>
+  copyEditionIdsByBook: ReadonlyMap<string, ReadonlyMap<string, string>>
+  seriesIds: ReadonlySet<string>
+  seriesEntryIds: ReadonlySet<string>
+  seriesEntrySeriesIds: ReadonlyMap<string, string>
+}
+
+export interface BackupExtensionRestoreContext {
+  ownerId: string
+  /** Book IDs are regenerated on restore; edition/copy IDs within each book are preserved. */
+  bookIdMap: ReadonlyMap<string, string>
+  seriesIdMap: ReadonlyMap<string, string>
+  seriesEntryIdMap: ReadonlyMap<string, string>
+}
+
+export interface BackupExtensionProvider {
+  id: string
+  /** Existing providers run after series. Copy-dependent providers opt in to the later stage. */
+  restorePhase?: 'after-series' | 'after-copies'
+  build(ownerId: string, references: BackupExtensionReferenceSet): Promise<unknown>
+  /** Local-only identity checks, used for export, preview and restore before any account request. */
+  validateReferences?(payload: unknown, references: BackupExtensionReferenceSet): void
+  counts(payload: unknown): BackupCounts
+  preflightRestore(payload: unknown, references: BackupExtensionReferenceSet): Promise<void>
+  restore(
+    payload: unknown,
+    context: BackupExtensionRestoreContext,
+  ): Promise<Record<string, number>>
+}
+
+const backupExtensionProviders = new Map<string, BackupExtensionProvider>()
+
+export function registerBackupExtensionProvider(provider: BackupExtensionProvider): () => void {
+  if (!provider.id.trim()) throw new Error('A backup extension needs an id')
+  if (provider.restorePhase !== undefined &&
+      provider.restorePhase !== 'after-series' && provider.restorePhase !== 'after-copies')
+    throw new Error('Unknown backup extension restore phase')
+  backupExtensionProviders.set(provider.id, provider)
+  return () => {
+    if (backupExtensionProviders.get(provider.id) === provider)
+      backupExtensionProviders.delete(provider.id)
+  }
+}
+
 async function currentUserId(): Promise<string> {
   const { data } = await supabase.auth.getUser()
   const id = data.user?.id
@@ -509,6 +558,36 @@ export interface BackupCounts {
   [section: string]: number
 }
 
+function backupExtensionCounts(payloads: Record<string, unknown>): BackupCounts {
+  const counts: BackupCounts = Object.create(null)
+  const reserved = new Set<string>([...arraySections, ...nestedSections, 'editions', 'copies'])
+  for (const [provider, payload] of backupExtensionEntries({ books: [], extensions: payloads })) {
+    for (const [section, count] of Object.entries(provider.counts(payload))) {
+      if (reserved.has(section) || section in counts)
+        throw new Error(`Backup extensions declared the same count section: ${section}`)
+      if (!Number.isSafeInteger(count) || count < 0)
+        throw new Error(`Backup extension ${provider.id} returned an invalid ${section} count`)
+      counts[section] = count
+    }
+  }
+  return counts
+}
+
+async function buildBackupExtensions(
+  ownerId: string,
+  references: BackupExtensionReferenceSet,
+): Promise<{ payloads: Record<string, unknown>; counts: BackupCounts }> {
+  const payloads: Record<string, unknown> = Object.create(null)
+  for (const provider of [...backupExtensionProviders.values()].sort((a, b) =>
+    a.id.localeCompare(b.id),
+  )) {
+    const payload = await provider.build(ownerId, references)
+    provider.validateReferences?.(payload, references)
+    payloads[provider.id] = payload
+  }
+  return { payloads, counts: backupExtensionCounts(payloads) }
+}
+
 export interface BackupPreview {
   version: number | null
   isNewerVersion: boolean
@@ -693,6 +772,7 @@ export async function buildBackup(): Promise<string> {
   const moods = moodsByBook(bookMoods)
   const series_tombstones = seriesTombstones(tombstones)
   const trope_dismissals = dismissalsByBook(dismissals)
+  const extensions = await buildBackupExtensions(ownerId, backupReferences({ books, series: seriesRows, series_entries: seriesEntries }))
 
   return JSON.stringify({
     v: CURRENT_BACKUP_VERSION,
@@ -720,6 +800,7 @@ export async function buildBackup(): Promise<string> {
       series_entries: seriesEntries.length,
       series_tombstones: series_tombstones.length,
       trope_dismissals: nested(trope_dismissals),
+      ...extensions.counts,
     } satisfies BackupCounts,
     discovery_sessions: discoveries.map(({ id, document }) => ({ id, document })),
     books,
@@ -737,6 +818,7 @@ export async function buildBackup(): Promise<string> {
     series_entries: seriesEntries,
     series_tombstones,
     trope_dismissals,
+    ...(Object.keys(extensions.payloads).length ? { extensions: extensions.payloads } : {}),
     profile: profile.data ? portableProfile(profile.data) : null,
   })
   })
@@ -785,6 +867,7 @@ export function countMismatches(data: BackupShape): string[] {
     series_tombstones: (data.series_tombstones ?? []).length,
     trope_dismissals: nested(data.trope_dismissals ?? {}),
   }
+  Object.assign(actual, backupExtensionCounts(data.extensions ?? {}))
   const out: string[] = []
   for (const [section, declared] of Object.entries(counts)) {
     const got = actual[section]
@@ -835,6 +918,9 @@ interface BackupShape {
   /** v5+: the reader's refusals. */
   series_tombstones?: BackupTombstone[]
   trope_dismissals?: Record<string, string[]>
+  /** v8+: private overlays keyed by a stable provider id. An installed build refuses an unknown
+   * extension before writing rather than quietly restoring only the public half of an archive. */
+  extensions?: Record<string, unknown>
   profile?: Record<string, unknown> | null
 }
 
@@ -920,6 +1006,13 @@ function parseBackupFile(json: string): BackupShape {
       throw new Error('That backup contains unreadable editions or copies. Nothing was restored.')
   }
 
+  if (data.extensions !== undefined && !isRecord(data.extensions))
+    throw new Error('That backup has an unreadable extensions section. Nothing was restored.')
+  backupExtensionCounts(data.extensions ?? {})
+  const references = backupReferences(data)
+  for (const [provider, payload] of backupExtensionEntries(data))
+    provider.validateReferences?.(payload, references)
+
   const mismatches = countMismatches(data)
   if (mismatches.length)
     throw new Error(
@@ -956,6 +1049,7 @@ export function inspectBackup(json: string): BackupPreview {
     series_entries: (data.series_entries ?? []).length,
     series_tombstones: (data.series_tombstones ?? []).length,
     trope_dismissals: nested(data.trope_dismissals ?? {}),
+    ...backupExtensionCounts(data.extensions ?? {}),
   }
   const knownSections = new Set<string>([
     ...arraySections,
@@ -965,6 +1059,12 @@ export function inspectBackup(json: string): BackupPreview {
     'editions',
     'copies',
   ])
+  for (const [id, payload] of Object.entries(data.extensions ?? {})) {
+    const provider = backupExtensionProviders.get(id)
+    if (provider) {
+      for (const section of Object.keys(provider.counts(payload))) knownSections.add(section)
+    }
+  }
   const unknownSections = Object.keys(data.counts ?? {})
     .filter((section) => !knownSections.has(section))
     .sort()
@@ -1016,15 +1116,21 @@ async function restoreStructuredSeries(
   entries: readonly BackupSeriesEntryRow[],
   bookIdMap: ReadonlyMap<string, string>,
   ownerId: string,
-): Promise<{ entries: number; tombstones: number }> {
-  if (!seriesRows.length && !entries.length) return { entries: 0, tombstones: 0 }
+): Promise<{
+  entries: number
+  tombstones: number
+  seriesIdMap: Map<string, string>
+  seriesEntryIdMap: Map<string, string>
+}> {
+  const seriesIdMap = new Map<string, string>()
+  const seriesEntryIdMap = new Map<string, string>()
+  if (!seriesRows.length && !entries.length)
+    return { entries: 0, tombstones: 0, seriesIdMap, seriesEntryIdMap }
 
   const existing = await pageAll<{ id: string; name: string }>('series', (from, to) =>
     supabase.from('series').select('id, name', { count: 'exact' }).order('id').range(from, to),
   )
   const byName = new Map(existing.map((row) => [row.name, row.id]))
-  const seriesIdMap = new Map<string, string>()
-
   for (const row of seriesRows) {
     let id = byName.get(row.name)
     if (!id) {
@@ -1148,6 +1254,7 @@ async function restoreStructuredSeries(
       membership_claim: entry.membership_claim ?? { origin: 'unknown' },
       position_claim: restoredPositionClaim,
     }
+    let restoredEntryId: string
     if (existingEntryId) {
       const { owner_id: _owner, series_id: _series, ...patch } = payload
       const { error } = await supabase
@@ -1155,13 +1262,20 @@ async function restoreStructuredSeries(
         .update(patch)
         .eq('id', existingEntryId)
       if (error) throw error
+      restoredEntryId = existingEntryId
     } else {
-      const { error } = await supabase.from('series_entries').insert(payload)
+      const { data, error } = await supabase
+        .from('series_entries')
+        .insert(payload)
+        .select('id')
+        .single()
       if (error) throw error
+      restoredEntryId = (data as { id: string }).id
     }
+    seriesEntryIdMap.set(entry.id, restoredEntryId)
     const at = occupied.findIndex((slot) => slot.id === existingEntryId)
     const occupiedRow = {
-      id: existingEntryId ?? `restored-${restored}`,
+      id: restoredEntryId,
       series_id: seriesId,
       position: restoredPosition,
       title: entry.title,
@@ -1172,7 +1286,12 @@ async function restoreStructuredSeries(
     restored++
     if (entry.removed_at) restoredTombstones++
   }
-  return { entries: restored, tombstones: restoredTombstones }
+  return {
+    entries: restored,
+    tombstones: restoredTombstones,
+    seriesIdMap,
+    seriesEntryIdMap,
+  }
 }
 
 /**
@@ -1329,15 +1448,69 @@ async function restoreTaxonomy(
   return { tropes: tRows.length, moods: mRows.length, dismissals: dRows.length }
 }
 
+function backupReferences(data: Pick<BackupShape, 'books' | 'series' | 'series_entries'>): BackupExtensionReferenceSet {
+  const editionIdsByBook = new Map<string, ReadonlySet<string>>()
+  const copyEditionIdsByBook = new Map<string, ReadonlyMap<string, string>>()
+  const bookIds = new Set<string>()
+  for (const book of data.books) {
+    if (typeof book.id !== 'string' || !book.id || bookIds.has(book.id))
+      throw new Error('That backup contains missing or repeated book IDs. Nothing was restored.')
+    bookIds.add(book.id)
+    const inventory = parseCopyInventory(book.copy_inventory)
+    if (book.copy_inventory != null && !inventory)
+      throw new Error('That backup contains unreadable editions or copies. Nothing was restored.')
+    // Null legacy inventory is absent here. An explicitly configured empty inventory is present.
+    if (inventory) {
+      editionIdsByBook.set(book.id, new Set(inventory.editions.map(edition => edition.id)))
+      copyEditionIdsByBook.set(book.id, new Map(inventory.copies.map(copy => [copy.id, copy.editionId])))
+    }
+  }
+  return {
+    bookIds, editionIdsByBook, copyEditionIdsByBook,
+    seriesIds: new Set((data.series ?? []).map(row => row.id)),
+    seriesEntryIds: new Set((data.series_entries ?? []).map(row => row.id)),
+    seriesEntrySeriesIds: new Map((data.series_entries ?? []).map(row => [row.id, row.series_id])),
+  }
+}
+
+function backupExtensionEntries(data: BackupShape): [BackupExtensionProvider, unknown][] {
+  const payloads = data.extensions ?? {}
+  const unknown = Object.keys(payloads).filter((id) => !backupExtensionProviders.has(id))
+  if (unknown.length)
+    throw new Error(
+      `That backup includes ${unknown.join(', ')}, which this build cannot restore. ` +
+        `Open it in the ${APP_NAME} edition that created it — nothing was restored.`,
+    )
+  return Object.entries(payloads).map(([id, payload]) => [
+    backupExtensionProviders.get(id)!,
+    payload,
+  ])
+}
+
 /** Restore a backup as new rows owned by the current user (ids are remapped, not reused). Reads v4
  *  and v5 files; a v4 file simply carries no tropes, moods or follows to restore. */
 export async function restoreBackup(
   json: string,
-): Promise<{ books: number; lists: number; reads: number; tropes: number; moods: number; follows: number; tombstones: number; dismissals: number }> {
+): Promise<{
+  books: number
+  lists: number
+  reads: number
+  tropes: number
+  moods: number
+  follows: number
+  tombstones: number
+  dismissals: number
+  extensions: Record<string, Record<string, number>>
+}> {
   // Re-run the same local validation the preview used against the exact retained file text. This is
   // intentionally before even the auth lookup and, more critically, before the first account write.
   const data = parseBackupFile(json)
+  const extensionEntries = backupExtensionEntries(data)
   const ownerId = await currentUserId()
+
+  const references = backupReferences(data)
+  for (const [provider, payload] of extensionEntries)
+    await provider.preflightRestore(payload, references)
 
   // Validate all saved snapshots before any restore write. Never copy a source owner id.
   const discoveries = (data.discovery_sessions ?? []).map((row) => {
@@ -1448,6 +1621,16 @@ export async function restoreBackup(
     bookIdMap,
     ownerId,
   )
+  const extensionResults: Record<string, Record<string, number>> = {}
+  const extensionContext: BackupExtensionRestoreContext = {
+    ownerId, bookIdMap,
+    seriesIdMap: structuredSeries.seriesIdMap,
+    seriesEntryIdMap: structuredSeries.seriesEntryIdMap,
+  }
+  for (const [provider, payload] of extensionEntries) {
+    if (provider.restorePhase === 'after-copies') continue
+    extensionResults[provider.id] = await provider.restore(payload, extensionContext)
+  }
 
   // Reads + memberships, remapped onto the new ids.
   const reads = (data.reads ?? [])
@@ -1547,6 +1730,13 @@ export async function restoreBackup(
     if (error) throw error
   }
 
+  // Only after every inventory and historical annotation succeeded may copy-dependent extensions
+  // attach evidence to the regenerated book IDs. A failed inventory write never reaches this phase.
+  for (const [provider, payload] of extensionEntries) {
+    if (provider.restorePhase !== 'after-copies') continue
+    extensionResults[provider.id] = await provider.restore(payload, extensionContext)
+  }
+
   // Followed/muted authors (v5) — keyed by display name, so nothing to remap.
   const follows = followRows(data.author_follows ?? [], ownerId)
   if (follows.length) {
@@ -1586,6 +1776,7 @@ export async function restoreBackup(
     follows: follows.length,
     tombstones: tombstoneCount,
     dismissals: taxonomy.dismissals,
+    extensions: extensionResults,
   }
 }
 
