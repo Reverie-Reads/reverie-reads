@@ -1,6 +1,6 @@
 # End-user workflow and visual audit — October 2026
 
-Audit date: October 2, 2026. Public baseline: `9e37809` (#615). Working branch:
+Audit date: October 2, 2026. Public starting baseline: `9e37809` (#615); integrated main `2d6b8d1` (#616). Working branch:
 `codex/end-user-workflow-audit`. **Validation is in progress; this is not release approval.**
 
 This audit combines workflow/source review, disposable local accounts, browser interaction,
@@ -111,12 +111,17 @@ in source is not a pass. Final run counts and exceptions are recorded in the val
 | Administration                | Unauthorized entry, bounded catalog review, cover/edition evidence, explicit acceptance/dismissal, failed writes                                            | `catalog-cover-review`, `catalog-metadata-review`, catalog/database tests; no real catalog writes        |
 | Appearance/accessibility      | Nine rooms × two modes, real fonts, reduced motion, keyboard/dialog focus, title lengths/scripts, phone/tablet/desktop                                      | Registry-keyed contrast tests, `a11y`, `fonts`, `reader-flow`, visual audit and focused geometry         |
 
-All 35 registered public routes are inventoried, including `/start`, `/settings/guidance`, shared
-series and the three design labs. Parameterized routes use actual fixture records. An authenticated
+All 36 registered public routes are inventoried, including `/start`, `/settings/guidance`, shared
+series and the four design labs. Parameterized routes use actual fixture records. An authenticated
 visit to `/auth` is a redirect, not sign-in-screen coverage. Public account screens and guest states
 are exercised separately. A route visit does not stand in for its dialogs or save workflow.
 
 ## Validation record
+
+- Conflict resolution: main’s merged Bearded Mode/iOS work (#616) is combined in `c678617`. The
+  account-keyed reading-mode and Add-return providers are both retained. Automatically merged
+  authentication, book sections and modal safe areas were reviewed. Combined source/browser gates
+  are pending; a real Bearded Mode Add/Edit case joins the full-interface phone/desktop cases.
 
 - Local audit accounts: new reader, returning owner, and household member. Synthetic books include
   short, long multiword, very long unbroken, CJK, Arabic, and diacritic-bearing titles; long authors

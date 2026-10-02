@@ -202,20 +202,28 @@ for (const width of [320, 390, 1440]) {
   })
 }
 
-for (const width of [390, 1440]) {
-  test(`Add returns to its entry and Edit keeps its draft through cover selection at ${width}px`, async ({
+for (const { width, bearded } of [
+  { width: 390, bearded: false },
+  { width: 1440, bearded: false },
+  { width: 390, bearded: true },
+]) {
+  test(`Add returns to its entry and Edit keeps its draft through cover selection at ${width}px (${bearded ? 'Bearded Mode' : 'full interface'})`, async ({
     page,
   }) => {
     test.setTimeout(120_000)
     await page.setViewportSize({ width, height: 900 })
     await signIn(page)
+    if (bearded) {
+      await page.goto('/settings')
+      await page.getByRole('radio', { name: /^Bearded Mode/ }).check()
+    }
     await page.goto('/shelves')
     const add = page.getByTestId('persistent-add').filter({ visible: true })
     await add.click()
     await expect(page.getByRole('button', { name: 'Back to Shelves', exact: true })).toBeVisible()
     await page.getByRole('radio', { name: /My library only/ }).check()
     await page.getByRole('button', { name: 'Add manually', exact: true }).click()
-    const title = `A new book from my shelves ${width}`
+    const title = `A new book from my shelves ${width} ${bearded ? 'bearded' : 'full'}`
     await page.getByPlaceholder('Title', { exact: true }).fill(title)
     await page.getByRole('button', { name: 'Back to Shelves', exact: true }).click()
     await page.getByRole('button', { name: 'Keep editing', exact: true }).click()
@@ -232,6 +240,11 @@ for (const width of [390, 1440]) {
 
     // A small correction must not force unrelated metadata choices on a newly added book.
     await page.goto(`/book/${saved[0].id}`)
+    if (bearded)
+      await page
+        .locator('summary')
+        .filter({ hasText: /^More about this book$/ })
+        .click()
     await page.getByRole('button', { name: 'Edit details', exact: true }).click()
     const correction = page.getByRole('dialog', { name: 'Edit details', exact: true })
     await correction
@@ -257,6 +270,11 @@ for (const width of [390, 1440]) {
     })
 
     await page.goto(`/book/${books[0].id}`)
+    if (bearded)
+      await page
+        .locator('summary')
+        .filter({ hasText: /^More about this book$/ })
+        .click()
     await page.getByRole('button', { name: 'Edit details', exact: true }).click()
     const edit = page.getByRole('dialog', { name: 'Edit details', exact: true })
     await edit
