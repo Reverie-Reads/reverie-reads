@@ -36,7 +36,7 @@ it('preserves a background series reconciliation when only the title draft chang
   const book = makeBook({ id: 'book', title: 'An unclassified title', genre: '', subgenre: '' })
   const close = vi.fn()
   const view = render(<EditDetails book={book} onClose={close} />)
-  fireEvent.change(screen.getByRole('textbox', { name: 'Title', exact: true }), {
+  fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), {
     target: { value: 'A corrected title' },
   })
   view.rerender(
@@ -45,7 +45,7 @@ it('preserves a background series reconciliation when only the title draft chang
       onClose={close}
     />,
   )
-  fireEvent.click(screen.getByRole('button', { name: 'Save details', exact: true }))
+  fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
   await waitFor(() => expect(close).toHaveBeenCalledOnce())
   expect(state.update).toHaveBeenCalledWith({
     id: book.id,
