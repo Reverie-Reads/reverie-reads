@@ -202,10 +202,10 @@ for (const width of [320, 390, 1440]) {
   })
 }
 
-for (const { width, bearded } of [
-  { width: 390, bearded: false },
-  { width: 1440, bearded: false },
-  { width: 390, bearded: true },
+for (const { width, bearded, title } of [
+  { width: 390, bearded: false, title: 'A Clockmaker’s Quiet Morning' },
+  { width: 1440, bearded: false, title: 'Atlas of Distant Tidal Islands' },
+  { width: 390, bearded: true, title: 'Fireflies Over the Mountain Orchard' },
 ]) {
   test(`Add returns to its entry and Edit keeps its draft through cover selection at ${width}px (${bearded ? 'Bearded Mode' : 'full interface'})`, async ({
     page,
@@ -225,7 +225,6 @@ for (const { width, bearded } of [
     const personalDestination = page.getByRole('radio', { name: /My library only/ })
     await personalDestination.click()
     await page.getByRole('button', { name: 'Add manually', exact: true }).click()
-    const title = `A new book from my shelves ${width} ${bearded ? 'bearded' : 'full'}`
     await page.getByPlaceholder('Title', { exact: true }).fill(title)
     await page.getByRole('button', { name: 'Back to Shelves', exact: true }).click()
     await page.getByRole('button', { name: 'Keep editing', exact: true }).click()
