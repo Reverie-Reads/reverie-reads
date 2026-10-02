@@ -126,7 +126,7 @@ const ownerLabel = (owner: HouseholdBookOwner, currentReaderId: string): string 
 const ownerSummary = (book: HouseholdBook, currentReaderId: string): string =>
   book.owners.length
     ? book.owners.map((owner) => ownerLabel(owner, currentReaderId)).join(', ')
-    : 'Household copy'
+    : 'Household entry'
 
 export function HouseholdBookCard({
   book,

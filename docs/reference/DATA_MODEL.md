@@ -181,18 +181,12 @@ anywhere in the schema, by design.
 { id, name, priority?: bool, ids: [ bookId, … ] }
 ```
 
-### Shared documents (capability-keyed; stored remotely under a share code)
+### Shared lists (looked up by a share code)
 
 ```jsonc
 // shared list / book-club TBR
 { type:"list", kind:"list"|"clubtbr", name, items:[{id,title,author,cover,by}], updatedAt }
 
-// read-along
-{ type:"club", title, author, cover,
-  unit:{ type:"chapter"|"page"|"percent", count, label },
-  members:[ {id,name,progress} ],
-  comments:[ {id,by,byName,unit,text,ts} ],   // visible only if unit <= my progress
-  updatedAt }
 ```
 
 ---
@@ -454,8 +448,8 @@ club_members        (club_id fk, user_id fk, display_name, progress int, joined_
                      primary key (club_id, user_id))
 club_comments       (id pk, club_id fk, user_id fk, unit int, body, created_at)
 
-shared_docs         (key text pk, value jsonb, updated_at)   -- the shared doc itself; the
-                     -- share CODE is the key, and knowing it is the capability (RLS is open)
+shared_docs         (key text pk, value jsonb, updated_at)   -- legacy shared document;
+                     -- access contract and revision limitations: see SHARING.md
 shared_refs         (owner_id fk, code, kind 'list'|'clubtbr', name, created_at,
                      primary key (owner_id, code))           -- a reader's joined codes
 ```
@@ -703,8 +697,9 @@ invalidates the snapshot while a later insert waits until the reviewed transacti
 - Genres/tags stayed `text[]` with GIN indexes (the "simpler" option). **Tropes and moods did
   not** — they became join tables when they gained structure (emphasis, facets, canonical vs.
   personal entries).
-- `club_comments` spoiler gating is still honor-based (client-side, `spoiler.ts`). Server
-  enforcement via RLS is a later upgrade (`AGENTS.md`, open decision 3).
+- `club_comments` spoiler gating is enforced by RLS: members see their own comments, or
+  non-hidden comments at or before their own progress. The client also applies presentation
+  gates; it is not the sole authorization boundary. See [Sharing](SHARING.md).
 
 ### Logic ported from the prototype
 

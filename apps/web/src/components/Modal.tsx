@@ -81,7 +81,7 @@ export function Modal({
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <h2
-              className="text-[22px] italic leading-tight text-ink"
+              className="min-w-0 text-[22px] italic leading-tight text-ink [overflow-wrap:anywhere]"
               style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
             >
               {title}

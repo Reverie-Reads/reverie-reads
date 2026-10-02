@@ -271,7 +271,7 @@ export function Nameplate({
           </div>
         )}
         <h2
-          className="text-balance text-[22px] leading-tight text-ink"
+          className="max-w-full text-balance text-[22px] leading-tight text-ink [overflow-wrap:anywhere]"
           style={{
             fontFamily: 'var(--font-display)',
             fontWeight: 600,
@@ -281,7 +281,10 @@ export function Nameplate({
           {title}
         </h2>
         {subtitle && (
-          <p className="text-[13px] text-muted" style={plate?.subtitleStyle}>
+          <p
+            className="max-w-full text-[13px] text-muted [overflow-wrap:anywhere]"
+            style={plate?.subtitleStyle}
+          >
             {subtitle}
           </p>
         )}

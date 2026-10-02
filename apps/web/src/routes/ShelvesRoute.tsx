@@ -572,10 +572,10 @@ function ShelvesScreen() {
                       onClick={() =>
                         void navigate({ to: '/shelf/$listId', params: { listId: l.id } })
                       }
-                      className="block text-left"
+                      className="block max-w-full text-left"
                     >
                       <h2
-                        className="text-[18px] italic text-ink underline-offset-4 hover:underline"
+                        className="text-[18px] italic text-ink underline-offset-4 [overflow-wrap:anywhere] hover:underline"
                         style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
                       >
                         {l.priority && (

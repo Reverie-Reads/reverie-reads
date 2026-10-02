@@ -190,6 +190,12 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Goodreads/StoryGraph CSV importer, and the spoiler-gating rule (`comment.unit <=
 myProgress`). Move them into `packages/core` with tests.
 - Copy stays sentence case, plain verbs, no filler; empty states invite action.
+- **Long reader-authored text must leave actions reachable.** Book titles, contributors and shelf
+  names wrap inside their panels, including unbroken words at 320 px; a visible Close or favorite
+  control must also fit and be operable. Household load recovery revalidates membership before
+  retrying its books, including a fast response with unchanged membership. Explain household tag
+  propagation at the tag picker and keep automatic series defaults distinct from deliberate
+  adoption of shared genre, cover and publication details.
 - **Release handoffs select an edition, not a work-search ISBN.** Discover's bounded release draft
   must agree with the complete outer identity, ISBN and date. Keep the ordinary Hardcover work-search
   guard. Unknown formats remain unknown; changing identity or a known format detaches inherited

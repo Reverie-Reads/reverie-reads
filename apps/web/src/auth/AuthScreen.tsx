@@ -2,6 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { SKINS } from '@reverie/core'
 import { useAuth, type OAuthProvider } from './AuthProvider'
+import { readableAuthError } from './errors'
 import { supabase } from '../lib/supabase'
 import { Wordmark } from './Wordmark'
 import { Surface } from '../components/Surface'
@@ -84,7 +85,7 @@ export function AuthScreen() {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${window.location.origin}/welcome`,
       })
-      if (error) setError(error.message)
+      if (error) setError(readableAuthError(error))
       else setNotice('reset-sent')
     }
     setBusy(false)
