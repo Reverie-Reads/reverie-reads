@@ -22,7 +22,7 @@ export function WriteErrorToast() {
       role="alert"
       aria-live="assertive"
       className="pointer-events-none fixed inset-x-0 z-[60] flex flex-col items-center gap-2 px-4"
-      style={{ top: 'calc(12px + env(safe-area-inset-top))' }}
+      style={{ top: 'calc(12px + var(--safe-top))' }}
     >
       {errors.map((e) => (
         <div

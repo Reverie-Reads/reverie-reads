@@ -373,7 +373,7 @@ const displayFont = { fontFamily: 'var(--font-display)', fontWeight: 600 } as co
  *  door reversible. */
 function Shell({ children }: { children: ReactNode }) {
   return (
-    <main className="relative z-[1] mx-auto flex min-h-dvh w-full max-w-[1000px] items-center px-6">
+    <main className="auth-stage relative z-[1] mx-auto flex min-h-dvh w-full max-w-[1000px] items-center px-6">
       <div className="grid w-full items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <aside className="hidden md:block">
           <Link to="/" className="inline-block">

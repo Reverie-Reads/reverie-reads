@@ -16,6 +16,23 @@
   --chip-border: color-mix(in srgb, var(--ink) 14%, transparent);
   --hair: color-mix(in srgb, var(--gold) 55%, transparent);
 
+  /* Beard portraits: isolated personal accents, never replacements for room or UI text tokens. */
+  --beard-paper: #f1eadc;
+  --beard-charcoal: #241d20;
+  --beard-espresso: #34211c;
+  --beard-chestnut: #704333;
+  --beard-copper: #a74f27;
+  --beard-golden: #c59b52;
+  --beard-silver: #969a9c;
+  --beard-snow: #e9e4dc;
+  --beard-plum: #70416b;
+  --beard-rainbow-red: #e0676a;
+  --beard-rainbow-orange: #e79846;
+  --beard-rainbow-yellow: #e6c962;
+  --beard-rainbow-green: #6bb68a;
+  --beard-rainbow-blue: #77a5df;
+  --beard-rainbow-violet: #b28bdb;
+
   /* demo-contract aliases (read-only) */
   --bg: var(--bg0);
   --bg2: var(--bg1);

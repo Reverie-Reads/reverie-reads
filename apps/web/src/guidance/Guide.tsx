@@ -9,6 +9,7 @@ import { GUIDE_CHAPTERS, chapterAvailable, type GuidanceMode, type GuideId } fro
 import { getGuideChapterDetails } from './chapterDetailsSlot'
 import { StartBookTour, StartReadingTour, StartNextReadTour, StartPlannerTour } from './BookTour'
 import { useBookTour } from './BookTourContext'
+import { useReadingMode } from '../design/useReadingMode'
 
 const linkClass =
   'skin-control skin-btn-secondary inline-flex min-h-11 items-center justify-center px-4 py-2 text-[14px] leading-relaxed'
@@ -20,6 +21,40 @@ export function GuidanceChoice({
   onChoose: (mode: GuidanceMode, tour: boolean) => void
   pending?: boolean
 }) {
+  const { mode } = useReadingMode()
+  if (mode === 'bearded')
+    return (
+      <Surface tone="card-solid" radius="panel" pad={5}>
+        <h2 className="text-[22px] font-semibold leading-snug text-ink">Would you like a hand?</h2>
+        <p className="mt-2 text-[16px] leading-relaxed text-muted">
+          Follow one step at a time in your library. You choose the book and make every change.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button disabled={pending} onClick={() => onChoose('full', true)}>
+            Show me how to add a book
+          </Button>
+          <Button variant="ghost" disabled={pending} onClick={() => onChoose('full', false)}>
+            Explore on my own
+          </Button>
+        </div>
+        <details className="mt-4 border-t border-line pt-2">
+          <summary className="min-h-12 cursor-pointer py-3 text-[15px] text-ink">
+            Another pace
+          </summary>
+          <p className="text-[14px] leading-relaxed text-muted">
+            Meet more tools gradually as you use the library. Your simple interface stays the same.
+          </p>
+          <Button
+            variant="secondary"
+            className="mt-3"
+            disabled={pending}
+            onClick={() => onChoose('gentle', true)}
+          >
+            Start gently
+          </Button>
+        </details>
+      </Surface>
+    )
   return (
     <div className="space-y-3">
       <Surface tone="card-solid" radius="panel" pad={5}>

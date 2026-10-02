@@ -31,6 +31,8 @@ async function firstReader(page: Page) {
     `/#access_token=${access_token}&refresh_token=${refresh_token}&expires_in=3600&token_type=bearer&type=magiclink`,
   )
   await page.getByRole('button', { name: /enter your library/i }).click({ timeout: 20_000 })
+  await expect(page.getByRole('heading', { name: 'Make this your library.' })).toBeVisible()
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
   await page.getByRole('button', { name: 'Show me around', exact: true }).click()
   await expect(page).toHaveURL(/\/add$/)
   await expect(

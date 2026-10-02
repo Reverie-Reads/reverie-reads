@@ -2,7 +2,8 @@
   position: fixed;
   z-index: 80;
   visibility: hidden;
-  width: min(320px, calc(100vw - 24px));
+  width: min(320px, calc(100vw - var(--safe-left, 0px) - var(--safe-right, 0px) - 24px));
+  overflow-y: auto;
   box-sizing: border-box;
   padding: 16px;
   border: 1px solid var(--line);
@@ -117,7 +118,7 @@
 }
 @media (max-width: 699px) {
   .book-tour-panel {
-    width: calc(100vw - 24px);
+    width: calc(100vw - var(--safe-left, 0px) - var(--safe-right, 0px) - 24px);
     padding: 12px 14px;
   }
   .book-tour-title {
@@ -146,6 +147,7 @@
   position: relative;
   visibility: visible;
   width: 100%;
+  overflow: visible;
   margin-bottom: 20px;
   box-shadow: none;
   background: var(--card-solid);

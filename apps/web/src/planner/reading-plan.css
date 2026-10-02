@@ -680,9 +680,9 @@
 .plan-undo {
   position: fixed;
   z-index: 80;
-  right: 1rem;
-  bottom: calc(5.5rem + env(safe-area-inset-bottom));
-  left: 1rem;
+  right: calc(1rem + var(--safe-right));
+  bottom: calc(5.5rem + var(--safe-bottom));
+  left: calc(1rem + var(--safe-left));
   display: flex;
   max-width: 34rem;
   align-items: center;

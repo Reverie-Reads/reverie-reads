@@ -63,6 +63,7 @@ import { workKeyFor } from '../data/reviews'
 import { useProfile } from '../data/profile'
 import { BookmarkGlyph } from '../components/BookmarkGlyph'
 import { Surface } from '../components/Surface'
+import { ReadingSection } from '../components/ReadingSection'
 import { sharedCorpusDetailsDiffer } from './sharedCorpusDetails'
 import { CorpusCoverReviewToggle } from '../components/CorpusCoverReviewToggle'
 import { ReadingProgressDialog } from '../components/ReadingProgress'
@@ -638,14 +639,7 @@ export function BookDetailScreen() {
         </section>
       )}
 
-      <section aria-labelledby="your-copy" className="mt-8 border-t border-line pt-6">
-        <h2
-          id="your-copy"
-          className="mb-4 text-[20px] font-semibold text-ink"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Your editions & copies
-        </h2>
+      <ReadingSection id="your-copy" title="Your editions & copies">
         {/* your copies (per-format ownership) */}
         <div className="mt-6">
           {!book.copyInventory && (
@@ -702,7 +696,7 @@ export function BookDetailScreen() {
 
         {/* buy at an indie (discover + support — not live inventory) */}
         <BuyAtIndie book={book} />
-      </section>
+      </ReadingSection>
 
       <section aria-labelledby="your-reading" className="mt-8 border-t border-line pt-6">
         <h2
@@ -862,14 +856,7 @@ export function BookDetailScreen() {
         </div>
       </section>
 
-      <section aria-labelledby="series-and-plans" className="mt-8 border-t border-line pt-6">
-        <h2
-          id="series-and-plans"
-          className="mb-4 text-[20px] font-semibold text-ink"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          Series and plans
-        </h2>
+      <ReadingSection id="series-and-plans" title="Series and plans">
         <SeriesStrip book={book} />
         {!book.series && (
           <p className="text-[14px] text-muted">
@@ -970,16 +957,9 @@ export function BookDetailScreen() {
             )}
           </Surface>
         ) : null}
-      </section>
+      </ReadingSection>
 
-      <section aria-labelledby="more-about-book" className="mt-8 border-t border-line pt-6">
-        <h2
-          id="more-about-book"
-          className="mb-4 text-[20px] font-semibold text-ink"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          More about this book
-        </h2>
+      <ReadingSection id="more-about-book" title="More about this book">
         <button
           type="button"
           onClick={() => setDialog('edit')}
@@ -1103,7 +1083,7 @@ export function BookDetailScreen() {
             Remove from personal library
           </button>
         </div>
-      </section>
+      </ReadingSection>
 
       {dialog === 'trope' && <TropePicker book={book} onClose={() => setDialog(null)} />}
       {dialog === 'mood' && (

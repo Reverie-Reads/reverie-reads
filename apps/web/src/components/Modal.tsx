@@ -11,11 +11,13 @@ export function Modal({
   onClose,
   children,
   wide = false,
+  panelClassName = '',
 }: {
   title: string
   onClose: () => void
   children: ReactNode
   wide?: boolean
+  panelClassName?: string
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   // HTMLElement, not HTMLDivElement: the panel renders through Surface, whose `as` contract means
@@ -46,6 +48,9 @@ export function Modal({
       document.removeEventListener('keydown', onKey)
       if (dialog.open && typeof dialog.close === 'function') dialog.close()
       if (opener?.isConnected) opener.focus({ preventScroll: true })
+      // Changing the interface can remove its own menu opener. Keep keyboard focus in
+      // the stable application content rather than leaving it on the document body.
+      else document.getElementById('main')?.focus({ preventScroll: true })
     }
   }, [])
 
@@ -60,7 +65,7 @@ export function Modal({
       className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-transparent p-0 text-ink"
     >
       <div
-        className="flex h-full items-end justify-center sm:items-center sm:p-4"
+        className="rv-modal-stage flex h-full items-end justify-center sm:items-center"
         style={{ background: 'rgba(0,0,0,0.5)' }}
         onClick={(event) => {
           if (event.target === event.currentTarget) onClose()
@@ -81,7 +86,7 @@ export function Modal({
           raised
           className={`max-h-[92dvh] w-full rv-modal overflow-y-auto outline-none ${
             wide ? 'sm:max-w-2xl' : 'sm:max-w-md'
-          }`}
+          } ${panelClassName}`}
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <h2

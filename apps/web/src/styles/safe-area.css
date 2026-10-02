@@ -1,0 +1,59 @@
+/* viewport-fit=cover keeps the room edge-to-edge. Content and top-layer controls stay
+   inside the device's safe rectangle, in Safari and when launched from Home Screen.
+   Named values also let browser simulations exercise nonzero insets explicitly. */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-height: calc(100dvh - var(--safe-top) - var(--safe-bottom));
+}
+#root {
+  padding: var(--safe-top) var(--safe-right) 0 var(--safe-left);
+}
+.app-frame,
+.welcome-stage,
+.auth-stage {
+  min-height: var(--safe-height);
+}
+#root > .gold-brand {
+  padding-bottom: var(--safe-bottom);
+}
+.rv-nav-surface.rv-sidebar,
+.bearded-sidebar {
+  top: var(--safe-top);
+  height: var(--safe-height);
+}
+.rv-mobile-dock,
+.bearded-mobile-dock {
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  padding-bottom: var(--safe-bottom);
+}
+#mobile-more-sheet {
+  left: calc(12px + var(--safe-left));
+  right: calc(12px + var(--safe-right));
+  max-height: calc(var(--safe-height) - 100px);
+  overflow-y: auto;
+}
+.rv-modal-stage {
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+}
+.rv-modal-stage .rv-modal {
+  max-height: min(92dvh, var(--safe-height));
+}
+[data-drawer-dialog] > section {
+  top: var(--safe-top);
+  right: var(--safe-right);
+  height: var(--safe-height);
+  max-width: calc(100vw - var(--safe-left) - var(--safe-right));
+}
+@media (min-width: 640px) {
+  .rv-modal-stage {
+    padding: max(16px, var(--safe-top)) max(16px, var(--safe-right)) max(16px, var(--safe-bottom))
+      max(16px, var(--safe-left));
+  }
+  .rv-modal-stage .rv-modal {
+    max-height: min(92dvh, calc(var(--safe-height) - 32px));
+  }
+}

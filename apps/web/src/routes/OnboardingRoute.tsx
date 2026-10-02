@@ -33,6 +33,8 @@ import { GuidanceChoice } from '../guidance/Guide'
 import { useUpdateGuidance } from '../guidance/data'
 import { useBookTour } from '../guidance/BookTourContext'
 import { arrangementFromUnknown } from '../design/arrangements'
+import { WelcomeInterface } from '../components/WelcomeInterface'
+import { useReadingMode } from '../design/useReadingMode'
 
 // Compatibility for an older cached build only. The current app uses profiles.guidance;
 // this device-wide marker never decides whether a new account sees its welcome.
@@ -49,8 +51,12 @@ const ROOMS = SKIN_LIST.map((s) => ({ id: s.id, label: s.label, tagline: s.tagli
 
 /** The shared full-screen stage: skin Sky behind, a single centered column. */
 function Stage({ children }: { children: ReactNode }) {
+  const { mode } = useReadingMode()
   return (
-    <section className="relative z-[1] flex min-h-dvh flex-col items-center justify-center px-5 py-10">
+    <section
+      data-reading-mode={mode}
+      className="welcome-stage relative z-[1] flex min-h-dvh flex-col items-center justify-center px-5 py-10"
+    >
       <div className="w-full max-w-[520px]">{children}</div>
     </section>
   )
@@ -88,6 +94,7 @@ function OnboardingFlow() {
         : 'books',
   )
   const [picked, setPicked] = useState<SkinId | null>(null)
+  const [interfaceChosen, setInterfaceChosen] = useState(false)
   const [imp, setImp] = useState<ImportState>(null)
   const [guestImp, setGuestImp] = useState<GuestImportState>(null)
   const [guestErr, setGuestErr] = useState<string | null>(null)
@@ -219,6 +226,14 @@ function OnboardingFlow() {
         <Button variant="ghost" onClick={() => void navigate({ to: '/library' })}>
           Open my library
         </Button>
+      </Stage>
+    )
+  // Interface comes first for every new reader, including a guest-library handoff. This choice
+  // does not complete onboarding, save guidance, import books or register another product.
+  if (!profile.data.guidance && !interfaceChosen && !guestImp && !imp)
+    return (
+      <Stage>
+        <WelcomeInterface onContinue={() => setInterfaceChosen(true)} />
       </Stage>
     )
   if (!profile.data.guidance && step !== 'guest' && !guestImp && !imp)

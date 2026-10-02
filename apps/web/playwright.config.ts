@@ -175,7 +175,11 @@ export default defineConfig({
   // the place to decide to add.
   projects: [
     { name: 'a11y', testMatch: /a11y\.spec\.ts$/, use: { ...devices['Desktop Chrome'] } },
-    { name: 'rest', testIgnore: /a11y\.spec\.ts$/, use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'rest',
+      testIgnore: /(a11y|ios-layout)\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     {
       // ── An ALLOWLIST, not a blocklist — and that inversion is a decision, recorded ─────────────
       // This was `testIgnore: /a11y|series-builder|shelf-regressions/`, i.e. "run everything at
@@ -217,6 +221,18 @@ export default defineConfig({
         defaultBrowserType: 'chromium',
       },
     },
+    // Real WebKit, kept explicit because the existing apt-free CI image installs Chromium only.
+    // This checks the shared UI plus the real welcome/Add journey; it is not a physical-device
+    // or native Safari share-sheet test. See the device acceptance matrix in the layout audit.
+    ...(process.env.IOS_SIMULATIONS === '1'
+      ? [
+          {
+            name: 'ios',
+            testMatch: /(ios-layout|book-tour-safe-area|reader-guidance)\.spec\.ts$/,
+            use: { ...devices['iPhone 13'], viewport: { width: 390, height: 844 } },
+          },
+        ]
+      : []),
     // ── layout-390: the on-demand 390px LAYOUT sweep — absent unless asked for ──────────────────
     //
     // The old blocklist project (everything except a11y and the two mouse-gesture specs), kept as
@@ -241,7 +257,7 @@ export default defineConfig({
       ? [
           {
             name: 'layout-390',
-            testIgnore: /(a11y|series-builder|shelf-regressions)\.spec\.ts$/,
+            testIgnore: /(a11y|ios-layout|series-builder|shelf-regressions)\.spec\.ts$/,
             use: {
               ...devices['iPhone 13'],
               viewport: { width: 390, height: 844 },

@@ -15,6 +15,7 @@ import { PersonalLibrarySync } from '../components/PersonalLibrarySync'
 import { BookTourProvider } from '../guidance/BookTourProvider'
 import { BookTour } from '../guidance/BookTour'
 import { AddReturnProvider } from '../components/AddReturnContext'
+import { ReadingModeProvider } from '../design/ReadingMode'
 
 function RootLayout() {
   const { session, loading } = useAuth()
@@ -104,18 +105,20 @@ function RootLayout() {
       {!verified ? (
         <VerifyEmail email={session.user.email} />
       ) : (
-        <BookTourProvider key={session.user.id}>
-          <AddReturnProvider>
-            {onboarding ? (
-              <Outlet />
-            ) : (
-              <AppShell>
+        <ReadingModeProvider key={session.user.id} accountId={session.user.id}>
+          <BookTourProvider key={session.user.id}>
+            <AddReturnProvider>
+              {onboarding ? (
                 <Outlet />
-                <BookTour />
-              </AppShell>
-            )}
-          </AddReturnProvider>
-        </BookTourProvider>
+              ) : (
+                <AppShell>
+                  <Outlet />
+                  <BookTour />
+                </AppShell>
+              )}
+            </AddReturnProvider>
+          </BookTourProvider>
+        </ReadingModeProvider>
       )}
       <UpdateToast />
       <WriteErrorToast />

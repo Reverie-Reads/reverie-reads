@@ -232,11 +232,24 @@ test('Soon, intention, reorder, remove and Undo survive the real persistence bou
       .poll(async () => (await planRow(c, secondId)).plan_position, { timeout: 15_000 })
       .toBeLessThan((await planRow(c, firstId)).plan_position!)
 
+    // A landscape cutout must not cover the right-aligned recovery action.
+    await page.setViewportSize({ width: 844, height: 390 })
+    await page.addStyleTag({
+      content: ':root { --safe-left: 47px; --safe-right: 47px; --safe-bottom: 21px; }',
+    })
     await page.getByRole('button', { name: 'Remove Second Plan Book' }).click()
     await expect
       .poll(async () => (await planRow(c, secondId)).plan_position, { timeout: 15_000 })
       .toBeNull()
-    await page.getByRole('button', { name: 'Undo' }).click()
+    const undo = page.getByRole('button', { name: 'Undo', exact: true })
+    await expect(undo).toBeVisible()
+    const undoBox = await undo.boundingBox()
+    expect(undoBox).not.toBeNull()
+    expect(undoBox!.x).toBeGreaterThanOrEqual(47)
+    expect(undoBox!.x + undoBox!.width).toBeLessThanOrEqual(797)
+    expect(undoBox!.y).toBeGreaterThanOrEqual(0)
+    expect(undoBox!.y + undoBox!.height).toBeLessThanOrEqual(369)
+    await undo.click()
     await expect
       .poll(async () => await planRow(c, secondId), { timeout: 15_000 })
       .toMatchObject({ plan_y: null, plan_position: 0, plan_intention: 'For a quiet weekend.' })

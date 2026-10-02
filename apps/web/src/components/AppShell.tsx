@@ -21,6 +21,8 @@ import { GuidanceTrail } from '../guidance/Guide'
 import { guidedNavigation } from '../guidance/navigation'
 import { type Guidance } from '../guidance/model'
 import { DEFAULT_ARRANGEMENT_PRESET, type ArrangementConfig } from '../design/arrangements'
+import { useReadingMode } from '../design/useReadingMode'
+import { BeardedChrome } from './BeardedChrome'
 
 const COLLAPSE_KEY = 'reverie.sidebar.collapsed'
 
@@ -368,7 +370,7 @@ function MobileTabBar({
           pad={0}
           raised
           className="fixed inset-x-3 z-50 p-2 lg:hidden"
-          style={{ bottom: 'calc(76px + env(safe-area-inset-bottom))' }}
+          style={{ bottom: 'calc(76px + var(--safe-bottom))' }}
         >
           <nav
             className="grid grid-cols-2 gap-1 min-[480px]:grid-cols-3"
@@ -410,7 +412,7 @@ function MobileTabBar({
         aria-label="Primary"
         className="rv-mobile-dock fixed inset-x-0 bottom-0 z-40 backdrop-blur-lg lg:hidden"
         style={{
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingBottom: 'var(--safe-bottom)',
         }}
       >
         <div
@@ -461,6 +463,8 @@ function MobileTabBar({
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { mode } = useReadingMode()
+  const bearded = mode === 'bearded'
   const profile = useProfile().data
   const arrangement = profile?.arrangement ?? DEFAULT_ARRANGEMENT_PRESET.config
   const guidance = profile?.guidance
@@ -476,7 +480,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <ReadingTipsProvider show={profile?.showReadingTips !== false}>
-      <div className="relative flex min-h-dvh">
+      <div className="app-frame relative flex min-h-dvh" data-reading-mode={mode}>
         <a
           href="#main"
           className="skin-control sr-only px-4 py-2 text-[13px] font-semibold focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50"
@@ -485,11 +489,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           Skip to content
         </a>
 
-        <Sidebar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
+        {bearded ? (
+          <BeardedChrome householdAdd={householdAdd} arrangement={arrangement} />
+        ) : (
+          <Sidebar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
+        )}
         {guidance?.mode === 'gentle' && <GuidanceObserver key={profile?.id} />}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <MobileBar pathname={pathname} />
+          {bearded ? (
+            <BeardedChrome householdAdd={householdAdd} arrangement={arrangement} mobile />
+          ) : (
+            <MobileBar pathname={pathname} />
+          )}
           <div className="relative z-[1] px-4 lg:px-5">
             <SkinEvolveReveal />
           </div>
@@ -497,14 +509,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             ref={mainRef}
             id="main"
             tabIndex={-1}
-            className="relative z-[1] flex flex-1 flex-col pb-[calc(72px+env(safe-area-inset-bottom))] outline-none lg:pb-0"
+            className="relative z-[1] flex flex-1 flex-col pb-[calc(72px+var(--safe-bottom))] outline-none lg:pb-0"
           >
-            <GuidanceTrail />
+            {!bearded && <GuidanceTrail />}
             {children}
           </main>
         </div>
 
-        <MobileTabBar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
+        {!bearded && (
+          <MobileTabBar householdAdd={householdAdd} arrangement={arrangement} guidance={guidance} />
+        )}
       </div>
     </ReadingTipsProvider>
   )
