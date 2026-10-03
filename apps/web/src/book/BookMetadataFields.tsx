@@ -45,10 +45,12 @@ export const bookFieldClass = 'book-editor-field skin-field'
 export function BookField({
   label,
   error,
+  errorId,
   children,
 }: {
   label: string
   error?: string
+  errorId?: string
   children: ReactNode
 }) {
   return (
@@ -56,7 +58,7 @@ export function BookField({
       <span>{label}</span>
       {children}
       {error && (
-        <span role="alert" className="book-editor-error">
+        <span id={errorId} role="alert" className="book-editor-error">
           {error}
         </span>
       )}
@@ -212,6 +214,7 @@ export function BookMetadataFields({
   cover?: ReactNode
   editionNotice?: ReactNode
 }) {
+  const fieldPrefix = useId()
   const fields = useRef<HTMLDivElement>(null)
   const errorSignature = JSON.stringify(errors)
   const focusedAttempt = useRef(-1)
@@ -238,12 +241,14 @@ export function BookMetadataFields({
     placeholder?: string,
     numeric = false,
   ) => (
-    <BookField label={label} error={errors[field]}>
+    <BookField label={label} error={errors[field]} errorId={`${fieldPrefix}-${field}-error`}>
       <input
         value={f[field]}
         onChange={(e) => set(field, e.target.value)}
         placeholder={placeholder}
         inputMode={numeric ? (field === 'position' ? 'decimal' : 'numeric') : undefined}
+        aria-label={label}
+        aria-describedby={errors[field] ? `${fieldPrefix}-${field}-error` : undefined}
         aria-invalid={!!errors[field]}
         className={bookFieldClass}
       />

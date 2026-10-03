@@ -168,7 +168,7 @@ async function recordWrites(page: Page, action: () => Promise<void>): Promise<st
   return seen
 }
 
-test('a book-page series reassign issues one atomic RPC, and only ONE (unrelated) books PATCH', async ({
+test('a series-only edit uses one atomic RPC without replaying unchanged book metadata', async ({
   page,
 }) => {
   test.setTimeout(180_000)
@@ -193,10 +193,9 @@ test('a book-page series reassign issues one atomic RPC, and only ONE (unrelated
     })
 
     expect(writes.filter((w) => w === 'POST rpc/set_book_series_membership')).toHaveLength(1)
-    // The one PATCH books that DOES fire is updateBook's own — title/isbn/pages/etc, unrelated to
-    // series. The old two-write sequence's fingerprint was a SECOND, series-shaped write on top of
-    // this one; the authority RPC folds that transition inside itself instead of issuing it here.
-    expect(writes.filter((w) => w.startsWith('PATCH books'))).toHaveLength(1)
+    // The membership RPC owns the series transition. The shared editor now omits unchanged
+    // title/ISBN/pages fields too, so this series-only edit must issue no direct books PATCH.
+    expect(writes.filter((w) => w.startsWith('PATCH books'))).toEqual([])
     expect(writes.filter((w) => w.startsWith('PATCH series_entries'))).toEqual([])
 
     expect(await bookSeries(c, bookId)).toBe(NEW_SAGA)

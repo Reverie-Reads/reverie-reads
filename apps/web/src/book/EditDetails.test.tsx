@@ -100,6 +100,8 @@ it('focuses a failed field on Save without moving focus away while the reader co
   fireEvent.change(month, { target: { value: '99' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
   await waitFor(() => expect(pages).toHaveFocus())
+  expect(screen.getByRole('textbox', { name: 'Pages', exact: true })).toBe(pages)
+  expect(pages).toHaveAccessibleDescription('Pages must be a number.')
   fireEvent.change(pages, { target: { value: '3' } })
   expect(pages).toHaveFocus()
   expect(pages).toHaveValue('3')
