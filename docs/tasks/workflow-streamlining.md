@@ -50,10 +50,11 @@ journey, on Free and Pro. Paid capability does not include basic usability, reco
   Unchanged series fields do not become a reader-authored membership claim merely because another
   detail was corrected.
 
-These are branch changes awaiting the recorded browser gates and review. They do not establish that
-all view-local drafts or selections survive every route. Existing filters stored outside a route
-survive normal returns; route-local selection and planner/editor draft restoration need the next
-slice below. No billing, product registration, catalog authority, or production change is included.
+This first slice merged through #617 after its source, fresh-database and full browser checks
+passed; #619 records the final validation in the [workflow audit](../audits/end-user-workflows-2026-10.md).
+Existing filters stored outside a route survive normal returns; route-local selection and
+planner/editor draft restoration need the next slice below. Physical-device and live deployment
+acceptance remain separate. Billing, product registration and catalog authority are unchanged.
 
 ## Remaining workflow packets
 
