@@ -125,10 +125,13 @@ async function stub(page: Page) {
 async function clickHeaderAt(page: Page, name: RegExp): Promise<void> {
   const header = page.getByRole('button', { name }).first()
   await header.waitFor({ timeout: 20_000 })
-  // page.mouse, unlike locator.click(), never scrolls the target into view on its own — a header
-  // below the fold (Wishlist, on a page with several sections above it) would get a coordinate past
-  // the bottom of the viewport and the click would land on nothing.
-  await header.scrollIntoViewIfNeeded()
+  // A header can be inside the viewport but covered by the fixed phone dock. Center it before
+  // measuring, then wait for a stable, unobstructed hit target without dispatching a click.
+  // The actual action remains a coordinate click on the header itself.
+  await header.evaluate((element) =>
+    element.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }),
+  )
+  await header.click({ trial: true })
   const box = await header.boundingBox()
   if (!box) throw new Error(`shelf header "${name}" has no box — not on screen`)
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
