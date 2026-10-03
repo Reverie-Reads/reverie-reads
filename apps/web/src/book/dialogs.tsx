@@ -444,6 +444,7 @@ export function EditDetails({
                 other fields.
               </p>
               <BookRating
+                disabled={saving}
                 value={book.rating}
                 onChange={(rating) => updateBook.mutate({ id: book.id, patch: { rating } })}
               />

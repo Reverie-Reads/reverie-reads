@@ -974,7 +974,11 @@ function AddForm({
             }
           />
           <BookEditorSection id="reading" title="Your reading">
-            <BookRating value={rating} onChange={setRating} />
+            <BookRating
+              value={rating}
+              onChange={setRating}
+              disabled={saveState.busy || !!dup || !!saveState.recoveredBookId}
+            />
             <BookReadingStatus
               value={form.readStatus}
               onChange={(status) => set('readStatus', status)}

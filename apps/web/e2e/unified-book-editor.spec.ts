@@ -97,7 +97,24 @@ for (const width of [320, 390, 1440]) {
         true,
       )
       await page.screenshot({ path: info.outputPath(`add-genres-${width}.png`) })
-      await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
+      let releaseSave = () => {}
+      const saving = new Promise<void>((resolve) => {
+        releaseSave = resolve
+      })
+      await page.route('**/rest/v1/books?*', async (route) => {
+        if (route.request().method() === 'POST') await saving
+        return route.fallback()
+      })
+      try {
+        await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
+        await expect(page.locator('[data-book-tour="book-save"]')).toBeDisabled()
+        await expect(page.getByRole('slider', { name: 'Your rating', exact: true })).toHaveCount(0)
+        await expect(
+          page.getByRole('img', { name: 'Rated 4.5 stars of 5', exact: true }),
+        ).toBeVisible()
+      } finally {
+        releaseSave()
+      }
       await expect(
         page.getByRole('heading', { name: 'Your book was saved', exact: true }),
       ).toBeVisible()

@@ -148,14 +148,16 @@ export function BookEditor({
 export function BookRating({
   value,
   onChange,
+  disabled = false,
 }: {
   value: number
   onChange: (value: number) => void
+  disabled?: boolean
 }) {
   return (
-    <div>
+    <div aria-disabled={disabled || undefined}>
       <p className="book-editor-caption">Your rating</p>
-      <Stars value={value} step={0.5} onChange={onChange} />
+      <Stars value={value} step={0.5} onChange={disabled ? undefined : onChange} />
     </div>
   )
 }
