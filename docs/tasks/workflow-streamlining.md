@@ -78,13 +78,15 @@ slice below. No billing, product registration, catalog authority, or production 
 
 ## Delivery order and acceptance
 
-1. Verify the first Add/Edit slice with real clicks on phone and desktop, household and personal
-   routes, direct links, account replacement, pending/failed saves, duplicate/release handoff and
-   guided/scanned continuations. Run existing regression gates after the final source changes.
+1. The first Add/Edit slice passed the final public source and fresh-database browser gates at
+   `fad4c4e`; see the audit receipt. Validate its private integration separately, retaining phone,
+   desktop, household, direct-entry, duplicate/release and guided/scanned continuations.
 2. Introduce one account-bound view/draft restoration contract, starting with Library and Planner.
    Keep draft values out of URLs, analytics and shared data. Test leaving and returning after edits,
    a changed account, household revocation, and records removed while away.
-3. Reduce Add/Edit density through optional sections, then unify repeated pickers and direct actions.
+3. Make detail editing revision-aware: preserve unrelated concurrent changes, surface overlapping
+   conflicts, and keep the older draft available for review. Then reduce Add/Edit density through
+   optional sections and unify repeated pickers and direct actions.
    Determine visibility from task state, not account price or a promise to simplify Bearded Mode.
 4. Repair shared-list access, simultaneous writes and join recovery before improving its invitation
    flow; add independent read recovery for clubs. Keep this security/data change separately reviewable.
