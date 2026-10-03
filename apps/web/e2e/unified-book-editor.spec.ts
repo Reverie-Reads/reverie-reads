@@ -47,14 +47,11 @@ async function setup(page: Page) {
   }
 }
 
-test.beforeEach(({}, info) =>
-  test.skip(info.project.name !== 'rest', 'Explicit phone and desktop sizes below'),
-)
-
 for (const width of [320, 390, 1440]) {
   test(`Add and contextual Edit share metadata and retain subgenres at ${width}px`, async ({
     page,
   }, info) => {
+    test.skip(info.project.name !== 'rest', 'Explicit phone and desktop sizes below')
     test.setTimeout(120_000)
     await page.setViewportSize({ width, height: 900 })
     const account = await setup(page)
@@ -174,6 +171,7 @@ for (const width of [320, 390, 1440]) {
 test('Bearded Next read starts with one pick and retains the refinement draft across mode changes', async ({
   page,
 }, info) => {
+  test.skip(info.project.name !== 'rest', 'Explicit phone and desktop sizes below')
   test.setTimeout(120_000)
   await page.setViewportSize({ width: 390, height: 844 })
   const account = await setup(page)
