@@ -259,6 +259,8 @@ test('scope controls remain available through personal and household loading fai
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'rest', 'desktop route-state coverage')
+  // Exhausts two deliberate query-retry cycles before testing the reader's explicit recovery.
+  test.setTimeout(90_000)
 
   let releasePersonal!: () => void
   const personalGate = new Promise<void>((resolve) => {
@@ -292,7 +294,7 @@ test('scope controls remain available through personal and household loading fai
     'aria-label',
     'Add a book',
   )
-  await page.goto('/library?scope=household')
+  await page.getByRole('button', { name: 'Household library', exact: true }).click()
   await expect(page.getByText('Loading the household library…')).toBeVisible()
   await expect(page.getByRole('button', { name: 'My library', exact: true })).toBeVisible()
   await expect(page.locator('aside[aria-label="Household book details"]')).toHaveCount(0)
@@ -301,6 +303,9 @@ test('scope controls remain available through personal and household loading fai
   await expect(page.getByRole('button', { name: 'My library', exact: true })).toBeVisible()
   await expect(page.locator('aside[aria-label="Household book details"]')).toHaveCount(0)
   await page.unroute(rosterPattern)
+  await page.getByRole('button', { name: 'Try again', exact: true }).click()
+  await expect(page.getByText('No household linked')).toBeVisible()
+  await expect(page.getByText(/couldn’t load the household library/i)).toHaveCount(0)
 })
 
 test('two linked personal libraries appear together without exposing personal controls', async ({
@@ -473,6 +478,35 @@ test('two linked personal libraries appear together without exposing personal co
     await expect(page.locator('aside[aria-label="Household book details"]')).toBeVisible()
   }
   await expect(page).toHaveURL(/\/library\?scope=household$/)
+})
+
+test('retrying household books revalidates unchanged membership and restores the shared view', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  if (!seeded) throw new Error('household-library seed missing')
+  await signIn(page, owner.session)
+  const pattern = '**/rest/v1/rpc/household_library_works'
+  await page.route(pattern, (route) =>
+    route.fulfill({
+      status: 503,
+      json: { message: 'forced household books failure' },
+    }),
+  )
+  await page.goto('/library?scope=household')
+  await expect(page.getByText(/couldn’t load the household library/i)).toBeVisible({
+    timeout: 20_000,
+  })
+  await expect(page.getByTestId('household-book-card')).toHaveCount(0)
+  await page.unroute(pattern)
+  const membership = page.waitForResponse(
+    (response) => response.url().endsWith('/rest/v1/rpc/household_roster') && response.ok(),
+  )
+  await page.getByRole('button', { name: 'Try again', exact: true }).click()
+  await membership
+  await expect(page.getByTestId('household-book-card')).toHaveCount(1)
+  await expect(page.getByText(/couldn’t load the household library/i)).toHaveCount(0)
+  await expect(page.getByText(seeded.sentinels.note, { exact: false })).toHaveCount(0)
 })
 
 test('an administrator explicitly reviews a personal cover before it becomes a corpus option', async ({

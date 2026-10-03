@@ -8,6 +8,7 @@ import { SKIN_ORDER, type SkinId } from '@reverie/core'
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { randomUUID } from 'node:crypto'
 
 /**
  * VISUAL-MISALIGNMENT AUDIT — horizontal overflow, clipped text, controls past their container.
@@ -60,8 +61,8 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const WEB_ROOT = join(HERE, '..', '..')
 const OUT_DIR = join(WEB_ROOT, 'audit-output', 'visual-overflow')
 
-/** Phone widths bracket the trigger device; 768/1280 keep tablet and desktop honest. */
-const WIDTHS = [375, 390, 412, 768, 1280] as const
+/** Include compact phones, common phone widths, tablet and desktop. */
+const WIDTHS = [320, 375, 390, 412, 768, 1440] as const
 const HEIGHT = 844
 const MODES = ['light', 'dark'] as const
 
@@ -102,7 +103,12 @@ function discoverRoutes(): { ident: string; path: string; file: string }[] {
     if (!rel) throw new Error(`audit: no import found for route '${ident}' in router.tsx`)
     const file = join(WEB_ROOT, 'src', `${rel.replace(/^\.\//, '')}.tsx`)
     const src = readFileSync(file, 'utf8')
-    const path = /^\s*path: '([^']*)'/m.exec(src)?.[1]
+    // GuideRoute exports two routes. Resolve the requested declaration, not the first path
+    // in its file, or /settings/guidance silently becomes a second visit to /guide.
+    const declaration = new RegExp(
+      `export const ${ident} = createRoute\\(\\{([\\s\\S]*?)\\n\\}\\)`,
+    ).exec(src)?.[1]
+    const path = declaration && /^\s*path: '([^']*)'/m.exec(declaration)?.[1]
     if (path === undefined) throw new Error(`audit: no path: literal in ${file} (route '${ident}')`)
     return { ident, path, file }
   })
@@ -116,6 +122,15 @@ type Client = {
   uid: string
 }
 let shared: Client | null = null
+let sharedSeriesId: string | null = null
+
+test.afterAll(async () => {
+  if (shared && sharedSeriesId)
+    await ok(
+      shared.admin.from('corpus_series').delete().eq('id', sharedSeriesId),
+      'audit shared series cleanup',
+    )
+})
 
 async function client(): Promise<Client> {
   if (shared) return shared
@@ -168,7 +183,13 @@ async function seedFixtures(c: Client) {
     title:
       i === 0
         ? 'A Thoroughly Unreasonable and Deliberately Overlong Title That Will Not Wrap Politely'
-        : `Overflow Probe ${String(i + 1).padStart(2, '0')} — A Subtitle of Some Length`,
+        : i === 1
+          ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ'
+          : i === 2
+            ? 'It'
+            : i === 3
+              ? '星のない夜に長い物語を読みながら帰り道を探している図書館の記録'
+              : `Overflow Probe ${String(i + 1).padStart(2, '0')} — A Subtitle of Some Length`,
     author_first: 'Wilhelmina',
     author_last: 'Featherstonehaugh-Marchbanks',
     genre: 'fantasy',
@@ -272,7 +293,34 @@ async function seedFixtures(c: Client) {
     'audit shared_docs insert',
   )
 
-  return { listId, bookId: bookIds[0]!, moodId, clubId, seriesName }
+  sharedSeriesId = randomUUID()
+  await ok(
+    c.admin.from('corpus_series').insert({
+      id: sharedSeriesId,
+      name: 'A Shared Series With An Extravagantly Long Name for Visual Review',
+      name_key: sharedSeriesId,
+      creator_key: 'visual overflow audit',
+    }),
+    'audit shared series insert',
+  )
+  await ok(
+    c.admin.from('corpus_series_entries').insert([
+      {
+        series_id: sharedSeriesId,
+        title: rows[0]!.title,
+        author_text: 'Wilhelmina Featherstonehaugh-Marchbanks',
+        position: 1,
+      },
+      {
+        series_id: sharedSeriesId,
+        title: rows[1]!.title,
+        author_text: 'Wilhelmina Featherstonehaugh-Marchbanks',
+        position: 2,
+      },
+    ]),
+    'audit shared series entries insert',
+  )
+  return { listId, bookId: bookIds[0]!, moodId, clubId, seriesName, sharedSeriesId }
 }
 
 async function signIn(page: Page, session: { access_token: string; refresh_token: string }) {
@@ -417,6 +465,13 @@ function probeSource() {
   for (const el of Array.from(document.querySelectorAll<HTMLElement>('body *'))) {
     const cs = getComputedStyle(el)
     if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') continue
+    const screenReaderOnly = el.closest('.sr-only')
+    // Hidden labels are deliberately clipped. A focused skip link removes its clip and is
+    // measured normally; the class alone must not exempt a revealed, actionable control.
+    if (screenReaderOnly) {
+      const hiddenStyle = getComputedStyle(screenReaderOnly)
+      if (hiddenStyle.clip !== 'auto' || hiddenStyle.clipPath === 'inset(50%)') continue
+    }
     // Inline boxes report client/scrollWidth of 0 — they have no content box to measure. Skipping
     // them is not a coverage loss: their text overflows through the BLOCK that contains them, which
     // is measured.
@@ -447,7 +502,8 @@ function probeSource() {
         // 1.5em — scrollWidth tracks clientWidth exactly), because the overhang sits outside the
         // padding box, not inside it.
         const clamped = cs.webkitLineClamp !== 'none' && cs.webkitLineClamp !== ''
-        if (cs.textOverflow !== 'ellipsis' && !clamped)
+        // Empty atmosphere/backdrop layers do not contain text that a reader can lose.
+        if (cs.textOverflow !== 'ellipsis' && !clamped && textOf(el))
           out.push({
             kind: 'hard-clip',
             sel: sel(el),
@@ -517,6 +573,15 @@ function stateSource() {
     mode: d.dataset.mode ?? '',
     display,
     body,
+    loadingMessages: Array.from(
+      document.querySelectorAll<HTMLElement>('h1, h2, p, [role="status"]'),
+    )
+      .filter(
+        (el) =>
+          el.getClientRects().length > 0 &&
+          /^(Loading|Searching|Fetching|Preparing)(?:[ .…]|$)/i.test(el.innerText.trim()),
+      )
+      .map((el) => el.innerText.trim().slice(0, 160)),
     fontsLoaded:
       (display ? document.fonts.check(`16px "${display}"`) : true) &&
       (body ? document.fonts.check(`16px "${body}"`) : true),
@@ -526,14 +591,18 @@ function stateSource() {
 // ── the sweep ───────────────────────────────────────────────────────────────────────────────────
 type Row = {
   route: string
+  renderedRoute: string
   skin: string
   mode: string
   width: number
   findings: Finding[]
   fontsLoaded: boolean
+  networkSettled: boolean
+  loadingMessages: string[]
 }
 
 test('visual overflow audit — sweep and report', async ({ page }) => {
+  page.setDefaultTimeout(20_000)
   const c = await client()
   const fx = await seedFixtures(c)
   await stub(page)
@@ -547,6 +616,7 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
     $clubId: fx.clubId,
     $code: SHARE_CODE,
     $seriesName: encodeURIComponent(fx.seriesName),
+    $seriesId: fx.sharedSeriesId,
   }
   // /tropes/$tropeId has no seedable id — resolve it from the index the way a reader would, below.
   const routes: string[] = []
@@ -569,7 +639,7 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
   if (deferred.length) {
     await page.setViewportSize({ width: 1280, height: HEIGHT })
     await page.goto('/tropes')
-    await page.waitForTimeout(900)
+    await expect(page.locator('a[href^="/tropes/"]').first()).toBeVisible()
     const href = await page.locator('a[href^="/tropes/"]').first().getAttribute('href')
     expect(
       href,
@@ -585,7 +655,19 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
   async function measure(route: string, skin: string, mode: string, width: number) {
     await page.setViewportSize({ width, height: HEIGHT })
     await page.goto(route)
-    await page.waitForTimeout(900) // async content (queries, covers) can change layout width
+    if (route === '/lab/reading-mode') {
+      // This synthetic study deliberately owns its appearance instead of reading the profile.
+      // Exercise its real controls so the measured room is the one named in the report.
+      const room = page.getByRole('combobox')
+      await expect(room).toHaveCount(1)
+      await room.selectOption(skin)
+      await page.getByRole('checkbox', { name: 'Night', exact: true }).setChecked(mode === 'dark')
+    }
+    const networkSettled = await page.waitForLoadState('networkidle', { timeout: 15_000 }).then(
+      () => true,
+      () => false,
+    )
+    await page.evaluate(() => document.fonts.ready.then(() => undefined))
     const st = await page.evaluate(stateSource)
     // A measurement taken under the WRONG skin is worse than no measurement — it would be filed
     // against a combination that was never on screen. Refuse it loudly instead.
@@ -594,7 +676,27 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
         `audit: asked for ${skin}/${mode} but the page rendered ${st.skin}/${st.mode} at ${route}`,
       )
     const findings = (await page.evaluate(probeSource)) as Finding[]
-    rows.push({ route, skin, mode, width, findings, fontsLoaded: st.fontsLoaded })
+    const rendered = new URL(page.url())
+    rows.push({
+      route,
+      renderedRoute: rendered.pathname + rendered.search,
+      skin,
+      mode,
+      width,
+      findings,
+      fontsLoaded: st.fontsLoaded,
+      networkSettled,
+      loadingMessages: st.loadingMessages,
+    })
+    // Preserve completed observations if an interrupted development server stops a long sweep.
+    writeFileSync(
+      join(OUT_DIR, 'progress.json'),
+      JSON.stringify({ status: 'in progress', measurements: rows }, null, 2),
+    )
+    if (rows.length % 25 === 0)
+      console.log(
+        `audit: ${rows.length} measurements completed; latest ${route} ${skin}/${mode} @${width}`,
+      )
 
     // One screenshot per unique (kind, selector) signature — enough to see it, not a flood.
     for (const f of findings) {
@@ -699,6 +801,7 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
       byKind.set(k, [...(byKind.get(k) ?? []), r])
 
   const fontMisses = rows.filter((r) => !r.fontsLoaded)
+  const unsettled = rows.filter((r) => !r.networkSettled || r.loadingMessages.length)
   const lines: string[] = [
     '# Visual overflow audit',
     '',
@@ -711,6 +814,7 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
       : '- stage B covered every flagged (route,width) — nothing dropped to the cap',
     only.length ? `- **PARTIAL RUN** — AUDIT_ONLY=${only.join(',')}` : '',
     `- real webfonts: ${rows.length - fontMisses.length}/${rows.length} measurements had both faces loaded`,
+    `- unsettled/loading measurements: ${unsettled.length}; these do not establish the completed screen's layout`,
     '',
   ]
   for (const [kind, rs] of [...byKind].sort((a, b) => b[1].length - a[1].length)) {
@@ -735,7 +839,14 @@ test('visual overflow audit — sweep and report', async ({ page }) => {
   if (!hits.length) lines.push('No findings in any measured combination.', '')
 
   writeFileSync(join(OUT_DIR, 'report.md'), lines.join('\n'))
-  writeFileSync(join(OUT_DIR, 'findings.json'), JSON.stringify({ rows: hits }, null, 2))
+  writeFileSync(
+    join(OUT_DIR, 'findings.json'),
+    JSON.stringify({ rows: hits, measurements: rows }, null, 2),
+  )
+  writeFileSync(
+    join(OUT_DIR, 'progress.json'),
+    JSON.stringify({ status: 'complete', measurements: rows }, null, 2),
+  )
   console.log(lines.join('\n'))
   console.log(`audit: wrote ${join(OUT_DIR, 'report.md')}`)
 })

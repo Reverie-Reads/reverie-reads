@@ -31,6 +31,8 @@ import {
 } from '@reverie/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { rootRoute } from './RootRoute'
+import { useAddReturn } from '../components/addReturn'
+import { DraftExitGuard } from '../components/DraftExitGuard'
 import { useAuth } from '../auth/AuthProvider'
 import { useIntake, type ReviewCandidate } from '../data/intake'
 import { useBooks } from '../data/books'
@@ -242,25 +244,22 @@ function RefineAdded({
         >
           Edition added
         </h2>
-        <p className="mb-3 mt-1 text-[13px] text-muted">
+        <p className="mb-3 mt-1 text-[13px] text-muted [overflow-wrap:anywhere]">
           The selected release is now recorded with {book.title}. Open the book to manage its
           copies, or return to releases.
         </p>
         <Link
           to="/book/$bookId"
           params={{ bookId }}
-          className="mt-4 flex min-h-11 w-full items-center justify-center skin-control px-4 text-center text-[14px] font-semibold"
-          style={{
-            background: 'linear-gradient(135deg, var(--primary), var(--gold))',
-            color: 'var(--on-primary)',
-          }}
+          replace
+          className="mt-4 flex min-h-11 w-full items-center justify-center skin-control skin-btn-secondary px-4 text-center text-[14px] font-semibold"
         >
           Open your book
         </Link>
         <button
           type="button"
           onClick={onDone}
-          className="mt-2 min-h-11 w-full text-[14px] text-ink underline"
+          className="mt-2 min-h-11 w-full skin-control skin-btn-primary px-4 text-[14px] font-semibold"
         >
           {returnLabel}
         </button>
@@ -279,12 +278,33 @@ function RefineAdded({
         className="text-[16px] italic text-ink"
         style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
       >
-        Added — finish the details
+        Your book was saved
       </h2>
-      <p className="mb-3 mt-1 text-[13px] text-muted">
-        {book.title} is in your library. Fix the cover or tag its {labels.tags.toLowerCase()} now —
-        or leave it and edit later.
+      <p className="mb-3 mt-1 text-[13px] text-muted [overflow-wrap:anywhere]">
+        {book.title} is in your library. You can return now or add optional details below.
       </p>
+      <button
+        type="button"
+        onClick={onDone}
+        data-book-tour="book-done"
+        className="mt-2 min-h-11 w-full skin-control skin-btn-primary px-4 text-[14px] font-semibold"
+      >
+        {returnLabel}
+      </button>
+      <div
+        className="mt-3 empty:hidden"
+        data-book-tour-inline="book-done"
+        data-book-tour-inline-desktop
+      />
+      <Link
+        to="/book/$bookId"
+        params={{ bookId }}
+        replace
+        className="mt-4 flex min-h-11 w-full items-center justify-center skin-control skin-btn-secondary px-4 text-center text-[14px] font-semibold"
+      >
+        Open your book
+      </Link>
+      <p className="mb-2 mt-4 text-[13px] text-muted">Optional details</p>
       <div className="flex gap-4">
         <div
           className="aspect-[2/3] w-20 flex-none overflow-hidden rounded-lg border border-line"
@@ -312,30 +332,6 @@ function RefineAdded({
           </button>
         </div>
       </div>
-      <Link
-        to="/book/$bookId"
-        params={{ bookId }}
-        className="mt-4 flex min-h-11 w-full items-center justify-center skin-control px-4 text-center text-[14px] font-semibold"
-        style={{
-          background: 'linear-gradient(135deg, var(--primary), var(--gold))',
-          color: 'var(--on-primary)',
-        }}
-      >
-        Open your book
-      </Link>
-      <button
-        type="button"
-        onClick={onDone}
-        data-book-tour="book-done"
-        className="mt-2 min-h-11 w-full text-[14px] text-ink underline"
-      >
-        {returnLabel}
-      </button>
-      <div
-        className="mt-3 empty:hidden"
-        data-book-tour-inline="book-done"
-        data-book-tour-inline-desktop
-      />
       {dialog === 'cover' && <CoverSheet book={book} onClose={() => setDialog(null)} />}
       {dialog === 'trope' && <TropePicker book={book} onClose={() => setDialog(null)} />}
     </Surface>
@@ -459,6 +455,17 @@ function AddForm({
   ].sort()
   const labels = useLabels()
   const [cover, setCover] = useState(hit.cover ?? '')
+  const draftFingerprint = JSON.stringify([
+    form,
+    contribs,
+    subs,
+    intensity,
+    darkness,
+    possession,
+    cover,
+  ])
+  const initialDraft = useRef(draftFingerprint)
+  const hasDraftChanges = draftFingerprint !== initialDraft.current
   // Enrichment's alternate editions (real cover URLs) — a pre-save chooser so a wrong fetched cover
   // is fixable before the record even exists; upload/camera/more editions live in the refine step.
   const [alternates, setAlternates] = useState<CoverAlternate[]>([])
@@ -748,6 +755,9 @@ function AddForm({
 
   return (
     <Surface radius="panel" tone="card" pad={3} className="mt-4">
+      {!saveState.recoveredBookId && (hasDraftChanges || saveState.busy || !!saveState.error) && (
+        <DraftExitGuard busy={saveState.busy} />
+      )}
       <fieldset
         disabled={saveState.busy || !!dup || !!saveState.recoveredBookId}
         className="min-w-0"
@@ -1462,6 +1472,9 @@ function HouseholdAddForm({
   const canPersistPickedCover =
     hit.source !== 'google' && (currentMember?.role === 'owner' || isCorpusAdmin)
   const pending = addExisting.isPending || createWork.isPending || addToMember.isPending
+  const completed = useRef(false)
+  const initialDraft = useRef(JSON.stringify([title, author, isbn]))
+  const hasDraftChanges = JSON.stringify([title, author, isbn]) !== initialDraft.current
 
   async function save() {
     let workId = hit.corpusWorkId
@@ -1485,6 +1498,7 @@ function HouseholdAddForm({
     if (targetMemberId && workId) {
       await addToMember.mutateAsync({ workId, memberId: targetMemberId })
     }
+    completed.current = true
     onAdded()
   }
 
@@ -1503,6 +1517,9 @@ function HouseholdAddForm({
 
   return (
     <Surface radius="panel" tone="card" pad={3} className="mt-4">
+      {(hasDraftChanges || pending || !!saveError) && (
+        <DraftExitGuard busy={pending} canLeave={() => completed.current || !!coverWarning} />
+      )}
       <div className="flex gap-4">
         <div className="aspect-[2/3] w-20 flex-none overflow-hidden rounded-lg border border-line">
           <CoverImage book={{ title, cover: hit.cover ?? '' }} thumb />
@@ -1611,6 +1628,7 @@ function HouseholdAddForm({
 }
 
 function AddScreen() {
+  const origin = useAddReturn()
   const { state: bookTour } = useBookTour()
   const voice = useVoice()
   const navigate = useNavigate()
@@ -1681,6 +1699,23 @@ function AddScreen() {
 
   return (
     <section className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
+      <button
+        type="button"
+        onClick={() =>
+          origin
+            ? origin.returnToOrigin()
+            : void navigate({
+                to: '/library',
+                search: prefill.scope === 'household' ? { scope: 'household' } : {},
+              })
+        }
+        className="mb-3 min-h-11 text-[14px] text-ink underline"
+      >
+        {(
+          origin?.label ??
+          (prefill.scope === 'household' ? 'Return to your household' : 'Return to your library')
+        ).replace('Return to', 'Back to')}
+      </button>
       {!householdOnly && <StartBookTour label="Guide me through adding" quiet />}
       <h1
         className="text-[22px] italic text-ink"
@@ -1901,6 +1936,7 @@ function AddScreen() {
             targetMemberName={targetMember?.displayName}
             onAdded={() => {
               if (returnToScans()) return
+              if (origin) return origin.returnToOrigin()
               return prefill.discoverSession
                 ? void navigate({ to: '/discover', search: { session: prefill.discoverSession } })
                 : void navigate({ to: '/library', search: { scope: 'household' } })
@@ -1920,30 +1956,32 @@ function AddScreen() {
                     ? 'Return to releases'
                     : prefill.discoverSession
                       ? 'Return to your shortlist'
-                      : 'Return to your library'
+                      : (origin?.label ?? 'Return to your library')
             }
             onAdded={() => {
               if (returnToScans()) return
               return bookTour.status !== 'off' && bookTour.bookId
                 ? void navigate({ to: '/library', search: {} })
-                : prefill.releaseWindow
-                  ? void navigate({
-                      to: '/discover',
-                      search: {
-                        view: 'releases',
-                        window: prefill.releaseWindow,
-                        editions: prefill.releaseEditions,
-                      },
-                    })
-                  : prefill.discoverSession
+                : origin
+                  ? origin.returnToOrigin()
+                  : prefill.releaseWindow
                     ? void navigate({
                         to: '/discover',
-                        search: { session: prefill.discoverSession },
+                        search: {
+                          view: 'releases',
+                          window: prefill.releaseWindow,
+                          editions: prefill.releaseEditions,
+                        },
                       })
-                    : void navigate({
-                        to: '/library',
-                        search: destination === 'both' ? { scope: 'household' } : {},
-                      })
+                    : prefill.discoverSession
+                      ? void navigate({
+                          to: '/discover',
+                          search: { session: prefill.discoverSession },
+                        })
+                      : void navigate({
+                          to: '/library',
+                          search: destination === 'both' ? { scope: 'household' } : {},
+                        })
             }}
           />
         ))}

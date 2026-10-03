@@ -1,73 +1,99 @@
-# Sharing, household sync & book clubs
+# Sharing, households, and book clubs
 
-Reverie's **Clubs** tab adds three collaborative features:
+This reference describes the shipped React application and database, reviewed October 2, 2026.
+The prototype's `window.storage`, pasted backend keys, export-code blobs, and optional cloud setup
+are historical mechanisms, not current setup instructions.
 
-- **Shared lists** — a household TBR or any list you share by code; everyone with the code can add/remove and sees changes within a few seconds.
-- **Book-club TBR** — the same thing, labelled for a club (everyone can edit).
-- **Read-alongs** — a group reads one book together; each reader tracks their chapter/page, and every comment is tagged to a point in the book and stays hidden for you until you reach it.
+## Personal library, household library, and shared catalog
 
-## How sharing works
+These are independent records, not three views of one writable personal library.
 
-Everything shared is stored as one JSON **document** identified by a random **share code**.
-The code works like a Google-Doc "anyone with the link": hand it to your household or club and
-they can open and edit the same document. The app picks a sync backend automatically:
+| Record              | Purpose                                                                                        | Effect of an ordinary change                                                                                               |
+| ------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Personal book       | A reader's editions/copies, possession, reading state, rating, private history and annotations | Stays with that reader, subject to the explicit sharing rules below                                                        |
+| Household work      | Collective membership with eligible personal-copy attribution                                  | Can exist without a personal book or possession; removing a personal book does not automatically remove the household work |
+| Shared catalog work | Bibliographic identity and reviewed shared metadata                                            | Supplies eligible defaults; ordinary personal edits do not grant catalog authority                                         |
 
-| Mode                 | When                                                         | Live?                             | Notes                                                 |
-| -------------------- | ------------------------------------------------------------ | --------------------------------- | ----------------------------------------------------- |
-| **Cloud (Supabase)** | You've set a Project URL + anon key in ⚙ Sync setup          | Yes, across any device/person     | Recommended for a household or remote club            |
-| **Host-shared**      | Running inside an environment that provides `window.storage` | Yes, for everyone using that copy | e.g. the AI assistant artifact preview                |
-| **This device**      | A plain static deployment with no backend configured         | No                                | Still fully usable; share via **Export/Import** codes |
+Library offers **My library** and **Household library**. Each household work appears once, with its
+members' eligible copies identified. Owned copies enter automatically. A borrowed copy appears only
+when its owner deliberately shares that exact copy. Wishlist, reading progress, and ratings do not
+create household membership. The household may also add a work directly without creating a personal
+book.
 
-The app polls the shared document every few seconds while you have a list or read-along open, so
-edits from other people appear on their own. No realtime config required.
+Household membership is provisioned through the owner-operated household commands. The app can show
+“No household linked”; it does not currently offer a self-service invitation/join wizard. Membership
+and work access are verified server-side. The household view refuses cached access while offline or
+while membership cannot be verified. A failed load offers a membership-validating retry and preserves
+an exit to My library.
 
-### Turning on cloud sync (Supabase, free)
+The household projection excludes private ratings, favorites, reading logs/notes, reading state,
+progress, plans, wishlist, moods, and personal lists. Copy covers follow the curated URL rules in
+[the data model](DATA_MODEL.md); arbitrary third-party personal hotlinks are not sent to peers.
 
-1. Create a project at <https://supabase.com> (free tier is plenty).
-2. In the SQL editor, run [`supabase_schema.sql`](../supabase_schema.sql).
-3. In the app: **Clubs ▸ ⚙ Sync setup**, paste your **Project URL** and **anon public key**, Save.
-   (You can also bake them into `SyncBaked` at the top of the app script if you prefer.)
+### Shared enrichment and personal choices
 
-The app calls Supabase's auto-generated REST endpoint (PostgREST) directly with the anon key —
-no client library, no build step.
+Historical personal tags and tropes are not published merely because an owned book joins a
+household. Later tag/trope edits on an eligible household copy can synchronize the corresponding
+household enrichment field. Each field preserves the other field. The tag picker explains this sharing consequence
+at the edit control; it is distinct from private reading notes and moods.
 
-### Offline / no-backend sharing
+Household owners or catalog administrators can edit the allowed shared bibliographic fields. An
+ordinary member cannot edit an existing shared work simply by having a paid product account.
+“Use shared details” is a deliberate personal adoption of allowed genre, cover, series, and
+edition-compatible publication information. It does not adopt somebody else's reading history,
+rating, possession, ISBN, or notes. Trusted shared series can also reconcile eligible automatic
+personal defaults; reader and import choices remain protected.
 
-Without a backend you can still share: open a list and hit **Export code** to copy a self-contained
-blob (`RVL1:…`), send it to someone, and they paste it into **Join by code**. It's a snapshot, not
-live, but it moves a list between devices.
+A member must consent before peers can add neutral records to that member's personal library.
+Those additions do not assign ownership, reading state, a rating, or private details. A neutral
+record can be absent from the default possessed/history filter even though it was saved; see the
+[workflow audit](../audits/end-user-workflows-2026-10.md) for the remaining discoverability work.
 
-## Read-along spoiler gating
+## Shared lists and club TBRs
 
-Each comment carries the chapter/page it's "about". When you open a read-along the app only renders
-comments at or before **your** current progress; the rest show as a locked count
-("🔒 4 comments unlock at Chapter 12"). Move your progress up and more unlock.
+Clubs includes shared lists identified by a short code. The current data layer stores a JSON
+list in `shared_docs` and each reader's joined-list reference in `shared_refs`. A list item contains
+bibliographic display information and the contributor's display name; it does not copy private
+reading notes or ratings. Readers can add from My library or enter a title manually, remove an item,
+copy a code, and leave their own joined-list reference. Leaving does not delete the shared document.
 
-This is an **honor-friendly** gate: members are trusted (they hold the code), and the hiding happens
-in the app. It's designed for a friendly book club, not as an adversarial secret. Defining the book's
-structure (chapter/page count) is a quick manual step when you create the read-along — exactly as
-expected.
+The legacy list-access contract requires a coordinated database/API review before a sharing release.
+Do not infer a privacy guarantee from the browser's lookup or code-copy control. Restricted access
+findings and the repair packet are retained in the maintainer audit; this documentation refresh does
+not change the deployed access contract.
 
-## Data shapes
+Writes currently read and replace a whole JSON document. Concurrent updates can overwrite one
+another; there is no revision conflict check. A successful list lookup also does not yet guarantee
+that saving the reader's joined-list reference succeeded. W09 tracks both shortcomings.
 
-```jsonc
-// shared list (key = share code)
-{ "type":"list", "kind":"list"|"clubtbr", "name":"Household TBR",
-  "items":[{ "id":"…", "title":"…", "author":"…", "cover":"…", "by":"Greg" }],
-  "updatedAt": 1730000000000 }
+The app subscribes to database change notifications and invalidates its query cache. This is not
+prototype polling or a promise of offline collaborative editing.
 
-// read-along (key = share code)
-{ "type":"club", "title":"Iron Flame", "author":"Rebecca Yarros", "cover":"…",
-  "unit":{ "type":"chapter"|"page"|"percent", "count":65, "label":"Chapter" },
-  "members":[{ "id":"…", "name":"Greg", "progress":12 }],
-  "comments":[{ "id":"…", "by":"…", "byName":"Greg", "unit":12, "text":"…", "ts": 1730000000000 }],
-  "updatedAt": 1730000000000 }
-```
+## Read-alongs
 
-## Privacy & limits
+Read-alongs use separate relational records: `clubs`, `club_members`, and `club_comments`. Creating
+or joining establishes membership; each member has their own chapter/page/percent progress. A comment
+has an associated unit, author, text, and moderation state.
 
-- **Capability codes**: anyone with a code can view and edit that document. Don't post codes publicly.
-- **Last-write-wins**: simultaneous edits to the _same_ document resolve to the most recent save. Fine
-  for a few people; the app re-reads just before each change to minimise clobbering.
-- **Whole-library household sync** isn't wired into the UI yet, but it's the same mechanism — a future
-  step can store your library under a household code so everyone sees the same shelves.
+The spoiler boundary is enforced by database row-level policies, not merely by hiding text in the
+browser. An authorized member sees their own comments; other non-hidden comments become readable
+when their unit is at or before that member's progress. The locked-comment helper returns bounded
+count/next-unit information. A content-free activity change can refresh a behind-progress member's
+locked count without delivering the hidden comment body.
+
+Members can advance/retreat progress, post, report, and hide their own comments through the current
+controls. Leaving removes their membership. Read-along progress is separate from a personal book's
+reading history and does not imply owning or finishing a personal copy.
+
+The current club detail and secondary-query error states still need clearer failure/retry handling;
+see W08. A failed query must not be presented as “no comments,” no progress, or proof a club is missing.
+
+## Implementation references
+
+- [Data model](DATA_MODEL.md): possession, household projections, catalog/personal adoption, history.
+- `apps/web/src/data/household.ts` and `LibraryRoute.tsx`: household authorization and presentation.
+- `apps/web/src/data/sharedLists.ts` and `SharedListRoute.tsx`: current shared-document operations.
+- `apps/web/src/data/clubs.ts`, `ClubRoute.tsx`, and `useRealtimeRefetch.ts`: read-alongs and refresh.
+- Database household, RLS, and spoiler tests exercise authorization separately from UI presentation.
+
+Account products and Free/Pro access never replace workspace membership or catalog authority.

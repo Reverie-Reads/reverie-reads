@@ -123,6 +123,10 @@ export function TropePicker({ book, onClose }: { book: Book; onClose: () => void
       <p className="-mt-2 mb-3 text-[12.5px] text-muted">
         Tap to tag · tap again to pin (up to {PIN_CAP}) · a third tap clears.
       </p>
+      <p className="mb-3 text-[12.5px] text-muted">
+        When this book is included in your household library, changes here also update its shared
+        tags. Your moods and reading notes stay private.
+      </p>
 
       {book.tropes.length > 0 && (
         <div className="mb-4">

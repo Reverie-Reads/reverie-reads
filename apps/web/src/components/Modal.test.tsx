@@ -50,4 +50,21 @@ describe('Modal', () => {
     expect(opener).toHaveFocus()
     opener.remove()
   })
+  it('Escape closes only the topmost dialog, preserving the form beneath it', () => {
+    const closeEdit = vi.fn()
+    const closeCover = vi.fn()
+    render(
+      <>
+        <Modal title="Edit" onClose={closeEdit}>
+          Unsaved title
+        </Modal>
+        <Modal title="Cover" onClose={closeCover}>
+          Cover choices
+        </Modal>
+      </>,
+    )
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(closeCover).toHaveBeenCalledOnce()
+    expect(closeEdit).not.toHaveBeenCalled()
+  })
 })

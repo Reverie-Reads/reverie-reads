@@ -30,28 +30,35 @@ export function SkinAtmosphereCanvas({
     let width = 1
     let height = 1
     let palette: RoomPalette
+    let disposed = false
     const cancel = () => {
       window.clearTimeout(timer)
       window.cancelAnimationFrame(frame)
     }
     const paint = (time = 0) => {
+      if (disposed || !canvas.isConnected) return
       context.clearRect(0, 0, width, height)
       context.drawImage(still, 0, 0, width, height)
       if (time) paintRoomMotion(context, width, height, skin, palette, time)
     }
     const tick = () => {
-      if (!visible || document.hidden || motion.matches) return
+      if (disposed || !canvas.isConnected || !visible || document.hidden || motion.matches) return
       frame = window.requestAnimationFrame((time) => {
         paint(time)
         timer = window.setTimeout(tick, 125)
       })
     }
     const start = () => {
+      if (disposed || !canvas.isConnected) return
       cancel()
       paint()
       tick()
     }
     const resize = () => {
+      // A queued observer can arrive after React removes a preview but before effect cleanup.
+      // Detached canvases have no inherited palette; painting one would pass empty colors to
+      // CanvasGradient and turn an ordinary account/screen transition into an uncaught error.
+      if (disposed || !canvas.isConnected) return
       const started = performance.now()
       const rect = canvas.getBoundingClientRect()
       width = Math.max(1, rect.width)
@@ -103,6 +110,7 @@ export function SkinAtmosphereCanvas({
     document.addEventListener('visibilitychange', start)
     resize()
     return () => {
+      disposed = true
       cancel()
       resizeObserver?.disconnect()
       intersection?.disconnect()

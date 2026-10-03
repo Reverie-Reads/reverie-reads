@@ -119,8 +119,9 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   both modes, and **respect `prefers-reduced-motion`** (disable the night-sky drift/twinkle).
   Two layers guard contrast, and they cover different amounts: the **core contrast tests** are
   keyed off the `SKINS` registry, so all nine are checked and a new skin fails until it has
-  tokens; the **e2e axe sweep** runs four (`tryst`, `grimoire`, `aphelion`, `marrow`) × both
-  modes. A new component's contrast belongs in a registry-keyed core test — that is the layer
+  tokens; the **e2e axe sweep** derives its rooms from `SKIN_ORDER`: Tryst covers both modes
+  across every listed route, and every other room covers the core routes in one fixed mode.
+  A new component's contrast belongs in a registry-keyed core test — that is the layer
   that is exhaustive.
 - **Discover separates releases, curation and the shared catalog.** New & upcoming uses bounded
   date-window requests to existing release providers; Curated picks may contain backlist. Neither
@@ -206,6 +207,12 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Goodreads/StoryGraph CSV importer, and the spoiler-gating rule (`comment.unit <=
 myProgress`). Move them into `packages/core` with tests.
 - Copy stays sentence case, plain verbs, no filler; empty states invite action.
+- **Long reader-authored text must leave actions reachable.** Book titles, contributors and shelf
+  names wrap inside their panels, including unbroken words at 320 px; a visible Close or favorite
+  control must also fit and be operable. Household load recovery revalidates membership before
+  retrying its books, including a fast response with unchanged membership. Explain household tag
+  propagation at the tag picker and keep automatic series defaults distinct from deliberate
+  adoption of shared genre, cover and publication details.
 - **Release handoffs select an edition, not a work-search ISBN.** Discover's bounded release draft
   must agree with the complete outer identity, ISBN and date. Keep the ordinary Hardcover work-search
   guard. Unknown formats remain unknown; changing identity or a known format detaches inherited
@@ -219,6 +226,14 @@ myProgress`). Move them into `packages/core` with tests.
   account changes. Reader captures stay account-separated and page-session-only; export and
   lifetime notices must remain clear until durable drafts are implemented. See
   `docs/tasks/bulk-barcode-scanning.md`.
+- **Simpler paths apply to every presentation.** Bearded Mode may reduce density, but full UI and
+  Free accounts retain straightforward Add/Edit, recovery and return paths. Add remembers only an
+  observed internal origin in account-keyed page-session memory, with safe direct-link fallbacks;
+  preserve guided/scanned continuation. A saved confirmation does not require optional cover/tag
+  work. Keep an Edit draft mounted beneath its cover picker, close only the top dialog on Escape,
+  and do not force an unrelated genre choice to correct an unclassified book. See
+  `docs/tasks/workflow-streamlining.md`; remembering a URL is not proof that every route-local draft
+  or selection is restored.
 - **Single-book Add keeps a retry identity.** Pending submissions and duplicate decisions share
   one synchronous guard. A failed attempt keeps its draft and original duplicate action. Retrying
   checks its exact reader-owned insertion UUID first; an already saved or removed row is never
@@ -717,7 +732,7 @@ See `docs/tasks/isbndb-retirement.md` for the read-only inventory and remaining 
 pnpm dev            # run web app
 pnpm build          # production build (core tsc, then web tsc/vite)
 pnpm test           # unit tests (Vitest, all packages)
-pnpm e2e            # Playwright (includes the axe sweep — four skins x both modes)
+pnpm e2e            # Playwright (includes the registry-keyed axe sweep)
 pnpm lint           # ESLint
 pnpm typecheck      # tsc --noEmit, all packages
 pnpm series:trial -- --scope all --providers openlibrary,wikidata  # provider evidence trial

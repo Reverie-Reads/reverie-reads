@@ -417,9 +417,9 @@ export function BookDetailScreen() {
       </div>
 
       {/* header */}
-      {/* cover + title share the row even on phones — a stacked w-32 cover left dead space beside it */}
+      {/* Compact phones give the title its own row so long names remain readable. */}
       <div
-        className="skin-panel mt-4 flex gap-4 border border-line p-4 sm:gap-7 sm:p-7"
+        className="skin-panel mt-4 flex gap-4 border border-line p-4 max-[380px]:flex-col sm:gap-7 sm:p-7"
         style={{
           background:
             'linear-gradient(115deg, color-mix(in srgb, var(--primary) 10%, var(--panel-fill)), var(--panel-fill) 48%)',
@@ -453,7 +453,7 @@ export function BookDetailScreen() {
           )}
         </button>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 max-[380px]:w-full">
           <span className="skin-label text-[10px]" style={{ color: 'var(--accent-ink)' }}>
             Book record
           </span>
@@ -461,7 +461,7 @@ export function BookDetailScreen() {
             <h1
               data-book-tour={book.id === bookTour.bookId ? 'tour-opened-book' : undefined}
               tabIndex={-1}
-              className="mt-2 max-w-[18ch] text-balance text-[27px] font-semibold leading-[1.02] text-ink sm:text-[42px]"
+              className="mt-2 min-w-0 max-w-[18ch] text-balance text-[27px] font-semibold leading-[1.02] text-ink [overflow-wrap:anywhere] sm:text-[42px]"
               style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
             >
               {book.title}
@@ -471,21 +471,24 @@ export function BookDetailScreen() {
               onClick={() => updateBook.mutate({ id: book.id, patch: { fave: !book.fave } })}
               aria-pressed={book.fave}
               aria-label={book.fave ? 'Remove from favorites' : 'Add to favorites'}
-              className="text-[24px] leading-none"
+              className="shrink-0 text-[24px] leading-none"
               style={{ color: book.fave ? 'var(--primary)' : 'var(--muted)' }}
             >
               {book.fave ? '♥' : '♡'}
             </button>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-x-1.5 text-[15px] text-muted">
+          <div className="mt-2 flex flex-wrap items-center gap-x-1.5 text-[15px] text-muted [overflow-wrap:anywhere]">
             {book.contributors.length ? (
               book.contributors.map((c, i) => (
-                <span key={`${c.name}-${i}`} className="inline-flex items-center">
+                <span
+                  key={`${c.name}-${i}`}
+                  className="inline-flex min-w-0 max-w-full items-center"
+                >
                   {isAuthorRole(c.role) ? (
                     <button
                       type="button"
                       onClick={() => filterByAuthor(c.name)}
-                      className="text-ink underline-offset-2 hover:underline"
+                      className="min-w-0 text-ink underline-offset-2 hover:underline"
                     >
                       {c.name}
                     </button>
@@ -927,9 +930,9 @@ export function BookDetailScreen() {
         {householdWork ? (
           <Surface tone="field" radius="control" pad={2} className="mt-4 text-[12.5px] text-muted">
             <p>
-              Shared catalog edits do not change your personal copy automatically. Ownership,
-              reading history, rating, ISBN, and private notes are never part of this merge.
-              Publication details tied to a different edition stay unchanged.
+              Choose whether to use shared genre, cover, and compatible publication details.
+              Verified series can update an automatic default; a series you chose or imported stays
+              yours. Ownership, reading history, rating, ISBN, and private notes stay unchanged.
             </p>
             {sharedDetailsDiffer ? (
               <button
@@ -1103,13 +1106,7 @@ export function BookDetailScreen() {
           onClose={() => setDialog(null)}
         />
       )}
-      {dialog === 'edit' && (
-        <EditDetails
-          book={book}
-          onClose={() => setDialog(null)}
-          onChangeCover={() => setDialog('cover')}
-        />
-      )}
+      {dialog === 'edit' && <EditDetails book={book} onClose={() => setDialog(null)} />}
       {dialog === 'cover' && <CoverSheet book={book} onClose={() => setDialog(null)} />}
       {dialog === 'progress' && (
         <ReadingProgressDialog

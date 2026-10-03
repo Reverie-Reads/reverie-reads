@@ -408,6 +408,9 @@ export function useHouseholdBooks(householdId: string | null) {
  * screen can explain why network-only household access is unavailable.
  */
 export function useHouseholdLibraryAuthorization() {
+  const { session } = useAuth()
+  const readerId = session?.user.id ?? ''
+  const queryClient = useQueryClient()
   const roster = useHouseholdRoster()
   const rosterAuthorized = householdQueryIsAuthorized(roster)
   const householdId = rosterAuthorized ? (roster.data?.[0]?.householdId ?? null) : null
@@ -426,7 +429,21 @@ export function useHouseholdLibraryAuthorization() {
     authorized,
     paused,
     error,
-    loading: !paused && !error && !authorized,
+    loading: !paused && !authorized && (!error || roster.isFetching || householdBooks.isFetching),
+    retry: async () => {
+      // Membership may have changed. Only retry books for the freshly authorized household.
+      // Explicit invalidation also handles a fast, unchanged roster response: React can batch
+      // that response without ever disabling/re-enabling an already-failed books query.
+      const refreshed = await roster.refetch()
+      const verifiedHousehold = householdQueryIsAuthorized(refreshed)
+        ? refreshed.data?.[0]?.householdId
+        : null
+      if (verifiedHousehold)
+        await queryClient.invalidateQueries(
+          { queryKey: householdBooksKey(readerId, verifiedHousehold), exact: true },
+          { cancelRefetch: false },
+        )
+    },
   }
 }
 

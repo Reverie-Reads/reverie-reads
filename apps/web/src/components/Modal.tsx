@@ -37,7 +37,11 @@ export function Modal({
     else dialog.setAttribute('open', '')
     panelRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current()
+      const openDialogs = document.querySelectorAll('dialog[open]')
+      if (e.key === 'Escape' && openDialogs.item(openDialogs.length - 1) === dialog) {
+        e.preventDefault()
+        onCloseRef.current()
+      }
     }
     document.addEventListener('keydown', onKey)
     return () => {
@@ -86,7 +90,7 @@ export function Modal({
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <h2
-              className="text-[22px] italic leading-tight text-ink"
+              className="min-w-0 text-[22px] italic leading-tight text-ink [overflow-wrap:anywhere]"
               style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
             >
               {title}

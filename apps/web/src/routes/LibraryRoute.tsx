@@ -600,7 +600,14 @@ function HouseholdLibraryScreen() {
         <HouseholdCentered>Loading the household library…</HouseholdCentered>
       ) : household.error ? (
         <HouseholdCentered>
-          Couldn’t load the household library — {(household.error as Error).message}
+          <p>Couldn’t load the household library. Your personal books are still in My library.</p>
+          <button
+            type="button"
+            onClick={() => void household.retry()}
+            className="skin-control mt-3 min-h-11 border border-line px-4 py-2 font-semibold text-ink"
+          >
+            Try again
+          </button>
         </HouseholdCentered>
       ) : members.length === 0 ? (
         <HouseholdCentered>

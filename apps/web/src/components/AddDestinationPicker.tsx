@@ -34,7 +34,8 @@ export function AddDestinationPicker({
     {
       value: 'mine',
       label: 'My library only',
-      detail: 'Keeps this book personal.',
+      detail:
+        'Creates my personal book. Owned copies appear in Household; borrowed copies appear only when I share them.',
     },
     ...(!importOnly && householdAvailable
       ? [
@@ -76,6 +77,11 @@ export function AddDestinationPicker({
                 value={choice.value}
                 checked={checked}
                 onChange={() => onChange(choice.value)}
+                onClick={() => {
+                  // Confirming the already displayed default is still a deliberate choice.
+                  // Otherwise a later household response may replace it without another gesture.
+                  if (checked) onChange(choice.value)
+                }}
                 className="mt-0.5"
               />
               <span className="min-w-0">

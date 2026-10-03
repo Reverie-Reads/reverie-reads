@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import {
   authorOf,
   bookGenres,
@@ -25,6 +25,7 @@ import {
   type SeriesStatus,
 } from '@reverie/core'
 import { Modal } from '../components/Modal'
+import { CoverSheet } from '../components/CoverSheet'
 import { Chip } from '../components/Chip'
 import { Stars } from '../components/Stars'
 import {
@@ -211,16 +212,7 @@ export function LogReadForm({
   )
 }
 
-export function EditDetails({
-  book,
-  onClose,
-  onChangeCover,
-}: {
-  book: Book
-  onClose: () => void
-  /** modest "change cover" affordance — swaps this dialog for the cover sheet */
-  onChangeCover?: () => void
-}) {
+export function EditDetails({ book, onClose }: { book: Book; onClose: () => void }) {
   // Carries OwnedCopies too, whose format toggles each write the whole `owned` object.
   const updateBook = useUpdateBook(book.id)
   const labels = useLabels()
@@ -243,6 +235,11 @@ export function EditDetails({
     pubY: book.pub.y == null ? '' : String(book.pub.y),
     pubM: book.pub.m == null ? '' : String(book.pub.m),
     pubD: book.pub.d == null ? '' : String(book.pub.d),
+  })
+  const initialSeries = useRef({
+    name: book.series.trim(),
+    position: book.position === '' ? null : book.position,
+    count: book.seriesCount ?? null,
   })
   // Subgenres are a multi-pick; the first selection leads (it colors the gradient). Picks made
   // under one genre survive a genre switch — nothing is silently dropped.
@@ -275,13 +272,23 @@ export function EditDetails({
     setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: undefined } : prev)) // typing clears its own error
   }
   const oldSeries = book.series.trim()
-  const leavingSeries = !!oldSeries && f.series.trim() !== oldSeries
+  const seriesNameChanged = f.series.trim() !== initialSeries.current.name
+  const leavingSeries = !!oldSeries && seriesNameChanged && f.series.trim() !== oldSeries
   const [confirmingLeave, setConfirmingLeave] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<
     Partial<Record<keyof typeof f, string | undefined>>
   >({})
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [coverOpen, setCoverOpen] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const draft = JSON.stringify([f, contribs, subs, extraGenres, intensity, darkness])
+  const initialDraft = useRef(draft)
+  const close = () => {
+    if (saving) return
+    if (draft !== initialDraft.current) setConfirmExit(true)
+    else onClose()
+  }
 
   /** All five numeric fields through the ONE parser, with the bounds the columns actually enforce. */
   const readNumbers = () =>
@@ -311,7 +318,7 @@ export function EditDetails({
    * conceptually paired with.
    */
   async function save() {
-    if (!f.genre || saving) return
+    if (saving) return
     const parsed = readNumbers()
     // A blank title is REFUSED, not quietly reverted to the old one. Silently substituting a value
     // the reader didn't type is the same invisible write #78 exists to eliminate: the dialog would
@@ -377,14 +384,22 @@ export function EditDetails({
           pub: { y: pubY, m: pubM, d: pubD },
         },
       })
-      // Kept adjacent to the book write for readability, not because either depends on the other
-      // — see the save() docstring above.
-      await syncBookSeries.mutateAsync({
-        book,
-        newSeries: f.series,
-        newPosition: pos,
-        newSeriesCount: seriesCount,
-      })
+      // A title/date correction is not an explicit series choice. Calling the membership RPC
+      // with untouched defaults would promote their claim to reader-authored and block later
+      // trusted reconciliation. Compare with the opened draft, not a background refresh of the
+      // book: a refreshed shared default is not a change the reader made in this editor.
+      if (
+        seriesNameChanged ||
+        pos !== initialSeries.current.position ||
+        seriesCount !== initialSeries.current.count
+      ) {
+        await syncBookSeries.mutateAsync({
+          book,
+          newSeries: f.series,
+          newPosition: pos,
+          newSeriesCount: seriesCount,
+        })
+      }
       // Contributors last: the most independent write, through its own RPC (it also refreshes the
       // primary first/last + byline).
       await setContributors.mutateAsync({ bookId: book.id, contributors: contribs })
@@ -400,369 +415,397 @@ export function EditDetails({
   }
 
   return (
-    <Modal title="Edit details" onClose={onClose} wide>
-      {onChangeCover && (
+    <>
+      <Modal title="Edit details" onClose={close} wide>
         <div className="mb-3">
           <button
             type="button"
-            onClick={onChangeCover}
+            onClick={() => setCoverOpen(true)}
+            disabled={saving}
             className="text-[12.5px] font-semibold text-primary"
           >
             Change cover…
           </button>
         </div>
-      )}
-      <div className="mb-3">
-        <Field label="Title" error={fieldErrors.title}>
-          <input
-            value={f.title}
-            onChange={(e) => set('title', e.target.value)}
-            aria-label="Title"
-            aria-invalid={!!fieldErrors.title}
-            className={fieldClass}
-            style={fieldStyle}
-          />
-        </Field>
-      </div>
-      <div className="mb-3">
-        <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
-          Contributors
-        </span>
-        <ContributorEditor value={contribs} onChange={setContribs} suggestions={suggestions} />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Series">
-          <input
-            value={f.series}
-            onChange={(e) => set('series', e.target.value)}
-            className={fieldClass}
-            style={fieldStyle}
-          />
-        </Field>
-        <Field label="Position" error={fieldErrors.position}>
-          <input
-            value={f.position}
-            onChange={(e) => set('position', e.target.value)}
-            inputMode="decimal"
-            aria-invalid={!!fieldErrors.position}
-            className={fieldClass}
-            style={fieldStyle}
-          />
-        </Field>
-        <Field label="Series length" error={fieldErrors.seriesCount}>
-          <input
-            value={f.seriesCount}
-            onChange={(e) => set('seriesCount', e.target.value)}
-            placeholder="None set"
-            inputMode="numeric"
-            aria-invalid={!!fieldErrors.seriesCount}
-            className={fieldClass}
-            style={fieldStyle}
-          />
-        </Field>
-        <Field label="Series status">
-          {/* the SERIES' publication status — the reader's own progress lives in reads */}
-          <select
-            value={f.status}
-            onChange={(e) => set('status', e.target.value)}
-            className={fieldClass}
-            style={fieldStyle}
-          >
-            {SERIES_STATUS_VALUES.map((s) => (
-              <option key={s} value={s}>
-                {SERIES_STATUS_LABELS[s]}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Genre">
-          <select
-            value={f.genre}
-            onChange={(e) => set('genre', e.target.value)}
-            className={fieldClass}
-            style={fieldStyle}
-          >
-            {!f.genre && <option value="">Choose a genre…</option>}
-            {f.genre && !CORE_GENRES.some((g) => g.toLowerCase() === f.genre) && (
-              <option value={f.genre}>{f.genre}</option>
+        <div className="mb-3">
+          <Field label="Title" error={fieldErrors.title}>
+            <input
+              value={f.title}
+              onChange={(e) => set('title', e.target.value)}
+              aria-label="Title"
+              aria-invalid={!!fieldErrors.title}
+              className={fieldClass}
+              style={fieldStyle}
+            />
+          </Field>
+        </div>
+        <div className="mb-3">
+          <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
+            Contributors
+          </span>
+          <ContributorEditor value={contribs} onChange={setContribs} suggestions={suggestions} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Series">
+            <input
+              value={f.series}
+              onChange={(e) => set('series', e.target.value)}
+              className={fieldClass}
+              style={fieldStyle}
+            />
+          </Field>
+          <Field label="Position" error={fieldErrors.position}>
+            <input
+              value={f.position}
+              onChange={(e) => set('position', e.target.value)}
+              inputMode="decimal"
+              aria-invalid={!!fieldErrors.position}
+              className={fieldClass}
+              style={fieldStyle}
+            />
+          </Field>
+          <Field label="Series length" error={fieldErrors.seriesCount}>
+            <input
+              value={f.seriesCount}
+              onChange={(e) => set('seriesCount', e.target.value)}
+              placeholder="None set"
+              inputMode="numeric"
+              aria-invalid={!!fieldErrors.seriesCount}
+              className={fieldClass}
+              style={fieldStyle}
+            />
+          </Field>
+          <Field label="Series status">
+            {/* the SERIES' publication status — the reader's own progress lives in reads */}
+            <select
+              value={f.status}
+              onChange={(e) => set('status', e.target.value)}
+              className={fieldClass}
+              style={fieldStyle}
+            >
+              {SERIES_STATUS_VALUES.map((s) => (
+                <option key={s} value={s}>
+                  {SERIES_STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Genre">
+            <select
+              value={f.genre}
+              onChange={(e) => set('genre', e.target.value)}
+              className={fieldClass}
+              style={fieldStyle}
+            >
+              {!f.genre && <option value="">Choose a genre…</option>}
+              {f.genre && !CORE_GENRES.some((g) => g.toLowerCase() === f.genre) && (
+                <option value={f.genre}>{f.genre}</option>
+              )}
+              {CORE_GENRES.map((g) => (
+                <option key={g} value={g.toLowerCase()}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Format">
+            <select
+              value={f.format}
+              onChange={(e) => set('format', e.target.value)}
+              className={fieldClass}
+              style={fieldStyle}
+            >
+              {FORMATS.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Pages" error={fieldErrors.pages}>
+            <input
+              value={f.pages}
+              onChange={(e) => set('pages', e.target.value)}
+              placeholder="Unknown"
+              inputMode="numeric"
+              aria-label="Pages"
+              aria-invalid={!!fieldErrors.pages}
+              className={fieldClass}
+              style={fieldStyle}
+            />
+          </Field>
+          <Field label="ISBN">
+            <input
+              value={f.isbn}
+              onChange={(e) => set('isbn', e.target.value)}
+              placeholder="None set"
+              inputMode="numeric"
+              aria-label="ISBN"
+              className={fieldClass}
+              style={fieldStyle}
+            />
+          </Field>
+        </div>
+        {f.genre && (
+          <div className="mt-3">
+            <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
+              Also tag as
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {CORE_GENRES.filter((g) => g.toLowerCase() !== f.genre).map((g) => (
+                <Chip
+                  key={g}
+                  active={extraGenres.includes(g.toLowerCase())}
+                  onClick={() => toggleGenre(g.toLowerCase())}
+                >
+                  {g}
+                </Chip>
+              ))}
+            </div>
+            {extraGenres.length > 0 && (
+              <p className="mt-1.5 text-[11px] text-muted">
+                A romantasy-shaped book — tagged under more than one genre's shelf at once.
+              </p>
             )}
-            {CORE_GENRES.map((g) => (
-              <option key={g} value={g.toLowerCase()}>
-                {g}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Format">
-          <select
-            value={f.format}
-            onChange={(e) => set('format', e.target.value)}
-            className={fieldClass}
-            style={fieldStyle}
-          >
-            {FORMATS.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Pages" error={fieldErrors.pages}>
-          <input
-            value={f.pages}
-            onChange={(e) => set('pages', e.target.value)}
-            placeholder="Unknown"
-            inputMode="numeric"
-            aria-label="Pages"
-            aria-invalid={!!fieldErrors.pages}
-            className={fieldClass}
-            style={fieldStyle}
-          />
-        </Field>
-        <Field label="ISBN">
-          <input
-            value={f.isbn}
-            onChange={(e) => set('isbn', e.target.value)}
-            placeholder="None set"
-            inputMode="numeric"
-            aria-label="ISBN"
-            className={fieldClass}
-            style={fieldStyle}
-          />
-        </Field>
-      </div>
-      {f.genre && (
+          </div>
+        )}
         <div className="mt-3">
           <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
-            Also tag as
+            Subgenres
           </span>
-          <div className="flex flex-wrap gap-1.5">
-            {CORE_GENRES.filter((g) => g.toLowerCase() !== f.genre).map((g) => (
-              <Chip
-                key={g}
-                active={extraGenres.includes(g.toLowerCase())}
-                onClick={() => toggleGenre(g.toLowerCase())}
+          {f.genre ? (
+            <div className="flex flex-wrap gap-1.5">
+              {subOptions.map((s) => (
+                <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
+                  {s}
+                </Chip>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[13px] text-muted">
+              This book hasn’t chosen its genre yet — pick one above and its subgenre shelf appears.
+            </p>
+          )}
+          {f.genre && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setShowOtherSubs((v) => !v)}
+                aria-expanded={showOtherSubs}
+                className="text-[12px] font-semibold text-primary"
               >
-                {g}
-              </Chip>
-            ))}
-          </div>
-          {extraGenres.length > 0 && (
+                {showOtherSubs ? 'Hide other genres’ subgenres' : 'Other genres’ subgenres…'}
+              </button>
+              {showOtherSubs && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {otherSubs.map((s) => (
+                    <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
+                      {s}
+                    </Chip>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {subs.length > 1 && (
             <p className="mt-1.5 text-[11px] text-muted">
-              A romantasy-shaped book — tagged under more than one genre's shelf at once.
+              First pick leads — it sets the book’s gradient.
             </p>
           )}
         </div>
-      )}
-      <div className="mt-3">
-        <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
-          Subgenres
-        </span>
-        {f.genre ? (
-          <div className="flex flex-wrap gap-1.5">
-            {subOptions.map((s) => (
-              <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
-                {s}
-              </Chip>
-            ))}
-          </div>
-        ) : (
-          <p className="text-[13px] text-muted">
-            This book hasn’t chosen its genre yet — pick one above and its subgenre shelf appears.
-          </p>
-        )}
-        {f.genre && (
-          <div className="mt-2">
-            <button
-              type="button"
-              onClick={() => setShowOtherSubs((v) => !v)}
-              aria-expanded={showOtherSubs}
-              className="text-[12px] font-semibold text-primary"
-            >
-              {showOtherSubs ? 'Hide other genres’ subgenres' : 'Other genres’ subgenres…'}
-            </button>
-            {showOtherSubs && (
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {otherSubs.map((s) => (
-                  <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
-                    {s}
-                  </Chip>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {subs.length > 1 && (
-          <p className="mt-1.5 text-[11px] text-muted">
-            First pick leads — it sets the book’s gradient.
-          </p>
-        )}
-      </div>
-      {/* Reader state — ownership, the formats in hand, and read status. These lived ONLY on the book
+        {/* Reader state — ownership, the formats in hand, and read status. These lived ONLY on the book
           page's inline controls, so "edit details" was not actually the place you edit the details
           (the post-#80 matrix). Same components as the book page: OwnedCopies owns ownership AND the
           per-format flags together, and the read-status chips are the same vocabulary. They persist
           IMMEDIATELY, like MoodPicker below — independent of this form's Save, because that is how
           they behave on the book page and a control should not change meaning by moving. */}
-      <div className="mt-4">
-        <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
-          Your copies
-        </span>
-        {book.copyInventory ? (
-          <EditionCopies book={book} />
-        ) : (
-          <OwnedCopies
-            possession={possessionState(book)}
-            owned={book.owned}
-            onChange={(owned) => updateBook.mutate({ id: book.id, patch: { owned } })}
-            onPossessionChange={(next) =>
-              updateBook.mutate({ id: book.id, patch: possessionPatch(next) })
-            }
-          />
-        )}
-      </div>
-      <div className="mt-3">
-        <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
-          Reading status
-        </span>
-        <div className="flex flex-wrap gap-1.5">
-          {READ_STATUS_OPTIONS.map((rs) => (
-            <Chip
-              key={rs}
-              active={book.readStatus === rs}
-              onClick={() =>
-                updateBook.mutate({
-                  id: book.id,
-                  patch: {
-                    readStatus: rs,
-                    ...(rs === 'Reading' ? { readingNowHidden: false } : {}),
-                  },
-                })
+        <div className="mt-4">
+          <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
+            Your copies
+          </span>
+          {book.copyInventory ? (
+            <EditionCopies book={book} />
+          ) : (
+            <OwnedCopies
+              possession={possessionState(book)}
+              owned={book.owned}
+              onChange={(owned) => updateBook.mutate({ id: book.id, patch: { owned } })}
+              onPossessionChange={(next) =>
+                updateBook.mutate({ id: book.id, patch: possessionPatch(next) })
               }
-            >
-              {readStatusLabel(rs)}
-            </Chip>
-          ))}
+            />
+          )}
         </div>
-      </div>
+        <div className="mt-3">
+          <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
+            Reading status
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {READ_STATUS_OPTIONS.map((rs) => (
+              <Chip
+                key={rs}
+                active={book.readStatus === rs}
+                onClick={() =>
+                  updateBook.mutate({
+                    id: book.id,
+                    patch: {
+                      readStatus: rs,
+                      ...(rs === 'Reading' ? { readingNowHidden: false } : {}),
+                    },
+                  })
+                }
+              >
+                {readStatusLabel(rs)}
+              </Chip>
+            ))}
+          </div>
+        </div>
 
-      <LevelPicker
-        label={labels.intensity}
-        glyph={labels.intensityGlyph}
-        levels={labels.intensityLevels}
-        value={intensity}
-        onChange={setIntensity}
-        name="intensity"
-      />
-      <LevelPicker
-        label={labels.darkness}
-        glyph={labels.darknessGlyph}
-        levels={labels.darknessLevels}
-        value={darkness}
-        onChange={setDarkness}
-        name="darkness"
-      />
-      {/* Mood — the reader's own impression (how it landed). Reader-assigned, never derived; assigns
+        <LevelPicker
+          label={labels.intensity}
+          glyph={labels.intensityGlyph}
+          levels={labels.intensityLevels}
+          value={intensity}
+          onChange={setIntensity}
+          name="intensity"
+        />
+        <LevelPicker
+          label={labels.darkness}
+          glyph={labels.darknessGlyph}
+          levels={labels.darknessLevels}
+          value={darkness}
+          onChange={setDarkness}
+          name="darkness"
+        />
+        {/* Mood — the reader's own impression (how it landed). Reader-assigned, never derived; assigns
           persist immediately (book_moods), independent of this form's Save. */}
-      <div className="mt-3">
-        <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">Mood</span>
-        <p className="mb-1.5 text-[12px] text-muted">
-          How did it land on you? Optional, and yours alone.
-        </p>
-        <MoodPicker book={book} />
-      </div>
-      <div className="mt-3 grid grid-cols-3 gap-3">
-        <Field label="Pub year" error={fieldErrors.pubY}>
-          <input
-            value={f.pubY}
-            onChange={(e) => set('pubY', e.target.value)}
-            placeholder="2021"
-            inputMode="numeric"
-            aria-invalid={!!fieldErrors.pubY}
-            className={fieldClass}
-            style={fieldStyle}
-          />
-        </Field>
-        <Field label="Month" error={fieldErrors.pubM}>
-          <input
-            value={f.pubM}
-            onChange={(e) => set('pubM', e.target.value)}
-            placeholder="1–12"
-            inputMode="numeric"
-            aria-invalid={!!fieldErrors.pubM}
-            className={fieldClass}
-            style={fieldStyle}
-          />
-        </Field>
-        <Field label="Day" error={fieldErrors.pubD}>
-          <input
-            value={f.pubD}
-            onChange={(e) => set('pubD', e.target.value)}
-            placeholder="1–31"
-            inputMode="numeric"
-            aria-invalid={!!fieldErrors.pubD}
-            className={fieldClass}
-            style={fieldStyle}
-          />
-        </Field>
-      </div>
-      {/* Clearing or renaming the series REMOVES this book's slot from that series' reading order —
-          the same removal the series page's ✕ performs. Destructive enough to name before it happens. */}
-      {confirmingLeave ? (
-        <Surface tone="field" radius="card" pad={2} className="mt-4">
-          <p className="text-[13px] text-ink">
-            {f.series.trim()
-              ? `Moving this book to ${f.series.trim()} removes its slot from ${oldSeries}.`
-              : `This removes the book’s slot from ${oldSeries}.`}{' '}
-            <span className="text-muted">
-              The book stays in your library, and fetching {oldSeries} again won’t bring the slot
-              back.
-            </span>
+        <div className="mt-3">
+          <span className="mb-1 block text-[11px] uppercase tracking-[0.15em] text-muted">
+            Mood
+          </span>
+          <p className="mb-1.5 text-[12px] text-muted">
+            How did it land on you? Optional, and yours alone.
           </p>
-          <div className="mt-3 flex gap-2">
+          <MoodPicker book={book} />
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          <Field label="Pub year" error={fieldErrors.pubY}>
+            <input
+              value={f.pubY}
+              onChange={(e) => set('pubY', e.target.value)}
+              placeholder="2021"
+              inputMode="numeric"
+              aria-invalid={!!fieldErrors.pubY}
+              className={fieldClass}
+              style={fieldStyle}
+            />
+          </Field>
+          <Field label="Month" error={fieldErrors.pubM}>
+            <input
+              value={f.pubM}
+              onChange={(e) => set('pubM', e.target.value)}
+              placeholder="1–12"
+              inputMode="numeric"
+              aria-invalid={!!fieldErrors.pubM}
+              className={fieldClass}
+              style={fieldStyle}
+            />
+          </Field>
+          <Field label="Day" error={fieldErrors.pubD}>
+            <input
+              value={f.pubD}
+              onChange={(e) => set('pubD', e.target.value)}
+              placeholder="1–31"
+              inputMode="numeric"
+              aria-invalid={!!fieldErrors.pubD}
+              className={fieldClass}
+              style={fieldStyle}
+            />
+          </Field>
+        </div>
+        {/* Clearing or renaming the series REMOVES this book's slot from that series' reading order —
+          the same removal the series page's ✕ performs. Destructive enough to name before it happens. */}
+        {confirmingLeave ? (
+          <Surface tone="field" radius="card" pad={2} className="mt-4">
+            <p className="text-[13px] text-ink">
+              {f.series.trim()
+                ? `Moving this book to ${f.series.trim()} removes its slot from ${oldSeries}.`
+                : `This removes the book’s slot from ${oldSeries}.`}{' '}
+              <span className="text-muted">
+                The book stays in your library, and fetching {oldSeries} again won’t bring the slot
+                back.
+              </span>
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmingLeave(false)}
+                className="h-11 flex-1 skin-control-quiet border border-line text-[13.5px] font-semibold text-ink"
+                style={{
+                  background: 'var(--card)',
+                }}
+              >
+                Keep it in {oldSeries}
+              </button>
+              <button
+                type="button"
+                onClick={() => void save()}
+                disabled={saving}
+                className="h-11 flex-1 skin-control text-[14px] font-semibold disabled:opacity-50"
+                style={{
+                  background: 'linear-gradient(135deg, var(--primary), var(--gold))',
+                  color: 'var(--on-primary)',
+                }}
+              >
+                {saving ? 'Saving…' : 'Save and remove'}
+              </button>
+            </div>
+          </Surface>
+        ) : (
+          <button
+            type="button"
+            onClick={() => (leavingSeries ? setConfirmingLeave(true) : void save())}
+            disabled={saving}
+            className="mt-4 h-11 w-full skin-control text-[14px] font-semibold disabled:opacity-40"
+            style={{
+              background: 'linear-gradient(135deg, var(--primary), var(--gold))',
+              color: 'var(--on-primary)',
+            }}
+          >
+            {saving ? 'Saving…' : 'Save details'}
+          </button>
+        )}
+        {/* The dialog stays OPEN on failure — the reader keeps what they typed and can see why. */}
+        {saveError && (
+          <p role="alert" className="mt-2 text-[12.5px]" style={{ color: 'var(--accent-ink)' }}>
+            {saveError}
+          </p>
+        )}
+      </Modal>
+      {coverOpen && <CoverSheet book={book} onClose={() => setCoverOpen(false)} />}
+      {confirmExit && (
+        <Modal title="Leave these changes?" onClose={() => setConfirmExit(false)}>
+          <p className="text-[14px] text-ink">
+            Your detail changes have not all been saved. Covers, moods and possession changes save
+            separately and will be kept.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => setConfirmingLeave(false)}
-              className="h-11 flex-1 skin-control-quiet border border-line text-[13.5px] font-semibold text-ink"
-              style={{
-                background: 'var(--card)',
-              }}
+              className="skin-control skin-btn-primary min-h-11 px-4"
+              onClick={() => setConfirmExit(false)}
             >
-              Keep it in {oldSeries}
+              Keep editing
             </button>
             <button
               type="button"
-              onClick={() => void save()}
-              disabled={saving}
-              className="h-11 flex-1 skin-control text-[14px] font-semibold disabled:opacity-50"
-              style={{
-                background: 'linear-gradient(135deg, var(--primary), var(--gold))',
-                color: 'var(--on-primary)',
-              }}
+              className="skin-control skin-btn-secondary min-h-11 px-4"
+              onClick={onClose}
             >
-              {saving ? 'Saving…' : 'Save and remove'}
+              Leave changes
             </button>
           </div>
-        </Surface>
-      ) : (
-        <button
-          type="button"
-          onClick={() => (leavingSeries ? setConfirmingLeave(true) : void save())}
-          disabled={!f.genre || saving}
-          className="mt-4 h-11 w-full skin-control text-[14px] font-semibold disabled:opacity-40"
-          style={{
-            background: 'linear-gradient(135deg, var(--primary), var(--gold))',
-            color: 'var(--on-primary)',
-          }}
-        >
-          {saving ? 'Saving…' : f.genre ? 'Save details' : 'Pick a genre to save'}
-        </button>
+        </Modal>
       )}
-      {/* The dialog stays OPEN on failure — the reader keeps what they typed and can see why. */}
-      {saveError && (
-        <p role="alert" className="mt-2 text-[12.5px]" style={{ color: 'var(--accent-ink)' }}>
-          {saveError}
-        </p>
-      )}
-    </Modal>
+    </>
   )
 }
 

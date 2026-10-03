@@ -453,6 +453,31 @@ describe('household query identity and RPC boundary', () => {
     unmount()
   })
 
+  it.each([['roster', 'same'], ['books', 'same'], ['roster', 'replacement'], ['books', 'replacement']])('recovers a failed %s load with %s membership through fresh validation', async (failure, membership) => {
+    let failing = true
+    let householdId = 'house-before-retry'
+    mocked.rpc.mockImplementation(async (name: string) => {
+      if (failing && name === (failure === 'roster' ? 'household_roster' : 'household_library_works'))
+        return { data: null, error: new Error('temporarily unavailable') }
+      if (name === 'household_roster') return {
+        data: [{ household_id: householdId, household_name: 'Readers', user_id: 'reader-a', display_name: 'Avery', member_role: 'owner', allow_member_library_adds: false }], error: null,
+      }
+      return { data: [], error: null }
+    })
+    const { wrapper } = queryHarness()
+    const { result } = renderHook(() => useHouseholdLibraryAuthorization(), { wrapper })
+    await waitFor(() => expect(result.current.error).toBeTruthy())
+    expect(result.current.members).toEqual([])
+    expect(result.current.books).toEqual([])
+    failing = false
+    householdId = membership === 'same' ? householdId : 'house-after-retry'
+    await act(async () => { await result.current.retry() })
+    await waitFor(() => expect(result.current.authorized).toBe(true))
+    expect(result.current.error).toBeNull()
+    expect(result.current.householdId).toBe(householdId)
+    expect(result.current.members[0]?.householdId).toBe(householdId)
+  })
+
   it('forgets a selection across authorization loss or household replacement', () => {
     const firstBook = householdBook('book-1')
     const { result, rerender } = renderHook(

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { clearAllOfflineCaches, evictOtherReaders } from '../lib/offlineCache'
 import { storedSession } from '../lib/storedSession'
 import { signOutLocally } from '../lib/offlineSignOut'
+import { readableAuthError } from './errors'
 
 /** A refresh that failed because the network did, not because the credential is bad. auth-js
  *  preserves the stored session in this case and clears it in the other, so this is the signal
@@ -136,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     signInWithPassword: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
-      return { error: error?.message ?? null }
+      return { error: error ? readableAuthError(error) : null }
     },
     signUpWithPassword: async (email, password) => {
       const { data, error } = await supabase.auth.signUp({
@@ -144,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         options: { emailRedirectTo: `${window.location.origin}/welcome` },
       })
-      if (error) return { error: error.message, needsVerification: false }
+      if (error) return { error: readableAuthError(error), needsVerification: false }
       // No session back => email confirmation is required before sign-in (H3).
       return { error: null, needsVerification: !data.session }
     },
@@ -153,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         provider,
         options: { redirectTo: window.location.origin },
       })
-      return { error: error?.message ?? null }
+      return { error: error ? readableAuthError(error) : null }
     },
   }
 
