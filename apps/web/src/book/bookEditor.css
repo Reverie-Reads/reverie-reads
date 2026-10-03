@@ -156,16 +156,20 @@
   flex-shrink: 0;
 }
 .book-editor-dialog > .book-editor {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+.book-editor-dialog .book-editor-nav {
+  flex-shrink: 0;
+  margin-bottom: 0.5rem;
+}
+.book-editor-dialog .book-editor-content {
   overflow-y: auto;
   min-height: 0;
   padding: 4px;
-  scroll-padding-top: 7rem;
-}
-.book-editor-dialog .book-editor-nav {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--card-solid);
+  scroll-padding-top: 8px;
 }
 .book-editor-dialog .book-editor-actions {
   position: static;

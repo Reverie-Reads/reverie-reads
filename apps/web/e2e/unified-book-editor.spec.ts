@@ -170,6 +170,17 @@ for (const width of [320, 390, 1440]) {
         editor.getByRole('button', { name: 'Save details', exact: true }),
       ).toBeInViewport()
       await expect(editor.getByRole('button', { name: 'Close', exact: true })).toBeInViewport()
+      const navigation = await editor
+        .getByRole('navigation', { name: 'Book information sections' })
+        .boundingBox()
+      const section = await editor
+        .getByRole('heading', { name: 'Edition details', exact: true })
+        .boundingBox()
+      expect(navigation).not.toBeNull()
+      expect(section).not.toBeNull()
+      const sectionGap = section!.y - navigation!.y - navigation!.height
+      expect(sectionGap).toBeGreaterThanOrEqual(0)
+      expect(sectionGap).toBeLessThanOrEqual(24)
       expect(await editor.evaluate((dialog) => dialog.scrollWidth <= dialog.clientWidth)).toBe(true)
       await expect(editor.getByLabel('Pub year', { exact: true })).toHaveValue('2025')
       await expect(editor.getByLabel('Month', { exact: true })).toHaveValue('2')

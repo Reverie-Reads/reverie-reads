@@ -140,7 +140,7 @@ export function BookEditor({
           </button>
         ))}
       </nav>
-      {children}
+      <div className="book-editor-content">{children}</div>
     </div>
   )
 }
