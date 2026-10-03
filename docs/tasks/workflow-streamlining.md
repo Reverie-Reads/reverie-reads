@@ -56,6 +56,42 @@ Existing filters stored outside a route survive normal returns; route-local sele
 planner/editor draft restoration need the next slice below. Physical-device and live deployment
 acceptance remain separate. Billing, product registration and catalog authority are unchanged.
 
+## Shared book editor and quieter Next read
+
+The October 2 follow-up makes the personal Add and Edit forms use `BookMetadataFields`:
+identity/contributors, genres/subgenres, edition/date/page details and series details follow the
+same order, labels and controls. Rating and reading-status controls are shared too. Subgenres sit
+beside the primary genre, before the edition and series fields; existing cross-genre choices stay
+visible. Additional genres and other subgenre vocabularies are deliberate disclosures. An
+unclassified book stays unclassified until the reader chooses.
+
+The section bar jumps to Book, Genres, Edition, Series, Reading or Copies without replacing the
+draft. Book-page genre, edition, series and rating actions open that same editor at the relevant
+section. In the dialog, Close, section navigation and Save stay accessible while the fields scroll.
+Add collapses the search controls after a result/manual draft is chosen, and its destination
+control uses a quieter presentation without removing the household explanation.
+
+Personal Add now also exposes editable ISBN, secondary genres, series length/status and rating.
+Changing a selected release's ISBN detaches inherited publication/publisher/source facts; its new
+ISBN remains an explicit personal edition choice. Enrichment responses are tied to the current
+identity and ISBN. Series position/count edits retain the reader-choice guard.
+
+Edit submits only metadata changed from the opened draft, leaving unrelated refreshed values and
+untouched contributor/series claims alone. This reduces the W25 overwrite surface; it does **not**
+implement server revisions or resolve two edits to the same field. Existing immediate rating,
+reading, mood, cover and copy writes are named in the editor. Moods/tropes that need a saved book,
+copy-inventory setup and household catalog authority keep their existing dedicated flows.
+
+Bearded Next read begins with one recommendation. Scope, mood/quiz and secondary options live
+under Refine choices; the current scope, results, source qualifications and failures stay visible.
+Readers can reveal more books or refine the selection. The same mounted controls retain unfinished
+input across local or cross-tab interface changes; an active walkthrough opens its live targets.
+The full interface keeps its three-book shortlist. Private comparison/planning integration requires
+its own verification before this is considered shipped in the private app.
+
+Validation receipts, including any failed first runs and their corrections, belong in the audit
+record. Browser emulation is not installed-iPhone or physical-device acceptance.
+
 ## Remaining workflow packets
 
 | Workflow                           | Short intended path                                                                   | Required preservation and checks                                                                                                                                                         |
@@ -85,9 +121,9 @@ acceptance remain separate. Billing, product registration and catalog authority 
 2. Introduce one account-bound view/draft restoration contract, starting with Library and Planner.
    Keep draft values out of URLs, analytics and shared data. Test leaving and returning after edits,
    a changed account, household revocation, and records removed while away.
-3. Make detail editing revision-aware: preserve unrelated concurrent changes, surface overlapping
-   conflicts, and keep the older draft available for review. Then reduce Add/Edit density through
-   optional sections and unify repeated pickers and direct actions.
+3. Finish revision-aware detail editing: changed-field patches now preserve unrelated refreshed
+   values, but overlapping conflicts still need server revision checks and draft review. Build on
+   the shared editor and contextual entry without weakening its write and exit guards.
    Determine visibility from task state, not account price or a promise to simplify Bearded Mode.
 4. Repair shared-list access, simultaneous writes and join recovery before improving its invitation
    flow; add independent read recovery for clubs. Keep this security/data change separately reviewable.

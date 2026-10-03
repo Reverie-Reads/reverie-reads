@@ -1,7 +1,8 @@
+import { expectPublicationDate } from './support/bookEditor'
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import type { Route } from '@playwright/test'
-import { TRYST_LABELS, workKeyOf } from '@reverie/core'
+import { workKeyOf } from '@reverie/core'
 import { createClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
@@ -291,12 +292,10 @@ test('an exact edition lookup preserves corpus details and the matched ISBN', as
   })
   await expect(page.getByPlaceholder('Series')).toHaveValue('The Triage Cycle')
   await expect(page.getByPlaceholder('Book #')).toHaveValue('3')
-  // The genre select is labelled by the SKIN's vocabulary (`labels.genre`), not the word "Genre" —
-  // in tryst, the skin this account is seeded with, it reads "Romance". Ask the registry rather than
-  // hardcoding the string, so a vocabulary change moves this spec with it instead of breaking it.
-  await expect(page.getByLabel(TRYST_LABELS.genre)).toHaveValue(CORPUS_GENRE)
+  // Shared metadata labels stay genre-neutral across rooms.
+  await expect(page.getByRole('combobox', { name: 'Genre', exact: true })).toHaveValue(CORPUS_GENRE)
 
-  // ISBN is not a visible edit field on this compact form, so assert the click-to-prefill path at
+  // Assert the click-to-prefill path at
   // its consequence: the saved book carries the SECOND, actually matched edition, never [0].
   await page.getByRole('button', { name: /^Add to my library$/ }).click()
   await expect
@@ -322,9 +321,7 @@ for (const referenceIsbn of [CORPUS_FIRST_ISBN, CORPUS_RESULT_ISBN])
     await expect.poll(() => labelOf(page, CORPUS), { timeout: 15000 }).toBe('In the corpus')
     await row(page, CORPUS).locator('button').click()
     const sameEdition = referenceIsbn === CORPUS_RESULT_ISBN
-    await expect(page.getByLabel('Publication date', { exact: true })).toHaveValue(
-      sameEdition ? '2021' : '',
-    )
+    await expectPublicationDate(page, sameEdition ? '2021' : '')
     await page.getByRole('button', { name: /^Add to my library$/ }).click()
     const read = async () => {
       const { data, error } = await c.admin

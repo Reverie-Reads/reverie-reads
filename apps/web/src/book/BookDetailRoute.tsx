@@ -47,6 +47,7 @@ import { Chip } from '../components/Chip'
 import { READ_STATUS_OPTIONS, readStatusLabel, subgenreGradient } from '../library/constants'
 import { maybeChainPrompt } from '../lib/chainPrompt'
 import { EditDetails, LogReadForm, MergeDialog } from './dialogs'
+import type { BookEditorSectionId } from './BookMetadataFields'
 import { PlanEditor } from './PlanEditor'
 import { TropePicker } from '../components/TropePicker'
 import { TropeChip } from '../components/TropeChip'
@@ -297,6 +298,11 @@ export function BookDetailScreen() {
   const createList = useCreateList()
   const setAuthor = useFilters((s) => s.setAuthor)
   const [dialog, setDialog] = useState<Dialog>(null)
+  const [editSection, setEditSection] = useState<BookEditorSectionId>('identity')
+  const edit = (section: BookEditorSectionId) => {
+    setEditSection(section)
+    setDialog('edit')
+  }
   const [tropesExpanded, setTropesExpanded] = useState(false)
   const [progressNotice, setProgressNotice] = useState<{ bookId: string; text: string } | null>(
     null,
@@ -507,6 +513,13 @@ export function BookDetailScreen() {
               <span>{authorOf(book) || 'Unknown author'}</span>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => edit('classification')}
+            className="book-editor-disclosure mt-2"
+          >
+            Edit genres & subgenres
+          </button>
           <div className="mt-4 flex flex-wrap gap-1.5">
             {bookGenres(book).map((g) => (
               <Pill key={g}>{CORE_GENRES.find((cg) => cg.toLowerCase() === g) ?? g}</Pill>
@@ -640,6 +653,9 @@ export function BookDetailScreen() {
       )}
 
       <ReadingSection id="your-copy" title="Your editions & copies">
+        <button type="button" onClick={() => edit('edition')} className="book-editor-disclosure">
+          Edit edition details
+        </button>
         {/* your copies (per-format ownership) */}
         <div className="mt-6">
           {!book.copyInventory && (
@@ -756,7 +772,7 @@ export function BookDetailScreen() {
           action={
             <button
               type="button"
-              onClick={() => setDialog('edit')}
+              onClick={() => edit('reading')}
               className="text-[12px] text-primary"
             >
               Edit rating
@@ -858,9 +874,17 @@ export function BookDetailScreen() {
 
       <ReadingSection id="series-and-plans" title="Series and plans">
         <SeriesStrip book={book} />
+        {book.series && (
+          <button type="button" onClick={() => edit('series')} className="book-editor-disclosure">
+            Edit series details
+          </button>
+        )}
         {!book.series && (
           <p className="text-[14px] text-muted">
-            No personal series is set. You can add one in Edit details.
+            No personal series is set.{' '}
+            <button type="button" onClick={() => edit('series')} className="book-editor-disclosure">
+              Add series details
+            </button>
           </p>
         )}
         {/* lists & shelves */}
@@ -962,7 +986,7 @@ export function BookDetailScreen() {
       <ReadingSection id="more-about-book" title="More about this book">
         <button
           type="button"
-          onClick={() => setDialog('edit')}
+          onClick={() => edit('identity')}
           className="skin-control skin-btn-secondary min-h-11 px-4 text-[14px] font-semibold"
         >
           Edit details
@@ -1106,7 +1130,9 @@ export function BookDetailScreen() {
           onClose={() => setDialog(null)}
         />
       )}
-      {dialog === 'edit' && <EditDetails book={book} onClose={() => setDialog(null)} />}
+      {dialog === 'edit' && (
+        <EditDetails book={book} initialSection={editSection} onClose={() => setDialog(null)} />
+      )}
       {dialog === 'cover' && <CoverSheet book={book} onClose={() => setDialog(null)} />}
       {dialog === 'progress' && (
         <ReadingProgressDialog

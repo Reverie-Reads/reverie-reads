@@ -51,6 +51,7 @@ describe('skin character kit contrast (text on the kit surfaces ≥ AA, every sk
         ['nameplate eyebrow (accent-ink) on plate', t.accentInk, t.cardSolid],
         // 1c — typed text in a search / input field. --field = a 5% ink wash over the bg; model it.
         ['input/search text on field', t.ink, mixSrgb(t.ink, t.bg0, 0.05)],
+        ['book-editor section navigation on card', t.muted, t.cardSolid],
         // structural — section-header readout + accent status-tag text sit in --accent-ink on the page bg.
         ['structural readout / accent tag (accent-ink) on bg', t.accentInk, t.bg0],
         // taste tiers (taste-tiers): the named match-strength label on a card — top tier lit in the
