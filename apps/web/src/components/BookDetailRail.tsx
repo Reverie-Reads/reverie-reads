@@ -55,7 +55,7 @@ export function BookDetailRail({
 
   return (
     <div
-      className="flex h-full flex-col overflow-y-auto px-4 py-5"
+      className="flex h-full flex-col overflow-y-auto px-4 py-5 [&>*]:shrink-0"
       data-book-tour={book.id === bookTour.bookId ? 'tour-opened-book' : undefined}
       tabIndex={-1}
     >

@@ -569,7 +569,7 @@ export function HouseholdBookDetail({
   const published = publicationLabel(book)
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto px-4 py-5">
+    <div className="flex h-full flex-col overflow-y-auto px-4 py-5 [&>*]:shrink-0">
       <div
         className="mx-auto aspect-[2/3] w-36 overflow-hidden rounded-xl border border-line"
         style={{ background: `linear-gradient(150deg, ${g0}, ${g1})` }}

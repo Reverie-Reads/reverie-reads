@@ -119,8 +119,9 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   both modes, and **respect `prefers-reduced-motion`** (disable the night-sky drift/twinkle).
   Two layers guard contrast, and they cover different amounts: the **core contrast tests** are
   keyed off the `SKINS` registry, so all nine are checked and a new skin fails until it has
-  tokens; the **e2e axe sweep** runs four (`tryst`, `grimoire`, `aphelion`, `marrow`) × both
-  modes. A new component's contrast belongs in a registry-keyed core test — that is the layer
+  tokens; the **e2e axe sweep** derives its rooms from `SKIN_ORDER`: Tryst covers both modes
+  across every listed route, and every other room covers the core routes in one fixed mode.
+  A new component's contrast belongs in a registry-keyed core test — that is the layer
   that is exhaustive.
 - **Discover separates releases, curation and the shared catalog.** New & upcoming uses bounded
   date-window requests to existing release providers; Curated picks may contain backlist. Neither
@@ -731,7 +732,7 @@ See `docs/tasks/isbndb-retirement.md` for the read-only inventory and remaining 
 pnpm dev            # run web app
 pnpm build          # production build (core tsc, then web tsc/vite)
 pnpm test           # unit tests (Vitest, all packages)
-pnpm e2e            # Playwright (includes the axe sweep — four skins x both modes)
+pnpm e2e            # Playwright (includes the registry-keyed axe sweep)
 pnpm lint           # ESLint
 pnpm typecheck      # tsc --noEmit, all packages
 pnpm series:trial -- --scope all --providers openlibrary,wikidata  # provider evidence trial

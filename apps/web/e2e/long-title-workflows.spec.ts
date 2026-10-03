@@ -135,6 +135,25 @@ async function fits(element: Locator) {
   expect(m.content).toBeLessThanOrEqual(m.width + 1)
 }
 
+async function nameplateKeepsAuthor(heading: Locator) {
+  await expect(heading).toBeVisible()
+  const bounds = await heading.evaluate(async (el) => {
+    await document.fonts.ready
+    const plate = el.closest('.skin-plate')
+    const author = plate?.querySelector('p')
+    if (!(plate instanceof HTMLElement) || !author) throw new Error('Missing book nameplate')
+    return {
+      content: plate.scrollHeight,
+      height: plate.clientHeight,
+      authorBottom: author.getBoundingClientRect().bottom,
+      plateBottom: plate.getBoundingClientRect().bottom,
+    }
+  })
+  // A title can fit horizontally while its flex-shrunk nameplate clips the author below it.
+  expect(bounds.content).toBeLessThanOrEqual(bounds.height + 1)
+  expect(bounds.authorBottom).toBeLessThanOrEqual(bounds.plateBottom + 1)
+}
+
 test('an account-service failure keeps the credentials and a deliberate retry opens the library', async ({
   page,
 }) => {
@@ -164,7 +183,7 @@ test('an account-service failure keeps the credentials and a deliberate retry op
 })
 
 for (const width of [320, 390, 1440]) {
-  test(`complete book titles and shelf actions remain reachable at ${width}px`, async ({
+  test(`complete book titles, authors and shelf actions remain reachable at ${width}px`, async ({
     page,
   }, info) => {
     // Six title scripts/shapes, each opened in both personal and household detail.
@@ -185,11 +204,19 @@ for (const width of [320, 390, 1440]) {
         }
         await page.screenshot({ path: info.outputPath(`book-${width}.png`) })
       }
+      if (width >= 1024 && book.title === UNBROKEN) {
+        await page.goto('/library')
+        await page.getByRole('button', { name: `Open ${book.title}`, exact: true }).click()
+        await nameplateKeepsAuthor(page.getByRole('heading', { name: book.title, exact: true }))
+        await page.screenshot({ path: info.outputPath(`personal-drawer-${width}.png`) })
+        await page.getByRole('button', { name: 'Close details', exact: true }).click()
+      }
       await page.goto('/library?scope=household')
       await page
         .getByRole('button', { name: `View ${book.title} in the household library`, exact: true })
         .click()
       await fits(page.getByRole('heading', { name: book.title, exact: true }))
+      await nameplateKeepsAuthor(page.getByRole('heading', { name: book.title, exact: true }))
       if (book.title === UNBROKEN)
         await page.screenshot({ path: info.outputPath(`household-${width}.png`) })
       if (width < 1024)
