@@ -1,5 +1,6 @@
 import { StartNextReadTour } from '../guidance/BookTour'
 import { useBookTour } from '../guidance/BookTourContext'
+import { useReadingMode } from '../design/useReadingMode'
 import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -302,6 +303,9 @@ function NextReadCard({
 }
 
 function MatchScreen() {
+  const { mode } = useReadingMode()
+  const bearded = mode === 'bearded'
+  const [refineOpen, setRefineOpen] = useState(false)
   const { state: tour, send: sendTour } = useBookTour()
   const navigate = useNavigate()
   const search = matchRoute.useSearch()
@@ -365,7 +369,8 @@ function MatchScreen() {
   const visiblePicks = (vibe ? [...vibePicks, ...fallbackPicks].slice(0, 12) : result.picks).filter(
     (pick) => !hidden.has(pick.b.id),
   )
-  const displayed = showMore ? visiblePicks : visiblePicks.slice(0, 3)
+  const shortlistSize = bearded ? 1 : 3
+  const displayed = showMore ? visiblePicks : visiblePicks.slice(0, shortlistSize)
   const changeScope = (patch: Partial<typeof search>) => {
     setShowMore(false)
     void navigate({ to: '/match', search: { ...search, ...patch }, replace: true })
@@ -423,169 +428,194 @@ function MatchScreen() {
         </h1>
         <StartNextReadTour quiet />
       </div>
-      <ReadingTips>
-        <p className="mt-2 text-base text-muted">Find something you want to open.</p>
-      </ReadingTips>
-      <div className="mt-4 empty:hidden" data-book-tour-inline="next-scope" />
-      <fieldset className="mt-6" data-book-tour="next-scope">
-        <legend className="mb-2 text-sm font-semibold text-ink">Choose from</legend>
-        <select
-          aria-label="Choose from"
-          value={scope}
-          onChange={(e) => changeScope({ scope: e.target.value as NextReadScope })}
-          className="skin-field min-h-11 w-full border border-line bg-[color:var(--field)] px-3 text-base text-ink md:hidden"
-        >
-          {SCOPES.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <div className="hidden flex-wrap gap-2 md:flex">
-          {SCOPES.map((option) => (
-            <label
-              key={option.value}
-              className={`${quietButton} flex cursor-pointer items-center gap-2 ${scope === option.value ? 'bg-[color:var(--chip)]' : ''}`}
-            >
-              <input
-                type="radio"
-                name="next-read-scope"
-                value={option.value}
-                checked={scope === option.value}
-                onChange={() => changeScope({ scope: option.value })}
-              />
-              {option.label}
-            </label>
-          ))}
-        </div>
-        <p className="mt-2 text-sm text-muted">
+      {!bearded && (
+        <ReadingTips>
+          <p className="mt-2 text-base text-muted">Find something you want to open.</p>
+        </ReadingTips>
+      )}
+      {bearded && (
+        <p className="mt-3 text-sm text-muted">
           {SCOPES.find((option) => option.value === scope)?.description}
+          {includeRereads ? ' Including rereads.' : ''}
+          {includeDnf ? ' Including stopped books.' : ''}
         </p>
-      </fieldset>
-      <section className="mt-6" aria-label="Choose a mood">
-        <label htmlFor="next-read-mood" className="text-sm font-semibold text-ink">
-          What are you in the mood for?
-        </label>
-        <div className="mt-3 empty:hidden" data-book-tour-inline="next-mood" />
-        <form
-          className="mt-2 flex flex-col gap-2 sm:flex-row"
-          onSubmit={(e) => {
-            e.preventDefault()
-            const query = vibeQ.trim()
-            if (!query || vibeSearch.isPending) return
-            const request = ++vibeRequest.current
-            setVibe(null)
-            changeScope({ vibeQ: query, mood: undefined })
-            vibeSearch.mutate(query, {
-              onSuccess: (hits) => {
-                if (request === vibeRequest.current) {
-                  queryClient.setQueryData(moodCacheKey(query), hits)
-                  setVibe({ query, hits })
-                  setShowMore(false)
-                }
-              },
-            })
+      )}
+      <details
+        className="next-read-refinements"
+        open={!bearded || refineOpen || (tour.journey === 'next-read' && tour.status === 'active')}
+      >
+        <summary
+          hidden={!bearded}
+          className={`${quietButton} mt-4 cursor-pointer`}
+          onClick={(event) => {
+            event.preventDefault()
+            setRefineOpen(!refineOpen)
           }}
         >
-          <input
-            value={vibeQ}
-            onChange={(e) => setVibeQ(e.target.value)}
-            placeholder="A quiet mystery, or an adventure far from home"
-            id="next-read-mood"
-            data-book-tour="next-mood"
-            className="min-h-11 min-w-0 flex-1 skin-field border border-line bg-[color:var(--field)] px-3 text-base text-ink"
-          />
-          <button
-            type="submit"
-            disabled={vibeSearch.isPending || !vibeQ.trim()}
-            className={quietButton}
-          >
-            {vibeSearch.isPending ? 'Finding picks…' : 'Find this mood'}
-          </button>
-        </form>
-        {vibeSearch.isError && (
-          <p role="alert" className="mt-2 text-sm text-muted">
-            Mood search is unavailable. Your library picks are still here; try again or use the
-            questions below.
-          </p>
-        )}
-        <button
-          type="button"
-          className="mt-2 min-h-11 py-2 text-sm font-semibold text-ink underline underline-offset-4"
-          aria-expanded={quizOpen}
-          aria-controls={quizOpen ? 'next-read-questions' : undefined}
-          onClick={() => {
-            if (quizOpen) {
-              setQuizOpen(false)
-              return
-            }
-            vibeRequest.current++
-            setQuizOpen(true)
-            setStep(0)
-            setAnswers(emptyAnswers())
-            setMoodChoices([])
-            setTasteOnly(true)
-            changeScope({ vibeQ: undefined, mood: undefined })
-            setVibe(null)
-          }}
-        >
-          {quizOpen ? 'Close questions' : 'Help me choose'}
-        </button>
-        {quizOpen && q && (
-          <div id="next-read-questions" className="mt-4">
-            <p className="text-sm text-muted">
-              Question {step + 1} of {QUIZ.length}
-            </p>
-            <h2 className="mt-2 text-xl font-semibold text-ink">{q.q}</h2>
-            <div className="mt-3 flex flex-col gap-2">
-              {q.opts.map((option, optionIndex) => (
-                <button
-                  key={option.t}
-                  type="button"
-                  className={`${quietButton} bg-[color:var(--field)] text-left`}
-                  onClick={() => {
-                    setAnswers((a) => applyAnswer(a, option))
-                    const choices = [...moodChoices, optionIndex]
-                    setMoodChoices(choices)
-                    setStep((s) => s + 1)
-                    if (step === QUIZ.length - 1) {
-                      changeScope({ mood: choices.join('.'), vibeQ: undefined })
-                      setTasteOnly(false)
-                      setQuizOpen(false)
-                      setShowMore(false)
-                    }
-                  }}
-                >
-                  {option.t}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-      <details className="mt-2 border-b border-line pb-2">
-        <summary className="min-h-11 cursor-pointer py-2 text-[13px] font-medium leading-5 text-ink">
-          More options
+          Refine choices{search.vibeQ || search.mood ? ' · mood selected' : ''}
         </summary>
-        <div className="mt-2 flex flex-wrap gap-x-5">
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              checked={includeRereads}
-              onChange={(e) => changeScope({ rereads: e.target.checked || undefined })}
-            />
-            Include rereads
+        <div className="mt-4 empty:hidden" data-book-tour-inline="next-scope" />
+        <fieldset className="mt-6" data-book-tour="next-scope">
+          <legend className="mb-2 text-sm font-semibold text-ink">Choose from</legend>
+          <select
+            aria-label="Choose from"
+            value={scope}
+            onChange={(e) => changeScope({ scope: e.target.value as NextReadScope })}
+            className="skin-field min-h-11 w-full border border-line bg-[color:var(--field)] px-3 text-base text-ink md:hidden"
+          >
+            {SCOPES.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <div className="hidden flex-wrap gap-2 md:flex">
+            {SCOPES.map((option) => (
+              <label
+                key={option.value}
+                className={`${quietButton} flex cursor-pointer items-center gap-2 ${scope === option.value ? 'bg-[color:var(--chip)]' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="next-read-scope"
+                  value={option.value}
+                  checked={scope === option.value}
+                  onChange={() => changeScope({ scope: option.value })}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-sm text-muted">
+            {SCOPES.find((option) => option.value === scope)?.description}
+          </p>
+        </fieldset>
+        <section className="mt-6" aria-label="Choose a mood">
+          <label htmlFor="next-read-mood" className="text-sm font-semibold text-ink">
+            What are you in the mood for?
           </label>
-          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-ink">
+          <div className="mt-3 empty:hidden" data-book-tour-inline="next-mood" />
+          <form
+            className="mt-2 flex flex-col gap-2 sm:flex-row"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const query = vibeQ.trim()
+              if (!query || vibeSearch.isPending) return
+              const request = ++vibeRequest.current
+              setVibe(null)
+              changeScope({ vibeQ: query, mood: undefined })
+              vibeSearch.mutate(query, {
+                onSuccess: (hits) => {
+                  if (request === vibeRequest.current) {
+                    queryClient.setQueryData(moodCacheKey(query), hits)
+                    setVibe({ query, hits })
+                    setShowMore(false)
+                  }
+                },
+              })
+            }}
+          >
             <input
-              type="checkbox"
-              checked={includeDnf}
-              onChange={(e) => changeScope({ dnf: e.target.checked || undefined })}
+              value={vibeQ}
+              onChange={(e) => setVibeQ(e.target.value)}
+              placeholder="A quiet mystery, or an adventure far from home"
+              id="next-read-mood"
+              data-book-tour="next-mood"
+              className="min-h-11 min-w-0 flex-1 skin-field border border-line bg-[color:var(--field)] px-3 text-base text-ink"
             />
-            Include books I stopped reading
-          </label>
-        </div>
+            <button
+              type="submit"
+              disabled={vibeSearch.isPending || !vibeQ.trim()}
+              className={quietButton}
+            >
+              {vibeSearch.isPending ? 'Finding picks…' : 'Find this mood'}
+            </button>
+          </form>
+          <button
+            type="button"
+            className="mt-2 min-h-11 py-2 text-sm font-semibold text-ink underline underline-offset-4"
+            aria-expanded={quizOpen}
+            aria-controls={quizOpen ? 'next-read-questions' : undefined}
+            onClick={() => {
+              if (quizOpen) {
+                setQuizOpen(false)
+                return
+              }
+              vibeRequest.current++
+              setQuizOpen(true)
+              setStep(0)
+              setAnswers(emptyAnswers())
+              setMoodChoices([])
+              setTasteOnly(true)
+              changeScope({ vibeQ: undefined, mood: undefined })
+              setVibe(null)
+            }}
+          >
+            {quizOpen ? 'Close questions' : 'Help me choose'}
+          </button>
+          {quizOpen && q && (
+            <div id="next-read-questions" className="mt-4">
+              <p className="text-sm text-muted">
+                Question {step + 1} of {QUIZ.length}
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-ink">{q.q}</h2>
+              <div className="mt-3 flex flex-col gap-2">
+                {q.opts.map((option, optionIndex) => (
+                  <button
+                    key={option.t}
+                    type="button"
+                    className={`${quietButton} bg-[color:var(--field)] text-left`}
+                    onClick={() => {
+                      setAnswers((a) => applyAnswer(a, option))
+                      const choices = [...moodChoices, optionIndex]
+                      setMoodChoices(choices)
+                      setStep((s) => s + 1)
+                      if (step === QUIZ.length - 1) {
+                        changeScope({ mood: choices.join('.'), vibeQ: undefined })
+                        setTasteOnly(false)
+                        setQuizOpen(false)
+                        setShowMore(false)
+                      }
+                    }}
+                  >
+                    {option.t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+        <details className="mt-2 border-b border-line pb-2">
+          <summary className="min-h-11 cursor-pointer py-2 text-[13px] font-medium leading-5 text-ink">
+            More options
+          </summary>
+          <div className="mt-2 flex flex-wrap gap-x-5">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={includeRereads}
+                onChange={(e) => changeScope({ rereads: e.target.checked || undefined })}
+              />
+              Include rereads
+            </label>
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={includeDnf}
+                onChange={(e) => changeScope({ dnf: e.target.checked || undefined })}
+              />
+              Include books I stopped reading
+            </label>
+          </div>
+        </details>
       </details>
+      {vibeSearch.isError && (
+        <p role="alert" className="mt-2 text-sm text-muted">
+          Mood search is unavailable. Your library picks are still here; try again or use the
+          questions below.
+        </p>
+      )}
+
       {search.vibeQ && !vibe && !vibeSearch.isPending && tasteOnly && (
         <p className="mt-4 text-sm text-ink">
           Your saved mood is “{search.vibeQ}”. Choose Find this mood to run it again.
@@ -648,7 +678,7 @@ function MatchScreen() {
                   : result.sub}
               </p>
             </div>
-            {visiblePicks.length > 1 && (
+            {!bearded && visiblePicks.length > 1 && (
               <button
                 type="button"
                 className={quietButton}
@@ -684,7 +714,7 @@ function MatchScreen() {
               )}
             </Surface>
           )}
-          <div className="next-read-grid mt-4">
+          <div className={`next-read-grid mt-4 ${bearded ? 'next-read-simple' : ''}`}>
             {displayed.map((pick) => (
               <div key={pick.b.id} className="flex flex-col gap-2">
                 <NextReadCard
@@ -719,7 +749,7 @@ function MatchScreen() {
               </div>
             ))}
           </div>
-          {visiblePicks.length > 3 && (
+          {visiblePicks.length > shortlistSize && (
             <button
               type="button"
               className={`${quietButton} mt-4`}
@@ -727,7 +757,7 @@ function MatchScreen() {
             >
               {showMore
                 ? 'Show shortlist'
-                : `See ${visiblePicks.length - 3} more ${visiblePicks.length === 4 ? 'book' : 'books'}`}
+                : `See ${visiblePicks.length - shortlistSize} more ${visiblePicks.length - shortlistSize === 1 ? 'book' : 'books'}`}
             </button>
           )}
           <p className="mt-4 text-sm text-muted">

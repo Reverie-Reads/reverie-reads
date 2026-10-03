@@ -53,3 +53,60 @@ it('preserves a background series reconciliation when only the title draft chang
   })
   expect(state.series).not.toHaveBeenCalled()
 })
+
+it('does not replay untouched metadata or contributors when another session refreshes the book', async () => {
+  const book = makeBook({
+    id: 'book',
+    title: 'Original',
+    intensity: null,
+    darkness: null,
+    pages: 200,
+  })
+  const close = vi.fn()
+  const view = render(<EditDetails book={book} onClose={close} />)
+  fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), {
+    target: { value: 'Corrected' },
+  })
+  view.rerender(
+    <EditDetails
+      book={{
+        ...book,
+        pages: 300,
+        genre: 'mystery',
+        subgenres: ['Cozy Mystery'],
+        subgenre: 'Cozy Mystery',
+      }}
+      onClose={close}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
+  await waitFor(() => expect(close).toHaveBeenCalledOnce())
+  expect(state.update).toHaveBeenCalledExactlyOnceWith({
+    id: book.id,
+    patch: { title: 'Corrected' },
+  })
+  expect(state.contributors).not.toHaveBeenCalled()
+  expect(state.series).not.toHaveBeenCalled()
+})
+
+it('focuses a failed field on Save without moving focus away while the reader corrects it', async () => {
+  const close = vi.fn()
+  render(
+    <EditDetails book={makeBook({ id: 'validation', title: 'A clear draft' })} onClose={close} />,
+  )
+  const pages = screen.getByRole('textbox', { name: 'Pages' })
+  const month = screen.getByRole('textbox', { name: 'Month' })
+  fireEvent.change(pages, { target: { value: 'not a number' } })
+  fireEvent.change(month, { target: { value: '99' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
+  await waitFor(() => expect(pages).toHaveFocus())
+  expect(screen.getByRole('textbox', { name: /^Pages$/ })).toBe(pages)
+  expect(pages).toHaveAccessibleDescription('Pages must be a number.')
+  fireEvent.change(pages, { target: { value: '3' } })
+  expect(pages).toHaveFocus()
+  expect(pages).toHaveValue('3')
+  fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
+  await waitFor(() => expect(month).toHaveFocus())
+  expect(state.update).not.toHaveBeenCalled()
+  expect(close).not.toHaveBeenCalled()
+})

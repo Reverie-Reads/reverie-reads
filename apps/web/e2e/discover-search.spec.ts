@@ -1,3 +1,4 @@
+import { expectPublicationDate } from './support/bookEditor'
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import AxeBuilder from '@axe-core/playwright'
@@ -558,7 +559,7 @@ for (const surface of ['Discover', 'Add form'] as const) {
         await page.goto(`/add?${query}`)
         await page.getByRole('button', { name: /Fetch details/ }).click()
         await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('321')
-        await expect(page.getByLabel('Publication date', { exact: true })).toHaveValue('2010-09-28')
+        await expectPublicationDate(page, '2010-09-28')
         // A reader's edit wins over a later fetch.
         await page.getByLabel('Pages', { exact: true }).fill('543')
         await page.getByRole('button', { name: /Fetch details/ }).click()

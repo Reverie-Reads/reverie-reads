@@ -55,20 +55,18 @@ export function AddDestinationPicker({
 
   return (
     <fieldset className="mb-4">
-      <legend className="mb-2 text-[11px] uppercase tracking-[0.15em] text-muted">
-        Where should this go?
-      </legend>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <legend className="mb-2 text-sm font-medium text-ink">Where should this go?</legend>
+      <div className={`grid gap-2 ${choices.length > 1 ? 'sm:grid-cols-2' : ''}`}>
         {choices.map((choice) => {
           const checked = value === choice.value
           return (
             <label
               key={choice.value}
-              className="skin-control flex min-h-16 cursor-pointer items-start gap-2.5 border p-3 text-left"
+              className="flex min-h-16 cursor-pointer items-start gap-2.5 skin-card border p-3 text-left"
               style={{
-                background: checked ? 'var(--accent-fill)' : 'var(--field)',
-                color: checked ? 'var(--on-primary)' : 'var(--ink)',
-                borderColor: checked ? 'transparent' : 'var(--line)',
+                background: checked ? 'var(--card-solid)' : 'var(--field)',
+                color: 'var(--ink)',
+                borderColor: checked ? 'var(--accent-ink)' : 'var(--line)',
               }}
             >
               <input
@@ -88,7 +86,7 @@ export function AddDestinationPicker({
                 <span className="block text-[13px] font-semibold leading-tight">
                   {choice.label}
                 </span>
-                <span className="mt-1 block text-[11.5px] leading-snug">{choice.detail}</span>
+                <span className="mt-1 block text-sm leading-relaxed">{choice.detail}</span>
               </span>
             </label>
           )

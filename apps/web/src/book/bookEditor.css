@@ -1,0 +1,187 @@
+.book-editor {
+  min-width: 0;
+}
+.book-editor-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--card-solid);
+}
+.book-editor-nav button {
+  min-height: 44px;
+  flex: 1 0 auto;
+  padding: 0.5rem 0.75rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  border-radius: var(--radius-control);
+}
+.book-editor-nav button[aria-current] {
+  background: var(--field);
+  color: var(--ink);
+  font-weight: 600;
+}
+.book-editor-nav button:focus-visible,
+.book-editor-disclosure:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+.book-editor-section {
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: 1rem;
+  min-width: 0;
+}
+.book-editor-section h3 {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  overflow-wrap: anywhere;
+}
+.book-editor-section h3:focus {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 4px;
+}
+.book-editor-section-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  min-width: 0;
+}
+.book-editor-label {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.book-editor-field {
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--field);
+  color: var(--ink);
+  padding: 0.625rem 0.75rem;
+  font-size: 1rem;
+}
+.book-editor-caption {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.book-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.book-editor-error {
+  color: var(--accent-ink);
+  font-size: 0.875rem;
+}
+.book-editor-disclosure {
+  min-height: 44px;
+  text-align: left;
+  color: var(--ink);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.book-editor-actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--card-solid);
+  border-top: 1px solid var(--line);
+  padding: 0.75rem 0;
+  margin-top: 1rem;
+  z-index: 1;
+}
+@media (max-width: 380px) {
+  .book-editor-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.book-editor-identity {
+  display: flex;
+  gap: 1rem;
+  align-items: start;
+}
+.book-editor-identity > :last-child {
+  flex: 1;
+}
+.book-editor-cover {
+  width: 5rem;
+  flex: none;
+}
+.book-editor-cover > div {
+  flex-direction: column;
+  align-items: stretch;
+}
+.book-editor-cover button {
+  font-size: 0.75rem;
+  min-height: 44px;
+  padding: 0.25rem;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 480px) {
+  .book-editor-identity {
+    flex-direction: column;
+  }
+  .book-editor-identity > :last-child {
+    width: 100%;
+  }
+  .book-editor-cover {
+    width: 100%;
+  }
+  .book-editor-cover > div {
+    flex-direction: row;
+    align-items: center;
+  }
+  .book-editor-cover img {
+    max-height: 96px;
+  }
+}
+
+/* The editor owns its scroll area so navigation, Close and Save remain in reach. */
+.rv-modal.book-editor-dialog {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.book-editor-dialog > :not(.book-editor) {
+  flex-shrink: 0;
+}
+.book-editor-dialog > .book-editor {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+.book-editor-dialog .book-editor-nav {
+  flex-shrink: 0;
+  margin-bottom: 0.5rem;
+}
+.book-editor-dialog .book-editor-content {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 4px;
+  scroll-padding-top: 8px;
+}
+.book-editor-dialog .book-editor-actions {
+  position: static;
+  margin-top: 0.5rem;
+  padding-bottom: 0;
+}
+.book-editor-dialog .book-editor-actions > button {
+  margin-top: 0;
+}
+.book-editor .book-editor-identity input,
+.book-editor .book-editor-identity select {
+  min-height: 44px;
+  font-size: 1rem;
+}

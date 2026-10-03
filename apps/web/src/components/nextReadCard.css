@@ -3,3 +3,14 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
   gap: 1rem;
 }
+
+.next-read-simple {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 42rem;
+}
+.next-read-simple article > button {
+  flex-direction: row;
+}
+.next-read-refinements > summary::marker {
+  content: '';
+}

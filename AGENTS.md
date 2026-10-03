@@ -234,6 +234,14 @@ myProgress`). Move them into `packages/core` with tests.
   and do not force an unrelated genre choice to correct an unclassified book. See
   `docs/tasks/workflow-streamlining.md`; remembering a URL is not proof that every route-local draft
   or selection is restored.
+- **Personal book metadata has one editor.** Add and Edit reuse `BookMetadataFields`, with adjacent
+  genre/subgenre choices and the same identity, edition and series sections. Contextual entry moves
+  focus within the mounted draft. Keep Close and Save reachable on phones. Edit patches only changed
+  fields; this is not revision-based overlapping-conflict detection. Saved-book-only moods/tags and
+  copy inventory retain their explicit save/authority rules. Editable intake ISBN detaches inherited
+  edition facts and invalidates stale enrichment. Bearded Next read begins with one pick and keeps
+  refinements mounted behind a disclosure; mode changes preserve unsent input and active guidance
+  opens the relevant controls. Essential scope, source qualifications and failures remain visible.
 - **Single-book Add keeps a retry identity.** Pending submissions and duplicate decisions share
   one synchronous guard. A failed attempt keeps its draft and original duplicate action. Retrying
   checks its exact reader-owned insertion UUID first; an already saved or removed row is never

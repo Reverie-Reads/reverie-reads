@@ -1,3 +1,4 @@
+import { expectPublicationDate } from './support/bookEditor'
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
@@ -190,16 +191,18 @@ test('release failure offers recovery instead of claiming an empty shelf', async
   await expect(page.getByText(/No releases match/)).toBeVisible()
 })
 
-for (const { width, changeFormat } of [
-  { width: 1280, changeFormat: false },
-  { width: 390, changeFormat: false },
-  { width: 1280, changeFormat: true },
+for (const { width, changeFormat, changeIsbn } of [
+  { width: 1280, changeFormat: false, changeIsbn: false },
+  { width: 390, changeFormat: false, changeIsbn: false },
+  { width: 1280, changeFormat: true, changeIsbn: false },
+  { width: 390, changeFormat: false, changeIsbn: true },
 ]) {
-  test(`selected release saves one wanted edition and returns to the same window at ${width}px (change format: ${changeFormat})`, async ({
+  test(`selected release saves one wanted edition and returns to the same window at ${width}px (change format: ${changeFormat}, change ISBN: ${changeIsbn})`, async ({
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 })
     const c = await client()
+    const detached = changeFormat || changeIsbn
     const title = 'Edition Handoff Journey'
     await ok(
       c.sb.from('books').delete().eq('owner_id', c.uid).eq('title', title),
@@ -250,7 +253,7 @@ for (const { width, changeFormat } of [
         .getByRole('link', { name: 'Add to wishlist', exact: true })
         .click()
       await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(title)
-      await expect(page.getByLabel('Publication date', { exact: true })).toHaveValue(pub)
+      await expectPublicationDate(page, pub)
       await expect(page.getByLabel('Edition format', { exact: true })).toHaveValue(
         width === 1280 ? 'Hardcover' : '',
       )
@@ -260,11 +263,21 @@ for (const { width, changeFormat } of [
       await expect(page.getByText(`ISBN ${release.isbn}`, { exact: true })).toBeVisible()
       expect(await rows()).toHaveLength(0)
       await page.reload()
-      await expect(page.getByLabel('Publication date', { exact: true })).toHaveValue(pub)
+      await expectPublicationDate(page, pub)
       expect(await rows()).toHaveLength(0)
       if (changeFormat) {
         await page.getByLabel('Edition format', { exact: true }).selectOption('Paperback')
         await expect(page.getByRole('status')).toContainText('no longer match this release')
+      }
+      if (changeIsbn) {
+        await page.getByLabel('ISBN', { exact: true }).fill('9780316580792')
+        await expect(page.getByRole('status')).toContainText('no longer match this release')
+        await expectPublicationDate(page, '')
+        await page.locator('[data-book-tour="book-save"]').click()
+        await expect(page.getByRole('alert')).toContainText('Enter a valid ISBN-10 or ISBN-13')
+        expect(await rows()).toHaveLength(0)
+        await expect(page.getByRole('textbox', { name: /^ISBN/ })).toBeFocused()
+        await page.getByRole('textbox', { name: /^ISBN/ }).fill('9780316580793')
       }
       await page.screenshot({
         path: test.info().outputPath(`edition-draft-${width}.png`),
@@ -275,8 +288,8 @@ for (const { width, changeFormat } of [
       const saved = await rows()
       expect(saved).toHaveLength(1)
       expect(saved[0]).toMatchObject({
-        isbn: changeFormat ? null : release.isbn,
-        ...(changeFormat ? { pub_y: null, pub_m: null, pub_d: null } : {}),
+        isbn: changeIsbn ? '9780316580793' : changeFormat ? null : release.isbn,
+        ...(detached ? { pub_y: null, pub_m: null, pub_d: null } : {}),
         ownership: 'unowned',
         wishlist: true,
         borrowed: false,
@@ -287,15 +300,15 @@ for (const { width, changeFormat } of [
       expect(saved[0].copy_inventory.copies).toHaveLength(1)
       expect(saved[0].copy_inventory.copies[0].state).toBe('wishlist')
       expect(saved[0].copy_inventory.editions[0]).toMatchObject({
-        isbn: changeFormat ? '' : release.isbn,
-        published: changeFormat ? '' : pub,
-        publisher: changeFormat ? '' : 'Example Press',
-        ...(!changeFormat ? { sourceUrl } : {}),
+        isbn: changeIsbn ? '9780316580793' : changeFormat ? '' : release.isbn,
+        published: detached ? '' : pub,
+        publisher: detached ? '' : 'Example Press',
+        ...(!detached ? { sourceUrl } : {}),
         format: changeFormat ? 'paperback' : width === 1280 ? 'hardcover' : 'unknown',
       })
       await page.getByRole('link', { name: 'Open your book', exact: true }).click()
       await expect(page.getByRole('button', { name: 'Manage copies', exact: true })).toBeVisible()
-      if (changeFormat) {
+      if (detached) {
         expect(saved[0].copy_inventory.editions[0]).not.toHaveProperty('sourceUrl')
         await expect(
           page.getByRole('link', { name: 'Release listing ↗', exact: true }),

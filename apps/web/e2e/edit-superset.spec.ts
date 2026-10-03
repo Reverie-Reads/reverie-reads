@@ -296,12 +296,12 @@ test('edit details carries ownership and read status, persisting immediately', a
 
     const dlg = await openEdit(page)
     await expect(dlg.getByText('Your copies').first()).toBeVisible()
-    await expect(dlg.getByText('Reading status')).toBeVisible()
+    await expect(dlg.getByText('Reading status', { exact: true })).toBeVisible()
 
     // These persist immediately, like MoodPicker — the same behaviour they have on the book page.
     await dlg
-      .getByRole('button', { name: /^Reading$/ })
-      .first()
+      .getByRole('group', { name: 'Reading status', exact: true })
+      .getByRole('button', { name: 'Reading', exact: true })
       .click()
     await expect
       .poll(async () => (await rowOf(c, id)).read_status, { timeout: 15_000 })

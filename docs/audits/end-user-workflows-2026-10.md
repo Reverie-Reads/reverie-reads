@@ -212,6 +212,41 @@ are exercised separately. A route visit does not stand in for its dialogs or sav
   Earlier red discovery attempts remain in this ledger. No production migration or deployment
   was performed. This receipt changes documentation only; no new browser run is required for it.
 
+## October 3 shared-editor follow-up
+
+The next UI slice gives personal Add and Edit the same metadata layout, puts subgenres beside
+genre, and opens contextual book-page actions at the corresponding editor section. The dialog
+keeps navigation, Close and Save outside its scrolling fields. Bearded Next read opens with one
+recommendation and optional refinements; the full interface retains its three-book shortlist.
+The implementation contract and remaining W18/W25 work are in
+[`workflow-streamlining.md`](../tasks/workflow-streamlining.md).
+
+- Focused Add/Edit, long-title and nested-cover checks passed at 320, 390 and 1,440 px. The final
+  fixed-control set passed 11 checks, and the resulting phone/desktop images were inspected.
+  Release handoff and retry checks passed 25 checks; all 535 registry-keyed contrast checks passed.
+- The completed first full browser run at `753dd67` was **red**: 373 passed, six failed, ten declared
+  skips and one serial dependent test not run (default one worker, fresh database, retries zero).
+  Lint, types, formatting, build, unit tests and 1,973 SQL assertions passed at that candidate.
+  [Hosted CI 37104168775](https://github.com/Reverie-Reads/reverie-reads/actions/runs/37104168775)
+  independently found the same six browser failures.
+- Two failures came from validation text entering the accessible field name; stable labels now
+  reference errors as descriptions. Two came from an alternate-cover strip widening the editor's
+  implicit grid track; the track now has a bounded minimum. The other two checks needed to follow
+  the new behavior: reopen the preserved search disclosure, and require zero direct book patches
+  for a series-only edit. The latter retains the single atomic membership-write assertion.
+- All six corrected browser checks passed together on a fresh local database with one worker and
+  zero retries. Three editor unit checks passed, including a stable accessible name and associated
+  validation description. Local-stack restoration passed after both the red run and recovery run.
+- Earlier discovery checks also caught ambiguous selectors, invalid edited-release ISBN handling,
+  three navigation contrast pairs, an editable rating during a pending save, and content showing
+  beneath the editor navigation. Their corrections and focused validation preceded this full run.
+  Superseded full attempts were interrupted for those corrections, not counted as completed passes.
+
+The final full-gate and merge receipts belong to
+[PR #621](https://github.com/Reverie-Reads/reverie-reads/pull/621). Private comparison/planning
+integration has a separate acceptance gate. These browser fixtures do not establish live-provider,
+production-deployment or physical-device outcomes.
+
 ## Human testing that remains necessary
 
 Use the actual release build on a physical iPhone and Android phone: camera/barcodes, photo upload,

@@ -488,7 +488,9 @@ test('starting and replaying a guide on a populated Add form preserves the reade
     await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(
       'A draft I want to keep',
     )
+    await page.locator('summary').filter({ hasText: 'Search or choose another book' }).click()
     await expect(search).toHaveValue('My unfinished search')
+    await expect(guide.getByRole('status')).toHaveText('Make it yours')
     const rows = await account.reader.from('books').select('id').eq('owner_id', account.uid)
     if (rows.error) throw rows.error
     expect(rows.data).toEqual([{ id: account.bookId }])
