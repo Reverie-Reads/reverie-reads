@@ -177,6 +177,7 @@ test('Goodreads import: fidelity fixes land in the DB, summary is honest, axe gr
 
     // Import the real Goodreads export through the app's own file input.
     await page.locator('input[type="file"][accept*="csv"]').setInputFiles(FIXTURE)
+    await page.getByRole('button', { name: /^Confirm import of/ }).click()
 
     // ── the honest summary screen ──
     const summary = page.getByText(/Detected your generic export/i)

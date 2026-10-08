@@ -3,7 +3,7 @@ import { expect, test, type Page } from './support/fixtures'
 import { createClient } from '@supabase/supabase-js'
 import { authFailure } from './support/authError'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
-import { ok, okUser } from './support/ok'
+import { ok, okData, okUser } from './support/ok'
 
 /**
  * A FUZZY match on single-Add asks, it does not silently insert a second row.
@@ -113,7 +113,7 @@ async function stub(page: Page) {
 }
 
 /** Fill the manual Add form with a title and one contributor surname, then submit. */
-async function addManually(page: Page, title: string, surname: string) {
+async function addManually(page: Page, title: string, surname: string, pages?: string) {
   await page.goto('/add')
   await page.getByRole('button', { name: /^Add manually$/i }).click()
   const t = page.getByPlaceholder('Title', { exact: true })
@@ -121,7 +121,14 @@ async function addManually(page: Page, title: string, surname: string) {
   await t.fill(title)
   await page.getByRole('button', { name: /Add contributor/i }).click()
   await page.getByLabel('Contributor 1 name').fill(surname)
-  await page.getByRole('button', { name: /^Add to my library$/ }).click()
+  if (pages) {
+    await page
+      .getByRole('button', { name: 'Additional information (optional)', exact: true })
+      .click()
+    await page.getByLabel('Pages', { exact: true }).fill(pages)
+  }
+  await page.getByRole('button', { name: /^Review book$/ }).click()
+  await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
 }
 
 test('a fuzzy match on single-Add asks instead of inserting a duplicate', async ({ page }) => {
@@ -170,16 +177,17 @@ test('a fuzzy match on single-Add asks instead of inserting a duplicate', async 
     .toBe(1)
 })
 
-/**
- * The other half of the contract, and the reason this file does not just assert "a prompt appears":
- * an EXACT title+author match is a STRONG match, which `decideIntake` resolves on the line above
- * fuzzyMode. It must keep folding into the existing row rather than newly asking — otherwise the
- * fix would have quietly turned every re-add into a question.
- */
-test('an exact re-add still merges silently — the strong path is untouched', async ({ page }) => {
+/** Quick Add requires a decision even when spreadsheet imports may merge exact duplicates. */
+test('an exact re-add asks before merging even when import auto-merge is enabled', async ({
+  page,
+}) => {
   const c = await client()
   await stub(page)
   await reset(c)
+  await ok(
+    c.sb.from('profiles').update({ auto_merge_duplicates: true }).eq('id', c.uid),
+    'Enable import auto-merge',
+  )
 
   await ok(
     c.sb.from('books').insert({
@@ -198,15 +206,21 @@ test('an exact re-add still merges silently — the strong path is untouched', a
   )
 
   await signIn(page, c.session)
-  await addManually(page, INCOMING_TITLE, SURNAME)
+  await addManually(page, INCOMING_TITLE, SURNAME, '220')
 
-  await expect
-    .poll(
-      async () => ((await c.sb.from('books').select('id').eq('owner_id', c.uid)).data ?? []).length,
-      {
-        message: 'an exact re-add should fold into the existing row, not duplicate',
-        timeout: 15_000,
-      },
-    )
-    .toBe(1)
+  await expect(page.getByText(/You may already have/i)).toBeVisible()
+  const before = await okData(
+    c.sb.from('books').select('id,pages').eq('owner_id', c.uid),
+    'Exact duplicate before explicit merge',
+  )
+  expect(before).toHaveLength(1)
+  expect(before[0]?.pages).toBeNull()
+
+  await page.getByRole('button', { name: 'Merge into it', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Your book was saved' })).toBeVisible()
+  const after = await okData(
+    c.sb.from('books').select('id,pages').eq('owner_id', c.uid),
+    'Exact duplicate after explicit merge',
+  )
+  expect(after).toEqual([{ id: before[0]?.id, pages: 220 }])
 })

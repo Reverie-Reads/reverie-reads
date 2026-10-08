@@ -253,6 +253,9 @@ for (const { width, changeFormat, changeIsbn } of [
         .getByRole('link', { name: 'Add to wishlist', exact: true })
         .click()
       await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(title)
+      await page
+        .getByRole('button', { name: 'Additional information (optional)', exact: true })
+        .click()
       await expectPublicationDate(page, pub)
       await expect(page.getByLabel('Edition format', { exact: true })).toHaveValue(
         width === 1280 ? 'Hardcover' : '',
@@ -284,6 +287,7 @@ for (const { width, changeFormat, changeIsbn } of [
         fullPage: true,
       })
       await page.locator('[data-book-tour="book-save"]').click()
+      await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
       await expect(page.getByRole('heading', { name: 'Your book was saved' })).toBeVisible()
       const saved = await rows()
       expect(saved).toHaveLength(1)
@@ -403,6 +407,7 @@ test('a selected release can be reviewed and added to an existing personal book'
       .getByRole('link', { name: 'Add this edition', exact: true })
       .click()
     await page.locator('[data-book-tour="book-save"]').click()
+    await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
     await expect(page.getByText(`You may already have ${title}`)).toBeVisible()
     await page.getByRole('button', { name: 'Add edition to existing book' }).click()
 

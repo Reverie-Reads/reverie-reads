@@ -199,6 +199,7 @@ export function BookMetadataFields({
   validationAttempt = 0,
   cover,
   editionNotice,
+  quick = false,
 }: {
   value: BookMetadataDraft
   onChange: (field: keyof BookMetadataDraft, value: string) => void
@@ -213,7 +214,9 @@ export function BookMetadataFields({
   validationAttempt?: number
   cover?: ReactNode
   editionNotice?: ReactNode
+  quick?: boolean
 }) {
+  const [showDetails, setShowDetails] = useState(false)
   const fieldPrefix = useId()
   const fields = useRef<HTMLDivElement>(null)
   const errorSignature = JSON.stringify(errors)
@@ -222,8 +225,11 @@ export function BookMetadataFields({
     if (focusedAttempt.current === validationAttempt) return
     focusedAttempt.current = validationAttempt
     if (!Object.values(JSON.parse(errorSignature)).some(Boolean)) return
-    const invalid = fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')
-    invalid?.focus()
+    setShowDetails(true)
+    const frame = requestAnimationFrame(() =>
+      fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+    )
+    return () => cancelAnimationFrame(frame)
   }, [errorSignature, validationAttempt])
   const [showOtherSubs, setShowOtherSubs] = useState(false)
   const [showOtherGenres, setShowOtherGenres] = useState(false)
@@ -272,88 +278,100 @@ export function BookMetadataFields({
           </div>
         </div>
       </BookEditorSection>
-      <BookEditorSection id="classification" title="Genres & subgenres">
-        <BookField label="Genre">
-          <select
-            aria-label="Genre"
-            value={f.genre}
-            onChange={(e) => set('genre', e.target.value)}
-            className={bookFieldClass}
-          >
-            <option value="">Genre — not set</option>
-            {f.genre && !CORE_GENRES.some((g) => g.toLowerCase() === f.genre) && (
-              <option value={f.genre}>{f.genre}</option>
-            )}
-            {CORE_GENRES.map((g) => (
-              <option key={g} value={g.toLowerCase()}>
-                {g}
-              </option>
-            ))}
-          </select>
-        </BookField>
-        <div role="group" aria-label="Subgenres">
-          <p className="book-editor-caption">Subgenres</p>
-          {options.length ? (
-            <div className="flex flex-wrap gap-2">
-              {options.map((s) => (
-                <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
-                  {s}
-                </Chip>
+      {quick && (
+        <button
+          type="button"
+          className="book-editor-disclosure"
+          aria-expanded={showDetails}
+          onClick={() => setShowDetails(!showDetails)}
+        >
+          {showDetails ? 'Hide additional information' : 'Additional information (optional)'}
+        </button>
+      )}
+      <div hidden={quick && !showDetails}>
+        <BookEditorSection id="classification" title="Genres & subgenres">
+          <BookField label="Genre">
+            <select
+              aria-label="Genre"
+              value={f.genre}
+              onChange={(e) => set('genre', e.target.value)}
+              className={bookFieldClass}
+            >
+              <option value="">Genre — not set</option>
+              {f.genre && !CORE_GENRES.some((g) => g.toLowerCase() === f.genre) && (
+                <option value={f.genre}>{f.genre}</option>
+              )}
+              {CORE_GENRES.map((g) => (
+                <option key={g} value={g.toLowerCase()}>
+                  {g}
+                </option>
               ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted">
-              Choose a genre to see its subgenres, or browse all subgenres below.
-            </p>
-          )}
-          <button
-            type="button"
-            className="book-editor-disclosure"
-            aria-expanded={showOtherSubs}
-            onClick={() => setShowOtherSubs(!showOtherSubs)}
-          >
-            {showOtherSubs ? 'Hide other genres’ subgenres' : 'Other genres’ subgenres…'}
-          </button>
-          {showOtherSubs && (
-            <div className="flex flex-wrap gap-2">
-              {otherGenreSubgenres(f.genre)
-                .filter((s) => !options.includes(s))
-                .map((s) => (
+            </select>
+          </BookField>
+          <div role="group" aria-label="Subgenres">
+            <p className="book-editor-caption">Subgenres</p>
+            {options.length ? (
+              <div className="flex flex-wrap gap-2">
+                {options.map((s) => (
                   <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
                     {s}
                   </Chip>
                 ))}
-            </div>
-          )}
-        </div>
-        <div>
-          <button
-            type="button"
-            className="book-editor-disclosure"
-            aria-expanded={showOtherGenres}
-            onClick={() => setShowOtherGenres(!showOtherGenres)}
-          >
-            Also tag as{extraGenres.length ? ` · ${extraGenres.length} selected` : ''}
-          </button>
-          {(showOtherGenres || extraGenres.length > 0) && (
-            <div className="flex flex-wrap gap-2">
-              {CORE_GENRES.filter(
-                (g) =>
-                  g.toLowerCase() !== f.genre &&
-                  (showOtherGenres || extraGenres.includes(g.toLowerCase())),
-              ).map((g) => (
-                <Chip
-                  key={g}
-                  active={extraGenres.includes(g.toLowerCase())}
-                  onClick={() => toggleGenre(g.toLowerCase())}
-                >
-                  {g}
-                </Chip>
-              ))}
-            </div>
-          )}
-        </div>
-      </BookEditorSection>
+              </div>
+            ) : (
+              <p className="text-sm text-muted">
+                Choose a genre to see its subgenres, or browse all subgenres below.
+              </p>
+            )}
+            <button
+              type="button"
+              className="book-editor-disclosure"
+              aria-expanded={showOtherSubs}
+              onClick={() => setShowOtherSubs(!showOtherSubs)}
+            >
+              {showOtherSubs ? 'Hide other genres’ subgenres' : 'Other genres’ subgenres…'}
+            </button>
+            {showOtherSubs && (
+              <div className="flex flex-wrap gap-2">
+                {otherGenreSubgenres(f.genre)
+                  .filter((s) => !options.includes(s))
+                  .map((s) => (
+                    <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
+                      {s}
+                    </Chip>
+                  ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <button
+              type="button"
+              className="book-editor-disclosure"
+              aria-expanded={showOtherGenres}
+              onClick={() => setShowOtherGenres(!showOtherGenres)}
+            >
+              Also tag as{extraGenres.length ? ` · ${extraGenres.length} selected` : ''}
+            </button>
+            {(showOtherGenres || extraGenres.length > 0) && (
+              <div className="flex flex-wrap gap-2">
+                {CORE_GENRES.filter(
+                  (g) =>
+                    g.toLowerCase() !== f.genre &&
+                    (showOtherGenres || extraGenres.includes(g.toLowerCase())),
+                ).map((g) => (
+                  <Chip
+                    key={g}
+                    active={extraGenres.includes(g.toLowerCase())}
+                    onClick={() => toggleGenre(g.toLowerCase())}
+                  >
+                    {g}
+                  </Chip>
+                ))}
+              </div>
+            )}
+          </div>
+        </BookEditorSection>
+      </div>
       <BookEditorSection id="edition" title="Edition details">
         {editionNotice}
         <div className="book-editor-grid">
@@ -375,9 +393,9 @@ export function BookMetadataFields({
               ))}
             </select>
           </BookField>
-          {input('pages', 'Pages', 'Unknown', true)}
+          <div hidden={quick && !showDetails}>{input('pages', 'Pages', 'Unknown', true)}</div>
         </div>
-        <fieldset>
+        <fieldset hidden={quick && !showDetails}>
           <legend className="book-editor-caption">Publication date</legend>
           <p className="mb-2 text-sm text-muted">Enter only what you know.</p>
           <div className="grid grid-cols-3 gap-3">
@@ -387,27 +405,29 @@ export function BookMetadataFields({
           </div>
         </fieldset>
       </BookEditorSection>
-      <BookEditorSection id="series" title="Series details">
-        <div className="book-editor-grid">
-          {input('series', 'Series', 'Series')}
-          {input('position', 'Position', 'Book #', true)}
-          {input('seriesCount', 'Series length', 'None set', true)}
-          <BookField label="Series status">
-            <select
-              aria-label="Series status"
-              value={f.status}
-              onChange={(e) => set('status', e.target.value)}
-              className={bookFieldClass}
-            >
-              {SERIES_STATUS_VALUES.map((s) => (
-                <option key={s} value={s}>
-                  {SERIES_STATUS_LABELS[s]}
-                </option>
-              ))}
-            </select>
-          </BookField>
-        </div>
-      </BookEditorSection>
+      <div hidden={quick && !showDetails}>
+        <BookEditorSection id="series" title="Series details">
+          <div className="book-editor-grid">
+            {input('series', 'Series', 'Series')}
+            {input('position', 'Position', 'Book #', true)}
+            {input('seriesCount', 'Series length', 'None set', true)}
+            <BookField label="Series status">
+              <select
+                aria-label="Series status"
+                value={f.status}
+                onChange={(e) => set('status', e.target.value)}
+                className={bookFieldClass}
+              >
+                {SERIES_STATUS_VALUES.map((s) => (
+                  <option key={s} value={s}>
+                    {SERIES_STATUS_LABELS[s]}
+                  </option>
+                ))}
+              </select>
+            </BookField>
+          </div>
+        </BookEditorSection>
+      </div>
     </div>
   )
 }

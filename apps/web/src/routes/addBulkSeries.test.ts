@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SearchResult } from '../lib/search'
-import { bulkIncomingFromSearch } from './AddRoute'
+import { hitOf } from './AddRoute'
 
 const result = (over: Partial<SearchResult> = {}): SearchResult => ({
   source: 'hardcover',
@@ -16,26 +16,24 @@ const result = (over: Partial<SearchResult> = {}): SearchResult => ({
 
 describe('bulk Add series evidence', () => {
   it('withholds a search label until the corpus classifier proves relational membership', () => {
-    const incoming = bulkIncomingFromSearch(result(), 'fantasy', 'Epic fantasy')
+    const incoming = hitOf(result())
 
-    expect(incoming.series).toBe('')
-    expect(incoming.position).toBe('')
-    expect(incoming.status).toBe('standalone')
-    expect(incoming.seriesClaim).toBeUndefined()
+    expect(incoming).not.toHaveProperty('series')
+    expect(incoming).not.toHaveProperty('position')
+    expect(incoming).not.toHaveProperty('genre')
+    expect(incoming).not.toHaveProperty('seriesClaim')
     expect(incoming.cover).toBe('https://example.test/fourth-wing.jpg')
   })
 
   it('keeps a result with no series unknown instead of inventing membership', () => {
-    const incoming = bulkIncomingFromSearch(
+    const incoming = hitOf(
       result({ source: 'google', series: undefined, seriesPosition: undefined }),
-      'fantasy',
-      'Epic fantasy',
     )
 
-    expect(incoming.series).toBe('')
-    expect(incoming.position).toBe('')
-    expect(incoming.status).toBe('standalone')
-    expect(incoming.seriesClaim).toBeUndefined()
+    expect(incoming).not.toHaveProperty('series')
+    expect(incoming).not.toHaveProperty('position')
+    expect(incoming).not.toHaveProperty('genre')
+    expect(incoming).not.toHaveProperty('seriesClaim')
     expect(incoming.cover).toBe('')
   })
 })

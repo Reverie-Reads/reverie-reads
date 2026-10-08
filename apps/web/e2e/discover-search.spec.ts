@@ -558,6 +558,9 @@ for (const surface of ['Discover', 'Add form'] as const) {
         })
         await page.goto(`/add?${query}`)
         await page.getByRole('button', { name: /Fetch details/ }).click()
+        await page
+          .getByRole('button', { name: 'Additional information (optional)', exact: true })
+          .click()
         await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('321')
         await expectPublicationDate(page, '2010-09-28')
         // A reader's edit wins over a later fetch.
@@ -565,7 +568,8 @@ for (const surface of ['Discover', 'Add form'] as const) {
         await page.getByRole('button', { name: /Fetch details/ }).click()
         await expect(page.getByRole('button', { name: /Fetch details/ })).toBeEnabled()
         await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('543')
-        await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
+        await page.getByRole('button', { name: 'Review book', exact: true }).click()
+        await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
         // Add deliberately stays on its post-save refinement screen until the reader is done.
         await expect(
           page.getByRole('heading', { name: 'Your book was saved', exact: true }),

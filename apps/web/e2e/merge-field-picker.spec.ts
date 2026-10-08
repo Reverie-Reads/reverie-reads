@@ -166,6 +166,7 @@ test('a per-field merge writes exactly the fields the reader left checked', asyn
     timeout: 30_000,
   })
   await page.locator('input[type="file"][accept*="csv"]').setInputFiles(FIXTURE)
+  await page.getByRole('button', { name: /^Confirm import of/ }).click()
 
   const card = page.getByText(/Review possible duplicates/i)
   await expect(card, 'the fuzzy CSV row did not reach the duplicate review list').toBeVisible({

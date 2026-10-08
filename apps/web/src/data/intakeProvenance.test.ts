@@ -3,6 +3,10 @@ import { makeSeriesClaim, mergeImport } from '@reverie/core'
 import { incomingToBook } from './intake'
 
 describe('series provenance through intake', () => {
+  it('keeps a reader-provided darkness value without inventing one for imports', () => {
+    expect(incomingToBook({ title: 'Reader choice', darkness: 3 }).darkness).toBe(3)
+    expect(incomingToBook({ title: 'Unknown darkness' }).darkness).toBeNull()
+  })
   it('preserves an explicit manual Add choice', () => {
     const claim = makeSeriesClaim('reader', 'add', { at: '2026-08-30T12:00:00.000Z' })
     const book = incomingToBook({

@@ -58,6 +58,9 @@ for (const width of [320, 390, 1440]) {
     try {
       await page.goto('/add')
       await page.getByRole('button', { name: 'Add manually', exact: true }).click()
+      await page
+        .getByRole('button', { name: 'Additional information (optional)', exact: true })
+        .click()
       const title = `A Map of Every Quiet Island ${width} ` + 'Unbroken'.repeat(12)
       await page.getByLabel('Title', { exact: true }).fill(title)
       await page.getByRole('button', { name: /Add contributor/ }).click()
@@ -81,18 +84,12 @@ for (const width of [320, 390, 1440]) {
       await page
         .getByRole('combobox', { name: 'Series status', exact: true })
         .selectOption({ label: 'Completed' })
+      await page.getByText('Reading details (optional)', { exact: true }).click()
       await page.getByRole('slider', { name: 'Your rating', exact: true }).press('End')
       await page.getByRole('slider', { name: 'Your rating', exact: true }).press('ArrowLeft')
       await page.getByLabel('Pub year', { exact: true }).fill('2025')
       await page.getByLabel('Month', { exact: true }).fill('2')
       await page.getByLabel('Day', { exact: true }).fill('28')
-      await page
-        .getByRole('navigation', { name: 'Book information sections' })
-        .getByRole('button', { name: 'Genres', exact: true })
-        .click()
-      await expect(
-        page.getByRole('heading', { name: 'Genres & subgenres', exact: true }),
-      ).toBeFocused()
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
       )
@@ -106,12 +103,26 @@ for (const width of [320, 390, 1440]) {
         return route.fallback()
       })
       try {
-        await page.getByRole('button', { name: 'Add to my library', exact: true }).click()
+        await page.getByRole('button', { name: 'Review book', exact: true }).click()
+        const reviewDialog = page.getByRole('dialog', { name: 'Review your book' })
+        await expect(reviewDialog).toContainText(title)
+        await expect(reviewDialog).toContainText('352')
+        await page.screenshot({ path: info.outputPath(`quick-add-review-${width}.png`) })
+        const beforeConfirm = await account.reader
+          .from('books')
+          .select('id')
+          .eq('owner_id', account.uid)
+        expect(beforeConfirm.error).toBeNull()
+        expect(beforeConfirm.data).toEqual([])
+        await reviewDialog.getByRole('button', { name: 'Back to information' }).click()
+        await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('352')
+        await page.getByRole('button', { name: 'Review book', exact: true }).click()
+        await reviewDialog.getByRole('button', { name: 'Confirm and add', exact: true }).click()
         await expect(page.locator('[data-book-tour="book-save"]')).toBeDisabled()
         await expect(page.getByRole('slider', { name: 'Your rating', exact: true })).toHaveCount(0)
-        await expect(
-          page.getByRole('img', { name: 'Rated 4.5 stars of 5', exact: true }),
-        ).toBeVisible()
+        await expect(page.getByRole('dialog', { name: 'Review your book' })).toContainText(
+          '4.5 / 5',
+        )
       } finally {
         releaseSave()
       }
@@ -256,6 +267,148 @@ test('Bearded Next read starts with one pick and retains the refinement draft ac
     await page.getByRole('button', { name: 'See 3 more books', exact: true }).click()
     await expect(page.getByRole('article')).toHaveCount(4)
   } finally {
+    await account.cleanup()
+  }
+})
+
+test('pasted lists look up without writing and retain unresolved items after a confirmed add', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const account = await setup(page)
+  let finishLookup = () => {}
+  const pendingLookup = new Promise<void>((resolve) => {
+    finishLookup = resolve
+  })
+  try {
+    await page.route('**/functions/v1/search**', async (route) => {
+      const body = route.request().postDataJSON()
+      if (JSON.stringify(body).includes('Unavailable')) {
+        await pendingLookup
+        return route.fulfill({ status: 503, json: { error: 'Unavailable' } })
+      }
+      return route.fulfill({
+        json: {
+          results: [
+            {
+              source: 'hardcover',
+              title: 'A Quiet Atlas',
+              authors: ['Iona Vale'],
+              isbn: '9780316580792',
+              year: '2025',
+              cover: '',
+            },
+          ],
+        },
+      })
+    })
+    await page.goto('/add')
+    await page.getByText('Bulk add — paste a list', { exact: true }).click()
+    await page
+      .getByLabel('Books to add, one title or ISBN per line')
+      .fill('A Quiet Atlas\nUnavailable')
+    await page.getByRole('button', { name: 'Look up list', exact: true }).click()
+    await expect(page.getByRole('button', { name: /Review A Quiet Atlas/ })).toBeEnabled()
+    const before = await account.reader.from('books').select('id').eq('owner_id', account.uid)
+    expect(before.error).toBeNull()
+    expect(before.data).toEqual([])
+    await page.getByRole('button', { name: /Review A Quiet Atlas/ }).click()
+    await page.getByRole('button', { name: 'Review book', exact: true }).click()
+    const review = page.getByRole('dialog', { name: 'Review your book' })
+    await expect(review).toContainText('Not set')
+    await page.screenshot({ path: test.info().outputPath('quick-add-phone-review.png') })
+    await review.getByRole('button', { name: 'Confirm and add' }).click()
+    await expect(page.getByRole('heading', { name: 'Your book was saved' })).toBeVisible()
+    await page.getByRole('link', { name: 'Open your book', exact: true }).click()
+    const exit = page.getByRole('dialog', { name: 'Leave this draft?' })
+    await expect(exit).toBeVisible()
+    await exit.getByRole('button', { name: 'Keep editing' }).click()
+    finishLookup()
+    await page.getByRole('button', { name: 'Continue with your list' }).click()
+    await expect(page.getByText('1 saved · 1 to review', { exact: true })).toBeVisible()
+    await expect(
+      page.getByText('Lookup unavailable. Your entry is still here.', { exact: true }),
+    ).toBeVisible()
+    const after = await account.reader
+      .from('books')
+      .select('title,genre,ownership,read_status,format')
+      .eq('owner_id', account.uid)
+    expect(after.error).toBeNull()
+    expect(after.data).toEqual([
+      {
+        title: 'A Quiet Atlas',
+        genre: '',
+        ownership: 'unowned',
+        read_status: 'unset',
+        format: null,
+      },
+    ])
+  } finally {
+    finishLookup()
+    await account.cleanup()
+  }
+})
+
+test('a spreadsheet stays a reviewable draft until the reader confirms the file', async ({
+  page,
+}) => {
+  const account = await setup(page)
+  let releaseImport = () => {}
+  const heldImport = new Promise<void>((resolve) => {
+    releaseImport = resolve
+  })
+  try {
+    await page.goto('/settings')
+    await page.getByRole('heading', { name: 'Backup & import' }).click()
+    await page.getByTestId('import-library').waitFor({ state: 'visible' })
+    await page.locator('input[type="file"][accept*="csv"]').setInputFiles({
+      name: 'review.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(
+        'Title,Author,ISBN,Exclusive Shelf\nThe Window,Iona Vale,9780316580792,to-read',
+      ),
+    })
+    const review = page.getByRole('dialog', { name: 'Review your import' })
+    await expect(review).toContainText('1 book')
+    await review.locator('summary').filter({ hasText: 'The Window' }).click()
+    await expect(review).toContainText('Wishlist')
+    const before = await account.reader.from('books').select('id').eq('owner_id', account.uid)
+    expect(before.error).toBeNull()
+    expect(before.data).toEqual([])
+    await review.getByRole('button', { name: 'Cancel import' }).click()
+    const afterCancel = await account.reader.from('books').select('id').eq('owner_id', account.uid)
+    expect(afterCancel.error).toBeNull()
+    expect(afterCancel.data).toEqual([])
+    await page.locator('input[type="file"][accept*="csv"]').setInputFiles({
+      name: 'review.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(
+        'Title,Author,ISBN,Exclusive Shelf\nThe Window,Iona Vale,9780316580792,to-read',
+      ),
+    })
+    let writes = 0
+    await page.route('**/rest/v1/books?*', async (route) => {
+      if (route.request().method() === 'POST') {
+        writes++
+        await heldImport
+      }
+      return route.fallback()
+    })
+    await review.getByRole('button', { name: 'Confirm import of 1 book', exact: true }).click()
+    await expect.poll(() => writes).toBe(1)
+    await expect(review.getByRole('button', { name: 'Importing…', exact: true })).toBeDisabled()
+    await expect(review.getByRole('button', { name: 'Cancel import', exact: true })).toBeDisabled()
+    await expect(review).not.toContainText('Nothing has been imported')
+    releaseImport()
+    await expect(review).toHaveCount(0)
+    const after = await account.reader
+      .from('books')
+      .select('title,wishlist')
+      .eq('owner_id', account.uid)
+    expect(after.error).toBeNull()
+    expect(after.data).toEqual([{ title: 'The Window', wishlist: true }])
+  } finally {
+    releaseImport()
     await account.cleanup()
   }
 })

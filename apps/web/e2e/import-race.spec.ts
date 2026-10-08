@@ -155,6 +155,7 @@ async function importFile(page: Page) {
   // deleted — measured, not theorised: that mutant survived until this line changed.
   await page.getByTestId('import-library').click()
   await (await chooser).setFiles(FIXTURE)
+  await page.getByRole('button', { name: /^Confirm import of/ }).click()
 }
 
 const rowCount = async (c: Client) =>

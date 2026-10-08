@@ -10,6 +10,8 @@ import { usePerformMerge } from '../data/mergeBooks'
 import { buildBackup, buildLibraryCsv } from '../data/importExport'
 import { importDetectedExport, type ImportExportResult } from '../data/importLibrary'
 import { enrichImported } from '../data/importEnrich'
+import { DraftExitGuard } from '../components/DraftExitGuard'
+import { ImportPreview } from '../components/ImportPreview'
 import { ImportSummary } from '../components/ImportSummary'
 import { importSessionKey } from '../data/importReview'
 import { deleteAccount } from '../data/account'
@@ -133,6 +135,21 @@ function SettingsScreen() {
   const [showDupes, setShowDupes] = useState(false)
   const [review, setReview] = useState<ReviewCandidate[]>([])
   const [imported, setImported] = useState(false)
+  const [importDraft, setImportDraft] = useState<{
+    text: string
+    autoMerge: boolean
+    household: boolean
+  } | null>(null)
+  const [importBusy, setImportBusy] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
+  const importing = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
   const [importResult, setImportResult] = useState<ImportExportResult | null>(null)
   const [completing, setCompleting] = useState(false)
   const [tracing, setTracing] = useState(false)
@@ -1082,22 +1099,63 @@ function SettingsScreen() {
               hidden
               onChange={(e) =>
                 readFile(e.currentTarget, async (text) => {
-                  const r = await importDetectedExport(all, text, {
-                    autoMerge,
-                    addToHousehold: importDestination === 'both',
-                  })
-                  setReview(r.review)
-                  setImportResult(r)
-                  // Stash the per-book outcomes so the Import review screen can build its read-model.
-                  qc.setQueryData(importSessionKey, { outcomes: r.outcomes })
-                  setImported(true)
-                  setStatus(null) // the summary panel below now speaks for the import
-                  // Cover handoff: backfill missing covers for the imported books in the background (§3).
-                  void enrichImported(qc, r.bookIds)
+                  if (!mounted.current) return
+                  setImportError(null)
+                  setImportDraft({ text, autoMerge, household: importDestination === 'both' })
                 })
               }
             />
           </div>
+
+          {importBusy && <DraftExitGuard busy />}
+          {importDraft && (
+            <ImportPreview
+              text={importDraft.text}
+              books={all}
+              destination={importDraft.household ? 'Your library + Household' : 'Your library'}
+              autoMerge={importDraft.autoMerge}
+              busy={importBusy}
+              error={importError}
+              onClose={() => {
+                if (!importing.current) setImportDraft(null)
+              }}
+              onConfirm={() => {
+                if (importing.current || importError) return
+                importing.current = true
+                setImportBusy(true)
+                void (async () => {
+                  try {
+                    // Refresh the known library before any write; a stale preview never means empty.
+                    const fresh = (await qc.fetchQuery({ queryKey: ['books'], staleTime: 0 })) as
+                      | Book[]
+                      | undefined
+                    if (!fresh || !mounted.current) throw new Error('Library unavailable')
+                    const r = await importDetectedExport(fresh, importDraft.text, {
+                      autoMerge: importDraft.autoMerge,
+                      addToHousehold: importDraft.household,
+                    })
+                    if (!mounted.current) return
+                    setReview(r.review)
+                    setImportResult(r)
+                    qc.setQueryData(importSessionKey, { outcomes: r.outcomes })
+                    setImported(true)
+                    setStatus(null)
+                    setImportDraft(null)
+                    void qc.invalidateQueries()
+                    void enrichImported(qc, r.bookIds)
+                  } catch {
+                    if (mounted.current)
+                      setImportError(
+                        'The import could not be fully confirmed. Some books may already be saved. Review your library before trying this file again.',
+                      )
+                  } finally {
+                    importing.current = false
+                    if (mounted.current) setImportBusy(false)
+                  }
+                })()
+              }}
+            />
+          )}
 
           <label className="mt-3 flex items-start gap-2.5 text-[13px] text-ink">
             <input

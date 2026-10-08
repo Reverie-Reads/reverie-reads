@@ -139,6 +139,9 @@ test('Add: position 0 and decimals are settable; junk is refused visibly', async
     await page.goto('/add')
     // The manual path — now reachable without searching first (see the peer-button test below).
     await page.getByRole('button', { name: /^Add manually$/i }).click()
+    await page
+      .getByRole('button', { name: 'Additional information (optional)', exact: true })
+      .click()
 
     const title = page.getByPlaceholder('Title', { exact: true })
     await expect(title).toBeVisible({ timeout: 15_000 })
@@ -147,7 +150,7 @@ test('Add: position 0 and decimals are settable; junk is refused visibly', async
 
     // Junk is refused in the form — pre-fix it became '' with no word said.
     await position.fill('1.5 (novella)')
-    await page.getByRole('button', { name: /^Add to my library$/ }).click()
+    await page.getByRole('button', { name: /^Review book$/ }).click()
     await expect(page.getByRole('alert').filter({ hasText: /must be a number/i })).toBeVisible({
       timeout: 10_000,
     })
@@ -156,7 +159,8 @@ test('Add: position 0 and decimals are settable; junk is refused visibly', async
 
     // 0 is a real slot (the prequel position) — `Number(v) || ''` swallowed it.
     await position.fill('0')
-    await page.getByRole('button', { name: /^Add to my library$/ }).click()
+    await page.getByRole('button', { name: /^Review book$/ }).click()
+    await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
     await expect
       .poll(
         async () =>
@@ -183,9 +187,13 @@ test('Add: a decimal position survives', async ({ page }) => {
     await signIn(page, c.session)
     await page.goto('/add')
     await page.getByRole('button', { name: /^Add manually$/i }).click()
+    await page
+      .getByRole('button', { name: 'Additional information (optional)', exact: true })
+      .click()
     await page.getByPlaceholder('Title', { exact: true }).fill('Novella Probe')
     await page.getByPlaceholder('Book #').fill('2.5')
-    await page.getByRole('button', { name: /^Add to my library$/ }).click()
+    await page.getByRole('button', { name: /^Review book$/ }).click()
+    await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
     await expect
       .poll(
         async () =>

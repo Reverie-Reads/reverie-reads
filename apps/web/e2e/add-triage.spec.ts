@@ -293,11 +293,13 @@ test('an exact edition lookup preserves corpus details and the matched ISBN', as
   await expect(page.getByPlaceholder('Series')).toHaveValue('The Triage Cycle')
   await expect(page.getByPlaceholder('Book #')).toHaveValue('3')
   // Shared metadata labels stay genre-neutral across rooms.
+  await page.getByRole('button', { name: 'Additional information (optional)', exact: true }).click()
   await expect(page.getByRole('combobox', { name: 'Genre', exact: true })).toHaveValue(CORPUS_GENRE)
 
   // Assert the click-to-prefill path at
   // its consequence: the saved book carries the SECOND, actually matched edition, never [0].
-  await page.getByRole('button', { name: /^Add to my library$/ }).click()
+  await page.getByRole('button', { name: /^Review book$/ }).click()
+  await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
   await expect
     .poll(async () => {
       const { data, error } = await c.admin
@@ -321,8 +323,12 @@ for (const referenceIsbn of [CORPUS_FIRST_ISBN, CORPUS_RESULT_ISBN])
     await expect.poll(() => labelOf(page, CORPUS), { timeout: 15000 }).toBe('In the corpus')
     await row(page, CORPUS).locator('button').click()
     const sameEdition = referenceIsbn === CORPUS_RESULT_ISBN
+    await page
+      .getByRole('button', { name: 'Additional information (optional)', exact: true })
+      .click()
     await expectPublicationDate(page, sameEdition ? '2021' : '')
-    await page.getByRole('button', { name: /^Add to my library$/ }).click()
+    await page.getByRole('button', { name: /^Review book$/ }).click()
+    await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
     const read = async () => {
       const { data, error } = await c.admin
         .from('books')

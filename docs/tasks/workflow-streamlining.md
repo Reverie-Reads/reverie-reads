@@ -18,8 +18,9 @@ journey, on Free and Pro. Paid capability does not include basic usability, reco
 4. **Save once and state the result.** Keep the existing retry identity, partial-save explanation,
    duplicate review, revision conflict and authorization checks. A saved book followed by a failed
    reload is still saved. Open the exact saved book only when its record is available.
-5. **Offer one main completion action.** Put the named return beside the save confirmation. Opening
-   the new record or improving its cover/tags is optional. Do not put a completed Add form back in
+5. **Offer one main completion action.** After Quick Add review and confirmation, make Open your book
+   primary and retain a named return/next-capture action. Further editing belongs on the saved book.
+   Do not put a completed Add form back in
    the reader's path when they leave the saved book.
 6. **Protect unfinished work.** Cancel an unsaved draft deliberately; dismissing a secondary picker
    returns to the same draft. A pending save must not appear to cancel merely because a dialog
@@ -33,7 +34,7 @@ journey, on Free and Pro. Paid capability does not include basic usability, reco
    keyboard open, short viewports, reduced motion and every room/mode. Desktop can show more context
    without introducing additional steps.
 
-## This audit's first implementation slice
+## This audit's first implementation slice (historical)
 
 - An account-keyed, page-session Add origin remembers supported in-app entry routes. Named Back and
   post-save Return use that origin; normal browser history restores its entry scroll. Direct entry
@@ -49,6 +50,11 @@ journey, on Free and Pro. Paid capability does not include basic usability, reco
   Title and numeric/date validation, series-change confirmation and sequenced writes still apply.
   Unchanged series fields do not become a reader-authored membership claim merely because another
   detail was corrected.
+
+The October 8 [Quick Add follow-up](quick-add-review.md) supersedes the original post-save hierarchy:
+it puts review before the write, makes Open your book primary after confirmation, and moves cover/tag
+refinement onto the book. Bulk list candidates use the same confirmation; spreadsheet imports have
+a paged preflight before the existing importer runs.
 
 This first slice merged through #617 after its source, fresh-database and full browser checks
 passed; #619 records the final validation in the [workflow audit](../audits/end-user-workflows-2026-10.md).
