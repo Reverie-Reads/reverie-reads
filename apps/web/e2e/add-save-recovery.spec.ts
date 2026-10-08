@@ -65,6 +65,7 @@ function barrier() {
 }
 async function draft(page: Page, title: string) {
   await page.getByRole('button', { name: 'Add manually', exact: true }).click()
+  await page.getByRole('button', { name: 'Additional information (optional)', exact: true }).click()
   await page.getByPlaceholder('Title', { exact: true }).fill(title)
   await page.getByRole('textbox', { name: 'Pages', exact: true }).fill('220')
   await page.getByRole('radio', { name: 'Wishlist', exact: true }).click()
@@ -110,6 +111,7 @@ for (const touch of [false, true]) {
           return route.fallback()
         })
         await page.locator('[data-book-tour="book-save"]').click()
+        await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
         await expect(
           page.getByRole('heading', { name: 'Your book was saved', exact: true }),
         ).toBeVisible({ timeout: 20_000 })
@@ -203,6 +205,7 @@ for (const touch of [false, true]) {
           return route.fallback()
         })
         await page.locator('[data-book-tour="book-save"]').click()
+        await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
         await expect(
           page.getByText('Its details are unavailable in your current library.', { exact: false }),
         ).toBeVisible()
@@ -250,6 +253,7 @@ for (const touch of [false, true]) {
         })
         const add = page.locator('[data-book-tour="book-save"]')
         await add.click()
+        await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
         await expect(add).toHaveText('Saving…')
         await expect(add).toBeDisabled()
         await expect(page.getByPlaceholder('Title', { exact: true })).toBeDisabled()
@@ -263,37 +267,26 @@ for (const touch of [false, true]) {
         await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(
           'One Quiet Evening',
         )
-        await expect(page.getByRole('textbox', { name: 'Pages', exact: true })).toHaveValue('220')
-        await expect(page.getByRole('radio', { name: 'Wishlist', exact: true })).toHaveAttribute(
+        await expect(page.locator('input[aria-label="Pages"]')).toHaveValue('220')
+        await expect(page.locator('[role="radio"][aria-label="Wishlist"]')).toHaveAttribute(
           'aria-checked',
           'true',
         )
         expect(await account.rows()).toEqual([])
+        const reviewDialog = page.getByRole('dialog', { name: 'Review your book', exact: true })
+        await expect(reviewDialog).toBeVisible()
         await expect(
-          page.getByRole('complementary', { name: 'Live walkthrough' }).getByRole('status'),
-        ).toHaveText('Make it yours')
-        // The coach must occupy layout space instead of covering the failure or retry control.
-        await expect
-          .poll(async () => {
-            const coach = await page
-              .getByRole('complementary', { name: 'Live walkthrough' })
-              .boundingBox()
-            const alert = await page.getByRole('alert').boundingBox()
-            const button = await add.boundingBox()
-            return (
-              !!coach &&
-              !!alert &&
-              !!button &&
-              alert.y + alert.height <= coach.y &&
-              coach.y + coach.height <= button.y
-            )
-          })
-          .toBe(true)
+          reviewDialog.getByRole('button', { name: 'Try saving again', exact: true }),
+        ).toBeEnabled()
+        await expect(reviewDialog).toContainText('One Quiet Evening')
         await page.screenshot({
           path: `test-results/add-save-${touch ? 'phone' : 'desktop'}.png`,
           fullPage: true,
         })
-        await page.getByRole('button', { name: 'Try saving again', exact: true }).click()
+        await page
+          .getByRole('dialog', { name: 'Review your book' })
+          .getByRole('button', { name: 'Try saving again', exact: true })
+          .click()
         await expect(page.getByRole('heading', { name: 'Your book was saved' })).toBeVisible()
         expect(inserts).toBe(2)
         expect(ids[0]).toBeTruthy()
@@ -336,10 +329,14 @@ for (const touch of [false, true]) {
           })
         })
         await page.locator('[data-book-tour="book-save"]').click()
+        await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
         await expect(page.getByRole('alert')).toContainText('couldn’t confirm the save')
         const rows = await account.rows()
         expect(rows).toHaveLength(1)
-        await page.getByRole('button', { name: 'Try saving again', exact: true }).click()
+        await page
+          .getByRole('dialog', { name: 'Review your book' })
+          .getByRole('button', { name: 'Try saving again', exact: true })
+          .click()
         await expect(page.getByRole('alert')).toContainText('not every detail was confirmed')
         await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue('A Lost Reply')
         await expect(page.locator('[data-book-tour="book-save"]')).toBeDisabled()
@@ -371,9 +368,13 @@ test('a contributor failure after insertion keeps the book and offers review wit
       })
     })
     await page.locator('[data-book-tour="book-save"]').click()
+    await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
     await expect(page.getByRole('alert')).toContainText('couldn’t confirm the save')
     expect(await account.rows()).toHaveLength(1)
-    await page.getByRole('button', { name: 'Try saving again' }).click()
+    await page
+      .getByRole('dialog', { name: 'Review your book' })
+      .getByRole('button', { name: 'Try saving again' })
+      .click()
     await expect(page.getByRole('link', { name: 'Review saved book' })).toBeVisible()
     expect(contributorWrites).toBe(1)
     expect(await account.rows()).toHaveLength(1)
@@ -399,6 +400,7 @@ test('Keep both cannot insert a third copy after the duplicate preference fails'
     await page.getByRole('button', { name: '＋ Add contributor', exact: true }).click()
     await page.getByPlaceholder('Name', { exact: true }).fill('Nell Marrow')
     await page.locator('[data-book-tour="book-save"]').click()
+    await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
     const keep = page.getByRole('button', { name: 'Keep both', exact: true })
     await expect(keep).toBeVisible()
     await expect(page.locator('[data-book-tour="book-save"]')).toBeDisabled()

@@ -277,6 +277,7 @@ export function BookTour() {
         openModal &&
         !usable &&
         !openModal.querySelector('[data-book-tour="tour-opened-book"]') &&
+        !(state.journey === 'first-book' && openModal.querySelector('[data-book-add-review]')) &&
         !(state.journey === 'planner' && openModal.querySelector('[data-planner-tour-context]')) &&
         !(
           state.journey === 'reading' &&

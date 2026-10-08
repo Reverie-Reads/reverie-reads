@@ -22,11 +22,12 @@ never fabricate or save reading progress, books, plans or Pro access. Tour movem
 an unfinished form or create a confusing page jump. Verify actual first-use flows, including empty
 libraries, saved arrangements and interruptions, before shipping.
 
-The first implementation covers **Add → search/choose → deliberate save → Library → open the
+The current implementation covers **Add → search/choose → Quick Add → review → confirm → Library → open the
 saved book**. The Books chapter and its in-app trail offer **Guide me in the app**. Each **Show me
 this step** moves a desktop cursor or a touch dot to a real control. The guide can open Add,
 return through Done and open the saved book; it points to search/results/save without choosing
-book data or saving for the reader. Validation failures remain on the details step. A successful
+book data or saving for the reader. Validation failures remain on the details step. The review
+dialog has its own pointer-only explanation; it never confirms on the reader's behalf. A successful
 personal save identifies the book for this session only. If current Library filters exclude it,
 a temporary “Your added book” section exposes that real record without changing the filters or
 possession. The normal cover card still opens the native drawer on compact desktop layouts.
@@ -193,11 +194,13 @@ a chosen manual form are visible. No retry, book selection or save is automatic.
 ## First-save feedback and recovery
 
 Single-book Add announces a pending save and blocks repeated submissions. A failed personal save
-keeps the form and the live guide at details; only a confirmed save enters refinement. The details
+keeps the form and review snapshot; the live guide explains the confirmation inside the dialog.
+Only a confirmed save reaches the saved state. The details
 coach sits in the page on desktop as well as phone, keeping errors and retry controls unobstructed.
 Retry first checks the exact reader-owned insertion UUID retained by this mounted form, then refreshes the
 library before matching again. An absent row may be retried using the same UUID, so a late original
-insert cannot create a second copy. Import and bulk Add do not opt into this session identity.
+insert cannot create a second copy. Pasted-list and barcode candidates use this same mounted
+single-book flow. Spreadsheet imports retain their existing separate import behavior.
 
 If the row already exists after a lost response, contributor failure or Keep both verdict failure,
 the form offers **Review saved book**. It does not replay those writes or claim all details succeeded.
@@ -213,11 +216,11 @@ confirmation, any household warning and an explicit return action visible. **Try
 only refetches the personal library; it cannot insert a copy or replay the completed save.
 
 Once the exact personal record is loaded, **Open your book** goes directly to its book page without
-changing reading state. Cover and tag refinement remain optional. The secondary return action names
+changing reading state. Further cover, tag and copy editing happens on that book. The secondary return action names
 its destination and retains the existing shortlist/household context. The walkthrough still offers
 the Library stop; readers can also open the saved book directly and continue into its reading chapter.
 While details are absent, the guide explains the confirmed save's loading state; only the loaded
-record advances it to refinement. Both loading and saved-step coaching occupy the page on desktop
+record advances it to the saved step. Both loading and saved-step coaching occupy the page on desktop
 and phone so recovery and navigation actions remain unobstructed.
 
 Browser fault injection checks the failure, pending retry and recovery against one real saved row,

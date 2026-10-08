@@ -242,6 +242,14 @@ myProgress`). Move them into `packages/core` with tests.
   edition facts and invalidates stale enrichment. Bearded Next read begins with one pick and keeps
   refinements mounted behind a disclosure; mode changes preserve unsent input and active guidance
   opens the relevant controls. Essential scope, source qualifications and failures remain visible.
+- **Quick Add is a draft, then review, then confirmed handoff.** Identity, optional ISBN/format and
+  possession come first; additional metadata and reading details remain optional. Confirmation uses
+  the exact reviewed payload and destination, never a silently refreshed form. Single Add asks about
+  duplicates even when spreadsheet auto-merge is enabled. A saved result opens the loaded personal
+  book for further editing. Pasted lists only look up candidates; every chosen result reuses Quick
+  Add, with failures retained and no first-result, room-genre or paperback guesses. CSV/XLSX files
+  receive a paged preflight before the existing importer writes; source mapping and duplicate policy
+  remain visible. See `docs/tasks/quick-add-review.md`.
 - **Single-book Add keeps a retry identity.** Pending submissions and duplicate decisions share
   one synchronous guard. A failed attempt keeps its draft and original duplicate action. Retrying
   checks its exact reader-owned insertion UUID first; an already saved or removed row is never

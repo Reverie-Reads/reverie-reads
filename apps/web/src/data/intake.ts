@@ -43,7 +43,7 @@ export const verdictLookupKey = (bookId: string, inc: Incoming): string => `${bo
 
 /** Build a full Book from an incoming partial. Absent source data stays absent — no fabricated
  *  genre/subgenre/format (docs/archive/task-import-quality.md §3); the add flows pass their own explicit
- *  values (AddRoute defaults genre to the skin's room), and imports leave the reader to choose. */
+ *  values; neither Quick Add nor imports infer a genre from the room. */
 export function incomingToBook(inc: Incoming): Book {
   const tags = inc.tags ?? []
   const subgenre = inc.subgenre ?? ''
@@ -69,7 +69,7 @@ export function incomingToBook(inc: Incoming): Book {
     tropes: [],
     moods: [],
     intensity: inc.intensity ?? null,
-    darkness: null, // no import format carries a darkness signal — a reader assesses it
+    darkness: inc.darkness ?? null, // Only an explicit reader value; import formats leave this absent.
     cover: inc.cover ?? '',
     pages: inc.pages ?? null,
     isbn: inc.isbn ?? '',
@@ -216,13 +216,13 @@ export async function applyIncoming(
 /** Single-intake hook for the Add / bulk paths — matches against the books cache, then writes. */
 export function useIntake() {
   const qc = useQueryClient()
-  return async (inc: Incoming, fuzzyMode: 'review' | 'add' = 'add', newBookId?: string): Promise<IntakeResult> => {
+  return async (inc: Incoming, fuzzyMode: 'review' | 'add' = 'add', newBookId?: string, reviewDuplicates = false, expectedOwnerId?: string): Promise<IntakeResult> => {
     const { data: auth } = await supabase.auth.getUser()
     const ownerId = auth.user?.id
-    if (!ownerId) throw new Error('Not signed in')
+    if (!ownerId || (expectedOwnerId && ownerId !== expectedOwnerId)) throw new Error('The account changed. Nothing was added.')
     const autoMergeStrong = qc.getQueryData<Profile>(profileKey)?.autoMergeDuplicates ?? true
     const library = (qc.getQueryData<Book[]>(booksKey) ?? []).map((b) => ({ ...b, reads: [...b.reads] }))
-    const result = await applyIncoming(inc, library, ownerId, { fuzzy: fuzzyMode, autoMergeStrong, newBookId })
+    const result = await applyIncoming(inc, library, ownerId, { fuzzy: fuzzyMode, autoMergeStrong: reviewDuplicates ? false : autoMergeStrong, newBookId })
     await qc.invalidateQueries({ queryKey: booksKey })
     await qc.invalidateQueries({ queryKey: ['reads', 'all'] })
     return result

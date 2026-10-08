@@ -780,6 +780,9 @@ test('persistent Add creates a household-only work and explicit adoption updates
     await page.getByRole('button', { name: 'Add manually' }).click()
     await page.getByLabel('Author').fill('Flow Reviewer')
     await page.getByRole('button', { name: 'Create shared record and add' }).click()
+    await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'The household entry was saved' })).toBeVisible()
+    await page.getByRole('button', { name: 'View household library', exact: true }).click()
     await expect(page).toHaveURL(/\/library\?scope=household$/)
     const householdOnlyCard = page.getByRole('button', {
       name: `View ${title} in the household library`,

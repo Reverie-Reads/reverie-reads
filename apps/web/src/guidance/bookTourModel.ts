@@ -34,6 +34,7 @@ export type BookTourStep =
   | 'search'
   | 'choose'
   | 'details'
+  | 'review'
   | 'saved-loading'
   | 'saved'
   | 'library'
@@ -225,7 +226,7 @@ export function bookTourReducer(state: BookTourState, event: BookTourEvent): Boo
     return state
   if (['saved', 'saved-loading'].includes(event.step) && !event.bookId) return state
   if (['library', 'opened'].includes(event.step) && event.bookId !== state.bookId) return state
-  const bookId = ['search', 'choose', 'details'].includes(event.step)
+  const bookId = ['search', 'choose', 'details', 'review'].includes(event.step)
     ? null
     : (event.bookId ?? state.bookId)
   if (state.step === event.step && state.bookId === bookId) return state
@@ -385,9 +386,16 @@ export const BOOK_TOUR_STEPS = {
   },
   details: {
     title: 'Make it yours',
-    text: 'Check the details and destination. Choose whether you own, borrowed or want it, then add the book when you are ready.',
+    text: 'Enter the basics and choose whether you own, borrowed or want it. Review book shows exactly what will be saved; confirm when you are ready.',
     target: 'book-save',
-    action: 'Show where to save',
+    action: 'Show where to review',
+    demonstration: 'point',
+  },
+  review: {
+    title: 'Review before saving',
+    text: 'Check the book and where it will be added. Back to information keeps your draft. Only Confirm and add saves it.',
+    target: 'book-confirm',
+    action: 'Show the confirmation',
     demonstration: 'point',
   },
   'saved-loading': {
@@ -399,7 +407,7 @@ export const BOOK_TOUR_STEPS = {
   },
   saved: {
     title: 'Your book is saved',
-    text: 'You can refine its cover and tags, or open your book now. Return to your library to see where it lives on your shelf.',
+    text: 'Open your saved book to add more details whenever you like, or return to your library to see where it lives on your shelf.',
     target: 'book-done',
     action: 'Return to the library',
     demonstration: 'click',

@@ -43,7 +43,7 @@ import { DraftExitGuard } from '../components/DraftExitGuard'
 import { useAuth } from '../auth/AuthProvider'
 import { useIntake, type ReviewCandidate } from '../data/intake'
 import { useBooks } from '../data/books'
-import { searchAddCatalog, useAddSearch } from '../data/useAddSearch'
+import { useAddSearch } from '../data/useAddSearch'
 import { useAddSave } from '../data/useAddSave'
 import {
   useAddCorpusWorkToHousehold,
@@ -68,10 +68,7 @@ import { useEffectiveSkin, useLabels, useVoice } from '../skin/labels'
 import { BarcodeBatch } from '../components/BarcodeBatch'
 import { Modal } from '../components/Modal'
 import { CoverImage } from '../components/CoverImage'
-import { CoverSheet } from '../components/CoverSheet'
-import { TropePicker } from '../components/TropePicker'
 import {
-  BookEditor,
   BookEditorSection,
   BookMetadataFields,
   BookReadingStatus,
@@ -79,12 +76,14 @@ import {
   type BookMetadataDraft,
 } from '../book/BookMetadataFields'
 import { CopyEditor } from '../book/EditionCopies'
-import { OWNERSHIP_LABELS, subgenreGradient, subgenresForGenre } from '../library/constants'
+import { OWNERSHIP_LABELS, subgenreGradient } from '../library/constants'
 import { Surface } from '../components/Surface'
 import { LevelPicker } from '../components/LevelPicker'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import { delegatedMemberId, type AddDestination } from '../components/addDestination'
 import { GoogleBooksAttribution, GoogleBooksResultLink } from '../components/GoogleBooksAttribution'
+import { BookAddReview } from '../book/BookAddReview'
+import { BulkAddQueue, type BulkAddRow } from '../book/BulkAddQueue'
 import { StartBookTour } from '../guidance/BookTour'
 import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 
@@ -120,7 +119,7 @@ interface Picked extends Partial<SearchHit> {
 
 /** A catalog result as the form's prefill — `pub` takes the fn's `year`, and its ISBN-13-preferred
  *  `isbn` is already the field Add wanted. */
-const hitOf = (r: SearchResult): SearchHit => ({
+export const hitOf = (r: SearchResult): SearchHit => ({
   source: r.source,
   title: r.title,
   authors: r.authors,
@@ -152,13 +151,7 @@ function parsePub(s: string): Book['pub'] {
   return { y: p.pubY ?? null, m: p.pubM ?? null, d: p.pubD ?? null }
 }
 
-/**
- * Step two of the add flow — the record now exists, so the SAME cover sheet and trope picker the
- * book screen uses run here against the real book, before the reader leaves. Both components persist
- * immediately and are keyed to a real book id (cover ingest scopes Storage by book; every trope
- * gesture writes book_tropes; suggestions query by id), so they can only bind to a saved book — this
- * refine step is how Add reaches full parity with Edit without a parallel implementation.
- */
+/** A confirmed save hands off to the real book; optional edits belong there. */
 function RefineAdded({
   bookId,
   householdWarning,
@@ -172,12 +165,10 @@ function RefineAdded({
   returnLabel: string
   editionAdded?: boolean
 }) {
-  const labels = useLabels()
   const { data: books, isFetching, isError, fetchStatus, refetch } = useBooks()
   const book = books?.find((b) => b.id === bookId)
   // This screen only mounts after a confirmed save. Loading is not a loaded-book observation.
   useBookTourObservation(editionAdded ? null : book ? 'saved' : 'saved-loading', bookId)
-  const [dialog, setDialog] = useState<'cover' | 'trope' | null>(null)
 
   if (!book) {
     return (
@@ -231,67 +222,34 @@ function RefineAdded({
     )
   }
 
-  const [g0, g1] = subgenreGradient(book.subgenre, book.genre)
-  const tropeCount = book.tropes.length
-
-  if (editionAdded) {
-    return (
-      <Surface radius="panel" tone="card" pad={3} className="mt-4">
-        {householdWarning ? (
-          <p role="status" className="mb-3 text-[12.5px] text-accent-ink">
-            {householdWarning}
-          </p>
-        ) : null}
-        <h2
-          className="text-[16px] italic text-ink"
-          style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
-        >
-          Edition added
-        </h2>
-        <p className="mb-3 mt-1 text-[13px] text-muted [overflow-wrap:anywhere]">
-          The selected release is now recorded with {book.title}. Open the book to manage its
-          copies, or return to releases.
-        </p>
-        <Link
-          to="/book/$bookId"
-          params={{ bookId }}
-          replace
-          className="mt-4 flex min-h-11 w-full items-center justify-center skin-control skin-btn-secondary px-4 text-center text-[14px] font-semibold"
-        >
-          Open your book
-        </Link>
-        <button
-          type="button"
-          onClick={onDone}
-          className="mt-2 min-h-11 w-full skin-control skin-btn-primary px-4 text-[14px] font-semibold"
-        >
-          {returnLabel}
-        </button>
-      </Surface>
-    )
-  }
-
   return (
     <Surface radius="panel" tone="card" pad={3} className="mt-4" data-book-tour-region>
-      {householdWarning ? (
-        <p role="status" className="mb-3 text-[12.5px] text-accent-ink">
+      <h2 className="text-xl text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+        {editionAdded ? 'Edition added' : 'Your book was saved'}
+      </h2>
+      {householdWarning && (
+        <p role="status" className="mt-3 text-sm text-ink">
           {householdWarning}
         </p>
-      ) : null}
-      <h2
-        className="text-[16px] italic text-ink"
-        style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
-      >
-        Your book was saved
-      </h2>
-      <p className="mb-3 mt-1 text-[13px] text-muted [overflow-wrap:anywhere]">
-        {book.title} is in your library. You can return now or add optional details below.
+      )}
+      <p className="mt-2 text-sm text-muted">
+        Open your book to add notes, reading history, cover choices and copies whenever you are
+        ready.
       </p>
+      <BookAddReview book={book} destination="Your library" />
+      <Link
+        to="/book/$bookId"
+        params={{ bookId }}
+        replace
+        className="mt-4 flex min-h-11 w-full items-center justify-center skin-control skin-btn-primary px-4 text-center text-sm font-semibold"
+      >
+        Open your book
+      </Link>
       <button
         type="button"
         onClick={onDone}
         data-book-tour="book-done"
-        className="mt-2 min-h-11 w-full skin-control skin-btn-primary px-4 text-[14px] font-semibold"
+        className="mt-2 min-h-11 w-full skin-control skin-btn-secondary px-4 text-sm font-semibold"
       >
         {returnLabel}
       </button>
@@ -300,44 +258,6 @@ function RefineAdded({
         data-book-tour-inline="book-done"
         data-book-tour-inline-desktop
       />
-      <Link
-        to="/book/$bookId"
-        params={{ bookId }}
-        replace
-        className="mt-4 flex min-h-11 w-full items-center justify-center skin-control skin-btn-secondary px-4 text-center text-[14px] font-semibold"
-      >
-        Open your book
-      </Link>
-      <p className="mb-2 mt-4 text-[13px] text-muted">Optional details</p>
-      <div className="flex gap-4">
-        <div
-          className="aspect-[2/3] w-20 flex-none overflow-hidden rounded-lg border border-line"
-          style={{ background: `linear-gradient(150deg, ${g0}, ${g1})` }}
-        >
-          <CoverImage book={book} thumb />
-        </div>
-        <div className="flex flex-1 flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => setDialog('cover')}
-            className="h-10 skin-control border border-line text-[13.5px] font-semibold text-ink"
-            style={{ background: 'var(--field)' }}
-          >
-            Change cover
-          </button>
-          <button
-            type="button"
-            onClick={() => setDialog('trope')}
-            className="h-10 skin-control border border-line text-[13.5px] font-semibold text-ink"
-            style={{ background: 'var(--field)' }}
-          >
-            Tag {labels.tags.toLowerCase()}
-            {tropeCount ? ` · ${tropeCount}` : ''}
-          </button>
-        </div>
-      </div>
-      {dialog === 'cover' && <CoverSheet book={book} onClose={() => setDialog(null)} />}
-      {dialog === 'trope' && <TropePicker book={book} onClose={() => setDialog(null)} />}
     </Surface>
   )
 }
@@ -347,13 +267,17 @@ function AddForm({
   defaultUnowned = false,
   addToHousehold = false,
   onAdded,
+  onSaved,
   returnLabel,
+  batchPending = false,
 }: {
   hit: Picked
   defaultUnowned?: boolean
   addToHousehold?: boolean
   onAdded: () => void
+  onSaved?: (bookId: string) => void
   returnLabel: string
+  batchPending?: boolean
 }) {
   const intake = useIntake()
   const { session } = useAuth()
@@ -369,11 +293,10 @@ function AddForm({
   )
   const qc = useQueryClient()
   const { data: books, refetch: refreshBooks } = useBooks()
-  // genre is a required metadata field, not a romance-only tag — default it to the ROOM the reader
-  // is in (add in Grimoire → fantasy, in Marrow → horror), never a hardcoded 'romance'.
+  // The room may color a placeholder, but it never supplies book metadata.
   const skinGenre = SKINS[useEffectiveSkin()].genre.toLowerCase()
   const [dup, setDup] = useState<ReviewCandidate | null>(null)
-  // Once the record is created we hand off to the refine step (cover + tropes) instead of leaving.
+  // A confirmed save stays visible until the reader opens the book or deliberately continues.
   const [addedId, setAddedId] = useState<string | null>(null)
   const [addedExistingEdition, setAddedExistingEdition] = useState(false)
   const [editionTarget, setEditionTarget] = useState<{
@@ -382,7 +305,6 @@ function AddForm({
   } | null>(null)
   const [editionTargetBusy, setEditionTargetBusy] = useState(false)
   const [editionTargetError, setEditionTargetError] = useState<string | null>(null)
-  useBookTourObservation(addedId ? null : 'details')
   const [householdWarning, setHouseholdWarning] = useState<string | null>(null)
   const [contribs, setContribs] = useState<Contributor[]>(
     contributorsFromAuthors(hit.authors ?? []),
@@ -410,7 +332,7 @@ function AddForm({
           physical: 'Physical',
           unknown: '',
         }[hit.edition.format]
-      : ('Paperback' as string),
+      : ('' as string),
     readStatus: 'unset' as Book['readStatus'],
     // Release cards and the manual horizon form carry flexible precision into Add. Keeping this
     // editable lets the reader correct a catalog date before it becomes their own record.
@@ -421,9 +343,13 @@ function AddForm({
   // Begin empty: subgenre choices belong to the reader, never to the active room.
   const [subs, setSubs] = useState<string[]>([])
   const [extraGenres, setExtraGenres] = useState<string[]>([])
+  const [review, setReview] = useState<Incoming | null>(null)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  useBookTourObservation(addedId ? null : reviewOpen ? 'review' : 'details')
+  const reviewHousehold = useRef(false)
   const [rating, setRating] = useState(0)
-  const [intensity, setIntensity] = useState(0)
-  const [darkness, setDarkness] = useState(0)
+  const [intensity, setIntensity] = useState<number | null>(null)
+  const [darkness, setDarkness] = useState<number | null>(null)
   const [validationAttempt, setValidationAttempt] = useState(0)
   const [isbnError, setIsbnError] = useState<string | undefined>()
   const [titleError, setTitleError] = useState<string | undefined>()
@@ -726,7 +652,7 @@ function AddForm({
       // `genre` above, just array-shaped so a second genre tag (added via Edit details) has
       // somewhere to live without a later edit silently overwriting it back to one.
       genres: normalizeBookGenres([form.genre, ...extraGenres]),
-      // tropes are tagged in the refine step via the full picker (book_tropes needs a saved id);
+      // Tropes are tagged on the saved book via the full picker (book_tropes needs a saved id);
       // no lightweight freeform tags here — the structured trope system is the one source of truth.
       rating,
       intensity,
@@ -748,22 +674,18 @@ function AddForm({
           : parsedPages.value,
       ...(inventory ? { copyInventory: inventory, ...inventoryPossession(inventory) } : {}),
     }
-    // Dedup on intake: a strong match folds into the existing record instead of duplicating.
-    // With auto-merge off, a match comes back for an inline decision instead.
-    //
-    // 'review', not 'add', and the difference is only ever the FUZZY tier — decideIntake consults
-    // fuzzyMode on its last line, after `none`, the always_merge/keep_separate verdicts and the
-    // strong-match branch have each already returned. Strong-match auto-merge is untouched by this.
-    //
-    // What it fixes: a fuzzy title/author match used to fall through to a silent insert, so adding
-    // "The Hobbit" next to an existing "Hobbit, The" quietly produced a second row. The review UI
-    // for exactly this decision already existed and was already wired up below (`setDup`, and the
-    // `dup && …` block) — it was simply unreachable from single-Add, because this argument said to
-    // skip it. Import and bulk paths already ask.
-    await saveState.run('save', async (newId, retry) => {
-      if (retry) await refreshBooks({ throwOnError: true })
-      const res = await intake(book, 'review', newId)
+    reviewHousehold.current = addToHousehold
+    setReview(book)
+    setReviewOpen(true)
+  }
+
+  async function confirmReview() {
+    if (!review) return
+    await saveState.run('save', async (newId) => {
+      await refreshBooks({ throwOnError: true })
+      const res = await intake(review, 'review', newId, true, session?.user.id)
       if (res.outcome === 'review' && res.review) {
+        setReviewOpen(false)
         setDup(res.review)
         return
       }
@@ -773,7 +695,7 @@ function AddForm({
   }
 
   async function finishSavedBook(bookId: string, existingEdition = false) {
-    if (addToHousehold) {
+    if (reviewHousehold.current) {
       try {
         await addPersonalBooksToHousehold.mutateAsync([bookId])
       } catch {
@@ -784,6 +706,7 @@ function AddForm({
     }
     setAddedExistingEdition(existingEdition)
     setAddedId(bookId)
+    onSaved?.(bookId)
   }
 
   async function reviewEditionWithExistingBook() {
@@ -838,15 +761,23 @@ function AddForm({
 
   return (
     <Surface radius="panel" tone="card" pad={3} className="mt-4">
-      {!saveState.recoveredBookId && (hasDraftChanges || saveState.busy || !!saveState.error) && (
-        <DraftExitGuard busy={saveState.busy} />
-      )}
+      {!saveState.recoveredBookId &&
+        (batchPending || hasDraftChanges || saveState.busy || !!saveState.error) && (
+          <DraftExitGuard busy={saveState.busy} />
+        )}
+      <h2 className="text-xl text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+        Quick Add
+      </h2>
+      <p className="mt-1 text-sm text-muted">
+        Start with the basics. Review before saving, then add more from your book.
+      </p>
       <fieldset
-        disabled={saveState.busy || !!dup || !!saveState.recoveredBookId}
+        disabled={saveState.busy || !!dup || !!saveState.error || !!saveState.recoveredBookId}
         className="min-w-0"
       >
-        <BookEditor>
+        <div className="book-editor">
           <BookMetadataFields
+            quick
             value={metadata}
             onChange={changeMetadata}
             contributors={contribs}
@@ -973,33 +904,38 @@ function AddForm({
               </>
             }
           />
-          <BookEditorSection id="reading" title="Your reading">
-            <BookRating
-              value={rating}
-              onChange={setRating}
-              disabled={saveState.busy || !!dup || !!saveState.recoveredBookId}
-            />
-            <BookReadingStatus
-              value={form.readStatus}
-              onChange={(status) => set('readStatus', status)}
-            />
-            <LevelPicker
-              label={labels.intensity}
-              glyph={labels.intensityGlyph}
-              levels={labels.intensityLevels}
-              value={intensity}
-              onChange={setIntensity}
-              name="intensity"
-            />
-            <LevelPicker
-              label={labels.darkness}
-              glyph={labels.darknessGlyph}
-              levels={labels.darknessLevels}
-              value={darkness}
-              onChange={setDarkness}
-              name="darkness"
-            />
-          </BookEditorSection>
+          <details className="my-3">
+            <summary className="min-h-11 cursor-pointer py-3 text-sm text-ink">
+              Reading details (optional)
+            </summary>
+            <BookEditorSection id="reading" title="Your reading">
+              <BookRating
+                value={rating}
+                onChange={setRating}
+                disabled={saveState.busy || !!dup || !!saveState.recoveredBookId}
+              />
+              <BookReadingStatus
+                value={form.readStatus}
+                onChange={(status) => set('readStatus', status)}
+              />
+              <LevelPicker
+                label={labels.intensity}
+                glyph={labels.intensityGlyph}
+                levels={labels.intensityLevels}
+                value={intensity ?? 0}
+                onChange={setIntensity}
+                name="intensity"
+              />
+              <LevelPicker
+                label={labels.darkness}
+                glyph={labels.darknessGlyph}
+                levels={labels.darknessLevels}
+                value={darkness ?? 0}
+                onChange={setDarkness}
+                name="darkness"
+              />
+            </BookEditorSection>
+          </details>
           <BookEditorSection id="copies" title="Your copies">
             {/* Ownership — a record no longer implies possession; most of a TBR is books you don't own. */}
             <div className="mt-3">
@@ -1047,8 +983,74 @@ function AddForm({
               </div>
             </div>
           </BookEditorSection>
-        </BookEditor>
+        </div>
       </fieldset>
+      {reviewOpen && review && (
+        <Modal
+          title="Review your book"
+          onClose={() => {
+            if (!saveState.busy) setReviewOpen(false)
+          }}
+        >
+          <p data-book-add-review className="text-sm text-muted">
+            {saveState.error
+              ? 'Check the save result below before continuing. Your original information is preserved.'
+              : 'Nothing is saved until you confirm. Check the information below; you can add the rest later.'}
+          </p>
+          <p className="mt-2 text-sm text-muted">
+            Starting information:{' '}
+            {hit.corpusWorkId
+              ? 'shared catalog'
+              : hit.source === 'hardcover'
+                ? 'Hardcover'
+                : hit.source === 'google'
+                  ? 'Google Books'
+                  : 'your entry'}
+            . Check it against your copy.
+          </p>
+          {coverNote && <p className="mt-2 text-sm text-ink">{coverNote}</p>}
+          <BookAddReview
+            book={review}
+            destination={reviewHousehold.current ? 'Your library + Household' : 'Your library'}
+          />
+          {saveState.error && (
+            <p role="alert" className="mt-3 text-sm text-ink">
+              {saveState.error}
+            </p>
+          )}
+          {saveState.recoveredBookId ? (
+            <Link
+              to="/book/$bookId"
+              params={{ bookId: saveState.recoveredBookId }}
+              className="mt-3 block min-h-11 text-ink underline"
+            >
+              Review saved book
+            </Link>
+          ) : (
+            <button
+              type="button"
+              disabled={saveState.busy}
+              data-book-tour="book-confirm"
+              onClick={() => void confirmReview()}
+              className="mt-4 min-h-11 w-full skin-control skin-btn-primary px-4 text-sm font-semibold"
+            >
+              {saveState.busy
+                ? 'Saving…'
+                : saveState.error
+                  ? 'Try saving again'
+                  : 'Confirm and add'}
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={saveState.busy}
+            onClick={() => setReviewOpen(false)}
+            className="mt-2 min-h-11 w-full skin-control skin-btn-secondary px-4 text-sm"
+          >
+            {saveState.error ? 'Close review' : 'Back to information'}
+          </button>
+        </Modal>
+      )}
       {dup && (
         <Surface radius="card" tone="field" pad={2} className="mt-4 text-[13px]">
           <p className="text-ink">
@@ -1136,7 +1138,7 @@ function AddForm({
         />
       )}
 
-      {saveState.error && (
+      {saveState.error && !reviewOpen && (
         <div className="mt-4 text-[14px] text-ink">
           <p role="alert">{saveState.error}</p>
           {saveState.recoveredBookId && (
@@ -1162,7 +1164,7 @@ function AddForm({
       />
       <button
         type="button"
-        onClick={() => void save()}
+        onClick={() => (saveState.error && review ? setReviewOpen(true) : void save())}
         data-book-tour="book-save"
         disabled={saveState.busy || !!saveState.recoveredBookId || !!dup}
         aria-busy={saveState.busy}
@@ -1176,133 +1178,8 @@ function AddForm({
           ? 'Saving…'
           : saveState.error && !dup && !saveState.recoveredBookId
             ? 'Try saving again'
-            : addToHousehold
-              ? 'Add to my library + Household'
-              : 'Add to my library'}
+            : 'Review book'}
       </button>
-    </Surface>
-  )
-}
-
-/** Generic search results identify books; they do not independently prove membership. Bulk Add
- * creates a neutral personal row and the shared corpus classifier seeds a series only after a
- * relational source contains the exact book. */
-export function bulkIncomingFromSearch(
-  result: SearchResult,
-  skinGenre: string,
-  bulkSub: string,
-): Incoming {
-  const hit = hitOf(result)
-  const authorParts = (hit.authors[0] ?? '').trim().split(/\s+/)
-  return {
-    title: hit.title,
-    contributors: contributorsFromAuthors(hit.authors),
-    first: authorParts.length > 1 ? (authorParts[0] ?? '') : '',
-    last: authorParts.length > 1 ? authorParts.slice(1).join(' ') : (authorParts[0] ?? ''),
-    series: '',
-    position: '',
-    status: 'standalone',
-    genre: skinGenre,
-    subgenre: bulkSub,
-    subgenres: [bulkSub],
-    // Same bug as single Add (see save() above): this held the subgenre, not the genre.
-    genres: [skinGenre],
-    tags: [],
-    intensity: null,
-    darkness: null,
-    owned: { physical: 'paperback', ebook: false, audiobook: false },
-    cover: result.source === 'google' ? '' : hit.cover,
-    isbn: hit.isbn,
-    readStatus: 'Unread',
-    source: 'Owned',
-    pub: parsePub(hit.pub),
-  }
-}
-
-function BulkAdd({ addToHousehold }: { addToHousehold: boolean }) {
-  const intake = useIntake()
-  const addPersonalBooksToHousehold = useAddPersonalBooksToHousehold()
-  const skinGenre = SKINS[useEffectiveSkin()].genre.toLowerCase()
-  const bulkSub = subgenresForGenre(skinGenre)[0] ?? 'Other' // genre's primary subgenre (always defined)
-  const [text, setText] = useState('')
-  const [status, setStatus] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-
-  async function run() {
-    const lines = text
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
-    if (!lines.length) return
-    setBusy(true)
-    let added = 0
-    let merged = 0
-    const bookIds: string[] = []
-    for (const [i, line] of lines.entries()) {
-      setStatus(`Looking up ${i + 1}/${lines.length}…`)
-      try {
-        const top = (await searchAddCatalog(line))[0]
-        if (!top) continue
-        const res = await intake(bulkIncomingFromSearch(top, skinGenre, bulkSub), 'add')
-        if (res.outcome === 'merged') merged++
-        else added++
-        if (res.bookId) bookIds.push(res.bookId)
-      } catch {
-        /* skip lines that fail */
-      }
-    }
-    if (addToHousehold && bookIds.length) {
-      try {
-        await addPersonalBooksToHousehold.mutateAsync([...new Set(bookIds)])
-      } catch {
-        setBusy(false)
-        setStatus(
-          `Added the personal books, but the household entries could not be added. Reconnect and try Household only.`,
-        )
-        return
-      }
-    }
-    setBusy(false)
-    setStatus(
-      `Added ${added}${merged ? ` · merged ${merged} into existing` : ''} of ${lines.length}${
-        addToHousehold ? ' to your library + Household' : ''
-      }.`,
-    )
-    setText('')
-  }
-
-  return (
-    <Surface as="details" radius="panel" tone="card" pad={3} className="mt-4">
-      <summary className="cursor-pointer text-[14px] font-semibold text-ink">
-        Bulk add — paste a list
-      </summary>
-      <p className="mb-2 mt-2 text-[12.5px] text-muted">
-        One title or ISBN per line. Each is looked up and added.
-      </p>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={5}
-        aria-label="Books to add, one title or ISBN per line"
-        placeholder={'Iron Flame\n9781649374172\nThe Love Hypothesis'}
-        className="w-full skin-field border border-line text-ink outline-none"
-        style={{ background: 'var(--field)' }}
-      />
-      <div className="mt-2 flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => void run()}
-          disabled={busy || !text.trim()}
-          className="skin-control px-4 py-2 text-[13px] font-semibold disabled:opacity-50"
-          style={{
-            background: 'linear-gradient(135deg, var(--primary), var(--gold))',
-            color: 'var(--on-primary)',
-          }}
-        >
-          Add all
-        </button>
-        {status && <span className="text-[12.5px] text-muted">{status}</span>}
-      </div>
     </Surface>
   )
 }
@@ -1434,6 +1311,9 @@ function HouseholdAddForm({
   const [isbn, setIsbn] = useState(hit.isbn ?? '')
   const [coverWarning, setCoverWarning] = useState('')
   const [saveError, setSaveError] = useState('')
+  const [reviewing, setReviewing] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const saving = useRef(false)
   const currentMember = household.members.find((member) => member.userId === session?.user.id)
   const canCreate = !!currentMember
   const canPersistPickedCover =
@@ -1458,7 +1338,12 @@ function HouseholdAddForm({
         setCoverWarning(result.coverWarning)
         // The shared work already committed. A delegated personal add is independent of its
         // optional cover ingest, so finish that requested destination before pausing on the warning.
-        if (!targetMemberId) return
+        if (!targetMemberId) {
+          completed.current = true
+          setSaved(true)
+          setReviewing(false)
+          return
+        }
       }
       workId = result.workId
     }
@@ -1466,10 +1351,13 @@ function HouseholdAddForm({
       await addToMember.mutateAsync({ workId, memberId: targetMemberId })
     }
     completed.current = true
-    onAdded()
+    setSaved(true)
+    setReviewing(false)
   }
 
   async function handleSave() {
+    if (saving.current) return
+    saving.current = true
     setSaveError('')
     try {
       await save()
@@ -1479,13 +1367,90 @@ function HouseholdAddForm({
           ? `The shared entry may have been added, but ${targetMemberName ?? 'the selected member'}’s personal book could not be created. Reconnect and try that destination again.`
           : 'The household entry could not be added. Reconnect and try again.',
       )
+    } finally {
+      saving.current = false
     }
   }
+
+  if (saved)
+    return (
+      <Surface radius="panel" tone="card" pad={3} className="mt-4">
+        <h2 className="text-xl text-ink">The household entry was saved</h2>
+        <p className="mt-2 text-sm text-ink [overflow-wrap:anywhere]">{title}</p>
+        {coverWarning && (
+          <p role="status" className="mt-2 text-sm text-muted">
+            {coverWarning}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={onAdded}
+          className="mt-4 min-h-11 w-full skin-control skin-btn-primary px-4 text-sm"
+        >
+          View household library
+        </button>
+      </Surface>
+    )
 
   return (
     <Surface radius="panel" tone="card" pad={3} className="mt-4">
       {(hasDraftChanges || pending || !!saveError) && (
         <DraftExitGuard busy={pending} canLeave={() => completed.current || !!coverWarning} />
+      )}
+      {reviewing && (
+        <Modal
+          title="Review household entry"
+          onClose={() => {
+            if (!saving.current) setReviewing(false)
+          }}
+        >
+          <BookAddReview
+            book={{
+              title,
+              contributors: contributorsFromAuthors([author]),
+              isbn,
+              cover: canPersistPickedCover ? hit.cover : '',
+              ownership: 'unowned',
+              readStatus: 'unset',
+            }}
+            destination={
+              targetMemberId ? `${targetMemberName ?? 'Member'} + Household` : 'Household only'
+            }
+          />
+          <p className="mt-3 text-sm text-muted">
+            This creates a shared catalog entry. It does not say that anyone owns or has read the
+            book.
+            {targetMemberId
+              ? ' A neutral personal book is also added for the selected member.'
+              : ' No personal book will be created.'}
+          </p>
+          {saveError && (
+            <p role="alert" className="mt-3 text-sm text-ink">
+              {saveError}
+            </p>
+          )}
+          {coverWarning && (
+            <p role="status" className="mt-3 text-sm text-ink">
+              {coverWarning}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => void handleSave()}
+            className="mt-4 min-h-11 w-full skin-control skin-btn-primary px-4 text-sm"
+          >
+            {pending ? 'Adding…' : 'Confirm and add'}
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => setReviewing(false)}
+            className="mt-2 min-h-11 w-full skin-control skin-btn-secondary px-4 text-sm"
+          >
+            Back to information
+          </button>
+        </Modal>
       )}
       <div className="flex gap-4">
         <div className="aspect-[2/3] w-20 flex-none overflow-hidden rounded-lg border border-line">
@@ -1576,7 +1541,7 @@ function HouseholdAddForm({
         <button
           type="button"
           disabled={pending || !title.trim()}
-          onClick={() => void handleSave()}
+          onClick={() => setReviewing(true)}
           className="skin-control skin-btn-primary mt-4 h-11 w-full px-4 text-[14px] font-semibold disabled:opacity-50"
         >
           {pending
@@ -1627,6 +1592,8 @@ function AddScreen() {
     items: [],
   })
   const [activeCapture, setActiveCapture] = useState<string | null>(null)
+  const [bulkRows, setBulkRows] = useState<BulkAddRow[]>([])
+  const [activeBulkId, setActiveBulkId] = useState<string | null>(null)
   const scanOwner = session?.user.id ?? ''
   const scanItems = scanBatch.owner === scanOwner ? scanBatch.items : []
   const changeScans = (items: BarcodeCapture[]) => setScanBatch({ owner: scanOwner, items })
@@ -1654,6 +1621,7 @@ function AddScreen() {
   const googleTriaged = triageResults(resultSections.google, books ?? [], corpus.data)
 
   function runSearch(term = q, fromCapture = false) {
+    setActiveBulkId(null)
     if (!fromCapture) setActiveCapture(null)
     if (term.trim().length >= 3) setPicked(null)
     return search(term)
@@ -1755,9 +1723,10 @@ function AddScreen() {
             force the empty state. The form already accepts a bare { title }. */}
           <button
             type="button"
-            onClick={() =>
+            onClick={() => {
+              setActiveBulkId(null)
               pickBook({ title: bookBarcode(q) ? '' : q.trim(), isbn: bookBarcode(q) || undefined })
-            }
+            }}
             className="h-11 skin-control border border-line px-5 text-[14px] font-semibold text-ink"
             style={{ background: 'var(--card)' }}
           >
@@ -1910,6 +1879,11 @@ function AddScreen() {
             targetMemberId={targetMemberId}
             targetMemberName={targetMember?.displayName}
             onAdded={() => {
+              if (activeBulkId) {
+                setActiveBulkId(null)
+                setPicked(null)
+                return
+              }
               if (returnToScans()) return
               if (origin) return origin.returnToOrigin()
               return prefill.discoverSession
@@ -1919,21 +1893,36 @@ function AddScreen() {
           />
         ) : (
           <AddForm
+            key={JSON.stringify(picked)}
             hit={picked}
+            batchPending={bulkRows.some((row) => !row.bookId)}
+            onSaved={(bookId) => {
+              if (activeBulkId)
+                setBulkRows((rows) =>
+                  rows.map((row) => (row.id === activeBulkId ? { ...row, bookId } : row)),
+                )
+            }}
             defaultUnowned={!!prefill.want}
             addToHousehold={destination === 'both'}
             returnLabel={
-              activeCapture && scanItems.some((item) => item.id === activeCapture)
-                ? 'Continue with scanned books'
-                : bookTour.status !== 'off' && bookTour.bookId
-                  ? 'Return to your library'
-                  : prefill.releaseWindow
-                    ? 'Return to releases'
-                    : prefill.discoverSession
-                      ? 'Return to your shortlist'
-                      : (origin?.label ?? 'Return to your library')
+              activeBulkId
+                ? 'Continue with your list'
+                : activeCapture && scanItems.some((item) => item.id === activeCapture)
+                  ? 'Continue with scanned books'
+                  : bookTour.status !== 'off' && bookTour.bookId
+                    ? 'Return to your library'
+                    : prefill.releaseWindow
+                      ? 'Return to releases'
+                      : prefill.discoverSession
+                        ? 'Return to your shortlist'
+                        : (origin?.label ?? 'Return to your library')
             }
             onAdded={() => {
+              if (activeBulkId) {
+                setActiveBulkId(null)
+                setPicked(null)
+                return
+              }
               if (returnToScans()) return
               return bookTour.status !== 'off' && bookTour.bookId
                 ? void navigate({ to: '/library', search: {} })
@@ -1961,7 +1950,24 @@ function AddScreen() {
           />
         ))}
 
-      {!picked && !householdOnly && <BulkAdd addToHousehold={destination === 'both'} />}
+      <BulkAddQueue
+        rows={bulkRows}
+        onChange={setBulkRows}
+        hidden={!!picked || householdOnly}
+        guardExit={!picked || !!bulkRows.find((row) => row.id === activeBulkId)?.bookId}
+        onReview={(row, result) => {
+          setActiveBulkId(row.id)
+          setActiveCapture(null)
+          pickBook(
+            result
+              ? hitOf(result)
+              : {
+                  title: bookBarcode(row.query) ? '' : row.query,
+                  isbn: bookBarcode(row.query) || undefined,
+                },
+          )
+        }}
+      />
     </section>
   )
 }
