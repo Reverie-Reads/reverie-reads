@@ -67,6 +67,7 @@ export type CorpusRecordChange =
 export function useSaveCorpusRecord() {
   const client = useQueryClient()
   return useMutation({
+    networkMode: 'always',
     retry: false,
     meta: { action: 'Shared catalog changes' },
     mutationFn: async (input: {
@@ -98,6 +99,7 @@ export function useSaveCorpusRecord() {
 export function useReportCorpusIsbn() {
   const client = useQueryClient()
   return useMutation({
+    networkMode: 'always',
     retry: false,
     meta: { action: 'ISBN report' },
     mutationFn: async (input: { workId: string; isbn: string; proposedIsbn: string; note: string }) => {
@@ -119,6 +121,7 @@ export function catalogError(error: unknown): string {
 export function useSelectCorpusEdition() {
   const client = useQueryClient()
   return useMutation({
+    networkMode: 'always',
     retry: false,
     meta: { action: 'Edition selection' },
     mutationFn: async ({ book, edition }: { book: import('@reverie/core').Book; edition: CorpusEdition }) => {
