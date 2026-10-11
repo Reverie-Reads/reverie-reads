@@ -143,4 +143,3 @@ $$;
 
 revoke all on function public.apply_series_membership(uuid, uuid, uuid, text, numeric, integer, boolean, jsonb, jsonb, boolean)
   from public, anon, authenticated, service_role;
-
