@@ -262,7 +262,7 @@ test('Edit details: title, ISBN and spice are editable and persist', async ({ pa
     // beside this one with its own "3", which the old `.first()` only survived by ordering luck.
     await dlg.getByRole('button', { name: /^Spice 3\b/ }).click()
     await dlg.getByRole('button', { name: /Save details/i }).click()
-    await expect(dlg.getByRole('alert')).toContainText('Check the ISBN before saving.')
+    await expect(dlg.getByText('Check the ISBN before saving.', { exact: true })).toBeVisible()
     expect((await rowOf(c, id)).isbn).toBe('')
     // The old fixture has an invalid check digit; a reviewed correction must be a real ISBN.
     await dlg.getByLabel('ISBN').fill('9780316580793')
