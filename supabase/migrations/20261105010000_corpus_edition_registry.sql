@@ -320,6 +320,26 @@ begin
 end;
 $$;
 
+-- Removal/account-exit preservation may fill objective gaps, but must not append personal
+-- genre choices to administrator-reviewed guidance or reorder its curated arrays.
+do $patch$
+declare definition text; old_expression text; column_name text;
+begin
+  definition := pg_get_functiondef('public.preserve_personal_book_objective_metadata(uuid)'::regprocedure);
+  foreach column_name in array array['genre','subgenre','genres','subgenres'] loop
+    if column_name in ('genre','subgenre') then
+      old_expression := format('coalesce(nullif(trim(w.%s), ''''), nullif(lower(trim(b.%s)), ''''))',column_name,column_name);
+    else
+      old_expression := format(E'array(\n        select distinct lower(trim(value)) from unnest(w.%s || coalesce(b.%s, ''{}'')) value\n        where trim(value) <> '''' order by lower(trim(value))\n      )',column_name,column_name);
+    end if;
+    if position(column_name || ' = ' || old_expression in definition)=0 then raise exception 'personal metadata preservation changed: %',column_name; end if;
+    definition := replace(definition,column_name || ' = ' || old_expression,
+      column_name || ' = case when w.metadata_provenance ? ''sharedGuidance'' then w.' || column_name || ' else ' || old_expression || ' end');
+  end loop;
+  execute definition;
+end;
+$patch$;
+
 -- Deliberate selection changes only the personal record's selected ISBN/page/date tuple. It never
 -- creates ownership, changes a configured copy inventory, or imports unknown values from a sibling.
 create function public.select_corpus_edition(p_book uuid,p_edition uuid,p_revision integer,p_expected jsonb)
