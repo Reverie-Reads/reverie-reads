@@ -185,3 +185,9 @@
   min-height: 44px;
   font-size: 1rem;
 }
+
+/* Quick series editing retains the full mounted draft for the optional full editor. */
+.book-editor-series-only [data-book-editor-section]:not([data-book-editor-section='series']),
+.book-editor-nav[hidden] {
+  display: none;
+}

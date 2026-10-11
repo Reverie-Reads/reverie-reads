@@ -975,6 +975,36 @@ test('the second reader gets the same household view with their own identity mar
   }
 })
 
+test('household search and filters find shared metadata without searching private notes', async ({
+  page,
+}, testInfo) => {
+  await signIn(page, owner.session)
+  await page.goto('/library?scope=household')
+  const search = page.getByRole('searchbox', { name: 'Search household library' })
+  await search.fill('Household Duplicate')
+  const card = page
+    .locator('[data-testid="household-book-card"]')
+    .filter({ hasText: `Household Duplicate ${projectName}` })
+  await expect(card).toBeVisible()
+  await search.fill(seeded!.sentinels.note)
+  await expect(card).toHaveCount(0)
+  await expect(page.getByText('No household books match.', { exact: false })).toBeVisible()
+  await search.fill(seeded!.sentinels.trope)
+  await expect(card).toBeVisible()
+  await page.getByRole('button', { name: /^Filters/ }).click()
+  // The other household reader borrowed this work; the owner did not.
+  await page.getByLabel('Member', { exact: true }).selectOption(owner.uid)
+  await page.getByLabel('Possession', { exact: true }).selectOption('borrowed')
+  await expect(card).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Show all matches' })).toBeVisible()
+  await page.getByRole('button', { name: 'Show all matches' }).click()
+  await expect(card).toBeVisible()
+  await expect(search).toHaveValue(seeded!.sentinels.trope)
+  await page.screenshot({ path: `/tmp/reverie-household-search-${testInfo.project.name}.png` })
+  await page.getByRole('button', { name: 'Clear search and filters' }).click()
+  await expect(search).toHaveValue('')
+})
+
 test('an already-open tab never repaints a revoked household while a replacement settles', async ({
   page,
 }) => {

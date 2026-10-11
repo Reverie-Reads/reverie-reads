@@ -32,6 +32,7 @@ const patched: Patch[] = []
 const rpcCalls: { fn: string; args: Record<string, unknown> }[] = []
 let libraryBooks: Record<string, unknown>[] = []
 let entryRows: Record<string, unknown>[] = []
+let insertFailure: { message: string; code: string } | null = null
 let sourcePayload: Record<string, unknown> | null = null
 
 const SERIES_ROW = {
@@ -70,7 +71,8 @@ vi.mock('../lib/supabase', () => ({
         inserted.push({ table, rows: list })
         // `.select()` after insert returns the stored rows; ids are all `useSeriesDetail` reads.
         const stored = list.map((r, i) => ({ ...r, id: `new-${i}`, removed_at: null, label: null }))
-        const res = { data: stored, error: null }
+        if (table === 'series_entries' && !insertFailure) entryRows.push(...stored)
+        const res = { data: insertFailure ? null : stored, error: insertFailure }
         return { ...chain(() => res), then: (f: (v: unknown) => unknown) => Promise.resolve(res).then(f) }
       },
       update: (patch: Record<string, unknown>) => {
@@ -108,6 +110,7 @@ beforeEach(() => {
   rpcCalls.length = 0
   entryRows = []
   sourcePayload = null
+  insertFailure = null
   libraryBooks = [
     {
       id: 'book-1',
@@ -233,5 +236,33 @@ describe('every reader gesture still claims the row', () => {
     expect(ghost?.user_edited).toBe(true)
     expect(ghost?.sort_order).toBe(3)
     expect(ghost?.sort_user_edited).toBe(true)
+  })
+})
+
+
+describe('source refresh save results', () => {
+  const detail = { series: { id: 'ser-1', name: 'The Empyrean', status: null, source: 'manual' as const, sourceRef: null, refreshedAt: null }, entries: [], unreviewed: [], removed: [] }
+  it('reports a rejected insert instead of announcing that the series is up to date', async () => {
+    sourcePayload = { sourceRef: 'hc-7', entries: [{ title: 'Onyx Storm', author: 'Rebecca Yarros', position: 3 }] }
+    insertFailure = { code: '42501', message: 'write rejected' }
+    const { result } = renderHook(() => useApplySeriesSource('The Empyrean'), { wrapper: wrapper() })
+    await act(async () => {
+      await expect(result.current.mutateAsync({ author: 'Rebecca Yarros', detail })).rejects.toMatchObject({ code: '42501' })
+    })
+    expect(patched).toEqual([])
+  })
+  it('places unnumbered source books after new numbered books and retries from stored entries', async () => {
+    sourcePayload = { sourceRef: 'hc-7', entries: [
+      { title: 'Numbered', author: 'Rebecca Yarros', position: 1 },
+      { title: 'Unnumbered', author: 'Rebecca Yarros', position: 0 },
+    ] }
+    const { result } = renderHook(() => useApplySeriesSource('The Empyrean'), { wrapper: wrapper() })
+    await act(async () => { await result.current.mutateAsync({ author: 'Rebecca Yarros', detail }) })
+    await waitFor(() => expect(result.current.data?.added).toBe(2))
+    expect(entryRows.map(row => row.position)).toEqual([1, 2])
+    expect(entryRows[1]?.position_claim).toEqual({ origin: 'unknown' })
+    await act(async () => { await result.current.mutateAsync({ author: 'Rebecca Yarros', detail }) })
+    await waitFor(() => expect(result.current.data?.added).toBe(0))
+    expect(entryRows).toHaveLength(2)
   })
 })

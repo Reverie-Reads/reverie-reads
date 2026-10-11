@@ -12,6 +12,7 @@ vi.mock('../data/contributors', () => ({
 }))
 vi.mock('../data/series', () => ({
   useSyncBookSeries: () => ({ mutateAsync: state.series }),
+  useSeriesList: () => ({ data: new Map([['saga', { series: { name: 'Existing saga' } }]]) }),
 }))
 vi.mock('../data/reads', () => ({ useAddRead: vi.fn() }))
 vi.mock('../data/mergeBooks', () => ({ usePerformMerge: vi.fn() }))
@@ -27,6 +28,7 @@ const { EditDetails } = await import('./dialogs')
 
 beforeEach(() => {
   vi.clearAllMocks()
+  Element.prototype.scrollIntoView = vi.fn()
   state.update.mockResolvedValue(undefined)
   state.series.mockResolvedValue(undefined)
   state.contributors.mockResolvedValue(undefined)
@@ -109,4 +111,47 @@ it('focuses a failed field on Save without moving focus away while the reader co
   await waitFor(() => expect(month).toHaveFocus())
   expect(state.update).not.toHaveBeenCalled()
   expect(close).not.toHaveBeenCalled()
+})
+
+it('quick series editing saves without requiring repairs to unrelated legacy publication data', async () => {
+  const close = vi.fn()
+  const book = makeBook({
+    id: 'quick',
+    title: 'My book',
+    series: '',
+    position: '',
+    pub: { y: null, m: 2, d: null },
+  })
+  render(<EditDetails book={book} initialSection="series" onClose={close} />)
+  fireEvent.change(screen.getByRole('combobox', { name: 'Series' }), {
+    target: { value: 'Existing saga' },
+  })
+  fireEvent.change(screen.getByRole('textbox', { name: 'Position' }), {
+    target: { value: '2' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Save series' }))
+  await waitFor(() => expect(close).toHaveBeenCalledOnce())
+  expect(state.series).toHaveBeenCalledWith({
+    book,
+    newSeries: 'Existing saga',
+    newPosition: 2,
+    newSeriesCount: null,
+  })
+  expect(state.update).not.toHaveBeenCalled()
+})
+
+it('keeps the series draft when expanding into the full editor and offers existing names', () => {
+  render(
+    <EditDetails
+      book={makeBook({ id: 'expanded', title: 'My book', series: '' })}
+      initialSection="series"
+      onClose={vi.fn()}
+    />,
+  )
+  const series = screen.getByRole('combobox', { name: 'Series' })
+  expect(document.querySelector('datalist option')?.getAttribute('value')).toBe('Existing saga')
+  fireEvent.change(series, { target: { value: 'New draft saga' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Full book details…' }))
+  expect(screen.getByRole('combobox', { name: 'Series' })).toHaveValue('New draft saga')
+  expect(screen.getByRole('button', { name: 'Save details' })).toBeInTheDocument()
 })

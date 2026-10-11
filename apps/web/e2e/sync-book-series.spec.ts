@@ -188,7 +188,7 @@ test('a series-only edit uses one atomic RPC without replaying unchanged book me
 
     const writes = await recordWrites(page, async () => {
       await dlg.getByRole('button', { name: /^Save details$/i }).click()
-      await dlg.getByRole('button', { name: /^Save and remove$/i }).click()
+      await dlg.getByRole('button', { name: /^Save main series$/i }).click()
       await expect(dlg).toBeHidden({ timeout: 15_000 })
     })
 
@@ -274,6 +274,75 @@ test('opening an unreviewed series is read-only until the reader confirms member
         return { source: row.membership_claim.source, primary: row.is_primary }
       })
       .toEqual({ source: 'series_review', primary: true })
+  } finally {
+    await reset(c)
+  }
+})
+
+test('quick series editing adopts a fetched slot and both slots survive reload', async ({
+  page,
+}, testInfo) => {
+  const c = await client()
+  await reset(c)
+  await stub(page)
+  await page.route('**/functions/v1/series**', (route) =>
+    route.fulfill({
+      json: {
+        sourceRef: 'fixture-series',
+        entries: [
+          { title: 'First Book', author: 'Ada North', position: 1 },
+          { title: 'Second Book', author: 'Ada North', position: 2 },
+        ],
+      },
+    }),
+  )
+  try {
+    const series = await c.sb
+      .from('series')
+      .insert({ owner_id: c.uid, name: NEW_SAGA })
+      .select('id')
+      .single()
+    if (series.error) throw series.error
+    const book = await c.sb
+      .from('books')
+      .insert({
+        owner_id: c.uid,
+        title: 'Second Book',
+        author_first: 'Ada',
+        author_last: 'North',
+        authors_display: 'Ada North',
+        ownership: 'owned',
+      })
+      .select('id')
+      .single()
+    if (book.error) throw book.error
+    await signIn(page, c.session)
+    await page.goto(`/series/${encodeURIComponent(NEW_SAGA)}`)
+    await page.getByRole('button', { name: /Fetch series data/ }).click()
+    await expect(page.getByText('2 series entries added from Hardcover.')).toBeVisible()
+    await page.reload()
+    await expect(page.getByText('First Book', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('Second Book', { exact: true }).first()).toBeVisible()
+    await page.goto(`/book/${book.data.id}`)
+    await page.getByRole('button', { name: 'Add series details', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'Edit series', exact: true })
+    const name = dialog.getByRole('combobox', { name: 'Series', exact: true })
+    await expect(dialog.locator('datalist option').first()).toHaveAttribute('value', NEW_SAGA)
+    await name.fill(NEW_SAGA)
+    await dialog.getByRole('textbox', { name: 'Position', exact: true }).fill('2')
+    await page.screenshot({ path: `/tmp/reverie-series-quick-${testInfo.project.name}.png` })
+    await dialog.getByRole('button', { name: 'Save series', exact: true }).click()
+    await expect(dialog).toBeHidden()
+    await page.reload()
+    expect(await bookSeries(c, book.data.id)).toBe(NEW_SAGA)
+    const rows = await c.sb
+      .from('series_entries')
+      .select('book_id,position')
+      .eq('series_id', series.data.id)
+      .is('removed_at', null)
+    if (rows.error) throw rows.error
+    expect(rows.data).toHaveLength(2)
+    expect(rows.data).toContainEqual({ book_id: book.data.id, position: 2 })
   } finally {
     await reset(c)
   }

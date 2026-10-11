@@ -26,6 +26,11 @@ export function DrawerDialog({
 
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const previousOverflow = document.documentElement.style.overflow
+    const scrollPosition = {
+      left: window.scrollX,
+      top: window.scrollY,
+      behavior: 'instant' as const,
+    }
     const cancel = (event: Event) => {
       event.preventDefault()
       onCloseRef.current()
@@ -55,7 +60,8 @@ export function DrawerDialog({
     dialog.addEventListener('keydown', trapFocus)
     if (!dialog.open) dialog.showModal()
     document.documentElement.style.overflow = 'hidden'
-    closeRef.current?.focus()
+    closeRef.current?.focus({ preventScroll: true })
+    window.scrollTo(scrollPosition)
 
     return () => {
       dialog.removeEventListener('cancel', cancel)
@@ -63,6 +69,7 @@ export function DrawerDialog({
       if (dialog.open) dialog.close()
       document.documentElement.style.overflow = previousOverflow
       opener?.focus({ preventScroll: true })
+      window.scrollTo(scrollPosition)
     }
   }, [])
 
