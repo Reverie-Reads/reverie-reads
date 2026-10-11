@@ -18,6 +18,7 @@ import {
   type SeriesStatus,
 } from '@reverie/core'
 import { rootRoute } from './RootRoute'
+import { Button } from '../components/Button'
 import { BackLink } from '../components/BackLink'
 import { CoverImage } from '../components/CoverImage'
 import { BookStateMarks } from '../components/BookStateMarks'
@@ -69,7 +70,7 @@ function SeriesScreen() {
   const { data: books } = useBooks()
   const { data: lists } = useLists()
   const { data: items } = useAllListItems()
-  const { data: detail, isLoading } = useSeriesDetail(name)
+  const { data: detail, isLoading, isError, refetch } = useSeriesDetail(name)
   const reviewClaims = useReviewSeriesClaims(name)
   const setPrimary = useSetPrimarySeriesMembership(name)
   const updateSeries = useUpdateSeries(name)
@@ -149,6 +150,16 @@ function SeriesScreen() {
       </div>
     )
 
+  if (isError)
+    return (
+      <section className="space-y-3" role="alert">
+        <h1 className="text-2xl">This series could not be loaded</h1>
+        <p>Your saved books have not been changed. Try loading the series again.</p>
+        <Button variant="secondary" onClick={() => void refetch()}>
+          Retry series
+        </Button>
+      </section>
+    )
   if (!detail) {
     return (
       <section className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
@@ -280,7 +291,7 @@ function SeriesScreen() {
           const parts: string[] = []
           if (r.added)
             parts.push(
-              `${r.added} canonical ${r.added === 1 ? 'entry' : 'entries'} added from Hardcover.`,
+              `${r.added} series ${r.added === 1 ? 'entry' : 'entries'} added from Hardcover.`,
             )
           if (r.skipped)
             parts.push(`${r.skipped} left where you arranged ${r.skipped === 1 ? 'it' : 'them'}.`)
@@ -292,11 +303,14 @@ function SeriesScreen() {
             parts.length
               ? parts.join(' ')
               : r.unavailable
-                ? 'No source data for this series — yours to arrange.'
-                : 'Already up to date.',
+                ? 'The catalog is unavailable right now. Your saved entries are unchanged; try again later.'
+                : 'Series refreshed. No additional numbered books found.',
           )
         },
-        onError: () => setSourceNote('Couldn’t reach the catalog just now.'),
+        onError: () =>
+          setSourceNote(
+            'Couldn’t complete the refresh. Any entries already saved are kept. Reload this series and try again.',
+          ),
       },
     )
 

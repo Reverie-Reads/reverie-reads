@@ -222,6 +222,7 @@ export function EditDetails({
   const labels = useLabels()
   const setContributors = useSetContributors()
   const syncBookSeries = useSyncBookSeries()
+  const [quickSeries, setQuickSeries] = useState(initialSection === 'series')
   const suggestions = useAuthorSuggestions()
   const [contribs, setContribs] = useState<Contributor[]>(
     book.contributors.length ? book.contributors : fromFirstLast(book.first, book.last),
@@ -320,6 +321,41 @@ export function EditDetails({
   async function save() {
     if (saving) return
     setValidationAttempt((attempt) => attempt + 1)
+    if (quickSeries) {
+      const parsed = parseNumericFields({
+        position: { raw: f.position, spec: SERIES_POSITION },
+        seriesCount: { raw: f.seriesCount, spec: SERIES_COUNT },
+      })
+      if (!parsed.ok) {
+        setFieldErrors(parsed.errors)
+        setSaveError('Check the series number and length before saving.')
+        setConfirmingLeave(false)
+        return
+      }
+      setSaving(true)
+      setSaveError(null)
+      try {
+        if (
+          seriesNameChanged ||
+          parsed.values.position !== initialSeries.current.position ||
+          parsed.values.seriesCount !== initialSeries.current.count
+        ) {
+          await syncBookSeries.mutateAsync({
+            book,
+            newSeries: f.series,
+            newPosition: parsed.values.position,
+            newSeriesCount: parsed.values.seriesCount,
+          })
+        }
+        if (f.status !== opened.current.f.status)
+          await updateBook.mutateAsync({ id: book.id, patch: { status: f.status as SeriesStatus } })
+        onClose()
+      } catch (error) {
+        setSaveError(readableWriteError(error))
+        setSaving(false)
+      }
+      return
+    }
     const parsed = readNumbers()
     // A blank title is REFUSED, not quietly reverted to the old one. Silently substituting a value
     // the reader didn't type is the same invisible write #78 exists to eliminate: the dialog would
@@ -413,8 +449,14 @@ export function EditDetails({
 
   return (
     <>
-      <Modal title="Edit details" onClose={close} wide panelClassName="book-editor-dialog">
-        <BookEditor initialSection={initialSection}>
+      <Modal
+        title={quickSeries ? 'Edit series' : 'Edit details'}
+        onClose={close}
+        wide={!quickSeries}
+        panelClassName="book-editor-dialog"
+      >
+        {quickSeries && <p className="mb-3 text-sm text-muted">{book.title}</p>}
+        <BookEditor initialSection={initialSection} compact={quickSeries}>
           <fieldset disabled={saving} className="min-w-0">
             <BookMetadataFields
               value={f}
@@ -514,17 +556,28 @@ export function EditDetails({
           </fieldset>
         </BookEditor>
         <div className="book-editor-actions">
+          {quickSeries && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => setQuickSeries(false)}
+              className="book-editor-disclosure"
+            >
+              Full book details…
+            </button>
+          )}
           {/* Clearing or renaming the series REMOVES this book's slot from that series' reading order —
           the same removal the series page's ✕ performs. Destructive enough to name before it happens. */}
           {confirmingLeave ? (
             <Surface tone="field" radius="card" pad={2} className="mt-4">
               <p className="text-[13px] text-ink">
                 {f.series.trim()
-                  ? `Moving this book to ${f.series.trim()} removes its slot from ${oldSeries}.`
+                  ? `Use ${f.series.trim()} as the main series? Its existing place in ${oldSeries} will remain as an additional series.`
                   : `This removes the book’s slot from ${oldSeries}.`}{' '}
                 <span className="text-muted">
-                  The book stays in your library, and fetching {oldSeries} again won’t bring the
-                  slot back.
+                  {f.series.trim()
+                    ? 'The book stays in your library.'
+                    : `The book stays in your library. Fetching ${oldSeries} again won’t bring this slot back.`}
                 </span>
               </p>
               <div className="mt-3 flex gap-2">
@@ -548,7 +601,7 @@ export function EditDetails({
                     color: 'var(--on-primary)',
                   }}
                 >
-                  {saving ? 'Saving…' : 'Save and remove'}
+                  {saving ? 'Saving…' : f.series.trim() ? 'Save main series' : 'Save and remove'}
                 </button>
               </div>
             </Surface>
@@ -563,7 +616,7 @@ export function EditDetails({
                 color: 'var(--on-primary)',
               }}
             >
-              {saving ? 'Saving…' : 'Save details'}
+              {saving ? 'Saving…' : quickSeries ? 'Save series' : 'Save details'}
             </button>
           )}
           {/* The dialog stays OPEN on failure — the reader keeps what they typed and can see why. */}

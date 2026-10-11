@@ -255,7 +255,9 @@ test('primary removal is one atomic call, clears the projection, and does not pr
     })
 
     await page.getByRole('button', { name: /Fetch series data/i }).click()
-    await expect(page.getByText('Already up to date.', { exact: true })).toBeVisible({
+    await expect(
+      page.getByText('Series refreshed. No additional numbered books found.', { exact: true }),
+    ).toBeVisible({
       timeout: 20_000,
     })
     expect((await entryState(c, seed.primaryEntryId)).removed_at).not.toBeNull()

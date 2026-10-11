@@ -106,7 +106,7 @@ const toEntry = (row: SeriesEntryRowT): SeriesEntry => ({
   positionClaim: normalizeSeriesClaim(row.position_claim),
 })
 
-export const seriesKey = (name: string) => ['series', name.toLowerCase()] as const
+export const seriesKey = (name: string) => ['series', name] as const
 export const seriesListKey = ['seriesList'] as const
 export const archivedSeriesListKey = ['archivedSeriesList'] as const
 
@@ -298,42 +298,39 @@ export function useRestoreSeries() {
  * tombstone, assign an order, or seed status. Explicit review and trusted mutation paths own those
  * transitions.
  */
-export function useSeriesDetail(name: string) {
-  return useQuery({
-    queryKey: seriesKey(name),
-    enabled: !!name.trim(),
-    queryFn: async (): Promise<SeriesDetail | null> => {
-      const { data: rows, error } = await supabase
-        .from('series')
-        .select('*')
-        .eq('name', name)
-        .limit(1)
-      if (error) throw error
-      const seriesRow = (rows as SeriesRowT[])[0]
-      if (!seriesRow) return null
+export async function fetchSeriesDetail(name: string): Promise<SeriesDetail | null> {
+  const { data: rows, error } = await supabase
+    .from('series')
+    .select('*')
+    .eq('name', name)
+    .limit(1)
+  if (error) throw error
+  const seriesRow = (rows as SeriesRowT[])[0]
+  if (!seriesRow) return null
 
-      const { data: entRows, error: entryError } = await supabase
-        .from('series_entries')
-        .select('*')
-        .eq('series_id', seriesRow.id)
-        .order('sort_order', { ascending: true })
-        .order('position', { ascending: true })
-        .order('id', { ascending: true })
-      if (entryError) throw entryError
-      const allRows = (entRows ?? []) as SeriesEntryRowT[]
-      const live = allRows.filter((row) => !row.removed_at)
-      return {
-        series: toUiSeries(seriesRow),
-        entries: sortEntries(
-          live.filter((row) => row.membership_claim?.origin !== 'unknown').map(toEntry),
-        ),
-        unreviewed: sortEntries(
-          live.filter((row) => row.membership_claim?.origin === 'unknown').map(toEntry),
-        ),
-        removed: allRows.filter((row) => row.removed_at).map(toEntry),
-      }
-    },
-  })
+  const { data: entRows, error: entryError } = await supabase
+    .from('series_entries')
+    .select('*')
+    .eq('series_id', seriesRow.id)
+    .order('sort_order', { ascending: true })
+    .order('position', { ascending: true })
+    .order('id', { ascending: true })
+  if (entryError) throw entryError
+  const allRows = (entRows ?? []) as SeriesEntryRowT[]
+  const live = allRows.filter((row) => !row.removed_at)
+  return {
+    series: toUiSeries(seriesRow),
+    entries: sortEntries(
+      live.filter((row) => row.membership_claim?.origin !== 'unknown').map(toEntry),
+    ),
+    unreviewed: sortEntries(
+      live.filter((row) => row.membership_claim?.origin === 'unknown').map(toEntry),
+    ),
+    removed: allRows.filter((row) => row.removed_at).map(toEntry),
+  }
+}
+export function useSeriesDetail(name: string) {
+  return useQuery({ queryKey: seriesKey(name), enabled: !!name.trim(), queryFn: () => fetchSeriesDetail(name) })
 }
 
 export function useReviewSeriesClaims(name: string) {
@@ -607,24 +604,8 @@ export function useRemoveEntry(name: string) {
   })
 }
 
-/**
- * Reconcile the book page's series edits into series_entries (docs/archive/task-series-defects.md §Positions,
- * §Removal) — ONE RPC, ATOMICALLY (`sync_book_series`, 20260817010000).
- *
- * This used to be two sequential, independently-committed writes issued from HERE: retire the old
- * slot (read from `book.series`, the client's CACHED value), then a separate `writeSeriesOrder` or
- * book-row claim for the new number/length. A failure between them left `books.series` already
- * pointing at the new name with the OLD slot still live — and unlike a tombstoned-but-unclaimed
- * removal, revive-on-refresh does not undo this: there is no tombstone yet for it to revive, so
- * nothing removes the stale live entry, permanently. The RPC also closes a second, independent bug:
- * it reads the CURRENT series from the `books` row itself, inside its own transaction, never from
- * whatever this hook's caller happened to be holding — a stale cache could retire the wrong slot.
- *
- * Position and length still split the same way they always have: when a series row AND a live
- * entry already link this book, both go through `set_series_order` (called from inside the RPC,
- * not duplicated here); otherwise they land as a direct claim on the book row, exactly as before.
- * The RPC decides which; this hook just passes the three raw values through.
- */
+/** Save a deliberate primary membership through the owner-bound atomic RPC. Other
+ * memberships remain secondary; clearing the primary tombstones only that membership. */
 export function useSyncBookSeries() {
   const qc = useQueryClient()
   return useMutation({
@@ -656,7 +637,7 @@ export function useSyncBookSeries() {
       })
       if (error) throw error
     },
-    onSuccess: (_r, { book, newSeries }) => {
+    onSuccess: () => {
       void qc.invalidateQueries({ queryKey: seriesListKey })
       void qc.invalidateQueries({ queryKey: booksKey })
       void qc.invalidateQueries({ queryKey: ['series-strip'] })
@@ -665,7 +646,7 @@ export function useSyncBookSeries() {
       // a restored copy "fresh", so an invalidated query still PAINTS the old badges for a beat before
       // the refetch lands. Dropping it means the series page opens on its loading line and the first
       // thing the reader sees is the number they just typed.
-      for (const nm of [book.series, newSeries]) if (nm?.trim()) qc.removeQueries({ queryKey: seriesKey(nm) })
+      qc.removeQueries({ queryKey: ['series'] })
     },
   })
 }
@@ -873,7 +854,9 @@ export function useApplySeriesSource(name: string) {
       if (error) throw error
       const payload = data as { sourceRef: string | null; entries: { position: number; title: string; author: string }[]; unavailable?: boolean }
       const src = payload.entries ?? []
-      const { detail } = input
+      if (payload.unavailable && !src.length) return { added: 0, skipped: 0, skippedCollision: 0, unavailable: true }
+      const detail = await fetchSeriesDetail(name)
+      if (!detail || detail.series.id !== input.detail.series.id) throw new Error('The series changed. Reload it before fetching again.')
       // Tombstones join `existing` so a removed slot MATCHES and is therefore never re-inserted —
       // the whole point of keeping them. They carry user_edited, so the merge can't try to move one.
       const { inserts, moves } = mergeSourceEntries(
@@ -900,54 +883,46 @@ export function useApplySeriesSource(name: string) {
         // still applies — the whole batch no longer aborts on one collision.
         skippedCollision = res.skipped_collision
       }
-      // A source entry with no usable number goes to the END, not to 0. `position: ... : 0` parked
-      // every unnumbered arrival on the same slot, so the first one took 0 and each one after it
-      // collided with it — silently before Phase 2, and as a rejected insert once
-      // series_entries_position_uidx lands. The end of the order is where a book whose place isn't
-      // known belongs; it is the same rule the seeder and the cleared-number path already use.
-      let nextFree = Math.floor(
-        Math.max(
-          0,
-          ...detail.entries.map((e) => e.position),
-          ...detail.unreviewed.map((e) => e.position),
-        ),
-      )
-      let added = 0
-      for (const s of inserts) {
-        const sourcePosition = s.position > 0 ? s.position : ++nextFree
-        const { error: iErr } = await supabase.from('series_entries').insert({
-          series_id: detail.series.id,
-          owner_id: uid,
-          position: sourcePosition,
-          sort_order: sourcePosition,
-          sort_user_edited: false,
-          title: s.title,
-          author: s.author,
-          source: 'hardcover',
-          user_edited: false,
-          is_primary: false,
-          membership_claim: makeSeriesClaim('enrichment', 'hardcover_series', {
-            sourceRef: payload.sourceRef ?? undefined,
-            confidence: 'high',
-            at: new Date().toISOString(),
-          }),
-          position_claim: makeSeriesClaim('enrichment', 'hardcover_series', {
-            sourceRef: payload.sourceRef ?? undefined,
-            confidence: 'high',
-            at: new Date().toISOString(),
-          }),
+      // Re-read after moves: returned source positions can collide with reader-held slots or
+      // another session. A single batch insert either persists every new slot or reports failure.
+      const afterMoves = moves.length ? await fetchSeriesDetail(name) : detail
+      if (!afterMoves || afterMoves.series.id !== detail.series.id) throw new Error('The series changed. Reload it before fetching again.')
+      const occupied = new Set([...afterMoves.entries, ...afterMoves.unreviewed].map(entry => entry.position))
+      let nextFree = Math.floor(Math.max(0, ...occupied, ...src.map(entry => Number.isFinite(entry.position) ? entry.position : 0)))
+      const seen = new Set<string>()
+      const rows = []
+      for (const entry of inserts) {
+        const identity = entry.title.trim().toLocaleLowerCase()
+        if (seen.has(identity)) continue
+        seen.add(identity)
+        const hasPosition = Number.isFinite(entry.position) && entry.position > 0
+        const position = hasPosition ? entry.position : ++nextFree
+        if (occupied.has(position)) { skippedCollision++; continue }
+        occupied.add(position)
+        const claim = makeSeriesClaim('enrichment', 'hardcover_series', {
+          sourceRef: payload.sourceRef ?? undefined, confidence: 'high', at: new Date().toISOString(),
         })
-        if (!iErr) added++
+        rows.push({
+          series_id: detail.series.id, owner_id: uid, position, sort_order: position,
+          sort_user_edited: false, title: entry.title, author: entry.author,
+          source: 'hardcover', user_edited: false, is_primary: false,
+          membership_claim: claim, position_claim: hasPosition ? claim : { origin: 'unknown' },
+        })
       }
-      await supabase
-        .from('series')
-        .update({
-          refreshed_at: new Date().toISOString(),
-          ...(src.length ? { source: 'hardcover', source_ref: payload.sourceRef } : {}),
-        })
-        .eq('id', detail.series.id)
+      let added = 0
+      if (rows.length) {
+        const { data: saved, error: insertError } = await supabase.from('series_entries').insert(rows).select('id')
+        if (insertError) throw insertError
+        if (saved?.length !== rows.length) throw new Error('Could not confirm the saved series entries. Reload before trying again.')
+        added = saved.length
+      }
+      const { error: refreshError } = await supabase.from('series').update({
+        refreshed_at: new Date().toISOString(),
+        ...(src.length ? { source: 'hardcover', source_ref: payload.sourceRef } : {}),
+      }).eq('id', detail.series.id)
+      if (refreshError) throw refreshError
       return { added, skipped, skippedCollision, unavailable: !!payload.unavailable && !src.length }
     },
-    onSuccess: () => invalidate(),
+    onSettled: () => invalidate(),
   })
 }

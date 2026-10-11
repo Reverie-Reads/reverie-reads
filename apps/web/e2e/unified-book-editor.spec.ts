@@ -78,7 +78,7 @@ for (const width of [320, 390, 1440]) {
       await page.getByRole('button', { name: 'Fantasy', exact: true }).click()
       await page.getByLabel('ISBN', { exact: true }).fill('9780316580792')
       await page.getByLabel('Pages', { exact: true }).fill('352')
-      await page.getByRole('textbox', { name: 'Series', exact: true }).fill('The Quiet Islands')
+      await page.getByRole('combobox', { name: 'Series', exact: true }).fill('The Quiet Islands')
       await page.getByLabel('Position', { exact: true }).fill('1.5')
       await page.getByLabel('Series length', { exact: true }).fill('4')
       await page

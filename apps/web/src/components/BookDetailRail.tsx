@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { EditDetails } from '../book/dialogs'
 import { Link } from '@tanstack/react-router'
 import {
   formatAuthors,
@@ -26,6 +28,7 @@ export function BookDetailRail({
   book: Book | null
   onToggleFave?: (id: string) => void
 }) {
+  const [editingSeriesFor, setEditingSeriesFor] = useState<string | null>(null)
   const labels = useLabels()
   const voice = useVoice()
   // Above the `if (!book)` early return below — rules-of-hooks.
@@ -187,6 +190,20 @@ export function BookDetailRail({
         </p>
       )}
 
+      <button
+        type="button"
+        onClick={() => setEditingSeriesFor(book.id)}
+        className="skin-control my-3 min-h-11 border border-line px-3 text-sm text-ink"
+      >
+        {book.series ? 'Edit series' : 'Add to a series'}
+      </button>
+      {editingSeriesFor === book.id && (
+        <EditDetails
+          book={book}
+          initialSection="series"
+          onClose={() => setEditingSeriesFor(null)}
+        />
+      )}
       <Link
         to="/book/$bookId"
         params={{ bookId: book.id }}

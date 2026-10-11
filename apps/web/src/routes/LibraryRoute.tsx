@@ -17,6 +17,13 @@ import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext
 import { useHideIntensity } from '../data/profile'
 import { useFilters } from '../library/filterStore'
 import { Toolbar } from '../library/Toolbar'
+import { HouseholdToolbar } from '../library/HouseholdToolbar'
+import {
+  defaultHouseholdFilters,
+  matchesHouseholdFilters,
+  matchesHouseholdQuery,
+  sortHouseholdBooks,
+} from '../library/householdFilters'
 import { FilterPanel } from '../library/FilterPanel'
 import { CoverCard } from '../components/CoverCard'
 import { CoverSheet } from '../components/CoverSheet'
@@ -550,6 +557,22 @@ function HouseholdLibraryScreen() {
     isCorpusAdmin ||
     members.some((member) => member.userId === currentReaderId && member.role === 'owner')
   const availableBooks = useMemo(() => (hasHousehold ? books : []), [books, hasHousehold])
+  const [householdFilters, setHouseholdFilters] = useState(defaultHouseholdFilters)
+  const visible = useMemo(
+    () =>
+      sortHouseholdBooks(
+        availableBooks.filter((book) => matchesHouseholdFilters(book, householdFilters)),
+        householdFilters.sort,
+      ),
+    [availableBooks, householdFilters],
+  )
+  const hiddenMatches = householdFilters.q.trim()
+    ? availableBooks.filter(
+        (book) =>
+          matchesHouseholdQuery(book, householdFilters.q) &&
+          !matchesHouseholdFilters(book, householdFilters),
+      ).length
+    : 0
   const selection = useHouseholdBookSelection({
     householdId: household.householdId,
     books: availableBooks,
@@ -580,7 +603,9 @@ function HouseholdLibraryScreen() {
   }
 
   const dockedBook =
-    isWide && availableBooks.length > 0 ? (selected ?? availableBooks[0] ?? null) : null
+    isWide && visible.length > 0
+      ? (visible.find((book) => book.id === selected?.id) ?? visible[0] ?? null)
+      : null
   const onlyCurrentMember =
     hasHousehold &&
     members.length === 1 &&
@@ -674,6 +699,32 @@ function HouseholdLibraryScreen() {
             </Surface>
           ) : null}
 
+          {availableBooks.length > 0 && (
+            <HouseholdToolbar
+              books={availableBooks}
+              members={members}
+              value={householdFilters}
+              onChange={setHouseholdFilters}
+            />
+          )}
+          {hiddenMatches > 0 && (
+            <p role="status" className="mb-3 text-sm text-muted">
+              {hiddenMatches} {hiddenMatches === 1 ? 'match' : 'matches'} hidden by filters —{' '}
+              <button
+                type="button"
+                className="underline underline-offset-4"
+                onClick={() =>
+                  setHouseholdFilters({
+                    ...defaultHouseholdFilters(),
+                    q: householdFilters.q,
+                    sort: householdFilters.sort,
+                  })
+                }
+              >
+                Show all matches
+              </button>
+            </p>
+          )}
           {availableBooks.length === 0 ? (
             <HouseholdCentered>
               <h2 className="text-[18px] font-semibold text-ink">
@@ -689,11 +740,16 @@ function HouseholdLibraryScreen() {
             <>
               <SectionHeader
                 label="Household library"
-                readout={availableBooks.length}
+                readout={`${visible.length} / ${availableBooks.length}`}
                 className="mb-3"
               />
+              {visible.length === 0 && (
+                <p role="status" className="py-10 text-center text-sm text-muted">
+                  No household books match. Try another search or clear the filters.
+                </p>
+              )}
               <div style={COVER_GRID}>
-                {availableBooks.map((book) => (
+                {visible.map((book) => (
                   <HouseholdBookCard
                     key={book.id}
                     book={book}
@@ -785,7 +841,12 @@ function HouseholdLibraryScreen() {
 
 function LibraryScreen() {
   const { scope } = libraryRoute.useSearch()
-  return scope === 'household' ? <HouseholdLibraryScreen /> : <PersonalLibraryScreen />
+  const { session } = useAuth()
+  return scope === 'household' ? (
+    <HouseholdLibraryScreen key={session?.user.id ?? 'signed-out'} />
+  ) : (
+    <PersonalLibraryScreen />
+  )
 }
 
 const SHELF_LINK_VALUES: readonly LibraryShelfLink[] = ['owned', 'borrowed', 'read', 'wishlist']

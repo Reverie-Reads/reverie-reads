@@ -6,6 +6,7 @@ import {
   type Contributor,
   type Book,
 } from '@reverie/core'
+import { useSeriesList } from '../data/series'
 import { ContributorEditor } from './ContributorEditor'
 import { Stars } from '../components/Stars'
 import { Chip } from '../components/Chip'
@@ -94,7 +95,9 @@ export function BookEditorSection({
 export function BookEditor({
   initialSection = 'identity',
   children,
+  compact = false,
 }: {
+  compact?: boolean
   initialSection?: BookEditorSectionId
   children: ReactNode
 }) {
@@ -120,8 +123,8 @@ export function BookEditor({
     return () => cancelAnimationFrame(frame)
   }, [initialSection])
   return (
-    <div className="book-editor" ref={root}>
-      <nav aria-label="Book information sections" className="book-editor-nav">
+    <div className={compact ? 'book-editor book-editor-series-only' : 'book-editor'} ref={root}>
+      <nav hidden={compact} aria-label="Book information sections" className="book-editor-nav">
         {(
           [
             ['identity', 'Book'],
@@ -216,6 +219,10 @@ export function BookMetadataFields({
   editionNotice?: ReactNode
   quick?: boolean
 }) {
+  const { data: existingSeries, isError: seriesError } = useSeriesList()
+  const seriesNames = [...(existingSeries?.values() ?? [])]
+    .map((row) => row.series.name)
+    .sort((a, b) => a.localeCompare(b))
   const [showDetails, setShowDetails] = useState(false)
   const fieldPrefix = useId()
   const fields = useRef<HTMLDivElement>(null)
@@ -408,7 +415,27 @@ export function BookMetadataFields({
       <div hidden={quick && !showDetails}>
         <BookEditorSection id="series" title="Series details">
           <div className="book-editor-grid">
-            {input('series', 'Series', 'Series')}
+            <BookField label="Series">
+              <input
+                value={f.series}
+                onChange={(e) => set('series', e.target.value)}
+                list={`${fieldPrefix}-series`}
+                placeholder="Choose an existing series or enter a name"
+                className={bookFieldClass}
+                aria-label="Series"
+                autoComplete="off"
+              />
+              <datalist id={`${fieldPrefix}-series`}>
+                {seriesNames.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+              <span className="text-sm font-normal text-muted">
+                {seriesError
+                  ? 'Existing series could not load. Check the name before saving.'
+                  : 'Choose an existing name to keep these books together.'}
+              </span>
+            </BookField>
             {input('position', 'Position', 'Book #', true)}
             {input('seriesCount', 'Series length', 'None set', true)}
             <BookField label="Series status">

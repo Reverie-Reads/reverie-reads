@@ -88,7 +88,11 @@ export function readableWriteError(error: unknown): string {
   // and it throws away the one thing set_series_order goes out of its way to say: WHICH slot lost.
   // A reader typing a number another book already holds is a case they can fix in one keystroke,
   // so it earns a sentence of its own rather than the catch-all.
-  if (/a target position is already held|series_entries_position_uidx/.test(raw))
+  if (
+    /a target position is already held|series position is already occupied|series_entries_position_uidx/.test(
+      raw,
+    )
+  )
     return 'Another book in this series is already at that number.'
   if (/two slots claim the same position/.test(raw))
     return 'Two books can’t share the same number in a series.'

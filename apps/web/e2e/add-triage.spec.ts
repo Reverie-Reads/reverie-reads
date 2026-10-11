@@ -290,10 +290,12 @@ test('an exact edition lookup preserves corpus details and the matched ISBN', as
   await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(CORPUS_CANONICAL, {
     timeout: 15_000,
   })
-  await expect(page.getByPlaceholder('Series')).toHaveValue('The Triage Cycle')
+  await page.getByRole('button', { name: 'Additional information (optional)', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Series', exact: true })).toHaveValue(
+    'The Triage Cycle',
+  )
   await expect(page.getByPlaceholder('Book #')).toHaveValue('3')
   // Shared metadata labels stay genre-neutral across rooms.
-  await page.getByRole('button', { name: 'Additional information (optional)', exact: true }).click()
   await expect(page.getByRole('combobox', { name: 'Genre', exact: true })).toHaveValue(CORPUS_GENRE)
 
   // Assert the click-to-prefill path at
@@ -386,7 +388,8 @@ test('a conflicting ISBN result never replaces its identity with corpus details'
   await row(page, conflictingTitle).locator('button').click()
   await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(conflictingTitle)
   await expect(page.getByLabel('Contributor 1 name', { exact: true })).toHaveValue('Another Writer')
-  await expect(page.getByPlaceholder('Series')).toHaveValue('')
+  await page.getByRole('button', { name: 'Additional information (optional)', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Series', exact: true })).toHaveValue('')
   await expect(page.getByPlaceholder('Book #')).toHaveValue('')
 })
 
