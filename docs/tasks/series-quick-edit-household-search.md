@@ -29,3 +29,20 @@ function and requires the existing human-confirmed guarded migration deployment.
 migration is performed by this change. Deploy the public feature through the private overlay before
 production. Local validation is recorded in the PR; local browser checks do not prove physical iOS
 or deployed account behavior.
+
+## Local validation (October 11, 2026)
+
+Typecheck, lint, production build and all unit suites passed. The database suite passed
+66 files / 1,984 assertions; focused desktop/mobile household and series flows passed
+24 tests with one pre-existing platform skip. The full default-worker, fresh-database browser
+run recorded 377 passes, 2 failures, 10 skips and 6 tests not run after a serial-suite failure.
+The failures were outdated assertions: Series is now a combobox inside Additional information,
+and the refresh confirmation now says no additional numbered books were found. Both test
+expectations were corrected, without weakening the persistence or tombstone checks.
+The replacement run passed all 14 Add triage, series removal and series persistence checks,
+including the six tests skipped after the original serial-suite failure. Current CI is recorded
+in the PR.
+
+A later source review also made a failed series load explicitly retryable instead of displaying
+the failure as an empty or absent series. Local results do not certify production or a physical
+phone. The private local schema is restored after each locked database run.
