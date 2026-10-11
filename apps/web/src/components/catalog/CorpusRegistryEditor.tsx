@@ -239,7 +239,7 @@ function RegistryWorkspace({
     </label>
   )
   return (
-    <div className="mt-3 min-w-0 space-y-4">
+    <div className="mt-3 min-w-0 space-y-4 break-words">
       <CorpusGuidance record={record} />
       {!action && (
         <Button variant="secondary" disabled={blocked} onClick={() => begin('guidance')}>

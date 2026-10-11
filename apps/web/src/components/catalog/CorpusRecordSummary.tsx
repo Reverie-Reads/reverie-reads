@@ -27,7 +27,7 @@ export function CorpusGuidance({ record }: { record: CorpusRecord }) {
   const genres = [...new Set([record.genre, ...record.genres].filter(Boolean))]
   const subs = [...new Set([record.subgenre, ...record.subgenres].filter(Boolean))]
   return (
-    <div className="space-y-2 text-sm">
+    <div className="min-w-0 space-y-2 break-words text-sm">
       <p>
         <span className="text-muted">Genres: </span>
         {genres.join(' · ') || 'Not recorded'}

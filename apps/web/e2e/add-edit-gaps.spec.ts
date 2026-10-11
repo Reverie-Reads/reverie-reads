@@ -262,13 +262,23 @@ test('Edit details: title, ISBN and spice are editable and persist', async ({ pa
     // beside this one with its own "3", which the old `.first()` only survived by ordering luck.
     await dlg.getByRole('button', { name: /^Spice 3\b/ }).click()
     await dlg.getByRole('button', { name: /Save details/i }).click()
+    await expect(dlg.getByRole('alert')).toContainText('Check the ISBN before saving.')
+    expect((await rowOf(c, id)).isbn).toBe('')
+    // The old fixture has an invalid check digit; a reviewed correction must be a real ISBN.
+    await dlg.getByLabel('ISBN').fill('9780316580793')
+    await dlg
+      .getByRole('checkbox', {
+        name: 'I reviewed this edition’s ISBN, pages and publication date.',
+      })
+      .check()
+    await dlg.getByRole('button', { name: /Save details/i }).click()
     await expect(dlg).toBeHidden({ timeout: 15_000 })
 
     await expect
       .poll(async () => await rowOf(c, id), { timeout: 15_000 })
       .toMatchObject({
         title: 'The Corrected Title',
-        isbn: '9780316580792',
+        isbn: '9780316580793',
         intensity: 3,
       })
 

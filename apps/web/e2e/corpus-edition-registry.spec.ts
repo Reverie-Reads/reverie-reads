@@ -36,33 +36,29 @@ async function fixture(page: Page) {
     title = `Registry ${work.slice(0, 8)}`
   await ok(admin.from('corpus_admins').insert({ user_id: user.id }), 'registry administrator')
   await ok(
-    admin
-      .from('works')
-      .insert({
-        id: work,
-        title,
-        author_text: 'Test Writer',
-        work_key: title.toLowerCase(),
-        isbns: [reference],
-        description: 'Bibliographic test fixture.',
-      }),
+    admin.from('works').insert({
+      id: work,
+      title,
+      author_text: 'Test Writer',
+      work_key: title.toLowerCase(),
+      isbns: [reference],
+      description: 'Bibliographic test fixture.',
+    }),
     'shared work',
   )
   await ok(
-    admin
-      .from('books')
-      .insert({
-        id: book,
-        owner_id: user.id,
-        corpus_work_id: work,
-        title,
-        authors_display: 'Test Writer',
-        isbn: reference,
-        ownership: 'owned',
-        intensity: null,
-        darkness: 0,
-        pages: 100,
-      }),
+    admin.from('books').insert({
+      id: book,
+      owner_id: user.id,
+      corpus_work_id: work,
+      title,
+      authors_display: 'Test Writer',
+      isbn: reference,
+      ownership: 'owned',
+      intensity: null,
+      darkness: 0,
+      pages: 100,
+    }),
     'personal book',
   )
   const client = createClient(URL, ANON, {

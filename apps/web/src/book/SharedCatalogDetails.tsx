@@ -17,7 +17,7 @@ export function SharedCatalogDetails({ book }: { book: Book }) {
   const [open, setOpen] = useState(false)
   if (!book.corpusWorkId) return null
   return (
-    <section className="mt-5 border-t border-line pt-3">
+    <section className="mt-5 min-w-0 break-words border-t border-line pt-3">
       <button
         className="min-h-11 text-left text-sm font-semibold underline underline-offset-4"
         type="button"
