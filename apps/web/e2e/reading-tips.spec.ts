@@ -179,17 +179,18 @@ test('reading tips save across sessions, preserve essential copy and the guide, 
   }
 })
 
-test('reading tips and the smaller disclosure remain usable in all eighteen room appearances', async ({
-  page,
-}) => {
-  test.setTimeout(300_000)
-  await page.setViewportSize({ width: 320, height: 740 })
-  const account = await returningReader(page)
-  try {
-    // A separate reader keeps the default despite the previous scenario choosing otherwise.
-    expect(await account.preference()).toBe(true)
-    for (const skin of SKIN_ORDER) {
-      for (const mode of ['light', 'dark']) {
+// Each appearance has an independent reader, timeout and failure receipt. One slow room must
+// not consume the budget for all eighteen or make a retry repeat the entire sweep.
+for (const skin of SKIN_ORDER) {
+  for (const mode of ['light', 'dark']) {
+    test(`reading tips and the smaller disclosure remain usable in ${skin}/${mode}`, async ({
+      page,
+    }) => {
+      test.setTimeout(90_000)
+      await page.setViewportSize({ width: 320, height: 740 })
+      const account = await returningReader(page)
+      try {
+        expect(await account.preference()).toBe(true)
         await account.room(skin, mode)
         await page.goto('/settings')
         await expect(page.locator('html')).toHaveAttribute('data-skin', skin)
@@ -250,9 +251,9 @@ test('reading tips and the smaller disclosure remain usable in all eighteen room
         await expect(
           page.getByText('Find something you want to open.', { exact: true }),
         ).toBeVisible()
+      } finally {
+        await account.cleanup()
       }
-    }
-  } finally {
-    await account.cleanup()
+    })
   }
-})
+}
