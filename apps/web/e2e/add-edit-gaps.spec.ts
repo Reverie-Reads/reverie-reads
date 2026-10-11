@@ -248,7 +248,7 @@ test('Edit details: title, ISBN and spice are editable and persist', async ({ pa
 
     const dlg = await openEdit(page)
     await dlg.getByLabel('Title').fill('The Corrected Title')
-    await dlg.getByLabel('ISBN').fill('9780316580792')
+    await dlg.getByRole('textbox', { name: 'ISBN', exact: true }).fill('9780316580792')
     await dlg
       .getByRole('checkbox', {
         name: 'I reviewed this edition’s ISBN, pages and publication date.',
@@ -265,7 +265,7 @@ test('Edit details: title, ISBN and spice are editable and persist', async ({ pa
     await expect(dlg.getByText('Check the ISBN before saving.', { exact: true })).toBeVisible()
     expect((await rowOf(c, id)).isbn).toBe('')
     // The old fixture has an invalid check digit; a reviewed correction must be a real ISBN.
-    await dlg.getByLabel('ISBN').fill('9780316580793')
+    await dlg.getByRole('textbox', { name: 'ISBN', exact: true }).fill('9780316580793')
     await dlg
       .getByRole('checkbox', {
         name: 'I reviewed this edition’s ISBN, pages and publication date.',
