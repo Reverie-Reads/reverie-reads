@@ -155,3 +155,69 @@ it('keeps the series draft when expanding into the full editor and offers existi
   expect(screen.getByRole('combobox', { name: 'Series' })).toHaveValue('New draft saga')
   expect(screen.getByRole('button', { name: 'Save details' })).toBeInTheDocument()
 })
+
+it('requires review of a changed ISBN and rejects a checksum error before saving', async () => {
+  const close = vi.fn()
+  render(
+    <EditDetails
+      book={makeBook({ id: 'isbn', title: 'My edition', isbn: '9780306406157' })}
+      onClose={close}
+    />,
+  )
+  const field = screen.getByRole('textbox', { name: 'ISBN' })
+  fireEvent.change(field, { target: { value: '9780306406158' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
+  await waitFor(() => expect(field).toHaveFocus())
+  expect(state.update).not.toHaveBeenCalled()
+  fireEvent.change(field, { target: { value: '9780140449136' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
+  expect(state.update).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('checkbox', { name: /I reviewed this edition/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
+  await waitFor(() => expect(close).toHaveBeenCalledOnce())
+  expect(state.update).toHaveBeenCalledWith({ id: 'isbn', patch: { isbn: '9780140449136' } })
+})
+
+it('does not convert shared defaults into personal levels during an unrelated edit', async () => {
+  const close = vi.fn()
+  render(
+    <EditDetails
+      book={makeBook({
+        id: 'shared',
+        title: 'Original',
+        intensity: null,
+        darkness: null,
+        sharedGuidance: { spice: 4, darkness: 2 },
+      })}
+      onClose={close}
+    />,
+  )
+  expect(screen.getByText('Using shared guidance: 4/5.')).toBeInTheDocument()
+  fireEvent.change(screen.getByRole('textbox', { name: 'Title' }), {
+    target: { value: 'Corrected' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
+  await waitFor(() => expect(close).toHaveBeenCalledOnce())
+  expect(state.update).toHaveBeenCalledWith({ id: 'shared', patch: { title: 'Corrected' } })
+})
+
+it('clears only the selected personal assessment when returning to shared guidance', async () => {
+  const close = vi.fn()
+  render(
+    <EditDetails
+      book={makeBook({
+        id: 'override',
+        title: 'Original',
+        intensity: 0,
+        darkness: 2,
+        sharedGuidance: { spice: 4, darkness: 5 },
+      })}
+      onClose={close}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Use shared spice guidance' }))
+  expect(screen.getByText('Using shared guidance: 4/5.')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Save details' }))
+  await waitFor(() => expect(close).toHaveBeenCalledOnce())
+  expect(state.update).toHaveBeenCalledWith({ id: 'override', patch: { intensity: null } })
+})

@@ -1,3 +1,4 @@
+import { bookGuidance } from '@reverie/core'
 import { useState } from 'react'
 import { EditDetails } from '../book/dialogs'
 import { Link } from '@tanstack/react-router'
@@ -51,7 +52,7 @@ export function BookDetailRail({
     formatAuthors(book.contributors) || [book.first, book.last].filter(Boolean).join(' ')
   const [g0, g1] = subgenreGradient(book.subgenre, book.genre)
   const isRead = book.readStatus === 'Read' || book.reads.length > 0
-  const intensity = book.intensity ?? 0
+  const intensity = bookGuidance(book).intensity ?? 0
   const owned = bookOwnedFormats(book)
   const possession = possessionState(book)
   const borrowed = possession === 'borrowed'

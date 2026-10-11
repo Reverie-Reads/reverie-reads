@@ -1,3 +1,4 @@
+import { bookGuidance } from '@reverie/core'
 import { useState } from 'react'
 import {
   formatAuthors,
@@ -51,7 +52,7 @@ export function CoverCard({
   const dnf = isDnf(book)
   const isRead = !dnf && (book.readStatus === 'Read' || book.reads.length > 0)
   const labels = useLabels()
-  const intensity = book.intensity ?? 0
+  const intensity = bookGuidance(book).intensity ?? 0
 
   // The skin-accent marks (--mark-accent: Tryst gold, Aphelion cyan) keep their flavour everywhere
   // axe can't measure them or where they still clear AA: over a real cover (contrast skipped over the

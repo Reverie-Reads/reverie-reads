@@ -160,3 +160,21 @@ describe('a row with no trio reads as no plan', () => {
     expect(toBook(row({})).plan).toEqual(emptyDate())
   })
 })
+
+describe('shared guidance is a read-time default, never a personal write', () => {
+  it('maps defaults separately while preserving a zero personal override', () => {
+    const book = toBook({ ...row({}), intensity: 0, darkness: null, corpus_guidance: { shared_spice: 4, shared_darkness: 3 } })
+    expect(book.intensity).toBe(0)
+    expect(book.darkness).toBeNull()
+    expect(book.sharedGuidance).toEqual({ spice: 4, darkness: 3 })
+    const written = toBookRow(book)
+    expect(written.intensity).toBe(0)
+    expect(written.darkness).toBeNull()
+    expect(written).not.toHaveProperty('sharedGuidance')
+    expect(written).not.toHaveProperty('corpus_guidance')
+    expect(written).not.toHaveProperty('shared_spice')
+  })
+  it('keeps absent guidance absent on legacy rows', () => {
+    expect(toBook(row({}))).not.toHaveProperty('sharedGuidance')
+  })
+})

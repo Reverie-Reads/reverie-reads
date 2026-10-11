@@ -516,7 +516,6 @@ function AddForm({
     if (dup) return
     setValidationAttempt((attempt) => attempt + 1)
     if (
-      hit.edition &&
       form.isbn.trim() &&
       (form.isbn.trim().length > 32 ||
         !/^[0-9Xx -]+$/.test(form.isbn.trim()) ||

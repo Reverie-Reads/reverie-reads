@@ -141,6 +141,10 @@ describe('query dehydration boundary', () => {
     expect(isOfflinePersistableQueryKey(['household', 'books', 'reader-a'])).toBe(false)
   })
 
+  it('keeps catalog reports and administrator history out of the offline mirror', () => {
+    expect(isOfflinePersistableQueryKey(['corpus-record', 'reader-a', 'work'])).toBe(false)
+  })
+
   it('keeps personal offline data eligible while retaining the series exclusions', () => {
     expect(isOfflinePersistableQueryKey(['books'])).toBe(true)
     expect(isOfflinePersistableQueryKey(['lists'])).toBe(true)

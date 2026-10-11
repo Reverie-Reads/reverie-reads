@@ -214,7 +214,7 @@ export default defineConfig({
       // already proven, and say nothing about touch.
       name: 'mobile',
       testMatch:
-        /(copy-inventory|spine-shelf-reachability|route-viewport|no-horizontal-overflow|placeholder-title-clip|cover-card-touch-affordance|star-touch-targets|scroll-restoration|shelf-header-links|household-library)\.spec\.ts$/,
+        /(copy-inventory|spine-shelf-reachability|route-viewport|no-horizontal-overflow|placeholder-title-clip|cover-card-touch-affordance|star-touch-targets|scroll-restoration|shelf-header-links|household-library|corpus-edition-registry)\.spec\.ts$/,
       use: {
         ...devices['iPhone 13'],
         viewport: { width: 390, height: 844 },

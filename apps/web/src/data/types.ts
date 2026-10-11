@@ -2,6 +2,7 @@
 // Mapped to/from the @reverie/core domain types in mappers.ts.
 
 export interface BookRow {
+  corpus_guidance?: { shared_spice?: number | null; shared_darkness?: number | null } | { shared_spice?: number | null; shared_darkness?: number | null }[] | null
   copy_inventory?: unknown
   copy_inventory_revision?: number
 

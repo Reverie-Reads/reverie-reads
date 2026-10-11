@@ -249,6 +249,11 @@ test('Edit details: title, ISBN and spice are editable and persist', async ({ pa
     const dlg = await openEdit(page)
     await dlg.getByLabel('Title').fill('The Corrected Title')
     await dlg.getByLabel('ISBN').fill('9780316580792')
+    await dlg
+      .getByRole('checkbox', {
+        name: 'I reviewed this edition’s ISBN, pages and publication date.',
+      })
+      .check()
     // Spice: the same 1-5 control Add uses. Click the 3rd notch.
     //
     // Anchored on the AXIS NAME, not on a trailing digit. Two things changed under this spec: the

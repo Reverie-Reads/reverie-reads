@@ -4,6 +4,7 @@ import {
   bookGenres,
   bookSubgenres,
   normalizeBookGenres,
+  normalizeIsbn,
   fromFirstLast,
   applyBookMergePicks,
   bookMergeOptions,
@@ -246,8 +247,8 @@ export function EditDetails({
     contribs,
     subs: bookSubgenres(book),
     genres: bookGenres(book),
-    intensity: book.intensity ?? 0,
-    darkness: book.darkness ?? 0,
+    intensity: book.intensity,
+    darkness: book.darkness,
   })
   const initialSeries = useRef({
     name: book.series.trim(),
@@ -265,9 +266,11 @@ export function EditDetails({
   const [extraGenres, setExtraGenres] = useState<string[]>(() =>
     bookGenres(book).filter((g) => g !== book.genre),
   )
-  const [intensity, setIntensity] = useState<number>(book.intensity ?? 0)
-  const [darkness, setDarkness] = useState<number>(book.darkness ?? 0)
+  const [intensity, setIntensity] = useState<number | null>(book.intensity)
+  const [darkness, setDarkness] = useState<number | null>(book.darkness)
+  const [isbnReviewed, setIsbnReviewed] = useState(false)
   const set = (k: keyof typeof f, v: string) => {
+    if (k === 'isbn') setIsbnReviewed(false)
     setF((prev) => ({ ...prev, [k]: v }))
     setFieldErrors((prev) => (prev[k] ? { ...prev, [k]: undefined } : prev)) // typing clears its own error
   }
@@ -354,6 +357,19 @@ export function EditDetails({
         setSaveError(readableWriteError(error))
         setSaving(false)
       }
+      return
+    }
+    if (
+      f.isbn.trim() !== opened.current.f.isbn.trim() &&
+      f.isbn.trim() &&
+      (!/^[0-9Xx -]{1,32}$/.test(f.isbn.trim()) || !normalizeIsbn(f.isbn))
+    ) {
+      setFieldErrors({ isbn: 'Enter a valid ISBN-10 or ISBN-13, or leave it blank.' })
+      setSaveError('Check the ISBN before saving.')
+      return
+    }
+    if (f.isbn.trim() !== opened.current.f.isbn.trim() && !isbnReviewed) {
+      setSaveError('Review the ISBN change in Edition details before saving.')
       return
     }
     const parsed = readNumbers()
@@ -470,6 +486,30 @@ export function EditDetails({
               onExtraGenresChange={setExtraGenres}
               errors={fieldErrors}
               validationAttempt={validationAttempt}
+              editionNotice={
+                f.isbn.trim() !== opened.current.f.isbn.trim() ? (
+                  <div className="mb-4 space-y-2 border border-line p-3 text-sm">
+                    <p>
+                      ISBN: {opened.current.f.isbn || 'Not recorded'} →{' '}
+                      {f.isbn.trim() || 'Not recorded'}
+                    </p>
+                    <p>
+                      This changes this book’s selected ISBN. Check its page count and publication
+                      date against the new edition. Individual copies and shared catalog records are
+                      unchanged.
+                    </p>
+                    <label className="flex min-h-11 items-start gap-3">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={isbnReviewed}
+                        onChange={(e) => setIsbnReviewed(e.target.checked)}
+                      />
+                      I reviewed this edition’s ISBN, pages and publication date.
+                    </label>
+                  </div>
+                ) : undefined
+              }
               cover={
                 <button
                   type="button"
@@ -507,18 +547,50 @@ export function EditDetails({
                 label={labels.intensity}
                 glyph={labels.intensityGlyph}
                 levels={labels.intensityLevels}
-                value={intensity}
+                value={intensity ?? book.sharedGuidance?.spice ?? 0}
                 onChange={setIntensity}
                 name="intensity"
               />
+              <p className="mt-2 text-sm text-muted">
+                {intensity == null
+                  ? book.sharedGuidance?.spice != null
+                    ? `Using shared guidance: ${book.sharedGuidance.spice}/5.`
+                    : 'Not assessed. Choose a level to save your own assessment.'
+                  : 'Your personal assessment overrides shared guidance.'}
+              </p>
+              {intensity != null && (
+                <button
+                  type="button"
+                  className="min-h-11 text-sm underline"
+                  onClick={() => setIntensity(null)}
+                >
+                  Use shared spice guidance
+                </button>
+              )}
               <LevelPicker
                 label={labels.darkness}
                 glyph={labels.darknessGlyph}
                 levels={labels.darknessLevels}
-                value={darkness}
+                value={darkness ?? book.sharedGuidance?.darkness ?? 0}
                 onChange={setDarkness}
                 name="darkness"
               />
+              <p className="mt-2 text-sm text-muted">
+                {darkness == null
+                  ? book.sharedGuidance?.darkness != null
+                    ? `Using shared guidance: ${book.sharedGuidance.darkness}/5.`
+                    : 'Not assessed. Choose a level to save your own assessment.'
+                  : 'Your personal assessment overrides shared guidance.'}
+              </p>
+              {darkness != null && (
+                <button
+                  type="button"
+                  className="min-h-11 text-sm underline"
+                  onClick={() => setDarkness(null)}
+                >
+                  Use shared darkness guidance
+                </button>
+              )}
               {/* Mood — the reader's own impression (how it landed). Reader-assigned, never derived; assigns
           persist immediately (book_moods), independent of this form's Save. */}
               <div className="mt-3">

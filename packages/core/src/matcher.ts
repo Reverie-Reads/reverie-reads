@@ -1,3 +1,4 @@
+import { bookGuidance } from './contentGuidance'
 import type { Book } from './types'
 import { isBookRead } from './filters'
 import { buildTasteProfile, tasteFit, type TasteProfile } from './tasteProfile'
@@ -191,13 +192,14 @@ export function scoreMatch(b: Book, p: MatchProfile, ctx?: MatchContext): MatchS
   }
 
   // darkness — distance to target. UNKNOWN sits at 0.75: mildly neutral, a deliberate change from
-  // the old "no penalty" (which let a no-data book tie a perfect fit). Reads b.darkness since the
+  // the old "no penalty" (which let a no-data book tie a perfect fit). Reads bookGuidance(b).darkness since the
   // split; every existing book is null here until a reader assesses it, so most books take the
   // 0.75 unknown branch rather than being scored against a heat value that answered a different
   // question.
+  const darkness = bookGuidance(b).darkness
   if (p.targetDarkness == null) add('darkness', NEUTRAL)
-  else if (b.darkness == null) add('darkness', 0.75)
-  else add('darkness', 1 - Math.abs(b.darkness - p.targetDarkness) / 5)
+  else if (darkness == null) add('darkness', 0.75)
+  else add('darkness', 1 - Math.abs(darkness - p.targetDarkness) / 5)
 
   // quality — the reader's OWN verdicts: rating, rereads as a love signal, DNF as a real negative
   const dnf = b.readStatus === 'DNF'

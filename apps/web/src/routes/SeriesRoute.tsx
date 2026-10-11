@@ -18,6 +18,7 @@ import {
   type SeriesStatus,
 } from '@reverie/core'
 import { rootRoute } from './RootRoute'
+import { Button } from '../components/Button'
 import { BackLink } from '../components/BackLink'
 import { CoverImage } from '../components/CoverImage'
 import { BookStateMarks } from '../components/BookStateMarks'
@@ -69,7 +70,7 @@ function SeriesScreen() {
   const { data: books } = useBooks()
   const { data: lists } = useLists()
   const { data: items } = useAllListItems()
-  const { data: detail, isLoading } = useSeriesDetail(name)
+  const { data: detail, isLoading, isError, refetch } = useSeriesDetail(name)
   const reviewClaims = useReviewSeriesClaims(name)
   const setPrimary = useSetPrimarySeriesMembership(name)
   const updateSeries = useUpdateSeries(name)
@@ -149,6 +150,16 @@ function SeriesScreen() {
       </div>
     )
 
+  if (isError)
+    return (
+      <section className="space-y-3" role="alert">
+        <h1 className="text-2xl">This series could not be loaded</h1>
+        <p>Your saved books have not been changed. Try loading the series again.</p>
+        <Button variant="secondary" onClick={() => void refetch()}>
+          Retry series
+        </Button>
+      </section>
+    )
   if (!detail) {
     return (
       <section className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
