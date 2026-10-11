@@ -76,7 +76,7 @@ for (const width of [320, 390, 1440]) {
       )
       await page.getByRole('button', { name: /^Also tag as/ }).click()
       await page.getByRole('button', { name: 'Fantasy', exact: true }).click()
-      await page.getByLabel('ISBN', { exact: true }).fill('9780316580792')
+      await page.getByLabel('ISBN', { exact: true }).fill('9780316580793')
       await page.getByLabel('Pages', { exact: true }).fill('352')
       await page.getByRole('combobox', { name: 'Series', exact: true }).fill('The Quiet Islands')
       await page.getByLabel('Position', { exact: true }).fill('1.5')
@@ -153,7 +153,7 @@ for (const width of [320, 390, 1440]) {
         pub_y: 2025,
         pub_m: 2,
         pub_d: 28,
-        isbn: '9780316580792',
+        isbn: '9780316580793',
       })
       await page.goto(`/book/${row.id}`)
       await page.getByRole('button', { name: 'Edit genres & subgenres', exact: true }).click()
