@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button } from '../Button'
+import { CorpusRegistryEditor } from './CorpusRegistryEditor'
 import { CatalogEditionCorrection } from './CatalogEditionCorrection'
 import { CatalogSeriesConfirmation } from './CatalogSeriesConfirmation'
 import {
@@ -40,6 +41,7 @@ export function CatalogMetadataEditor({
   const [error, setError] = useState('')
   const [editionDirty, setEditionDirty] = useState(false)
   const [seriesDirty, setSeriesDirty] = useState(false)
+  const [registryDirty, setRegistryDirty] = useState(false)
   const save = useSaveCatalogMetadataReview()
   const history = useCatalogMetadataHistory(work.id)
   const reviewed = confirmed && !!note.trim()
@@ -48,7 +50,7 @@ export function CatalogMetadataEditor({
   async function decide(
     action: Exclude<MetadataAction, 'edition_details' | 'series_confirmation'>,
   ) {
-    if (editionDirty || seriesDirty) return
+    if (editionDirty || seriesDirty || registryDirty) return
     setError('')
     try {
       await save.mutateAsync({
@@ -96,8 +98,8 @@ export function CatalogMetadataEditor({
           <h3 className="font-semibold">Compare related records</h3>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             Matching identifiers can mean a duplicate, an edition, or incorrect catalog data.
-            Compare the evidence before recording your assessment. This workspace does not merge
-            records or move ISBNs.
+            Compare the evidence before recording your assessment. Correct an edition or remove an
+            incorrect ISBN in the shared editions editor below. This workspace does not merge works.
           </p>
           <ul className="mt-3 space-y-3">
             {work.related.map((peer) => (
@@ -144,9 +146,15 @@ export function CatalogMetadataEditor({
           <SourceLink url={work.descriptionSource} />
         </p>
       )}
+      <CorpusRegistryEditor
+        workId={work.id}
+        blocked={descriptionChanged || editionDirty || seriesDirty || save.isPending}
+        onDirtyChange={setRegistryDirty}
+        onSaved={onSaved}
+      />
       <CatalogEditionCorrection
         work={work}
-        blocked={descriptionChanged || seriesDirty || save.isPending}
+        blocked={descriptionChanged || seriesDirty || registryDirty || save.isPending}
         onDirtyChange={setEditionDirty}
         onSaved={onSaved}
         onRefresh={onRefresh}
@@ -158,7 +166,7 @@ export function CatalogMetadataEditor({
       )}
       <CatalogSeriesConfirmation
         work={work}
-        blocked={descriptionChanged || editionDirty || save.isPending}
+        blocked={descriptionChanged || editionDirty || registryDirty || save.isPending}
         onDirtyChange={setSeriesDirty}
         onSaved={onSaved}
         onRefresh={onRefresh}
@@ -250,6 +258,7 @@ export function CatalogMetadataEditor({
             type="submit"
             disabled={
               editionDirty ||
+              registryDirty ||
               seriesDirty ||
               save.isPending ||
               !reviewed ||
@@ -263,7 +272,12 @@ export function CatalogMetadataEditor({
           <Button
             variant="secondary"
             disabled={
-              editionDirty || seriesDirty || save.isPending || !reviewed || descriptionChanged
+              editionDirty ||
+              seriesDirty ||
+              registryDirty ||
+              save.isPending ||
+              !reviewed ||
+              descriptionChanged
             }
             onClick={() => void decide('reviewed')}
           >
@@ -271,7 +285,9 @@ export function CatalogMetadataEditor({
           </Button>
           <Button
             variant="secondary"
-            disabled={editionDirty || seriesDirty || save.isPending || descriptionChanged}
+            disabled={
+              editionDirty || seriesDirty || registryDirty || save.isPending || descriptionChanged
+            }
             onClick={() => void decide('defer')}
           >
             Set aside for later
@@ -279,7 +295,9 @@ export function CatalogMetadataEditor({
           {work.state !== 'open' && (
             <Button
               variant="ghost"
-              disabled={editionDirty || seriesDirty || save.isPending || descriptionChanged}
+              disabled={
+                editionDirty || seriesDirty || registryDirty || save.isPending || descriptionChanged
+              }
               onClick={() => void decide('reopen')}
             >
               Reopen review

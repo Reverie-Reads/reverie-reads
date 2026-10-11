@@ -1,3 +1,4 @@
+import { bookGuidance } from './contentGuidance'
 import type { Book, ReadStatus, SeriesStatus } from './types'
 import { bookGenres, bookSubgenres } from './genreNormalize'
 import { bookTropeNames } from './tropes'
@@ -152,11 +153,11 @@ export function matchesFilters(b: Book, f: LibraryFilters): boolean {
   }
   if (f.format !== 'All' && b.format !== f.format) return false
   if (f.fave && !b.fave) return false
-  // `b.intensity ?? null`, never `?? 0`: an unassessed book matches only the explicit
+  // `bookGuidance(b).intensity ?? null`, never `?? 0`: an unassessed book matches only the explicit
   // not-assessed selection. Normalizing undefined to null keeps a partial fixture honest too.
-  if (f.intensity.length && !f.intensity.includes(b.intensity ?? null)) return false
+  if (f.intensity.length && !f.intensity.includes(bookGuidance(b).intensity ?? null)) return false
   // Same `?? null` rule as intensity directly above — see the comment there.
-  if (f.darkness.length && !f.darkness.includes(b.darkness ?? null)) return false
+  if (f.darkness.length && !f.darkness.includes(bookGuidance(b).darkness ?? null)) return false
   if (f.author && !bookHasAuthor(b, f.author)) return false
   if (f.q) {
     const hay = [
@@ -231,8 +232,10 @@ export function sortBooks(books: readonly Book[], sort: LibrarySort): Book[] {
        */
       const assessed: Book[] = []
       const unassessed: Book[] = []
-      for (const b of c) (b.intensity == null ? unassessed : assessed).push(b)
-      assessed.sort((a, b) => (b.intensity as number) - (a.intensity as number))
+      for (const b of c) (bookGuidance(b).intensity == null ? unassessed : assessed).push(b)
+      assessed.sort(
+        (a, b) => (bookGuidance(b).intensity as number) - (bookGuidance(a).intensity as number),
+      )
       return [...assessed, ...unassessed]
     }
     case 'darkness': {
@@ -243,8 +246,10 @@ export function sortBooks(books: readonly Book[], sort: LibrarySort): Book[] {
        */
       const assessed: Book[] = []
       const unassessed: Book[] = []
-      for (const b of c) (b.darkness == null ? unassessed : assessed).push(b)
-      assessed.sort((a, b) => (b.darkness as number) - (a.darkness as number))
+      for (const b of c) (bookGuidance(b).darkness == null ? unassessed : assessed).push(b)
+      assessed.sort(
+        (a, b) => (bookGuidance(b).darkness as number) - (bookGuidance(a).darkness as number),
+      )
       return [...assessed, ...unassessed]
     }
     case 'recent':

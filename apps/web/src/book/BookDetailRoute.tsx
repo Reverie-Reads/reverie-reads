@@ -1,3 +1,4 @@
+import { bookGuidance } from '@reverie/core'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, createRoute, useNavigate } from '@tanstack/react-router'
 import { StartReadingTour } from '../guidance/BookTour'
@@ -58,6 +59,7 @@ import { CoverSheet } from '../components/CoverSheet'
 import { useCoverBackfill } from '../data/coverBackfill'
 import { OwnedCopies } from './OwnedCopies'
 import { EditionCopies } from './EditionCopies'
+import { SharedCatalogDetails } from './SharedCatalogDetails'
 import { ReviewsPanel } from './ReviewsPanel'
 import { MoreLikeThis } from './MoreLikeThis'
 import { workKeyFor } from '../data/reviews'
@@ -108,12 +110,12 @@ function Label({ children, action }: { children: ReactNode; action?: ReactNode }
  *     silently hide a level they never asked to hide.
  */
 export function visibleLevelPills(
-  book: Pick<Book, 'intensity' | 'darkness'>,
+  book: Pick<Book, 'intensity' | 'darkness' | 'sharedGuidance'>,
   hideIntensity: boolean,
 ): { intensity: boolean; darkness: boolean } {
   return {
-    intensity: (book.intensity ?? 0) > 0 && !hideIntensity,
-    darkness: (book.darkness ?? 0) > 0,
+    intensity: (bookGuidance(book).intensity ?? 0) > 0 && !hideIntensity,
+    darkness: (bookGuidance(book).darkness ?? 0) > 0,
   }
 }
 
@@ -539,12 +541,18 @@ export function BookDetailScreen() {
               `hideIntensity` gates SPICE ONLY. It is the spice-hiding preference; darkness is a
               different axis and a reader who hid spice has said nothing about it.
             */}
+            {((book.intensity == null &&
+              book.sharedGuidance?.spice != null &&
+              !profile?.hideIntensity) ||
+              (book.darkness == null && book.sharedGuidance?.darkness != null)) && (
+              <span className="text-xs text-muted">Includes shared guidance</span>
+            )}
             {levelPills.intensity && (
               <LevelPill
                 axis="intensity"
                 label={labels.intensity}
                 glyph={labels.intensityGlyph}
-                level={book.intensity ?? 0}
+                level={bookGuidance(book).intensity ?? 0}
                 open={openLevel === 'intensity'}
                 onToggle={() => setOpenLevel((c) => (c === 'intensity' ? null : 'intensity'))}
               />
@@ -554,7 +562,7 @@ export function BookDetailScreen() {
                 axis="darkness"
                 label={labels.darkness}
                 glyph={labels.darknessGlyph}
-                level={book.darkness ?? 0}
+                level={bookGuidance(book).darkness ?? 0}
                 open={openLevel === 'darkness'}
                 onToggle={() => setOpenLevel((c) => (c === 'darkness' ? null : 'darkness'))}
               />
@@ -569,11 +577,15 @@ export function BookDetailScreen() {
           {openLevel && (
             <LevelGuideCard
               id={`level-guide-${openLevel}`}
-              level={(openLevel === 'intensity' ? book.intensity : book.darkness) ?? 0}
+              level={
+                (openLevel === 'intensity'
+                  ? bookGuidance(book).intensity
+                  : bookGuidance(book).darkness) ?? 0
+              }
               definition={
                 (openLevel === 'intensity'
-                  ? labels.intensityLevels[book.intensity ?? 0]
-                  : labels.darknessLevels[book.darkness ?? 0]) ?? ''
+                  ? labels.intensityLevels[bookGuidance(book).intensity ?? 0]
+                  : labels.darknessLevels[bookGuidance(book).darkness ?? 0]) ?? ''
               }
               onDismiss={() => setOpenLevel(null)}
               dismissLabel={`Close the ${
@@ -668,6 +680,7 @@ export function BookDetailScreen() {
           )}
           <div className="mt-3">
             <EditionCopies book={book} />
+            <SharedCatalogDetails book={book} />
           </div>
         </div>
 

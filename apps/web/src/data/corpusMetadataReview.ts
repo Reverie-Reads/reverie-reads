@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { supabase } from '../lib/supabase'
 
 export const METADATA_ISSUES = {
+  reader_report: 'Reader reported an ISBN problem',
   isbn_conflict: 'ISBN shared by several records',
   duplicate_identity: 'Same title and author',
   invalid_isbn: 'ISBN needs checking',

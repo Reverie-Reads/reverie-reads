@@ -35,6 +35,7 @@ function toContributors(row: BookRow): Contributor[] {
 
 /** Relational book row -> domain Book. `reads` are loaded separately (see data/reads.ts). */
 export function toBook(row: BookRow): Book {
+  const shared = Array.isArray(row.corpus_guidance) ? row.corpus_guidance[0] : row.corpus_guidance
   const inventory = parseCopyInventory(row.copy_inventory)
   const contributors = toContributors(row)
   // Prefer the normalized primary author; fall back to the back-compat first/last columns.
@@ -73,6 +74,7 @@ export function toBook(row: BookRow): Book {
         .filter((bm) => bm.moods?.name)
         .map((bm) => ({ id: bm.moods!.id, name: bm.moods!.name })),
     ),
+    ...(shared && (shared.shared_spice != null || shared.shared_darkness != null) ? { sharedGuidance: { spice: shared.shared_spice ?? null, darkness: shared.shared_darkness ?? null } } : {}),
     intensity: row.intensity ?? null,
     darkness: row.darkness ?? null,
     cover: row.cover_url ?? '',

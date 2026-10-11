@@ -20,18 +20,23 @@ export function useBooks() {
       //
       // `added_at` is not unique, so it cannot page on its own — two rows sharing a timestamp can
       // land in both windows or neither. `id` breaks the tie and makes the pages disjoint.
-      const rows = await pageAll<BookRow>('books', (from, to) =>
-        supabase
-          .from('books')
-          .select(
-            '*, book_authors(position, role, authors(id, name)), book_tropes(emphasis, tropes(id, name)), book_moods(moods(id, name))',
-            { count: 'exact' },
-          )
-          .is('removed_at', null)
-          .order('added_at', { ascending: true })
-          .order('id')
-          .range(from, to),
+      const baseFields = '*, book_authors(position, role, authors(id, name)), book_tropes(emphasis, tropes(id, name)), book_moods(moods(id, name))'
+      const read = (withGuidance: boolean) => pageAll<BookRow>('books', (from, to) =>
+        supabase.from('books').select(
+          baseFields + (withGuidance ? ', corpus_guidance:works!corpus_work_id(shared_spice, shared_darkness)' : ''),
+          { count: 'exact' },
+        ).is('removed_at', null).order('added_at', { ascending: true }).order('id').range(from, to).returns<BookRow[]>(),
       )
+      let rows: BookRow[]
+      try { rows = await read(true) } catch (error) {
+        const e = error as { code?: string; message?: string; details?: string }
+        const message = `${e.message || ''} ${e.details || ''}`
+        // Rolling deployment: only a missing new guidance column permits the legacy read.
+        // Network, permission, and ordinary query failures still surface with the library retry.
+        if ((e.code === '42703' || e.code === 'PGRST200' || e.code === 'PGRST204') &&
+          /shared_spice|shared_darkness/.test(message)) rows = await read(false)
+        else throw error
+      }
       return rows.map(toBook)
     },
   })

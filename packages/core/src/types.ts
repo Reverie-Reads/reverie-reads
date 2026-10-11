@@ -164,6 +164,8 @@ export interface Book {
   /** reader-assigned moods (join, inline) — how the book LANDED on the reader. NEVER derived:
    *  absence is a valid, quiet state, never backfilled with a guess (docs/archive/task-mood.md). */
   moods: { id: string; name: string }[]
+  /** Read-only catalog defaults. Never persisted as personal assessments or restored from backups. */
+  sharedGuidance?: { spice: number | null; darkness: number | null }
   intensity: number | null // 0..5, null = unset (HEAT — every skin labels this "Spice")
   darkness: number | null // 0..5, null = not assessed (DARKNESS/emotional intensity — a different axis from intensity; see labels.ts)
   cover: string

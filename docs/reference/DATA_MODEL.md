@@ -913,3 +913,31 @@ book UUIDs do not. A failed inventory write prevents the later phase. Restore re
 non-atomic account operation: a later extension failure can leave earlier restored rows, and must
 be reported without promising rollback. This contract does not itself add any condition records,
 source handoff, product signup or production migration.
+
+## Shared published editions and reader guidance defaults
+
+`corpus_editions` belongs to `works`, independently of private copy inventory. Each UUID has an
+optional canonical, globally unique valid ISBN, validated JSON bibliographic details, review flag,
+revision, provenance and source URL. Published versions without ISBNs are permitted. Details include
+edition title/statement, format, publisher, language, pages and the exact partial publication tuple.
+`corpus_isbn_exclusions` prevents rejected work/ISBN assignments from being reacquired automatically.
+`corpus_record_edits` retains administrator before/after snapshots and evidence, with no reader-copy
+writer. All four new tables (including reports) revoke direct privileges from every API role.
+
+`get_corpus_record` returns a work's editions and guidance, the caller's unresolved reports (all for
+an administrator), and administrator-only recent audit events. `admin_save_corpus_record` performs
+reviewed edition/guidance/ISBN/report actions with role checks and a locked fingerprint.
+`corpus_isbn_reports` belongs to its reporting profile and cascades on account deletion. Reports are
+submitted by the personal book owner or administrator through `report_corpus_isbn`; they do not
+write an identifier. They contribute to the existing metadata review queue and its fingerprint.
+
+`select_corpus_edition` validates personal ownership, exact work, reviewed edition revision and the
+expected personal ISBN/page/date tuple. It replaces only that tuple after reader review, refusing
+configured inventories. `books.copy_inventory` continues to own private copy facts.
+
+`works.shared_spice` and `shared_darkness` are nullable integers 0–5. Library reads join these into
+optional `Book.sharedGuidance`; the personal level columns remain unchanged. `bookGuidance` uses
+shared values only when the matching personal value is null. Zero overrides remain authoritative.
+Displays, library filtering and recommendations use this view; persistence, backups and merges use
+only the personal values. Reviewed shared genres resist automatic provider completion.
+See `../tasks/corpus-editions-and-guidance.md`.

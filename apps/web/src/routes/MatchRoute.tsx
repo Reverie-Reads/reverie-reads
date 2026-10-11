@@ -1,3 +1,4 @@
+import { bookGuidance } from '@reverie/core'
 import { StartNextReadTour } from '../guidance/BookTour'
 import { useBookTour } from '../guidance/BookTourContext'
 import { useReadingMode } from '../design/useReadingMode'
@@ -112,7 +113,7 @@ export function describeMatches(
     for (const t of b.tropes) tropeCount.set(t.name, (tropeCount.get(t.name) ?? 0) + 1)
     // Spice for a romance result, darkness for everything else — the same condition that picks the
     // WORD below, so the number and the vocabulary can never come from different columns.
-    const v = domGenreKey === 'romance' ? b.intensity : b.darkness
+    const v = domGenreKey === 'romance' ? bookGuidance(b).intensity : bookGuidance(b).darkness
     if (v != null) levels.push(v)
   }
   const domSub = modeOf(subCount)

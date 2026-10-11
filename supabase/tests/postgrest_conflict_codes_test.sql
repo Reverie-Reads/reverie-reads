@@ -21,8 +21,8 @@ select is(
     join pg_namespace namespace on namespace.oid = function.pronamespace
     where namespace.nspname = 'public' and function.prosrc like '%PT409%'
   ),
-  26,
-  'all twenty-six conflict-bearing functions return a bounded HTTP conflict'
+  28,
+  'all twenty-eight conflict-bearing functions return a bounded HTTP conflict'
 );
 
 select is(
@@ -32,9 +32,9 @@ select is(
     join pg_namespace namespace on namespace.oid = function.pronamespace
     where namespace.nspname = 'public'
   ),
-  -- Copy inventory adds one expected-revision conflict; keep it a bounded HTTP response.
-  33,
-  'all thirty-three remaining stale-context paths use the non-retryable conflict code'
+  -- Corpus edition/admin review add five stale-context paths; each returns one bounded response.
+  38,
+  'all thirty-eight remaining stale-context paths use the non-retryable conflict code'
 );
 
 select * from finish();
