@@ -229,3 +229,107 @@ test('published edition and shared guidance persist; a personal override and ISB
     await c.cleanup()
   }
 })
+
+test('an administrator reviews saved book details before pushing them and sees the persisted corpus update', async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 320, height: 740 })
+  const c = await fixture(page)
+  try {
+    await ok(
+      c.admin
+        .from('books')
+        .update({ pages: 321, genre: 'fantasy', genres: ['fantasy'], intensity: 2 })
+        .eq('id', c.book),
+      'saved personal facts',
+    )
+    const protectedFields =
+      'title,isbn,pages,intensity,darkness,ownership,borrowed,wishlist,copy_inventory,rating'
+    const personal = await ok(
+      c.admin.from('books').select(protectedFields).eq('id', c.book).single(),
+      'personal snapshot',
+    )
+    const before = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'shared snapshot',
+    )
+    await page.goto(`/book/${c.book}`)
+    const timestamp = page.getByText(/^Corpus last updated:/).locator('time')
+    await expect(timestamp).toBeVisible()
+    const initialTime = await timestamp.getAttribute('datetime')
+    await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
+    await dialog
+      .getByRole('textbox', { name: 'Evidence link' })
+      .fill('https://publisher.example/edition')
+    await dialog
+      .getByRole('textbox', { name: 'Explanation' })
+      .fill('The copyright page confirms this published edition.')
+    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
+    await expect(dialog.getByText('Proposed: 321', { exact: true })).toBeVisible()
+    expect(
+      (await ok(c.client.rpc('get_corpus_record', { p_work: c.work }), 'before confirmation'))
+        .fingerprint,
+    ).toBe(before.fingerprint)
+    await expect(dialog.getByRole('button', { name: 'Confirm push to corpus' })).toBeDisabled()
+    expect((await new AxeBuilder({ page }).include('dialog[open]').analyze()).violations).toEqual(
+      [],
+    )
+    expect(await dialog.evaluate((el) => el.scrollWidth > el.clientWidth + 1)).toBe(false)
+    await page.screenshot({
+      path: `/tmp/reverie-corpus-push-${info.project.name}.png`,
+      fullPage: true,
+    })
+    await dialog
+      .getByRole('checkbox', {
+        name: 'I verified these details and want to update the shared corpus.',
+      })
+      .check()
+    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+    await expect(dialog).not.toBeVisible()
+    await expect(page.getByRole('status').filter({ hasText: 'Corpus update saved.' })).toBeVisible()
+    const after = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'saved corpus edition',
+    )
+    expect(after.editions[0].details.pages).toBe(321)
+    expect(after.history[0].action).toBe('edition')
+    const savedTime = await ok(
+      c.admin.from('works').select('updated_at').eq('id', c.work).single(),
+      'saved update time',
+    )
+    expect(savedTime.updated_at).not.toBe(initialTime)
+    await expect(timestamp).toHaveAttribute('datetime', savedTime.updated_at)
+    await page.reload()
+    await expect(timestamp).toHaveAttribute('datetime', savedTime.updated_at)
+    await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
+    await dialog.getByRole('radio', { name: 'Genres & content guidance' }).check()
+    await dialog
+      .getByRole('textbox', { name: 'Evidence link' })
+      .fill('https://publisher.example/content')
+    await dialog
+      .getByRole('textbox', { name: 'Explanation' })
+      .fill('Reviewed the book content for these shared defaults.')
+    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
+    await dialog
+      .getByRole('checkbox', {
+        name: 'I verified these details and want to update the shared corpus.',
+      })
+      .check()
+    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+    await expect(dialog).not.toBeVisible()
+    const guidance = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'saved corpus guidance',
+    )
+    expect(guidance).toMatchObject({ genre: 'fantasy', spice: 2, darkness: 0 })
+    expect(
+      await ok(
+        c.admin.from('books').select(protectedFields).eq('id', c.book).single(),
+        'protected personal snapshot',
+      ),
+    ).toEqual(personal)
+  } finally {
+    await c.cleanup()
+  }
+})
