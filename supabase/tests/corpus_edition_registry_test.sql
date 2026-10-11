@@ -49,7 +49,7 @@ select set_config('request.jwt.claim.sub','b9222222-2222-4222-8222-222222222222'
 set local role authenticated;
 select throws_ok($$select pg_temp.registry_save('edition',pg_temp.registry_edition())$$,'42501','corpus administrator required','ordinary reader cannot change shared edition');
 select lives_ok($$select public.report_corpus_isbn('b9000000-0000-4000-8000-000000000001','9780306406157','9780140449136','My copyright page describes a different edition.')$$,'reader report persists');
-select lives_ok($$select public.report_corpus_isbn('b9000000-0000-4000-8000-000000000001','9780306406157','9780140449136','Updated explanation.')$$,'same open report updates rather than duplicating');
+select lives_ok($$select public.report_corpus_isbn('b9000000-0000-4000-8000-000000000001','0-306-40615-2','9780140449136','Updated explanation.')$$,'equivalent ISBN-10 report updates the ISBN-13 concern rather than duplicating');
 select is(jsonb_array_length(public.get_corpus_record('b9000000-0000-4000-8000-000000000001')->'reports'),1,'reader sees their report');
 select set_config('request.jwt.claim.sub','b9333333-3333-4333-8333-333333333333',true);
 select is(jsonb_array_length(public.get_corpus_record('b9000000-0000-4000-8000-000000000001')->'reports'),0,'another reader cannot see the private report');

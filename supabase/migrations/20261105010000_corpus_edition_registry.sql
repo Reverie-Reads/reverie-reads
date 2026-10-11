@@ -127,7 +127,7 @@ begin
     if exists(select 1 from public.corpus_isbn_exclusions where work_id=new.id and isbn=i)
       or exists(select 1 from public.works w where w.id<>new.id and public.catalog_review_isbns(w.isbns) @> array[i]) then continue; end if;
     facts := '{}'::jsonb;
-    if new.pages is not null and public.corpus_edition_fields_match(new.metadata_provenance,array['pageCount'],i,jsonb_build_object('pages',new.pages))
+    if new.pages between 1 and 20000 and public.corpus_edition_fields_match(new.metadata_provenance,array['pageCount'],i,jsonb_build_object('pages',new.pages))
       and new.metadata_provenance->'pageCount' ? 'referenceIsbn' then facts := facts || jsonb_build_object('pages',new.pages); end if;
     pub_fields := array['pubY'] || case when new.pub_m is null then '{}'::text[] else array['pubM'] end
       || case when new.pub_d is null then '{}'::text[] else array['pubD'] end;
@@ -267,7 +267,7 @@ grant execute on function public.admin_save_corpus_record(uuid,text,text,jsonb,t
 
 create function public.report_corpus_isbn(p_work uuid,p_isbn text,p_proposed_isbn text,p_note text)
 returns uuid language plpgsql security definer set search_path='' as $$
-declare caller uuid := (select auth.uid()); result uuid; proposed text;
+declare caller uuid := (select auth.uid()); result uuid; proposed text; reported text;
 begin
   if caller is null then raise exception 'authentication required' using errcode='42501'; end if;
   if p_isbn is null or length(p_isbn)>32 or nullif(btrim(p_note),'') is null or length(p_note)>1200
@@ -277,8 +277,9 @@ begin
   if not found then raise exception 'corpus work not found' using errcode='P0002'; end if;
   if not exists(select 1 from public.books b where b.owner_id=caller and b.corpus_work_id=p_work and b.removed_at is null)
     and not public.is_corpus_admin() then raise exception 'Add this book to your library before reporting its ISBN.' using errcode='42501'; end if;
+  reported := case when public.library_isbn_checksum_is_valid(p_isbn) then public.canonical_library_isbn(p_isbn) else btrim(p_isbn) end;
   proposed := case when nullif(btrim(p_proposed_isbn),'') is null then null else public.canonical_library_isbn(p_proposed_isbn) end;
-  insert into public.corpus_isbn_reports(work_id,reporter_id,isbn,proposed_isbn,note) values(p_work,caller,btrim(p_isbn),proposed,btrim(p_note))
+  insert into public.corpus_isbn_reports(work_id,reporter_id,isbn,proposed_isbn,note) values(p_work,caller,reported,proposed,btrim(p_note))
     on conflict(work_id,reporter_id,isbn) where resolved_at is null do update set proposed_isbn=excluded.proposed_isbn,note=excluded.note
     returning id into result;
   return result;
