@@ -16,6 +16,11 @@ function isbn() {
   return s + ((10 - ([...s].reduce((n, d, i) => n + Number(d) * (i % 2 ? 3 : 1), 0) % 10)) % 10)
 }
 async function fixture(page: Page) {
+  // The fixture tests persistence and UI, not live provider metadata or paid acquisition.
+  for (const endpoint of ['search', 'enrich', 'embed', 'releases', 'covers', 'series']) {
+    await page.route(`**/functions/v1/${endpoint}**`, (route) => route.fulfill({ json: {} }))
+  }
+  await page.route('**/books/v1/volumes**', (route) => route.fulfill({ json: { items: [] } }))
   const admin = createClient(URL, SERVICE, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
