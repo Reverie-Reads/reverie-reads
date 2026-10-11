@@ -78,7 +78,7 @@ select lives_ok($$select public.preserve_personal_book_objective_metadata('b9000
 select is((select jsonb_build_array(genre,genres,subgenre,subgenres) from public.works where id='b9000000-0000-4000-8000-000000000001'),'["fantasy",["fantasy","fiction"],"Epic",["Epic"]]'::jsonb,'personal preservation cannot append or reorder reviewed guidance');
 update public.books set genre=(select value->>'genre' from registry_personal_before),genres=(select array(select jsonb_array_elements_text(value->'genres')) from registry_personal_before),subgenre=(select value->>'subgenre' from registry_personal_before),subgenres=(select array(select jsonb_array_elements_text(value->'subgenres')) from registry_personal_before) where id='b9000000-0000-4000-8000-000000000003';
 set local role authenticated;
-select throws_ok($$select public.admin_save_corpus_record('b9000000-0000-4000-8000-000000000001',(select fingerprint from registry_stale),'edition',pg_temp.registry_edition(),'https://publisher.example/edition','Old draft',true)$$,'40001',null,'stale work/edition snapshot refused');
+select throws_ok($$select public.admin_save_corpus_record('b9000000-0000-4000-8000-000000000001',(select fingerprint from registry_stale),'edition',pg_temp.registry_edition(),'https://publisher.example/edition','Old draft',true)$$,'PT409',null,'stale work/edition snapshot refused');
 select lives_ok($$select pg_temp.registry_save('remove_isbn','{"isbn":"9780140449136"}')$$,'incorrect work ISBN is removed explicitly');
 reset role;
 update public.works set isbns=isbns||array['9780140449136'] where id='b9000000-0000-4000-8000-000000000001';
@@ -95,10 +95,12 @@ set local role authenticated;
 select throws_ok($$select pg_temp.registry_select()$$,'42501',null,'other account cannot choose a personal edition');
 select set_config('request.jwt.claim.sub','b9222222-2222-4222-8222-222222222222',true);
 select lives_ok($$select pg_temp.registry_select()$$,'owner deliberately selects reviewed edition');
-select throws_ok($$select pg_temp.registry_select()$$,'40001',null,'stale personal selection is refused');
+select throws_ok($$select pg_temp.registry_select()$$,'PT409',null,'stale personal selection is refused');
 reset role;
 select is((select jsonb_build_array(isbn,pages,pub_y,pub_m,pub_d) from public.books where id='b9000000-0000-4000-8000-000000000003'),'["9780306406157",456,2026,null,null]'::jsonb,'exact edition tuple persists with unknown month/day');
-select is((select to_jsonb(b)-array['isbn','pages','pub_y','pub_m','pub_d','updated_at','enriched_at','edition_revision'] from public.books b where id='b9000000-0000-4000-8000-000000000003'),(select value-array['isbn','pages','pub_y','pub_m','pub_d','updated_at','enriched_at','edition_revision'] from registry_personal_before),'selection preserves unrelated personal columns');
+-- The existing copy trigger advances its setup revision when legacy edition facts change.
+select is((select copy_inventory_revision from public.books where id='b9000000-0000-4000-8000-000000000003'),1,'edition selection invalidates an open legacy copy-setup draft');
+select is((select to_jsonb(b)-array['isbn','pages','pub_y','pub_m','pub_d','updated_at','enriched_at','copy_inventory_revision'] from public.books b where id='b9000000-0000-4000-8000-000000000003'),(select value-array['isbn','pages','pub_y','pub_m','pub_d','updated_at','enriched_at','copy_inventory_revision'] from registry_personal_before),'selection preserves unrelated personal columns');
 -- A reviewed correction changes the shared edition history, never the previously selected book.
 select set_config('request.jwt.claim.sub','b9111111-1111-4111-8111-111111111111',true);
 set local role authenticated;

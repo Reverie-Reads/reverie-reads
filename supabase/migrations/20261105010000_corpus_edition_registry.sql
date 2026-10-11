@@ -176,7 +176,7 @@ returns uuid language plpgsql security definer set search_path='' as $$
 declare caller uuid := (select auth.uid()); w public.works; old_record jsonb; next_record jsonb;
   e public.corpus_editions; eid uuid; reference text; old_isbn text; isbns_to_lock text[];
   preserve_catalog_before text := current_setting('reverie.series_review_preserve_catalog',true);
-  genres text[]; subs text[]; spice integer; darkness integer; report_id uuid;
+  desired_genres text[]; subs text[]; spice integer; darkness integer; report_id uuid;
 begin
   if caller is null then raise exception 'authentication required' using errcode='42501'; end if;
   perform 1 from public.profiles where id=caller for key share;
@@ -209,7 +209,7 @@ begin
   select * into w from public.works where id=p_work for update;
   if not found then raise exception 'corpus work not found' using errcode='P0002'; end if;
   if p_expected_fingerprint is distinct from public.corpus_record_fingerprint(p_work) then
-    raise exception 'This catalog record changed. Reload before reviewing the change again.' using errcode='40001'; end if;
+    raise exception 'This catalog record changed. Reload before reviewing the change again.' using errcode='PT409'; end if;
   old_record := public.get_corpus_record(p_work)-array['reports','history','fingerprint'];
   perform set_config('reverie.series_review_preserve_catalog','on',true);
   if p_action='edition' then
@@ -231,7 +231,7 @@ begin
     update public.works set isbns=array(select distinct i from unnest(w.isbns || case when reference is null then '{}'::text[] else array[reference] end) i
       where i is distinct from e.isbn or i=reference) where id=p_work;
   elsif p_action='remove_isbn' then
-    if not old_isbn=any(w.isbns) then raise exception 'This ISBN is no longer assigned to this work.' using errcode='40001'; end if;
+    if not old_isbn=any(w.isbns) then raise exception 'This ISBN is no longer assigned to this work.' using errcode='PT409'; end if;
     insert into public.corpus_isbn_exclusions values(p_work,coalesce(public.canonical_library_isbn(old_isbn),old_isbn)) on conflict do nothing;
     -- Retain the edition and its history; only the incorrect identifier assignment is removed.
     update public.corpus_editions set isbn=null,reviewed=false,revision=revision+1,updated_at=now() where work_id=p_work and isbn=public.canonical_library_isbn(old_isbn);
@@ -244,16 +244,16 @@ begin
       or (p_value->'spice'<>'null'::jsonb and (jsonb_typeof(p_value->'spice')<>'number' or p_value->>'spice' !~ '^[0-5]$'))
       or (p_value->'darkness'<>'null'::jsonb and (jsonb_typeof(p_value->'darkness')<>'number' or p_value->>'darkness' !~ '^[0-5]$')) then
       raise exception 'Use genre names and guidance levels from 0 to 5, or leave levels unknown.' using errcode='22023'; end if;
-    select coalesce(array_agg(name order by ord),'{}') into genres from (select lower(btrim(value)) name,min(ord) ord from jsonb_array_elements_text(p_value->'genres') with ordinality a(value,ord) where nullif(btrim(value),'') is not null group by lower(btrim(value))) g;
+    select coalesce(array_agg(name order by ord),'{}') into desired_genres from (select lower(btrim(value)) name,min(ord) ord from jsonb_array_elements_text(p_value->'genres') with ordinality a(value,ord) where nullif(btrim(value),'') is not null group by lower(btrim(value))) g;
     select coalesce(array_agg(name order by ord),'{}') into subs from (select (array_agg(btrim(value) order by ord))[1] name,min(ord) ord from jsonb_array_elements_text(p_value->'subgenres') with ordinality a(value,ord) where nullif(btrim(value),'') is not null group by lower(btrim(value))) g;
     spice := (p_value->>'spice')::integer; darkness := (p_value->>'darkness')::integer;
-    update public.works set genre=genres[1],genres=genres,subgenre=subs[1],subgenres=subs,shared_spice=spice,shared_darkness=darkness,
+    update public.works set genre=desired_genres[1],genres=desired_genres,subgenre=subs[1],subgenres=subs,shared_spice=spice,shared_darkness=darkness,
       metadata_provenance=coalesce(metadata_provenance,'{}') || jsonb_build_object('sharedGuidance',jsonb_build_object('source','administrator','sourceRef',p_source_url,'observedAt',now())) where id=p_work;
   else
     if p_value-array['reportId']<>'{}'::jsonb then raise exception 'Choose a report to resolve.' using errcode='22023'; end if;
     report_id := (p_value->>'reportId')::uuid;
     update public.corpus_isbn_reports set resolved_at=now() where id=report_id and work_id=p_work and resolved_at is null;
-    if not found then raise exception 'The report has already changed.' using errcode='40001'; end if;
+    if not found then raise exception 'The report has already changed.' using errcode='PT409'; end if;
   end if;
   perform set_config('reverie.series_review_preserve_catalog',coalesce(preserve_catalog_before,''),true);
   next_record := public.get_corpus_record(p_work)-array['reports','history','fingerprint'];
@@ -351,10 +351,10 @@ begin
   if not found then raise exception 'personal book not found' using errcode='42501'; end if;
   if b.copy_inventory is not null then raise exception 'Choose editions within your individual copy inventory.' using errcode='22023'; end if;
   if p_expected is distinct from jsonb_build_object('isbn',coalesce(b.isbn,''),'pages',b.pages,'publication',jsonb_build_object('y',b.pub_y,'m',b.pub_m,'d',b.pub_d)) then
-    raise exception 'Your book details changed. Reload before choosing an edition.' using errcode='40001'; end if;
+    raise exception 'Your book details changed. Reload before choosing an edition.' using errcode='PT409'; end if;
   select * into e from public.corpus_editions where id=p_edition and work_id=b.corpus_work_id for share;
   if not found or not e.reviewed or e.revision is distinct from p_revision then
-    raise exception 'This edition changed or still needs review. Reload its details.' using errcode='40001'; end if;
+    raise exception 'This edition changed or still needs review. Reload its details.' using errcode='PT409'; end if;
   update public.books set isbn=coalesce(e.isbn,''),pages=(e.details->>'pages')::integer,
     pub_y=(e.details->'publication'->>'y')::integer,pub_m=(e.details->'publication'->>'m')::integer,pub_d=(e.details->'publication'->>'d')::integer
     where id=b.id;
