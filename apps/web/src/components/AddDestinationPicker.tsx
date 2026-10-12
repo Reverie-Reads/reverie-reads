@@ -8,6 +8,8 @@ interface AddDestinationPickerProps {
   currentReaderId: string
   /** Imports always create personal rows, so only Mine and Mine + Household are meaningful. */
   importOnly?: boolean
+  householdStatus?: 'loading' | 'offline' | 'error' | 'ready'
+  onRetry?: () => void
 }
 
 export function AddDestinationPicker({
@@ -16,11 +18,16 @@ export function AddDestinationPicker({
   members,
   currentReaderId,
   importOnly = false,
+  householdStatus = 'ready',
+  onRetry,
 }: AddDestinationPickerProps) {
-  const householdAvailable = members.length > 0
+  const availableMembers = householdStatus === 'ready' ? members : []
+  const householdAvailable = availableMembers.length > 0
   const delegates = importOnly
     ? []
-    : members.filter((member) => member.userId !== currentReaderId && member.allowMemberLibraryAdds)
+    : availableMembers.filter(
+        (member) => member.userId !== currentReaderId && member.allowMemberLibraryAdds,
+      )
   const choices: { value: AddDestination; label: string; detail: string }[] = [
     ...(householdAvailable
       ? [
@@ -92,7 +99,22 @@ export function AddDestinationPicker({
           )
         })}
       </div>
-      {!householdAvailable ? (
+      {householdStatus !== 'ready' ? (
+        <div className="mt-3 rounded-[var(--radius-card)] border border-line bg-field p-3 text-sm leading-relaxed text-muted">
+          <p role={householdStatus === 'error' ? 'alert' : 'status'}>
+            {householdStatus === 'loading'
+              ? 'Checking household destinations…'
+              : householdStatus === 'offline'
+                ? 'Reconnect to check household destinations. You can still add to your own library.'
+                : 'Household destinations could not be checked. Try again, or choose your own library.'}
+          </p>
+          {householdStatus === 'error' && onRetry ? (
+            <button type="button" onClick={onRetry} className="mt-2 min-h-11 text-ink underline">
+              Try again
+            </button>
+          ) : null}
+        </div>
+      ) : !householdAvailable ? (
         <p className="mt-2 text-[12px] text-muted">
           Link this account to a household to add shared books.
         </p>

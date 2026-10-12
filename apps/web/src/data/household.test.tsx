@@ -30,6 +30,7 @@ import {
   useHouseholdBookSelection,
   useHouseholdBooks,
   useHouseholdLibraryAuthorization,
+  useHouseholdDestinationAuthorization,
   useHouseholdRoster,
   useAddCorpusWorkToHousehold,
   useAddCorpusWorkToMemberLibrary,
@@ -43,6 +44,7 @@ import {
   useSetHouseholdMemberLibraryAdds,
   useUpdateCorpusWorkMetadata,
   type HouseholdBook,
+  toHouseholdMember,
 } from './household'
 
 const queryHarness = () => {
@@ -743,5 +745,65 @@ describe('household query identity and RPC boundary', () => {
     })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['household'] })
     expect(mocked.rpc).toHaveBeenCalledTimes(1)
+  })
+})
+
+
+describe('Add destination authorization', () => {
+  const rosterRow = (userId = 'reader-a') => ({ household_id: 'house-a', household_name: 'Readers', user_id: userId, display_name: 'Avery', member_role: 'owner' as const, allow_member_library_adds: false })
+
+  it('waits for membership only and never requests the household book list', async () => {
+    let resolveRoster!: (value: unknown) => void
+    mocked.rpc.mockImplementation((name: string) => name === 'household_roster'
+      ? new Promise(resolve => { resolveRoster = resolve })
+      : new Promise(() => {}))
+    const { wrapper } = queryHarness()
+    const { result } = renderHook(() => useHouseholdDestinationAuthorization(), { wrapper })
+    expect(result.current.loading).toBe(true)
+    expect(result.current.members).toEqual([])
+    await act(async () => resolveRoster({ data: [rosterRow()], error: null }))
+    await waitFor(() => expect(result.current.authorized).toBe(true))
+    expect(result.current.members).toHaveLength(1)
+    expect(mocked.rpc).toHaveBeenCalledExactlyOnceWith('household_roster')
+  })
+
+  it('exposes failure and recovers with a fresh membership check', async () => {
+    mocked.rpc.mockResolvedValueOnce({ data: null, error: new Error('unavailable') })
+    const { wrapper } = queryHarness()
+    const { result } = renderHook(() => useHouseholdDestinationAuthorization(), { wrapper })
+    await waitFor(() => expect(result.current.error).toBeTruthy())
+    expect(result.current.authorized).toBe(false)
+    expect(result.current.loading).toBe(false)
+    mocked.rpc.mockResolvedValue({ data: [rosterRow()], error: null })
+    await act(async () => { await result.current.retry() })
+    await waitFor(() => expect(result.current.authorized).toBe(true))
+  })
+
+  it('does not reveal cached members when revalidation is paused offline', async () => {
+    const { client, wrapper } = queryHarness()
+    client.setQueryData(householdRosterKey('reader-a'), [toHouseholdMember(rosterRow())])
+    onlineManager.setOnline(false)
+    const { result } = renderHook(() => useHouseholdDestinationAuthorization(), { wrapper })
+    await waitFor(() => expect(result.current.paused).toBe(true))
+    expect(result.current.authorized).toBe(false)
+    expect(result.current.members).toEqual([])
+    expect(mocked.rpc).not.toHaveBeenCalled()
+  })
+
+  it('cannot expose a departed account response to the next reader', async () => {
+    let resolvePrevious!: (value: unknown) => void
+    mocked.rpc.mockImplementationOnce(() => new Promise(resolve => { resolvePrevious = resolve }))
+      .mockResolvedValue({ data: [], error: null })
+    const { wrapper } = queryHarness()
+    const { result, rerender } = renderHook(() => useHouseholdDestinationAuthorization(), { wrapper })
+    mocked.readerId = 'reader-b'
+    rerender()
+    await waitFor(() => expect(result.current.authorized).toBe(true))
+    await act(async () => resolvePrevious({ data: [rosterRow()], error: null }))
+    expect(result.current.members).toEqual([])
+    mocked.readerId = ''
+    rerender()
+    expect(result.current.authorized).toBe(false)
+    expect(result.current.members).toEqual([])
   })
 })

@@ -379,6 +379,25 @@ export function useHouseholdRoster() {
   })
 }
 
+/** Destination choices need fresh membership, not a download of household books.
+ * Keep this observer in the Add screen and pass its result to nested forms: mounting a second
+ * roster observer would force another authorization-sensitive fetch and briefly hide choices.
+ */
+export function useHouseholdDestinationAuthorization() {
+  const { session } = useAuth()
+  const roster = useHouseholdRoster()
+  const authorized = !!session?.user.id && householdQueryIsAuthorized(roster)
+  const paused = roster.fetchStatus === 'paused'
+  return {
+    members: authorized ? (roster.data ?? []) : [],
+    authorized,
+    paused,
+    error: roster.error,
+    loading: !!session?.user.id && !paused && !authorized && (!roster.error || roster.isFetching),
+    retry: () => roster.refetch(),
+  }
+}
+
 export function useHouseholdBooks(householdId: string | null) {
   const { session } = useAuth()
   const readerId = session?.user.id ?? ''

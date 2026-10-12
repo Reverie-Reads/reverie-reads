@@ -95,3 +95,27 @@ describe('AddDestinationPicker', () => {
     expect(screen.queryByRole('radio', { name: /Blake/ })).not.toBeInTheDocument()
   })
 })
+
+it.each(['loading', 'offline', 'error'] as const)(
+  'distinguishes %s from a confirmed absence of household membership',
+  (householdStatus) => {
+    const onRetry = vi.fn()
+    render(
+      <AddDestinationPicker
+        value="mine"
+        onChange={vi.fn()}
+        members={members}
+        currentReaderId="reader-a"
+        householdStatus={householdStatus}
+        onRetry={onRetry}
+      />,
+    )
+    expect(screen.getAllByRole('radio')).toHaveLength(1)
+    expect(screen.queryByText(/Link this account/)).not.toBeInTheDocument()
+    expect(screen.getByRole(householdStatus === 'error' ? 'alert' : 'status')).toBeVisible()
+    if (householdStatus === 'error') {
+      fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+      expect(onRetry).toHaveBeenCalledOnce()
+    }
+  },
+)
