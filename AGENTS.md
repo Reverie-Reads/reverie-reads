@@ -242,6 +242,10 @@ myProgress`). Move them into `packages/core` with tests.
   edition facts and invalidates stale enrichment. Bearded Next read begins with one pick and keeps
   refinements mounted behind a disclosure; mode changes preserve unsent input and active guidance
   opens the relevant controls. Essential scope, source qualifications and failures remain visible.
+- **Quick Add keeps the full editor discoverable.** Show current draft genre, edition and series
+  information beside an explicit expand control. Section navigation opens and focuses its mounted
+  fields; folding details away or changing presentation never clears them. Keep the cover-led
+  shared editor, room tokens and optional reading details.
 - **Quick Add is a draft, then review, then confirmed handoff.** Identity, optional ISBN/format and
   possession come first; additional metadata and reading details remain optional. Confirmation uses
   the exact reviewed payload and destination, never a silently refreshed form. Single Add asks about

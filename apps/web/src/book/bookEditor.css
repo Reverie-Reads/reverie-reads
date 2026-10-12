@@ -191,3 +191,50 @@
 .book-editor-nav[hidden] {
   display: none;
 }
+
+/* Quick Add uses the same quiet surfaces and section navigation as the full editor. */
+.book-add-overview {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card-solid);
+}
+.book-add-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.book-add-facts dt {
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+.book-add-facts dd {
+  color: var(--ink);
+}
+.book-add-expand {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+}
+.book-add-expand:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+@media (max-width: 600px) {
+  .book-add-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   CORE_GENRES,
   SERIES_STATUS_LABELS,
@@ -94,23 +94,33 @@ export function BookEditorSection({
 /** Same fields and order at every entry. Context only moves focus; it never replaces the draft. */
 export function BookEditor({
   initialSection = 'identity',
+  onNavigate,
   children,
   compact = false,
 }: {
   compact?: boolean
   initialSection?: BookEditorSectionId
+  onNavigate?: (section: BookEditorSectionId) => void
   children: ReactNode
 }) {
   const root = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState(initialSection)
+  const [navigationRequest, setNavigationRequest] = useState<{ id: BookEditorSectionId } | null>(
+    null,
+  )
   function focusSection(id: BookEditorSectionId) {
     setSelected(id)
+    onNavigate?.(id)
+    setNavigationRequest({ id })
+  }
+  useLayoutEffect(() => {
+    if (!navigationRequest) return
     const heading = root.current?.querySelector<HTMLElement>(
-      `[data-book-editor-section="${id}"] h3`,
+      `[data-book-editor-section="${navigationRequest.id}"] h3`,
     )
     heading?.focus({ preventScroll: true })
     heading?.scrollIntoView({ block: 'start', behavior: 'instant' })
-  }
+  }, [navigationRequest])
   useEffect(() => {
     if (initialSection === 'identity') return
     const frame = requestAnimationFrame(() => {
@@ -202,7 +212,9 @@ export function BookMetadataFields({
   validationAttempt = 0,
   cover,
   editionNotice,
+  overview,
   quick = false,
+  onExpandDetails,
 }: {
   value: BookMetadataDraft
   onChange: (field: keyof BookMetadataDraft, value: string) => void
@@ -217,27 +229,29 @@ export function BookMetadataFields({
   validationAttempt?: number
   cover?: ReactNode
   editionNotice?: ReactNode
+  overview?: ReactNode
   quick?: boolean
+  onExpandDetails?: (open: boolean) => void
 }) {
   const { data: existingSeries, isError: seriesError } = useSeriesList()
   const seriesNames = [...(existingSeries?.values() ?? [])]
     .map((row) => row.series.name)
     .sort((a, b) => a.localeCompare(b))
-  const [showDetails, setShowDetails] = useState(false)
   const fieldPrefix = useId()
   const fields = useRef<HTMLDivElement>(null)
   const errorSignature = JSON.stringify(errors)
   const focusedAttempt = useRef(-1)
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (focusedAttempt.current === validationAttempt) return
+    if (Object.values(JSON.parse(errorSignature)).some(Boolean)) {
+      if (quick) {
+        onExpandDetails?.(true)
+        return
+      }
+      fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    }
     focusedAttempt.current = validationAttempt
-    if (!Object.values(JSON.parse(errorSignature)).some(Boolean)) return
-    setShowDetails(true)
-    const frame = requestAnimationFrame(() =>
-      fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
-    )
-    return () => cancelAnimationFrame(frame)
-  }, [errorSignature, validationAttempt])
+  }, [errorSignature, validationAttempt, onExpandDetails, quick])
   const [showOtherSubs, setShowOtherSubs] = useState(false)
   const [showOtherGenres, setShowOtherGenres] = useState(false)
   const vocab = f.genre ? subgenresForGenre(f.genre) : []
@@ -285,17 +299,8 @@ export function BookMetadataFields({
           </div>
         </div>
       </BookEditorSection>
-      {quick && (
-        <button
-          type="button"
-          className="book-editor-disclosure"
-          aria-expanded={showDetails}
-          onClick={() => setShowDetails(!showDetails)}
-        >
-          {showDetails ? 'Hide additional information' : 'Additional information (optional)'}
-        </button>
-      )}
-      <div hidden={quick && !showDetails}>
+      {overview}
+      <div hidden={quick}>
         <BookEditorSection id="classification" title="Genres & subgenres">
           <BookField label="Genre">
             <select
@@ -400,9 +405,9 @@ export function BookMetadataFields({
               ))}
             </select>
           </BookField>
-          <div hidden={quick && !showDetails}>{input('pages', 'Pages', 'Unknown', true)}</div>
+          <div hidden={quick}>{input('pages', 'Pages', 'Unknown', true)}</div>
         </div>
-        <fieldset hidden={quick && !showDetails}>
+        <fieldset hidden={quick}>
           <legend className="book-editor-caption">Publication date</legend>
           <p className="mb-2 text-sm text-muted">Enter only what you know.</p>
           <div className="grid grid-cols-3 gap-3">
@@ -412,7 +417,7 @@ export function BookMetadataFields({
           </div>
         </fieldset>
       </BookEditorSection>
-      <div hidden={quick && !showDetails}>
+      <div hidden={quick}>
         <BookEditorSection id="series" title="Series details">
           <div className="book-editor-grid">
             <BookField label="Series">

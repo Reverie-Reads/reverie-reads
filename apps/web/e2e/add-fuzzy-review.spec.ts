@@ -122,9 +122,7 @@ async function addManually(page: Page, title: string, surname: string, pages?: s
   await page.getByRole('button', { name: /Add contributor/i }).click()
   await page.getByLabel('Contributor 1 name').fill(surname)
   if (pages) {
-    await page
-      .getByRole('button', { name: 'Additional information (optional)', exact: true })
-      .click()
+    await page.getByRole('button', { name: 'Show all book information', exact: true }).click()
     await page.getByLabel('Pages', { exact: true }).fill(pages)
   }
   await page.getByRole('button', { name: /^Review book$/ }).click()

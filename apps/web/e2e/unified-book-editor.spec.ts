@@ -58,9 +58,15 @@ for (const width of [320, 390, 1440]) {
     try {
       await page.goto('/add')
       await page.getByRole('button', { name: 'Add manually', exact: true }).click()
-      await page
-        .getByRole('button', { name: 'Additional information (optional)', exact: true })
-        .click()
+      const overview = page.getByRole('region', { name: 'Available book information' })
+      await expect(overview).toContainText('Genres & subgenres')
+      await expect(overview).toContainText('Pages & publication')
+      await expect(overview).toContainText('Series')
+      await expect(page.getByLabel('Pages', { exact: true })).toBeHidden()
+      await page.screenshot({ path: info.outputPath(`quick-add-basics-${width}.png`) })
+      await overview.screenshot({ path: info.outputPath(`quick-add-information-${width}.png`) })
+
+      await page.getByRole('button', { name: 'Show all book information', exact: true }).click()
       const title = `A Map of Every Quiet Island ${width} ` + 'Unbroken'.repeat(12)
       await page.getByLabel('Title', { exact: true }).fill(title)
       await page.getByRole('button', { name: /Add contributor/ }).click()
@@ -84,12 +90,33 @@ for (const width of [320, 390, 1440]) {
       await page
         .getByRole('combobox', { name: 'Series status', exact: true })
         .selectOption({ label: 'Completed' })
-      await page.getByText('Reading details (optional)', { exact: true }).click()
+      await page
+        .getByRole('navigation', { name: 'Book information sections' })
+        .getByRole('button', { name: 'Reading', exact: true })
+        .click()
       await page.getByRole('slider', { name: 'Your rating', exact: true }).press('End')
       await page.getByRole('slider', { name: 'Your rating', exact: true }).press('ArrowLeft')
       await page.getByLabel('Pub year', { exact: true }).fill('2025')
       await page.getByLabel('Month', { exact: true }).fill('2')
       await page.getByLabel('Day', { exact: true }).fill('28')
+      await page.getByRole('button', { name: 'Keep just the basics visible', exact: true }).click()
+      await expect(page.getByLabel('Pages', { exact: true })).toBeHidden()
+      await expect(overview).toContainText('352 pages')
+      await expect(overview).toContainText('2025-2-28')
+      await expect(overview).toContainText('The Quiet Islands · Book 1.5')
+      await expect(overview).toContainText('Dark Romance')
+      await page
+        .getByRole('navigation', { name: 'Book information sections' })
+        .getByRole('button', { name: 'Series', exact: true })
+        .click()
+      await expect(page.getByRole('heading', { name: 'Series details', exact: true })).toBeFocused()
+      await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('352')
+      await page
+        .getByRole('navigation', { name: 'Book information sections' })
+        .getByRole('button', { name: 'Reading', exact: true })
+        .click()
+      await expect(page.getByRole('heading', { name: 'Your reading', exact: true })).toBeFocused()
+
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
       )
@@ -206,6 +233,67 @@ for (const width of [320, 390, 1440]) {
     }
   })
 }
+
+test('Quick Add keeps expanded information and the draft through Bearded Mode changes', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const account = await setup(page)
+  try {
+    await page.goto('/add')
+    await page.getByRole('button', { name: 'Add manually', exact: true }).click()
+    await page.getByLabel('Title', { exact: true }).fill('A Room of Quiet Maps')
+    const navigation = page.getByRole('navigation', { name: 'Book information sections' })
+    await navigation.getByRole('button', { name: 'Edition', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Edition details', exact: true })).toBeFocused()
+    await page.getByLabel('Pages', { exact: true }).fill('248')
+    const other = await page.context().newPage()
+    try {
+      await other.goto('/settings')
+      await other.getByRole('radio', { name: /^Bearded Mode/ }).check()
+      // The reader returns from Settings to Add; focus assertions require the active tab.
+      await page.bringToFront()
+      await expect(
+        page.getByRole('button', { name: 'Choose your beard', exact: true }),
+      ).toBeVisible()
+      await expect(page.getByLabel('Title', { exact: true })).toHaveValue('A Room of Quiet Maps')
+      await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('248')
+      await page.getByRole('button', { name: 'Keep just the basics visible', exact: true }).click()
+      await expect(page.getByLabel('Pages', { exact: true })).toBeHidden()
+      await expect(page.getByRole('region', { name: 'Available book information' })).toContainText(
+        '248 pages',
+      )
+      await page.screenshot({ path: test.info().outputPath('quick-add-bearded-390.png') })
+      await other.bringToFront()
+      await other.getByRole('radio', { name: /^Full interface/ }).check()
+      await page.bringToFront()
+      await expect(
+        page.getByRole('button', { name: 'Choose your beard', exact: true }),
+      ).toHaveCount(0)
+      await expect(page.getByLabel('Title', { exact: true })).toHaveValue('A Room of Quiet Maps')
+      await navigation.getByRole('button', { name: 'Edition', exact: true }).click()
+      await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('248')
+      // Hidden invalid fields must reopen and receive focus, not silently drop their values.
+      await page.getByLabel('Pages', { exact: true }).fill('-2')
+      await page.getByRole('button', { name: 'Keep just the basics visible', exact: true }).click()
+      await page.getByRole('button', { name: 'Review book', exact: true }).click()
+      await expect(page.getByLabel('Pages', { exact: true })).toBeFocused()
+      await expect(page.getByLabel('Pages', { exact: true })).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      )
+      const rows = await okData(
+        account.reader.from('books').select('id').eq('owner_id', account.uid),
+        'Unsubmitted Quick Add draft',
+      )
+      expect(rows).toEqual([])
+    } finally {
+      await other.close()
+    }
+  } finally {
+    await account.cleanup()
+  }
+})
 
 test('Bearded Next read starts with one pick and retains the refinement draft across mode changes', async ({
   page,

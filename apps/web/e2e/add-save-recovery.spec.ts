@@ -65,7 +65,7 @@ function barrier() {
 }
 async function draft(page: Page, title: string) {
   await page.getByRole('button', { name: 'Add manually', exact: true }).click()
-  await page.getByRole('button', { name: 'Additional information (optional)', exact: true }).click()
+  await page.getByRole('button', { name: 'Show all book information', exact: true }).click()
   await page.getByPlaceholder('Title', { exact: true }).fill(title)
   await page.getByRole('textbox', { name: 'Pages', exact: true }).fill('220')
   await page.getByRole('radio', { name: 'Wishlist', exact: true }).click()
