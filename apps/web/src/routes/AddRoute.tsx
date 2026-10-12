@@ -50,7 +50,7 @@ import {
   useAddCorpusWorkToMemberLibrary,
   useAddPersonalBooksToHousehold,
   useCreateHouseholdCatalogWork,
-  useHouseholdLibraryAuthorization,
+  useHouseholdDestinationAuthorization,
 } from '../data/household'
 import { useWorksLookup, workToHit, type WorkRow } from '../data/works'
 import { publicationDateError } from '../lib/publicationDate'
@@ -1352,18 +1352,19 @@ function TriageRow({
 }
 
 function HouseholdAddForm({
+  household,
   hit,
   targetMemberId,
   targetMemberName,
   onAdded,
 }: {
+  household: ReturnType<typeof useHouseholdDestinationAuthorization>
   hit: Picked
   targetMemberId?: string | null
   targetMemberName?: string
   onAdded: () => void
 }) {
   const { session } = useAuth()
-  const household = useHouseholdLibraryAuthorization()
   const addExisting = useAddCorpusWorkToHousehold()
   const addToMember = useAddCorpusWorkToMemberLibrary()
   const createWork = useCreateHouseholdCatalogWork()
@@ -1630,7 +1631,7 @@ function AddScreen() {
   // elsewhere in the app — lands here with the form already filled, one tap from saved.
   const prefill = addRoute.useSearch()
   const { session } = useAuth()
-  const household = useHouseholdLibraryAuthorization()
+  const household = useHouseholdDestinationAuthorization()
   const [destination, setDestination] = useState<AddDestination>(
     prefill.scope === 'household' ? 'household' : 'mine',
   )
@@ -1733,7 +1734,17 @@ function AddScreen() {
           destinationChosen.current = true
           setDestination(next)
         }}
-        members={household.authorized ? household.members : []}
+        members={household.members}
+        householdStatus={
+          household.loading
+            ? 'loading'
+            : household.paused
+              ? 'offline'
+              : household.error
+                ? 'error'
+                : 'ready'
+        }
+        onRetry={() => void household.retry()}
         currentReaderId={session?.user.id ?? ''}
       />
 
@@ -1937,6 +1948,7 @@ function AddScreen() {
       {picked &&
         (householdOnly ? (
           <HouseholdAddForm
+            household={household}
             hit={picked}
             targetMemberId={targetMemberId}
             targetMemberName={targetMember?.displayName}

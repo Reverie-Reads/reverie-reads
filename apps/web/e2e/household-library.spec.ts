@@ -747,6 +747,51 @@ test('a member never receives or requests another reader’s arbitrary cover hot
   }
 })
 
+test('Add destinations wait only for membership and preserve an early personal choice', async ({
+  page,
+}) => {
+  await signIn(page, owner.session)
+  let releaseRoster!: () => void
+  const rosterGate = new Promise<void>((resolve) => {
+    releaseRoster = resolve
+  })
+  let rosterRequests = 0
+  let bookRequests = 0
+  await page.route('**/rest/v1/rpc/household_roster', async (route) => {
+    rosterRequests += 1
+    await rosterGate
+    await route.continue()
+  })
+  await page.route('**/rest/v1/rpc/household_library_works', async (route) => {
+    bookRequests += 1
+    await route.abort()
+  })
+  try {
+    await page.goto('/add')
+    await expect(page.getByText('Checking household destinations…')).toBeVisible()
+    await expect(page.getByText(/Link this account to a household/)).toHaveCount(0)
+    await page.getByRole('radio', { name: /My library only/ }).check()
+    // Clicking an already selected default must still mark the reader's deliberate choice.
+    await page.getByRole('radio', { name: /My library only/ }).click()
+    releaseRoster()
+    await expect(page.getByRole('radio', { name: /Household only/ })).toBeVisible()
+    await expect(page.getByRole('radio', { name: /My library only/ })).toBeChecked()
+    expect(bookRequests).toBe(0)
+    await page.getByRole('radio', { name: /Household only/ }).check()
+    await page.getByLabel('Search for a book').fill('Destination loading fixture')
+    await page.getByRole('button', { name: 'Add manually' }).click()
+    await expect(page.getByLabel('Author', { exact: true })).toBeVisible()
+    await expect(page.getByRole('radio', { name: /Household only/ })).toBeChecked()
+    expect(rosterRequests).toBe(1)
+    expect(bookRequests).toBe(0)
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
+  } finally {
+    releaseRoster()
+  }
+})
+
 test('persistent Add creates a household-only work and explicit adoption updates one personal copy', async ({
   page,
 }, testInfo) => {

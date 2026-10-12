@@ -263,6 +263,10 @@ myProgress`). Move them into `packages/core` with tests.
   After a confirmed save, a failed library reload is a read failure, not an ongoing save.
   Keep the confirmation, household warning and an exit visible; retry reads only. Offer direct
   book navigation only once that exact personal record is loaded, without starting a read.
+- **Add destinations need membership, not household books.** Use one fresh, account-scoped roster
+  observer in Add and pass its authorization to nested household forms. Loading, offline and failed
+  membership checks are distinct from no household; never expose cached members as authorization.
+  Preserve deliberate destination choices and drafts when membership settles or revalidates.
 - **Add search distinguishes failure from absence.** Only a successful empty response means no
   matches. Keep the entered query available for explicit retry or manual entry; a newer search,
   manual choice or route exit cancels the older request so late results cannot replace the current
