@@ -1014,6 +1014,14 @@ the repo goes public.
 
 ## Known-flaky, with a prior
 
+- **2026-10-11 — corpus edition registry, mobile:** the combined edition/guidance/ISBN-report
+  journey reached its 30-second test deadline at the final administrator-queue navigation in a
+  downstream integration run; the configured retry passed. No earlier assertion failed. The
+  administrator-push change separates edition adoption, ISBN reporting, edition pushes, guidance
+  pushes and ISBN-less targeting into independently seeded tests. All prior assertions remain;
+  the default timeout, worker count and retry policy are unchanged. Keep this occurrence visible
+  when assessing the replacement results; a recurrence needs investigation, not a blind rerun.
+
 - **Shelves initial loading can move Collections during a click — fix implemented in PR #581,
   observed 2026-09-15; deployment smoke pending.**
   Public PR #581's fresh-database, one-worker, retries-zero run failed

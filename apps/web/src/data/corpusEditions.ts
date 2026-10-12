@@ -47,6 +47,19 @@ export interface CorpusRecord {
   history: { id: string; action: string; source_url: string; note: string; created_at: string }[]
 }
 export const corpusRecordKey = ['corpus-record'] as const
+/** The database's catalog timestamp, never the query's last fetch time. */
+export function useCorpusUpdateTime(workId: string, enabled: boolean) {
+  const { session } = useAuth()
+  return useQuery({
+    queryKey: [...corpusRecordKey, session?.user.id, workId, 'updated-at'],
+    enabled: enabled && !!session && !!workId,
+    queryFn: async (): Promise<string> => {
+      const { data, error } = await supabase.from('works').select('updated_at').eq('id', workId).single()
+      if (error) throw error
+      return data.updated_at
+    },
+  })
+}
 export function useCorpusRecord(workId: string, enabled = true) {
   const { session } = useAuth()
   return useQuery({

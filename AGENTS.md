@@ -263,6 +263,12 @@ myProgress`). Move them into `packages/core` with tests.
   matches. Keep the entered query available for explicit retry or manual entry; a newer search,
   manual choice or route exit cancels the older request so late results cannot replace the current
   task. Short queries explain the minimum rather than pretending to have searched.
+- **Administrator push is reviewed and bound to a saved book.** Book Details offers corpus admins
+  a review of edition facts or shared guidance, with explicit confirmation, evidence, and the
+  existing fingerprint conflict check. A configured inventory requires an exact edition choice;
+  private notes, ratings, copy labels and locations never enter the payload. Unknown values preserve
+  shared facts. Show the persisted corpus update time, not a fetch time; discard the review when
+  the account or book changes. See `docs/tasks/corpus-editions-and-guidance.md`.
 - **Published editions are shared bibliography; individual copies stay private.** `corpus_editions`
   stores work-bound published versions, including ISBN-less versions. Existing unique valid ISBNs
   begin as unreviewed identifiers; work-level scalars never certify every edition. Shared correction

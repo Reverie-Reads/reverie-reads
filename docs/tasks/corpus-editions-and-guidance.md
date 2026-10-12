@@ -85,3 +85,21 @@ No production data or provider services were modified during implementation.
 - Focused real-browser save/reload flows and the required full browser gate remain pending
   until recorded in the delivery report. Local browser evidence is not physical-iPhone or
   production acceptance.
+
+## Administrator push from book details
+
+Book details exposes **Push to corpus** to corpus administrators. It uses saved personal
+values in a frozen, explicit review of either a published edition or shared genres/content
+guidance. Multiple private editions require choosing the exact source edition; only a valid,
+equivalent ISBN automatically matches an existing shared edition. If ISBN-less editions already
+exist, the administrator explicitly chooses one or creates a different edition. A retained attempt
+UUID prevents a reviewed retry from duplicating an uncertain save.
+Unknown fields preserve the existing shared values. Reading format is not an edition format.
+Personal copy labels, locations, possession, reading history, notes and ratings are excluded.
+
+The review shows current/proposed values, requires evidence and confirmation, and uses the
+existing fingerprint-bound administrator writer. A failed or uncertain attempt retains its
+draft and requires explicit reload and re-review. The visible update status reads the persisted
+`works.updated_at` timestamp; it never substitutes the query refresh time. Successful writes
+refresh both shared details and status. This UI addition needs no new migration beyond the
+shared-edition registry prerequisite.
