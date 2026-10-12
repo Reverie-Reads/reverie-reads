@@ -60,6 +60,8 @@ begin
       raise exception 'This ISBN belongs to another catalog record. Review and remove its incorrect assignment there first.' using errcode='23505'; end if;
     if reference is not null and exists(select 1 from public.corpus_editions other where other.id<>eid and other.isbn=reference) then
       raise exception 'This ISBN already has an edition. Edit that edition instead.' using errcode='23505'; end if;
+    if p_review_mode='direct' and e.id is not null and e.isbn is distinct from reference then
+      raise exception 'Use the catalog correction workflow to change an existing edition ISBN.' using errcode='22023'; end if;
     -- Changing an edition ISBN corrects its old work assignment, with an exclusion against reacquisition.
     if e.isbn is not null and e.isbn is distinct from reference then
       insert into public.corpus_isbn_exclusions values(p_work,e.isbn) on conflict do nothing;

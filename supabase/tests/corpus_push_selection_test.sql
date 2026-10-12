@@ -54,6 +54,8 @@ set local role authenticated;
 select throws_ok($$select public.admin_push_corpus_record('c9000000-0000-4000-8000-000000000001','stale',pg_temp.push_changes(),'direct')$$,'PT409',null,'direct mode cannot bypass stale snapshot protection');
 select throws_ok($$select pg_temp.push_save(jsonb_set(pg_temp.push_changes(),'{1,value,isbn}','"9780306406158"'))$$,'22023',null,'direct mode cannot bypass checksum validation');
 select throws_ok($$select pg_temp.push_save(jsonb_set(pg_temp.push_changes(),'{1,value,isbn}','"9780143117841"'))$$,'23505',null,'direct mode cannot steal another work ISBN');
+select throws_ok($$select pg_temp.push_save(jsonb_set(pg_temp.push_changes(),'{1,value,isbn}','null'))$$,'22023',null,'direct edition changes cannot remove an existing ISBN');
+select throws_ok($$select pg_temp.push_save(jsonb_set(pg_temp.push_changes(),'{1,value,isbn}','"9780140449136"'))$$,'22023',null,'direct edition changes cannot reassign an existing ISBN');
 select throws_ok($$select pg_temp.push_save(jsonb_set(pg_temp.push_changes(),'{1,value,details}','{"condition":"private"}'))$$,'22023',null,'private copy fields cannot enter an edition');
 select lives_ok($$select pg_temp.push_save(pg_temp.push_changes(260,1),'evidence','https://publisher.example/edition','Verified published details.')$$,'optional evidence-backed batch works');
 reset role;
