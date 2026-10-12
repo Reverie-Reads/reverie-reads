@@ -11,7 +11,7 @@
  *
  * Bump CACHE when the precache list or strategies change; activate sweeps old versions.
  */
-const CACHE = 'midniht-shell-v3'
+const CACHE = 'midniht-shell-v4'
 const SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -21,6 +21,17 @@ const SHELL = [
   '/icon-maskable-512.png',
   '/midniht/midniht-mark.svg',
 ]
+
+// SPA fallbacks can return a 200 HTML document for a retired hashed asset. Never persist that
+// document as executable code, and repair poisoned entries left by an older worker on read.
+function validAsset(response, path) {
+  if (!response || !response.ok) return false
+  const type = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase()
+  if (/\.m?js$/.test(path)) return /^(application|text)\/(javascript|ecmascript)$/.test(type)
+  if (/\.css$/.test(path)) return type === 'text/css'
+  if (/\.svg$/.test(path)) return type === 'image/svg+xml'
+  return type !== 'text/html'
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -35,7 +46,13 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => k !== CACHE && /^(midniht|reverie)-shell-v\d+$/.test(k))
+            .map((k) => caches.delete(k)),
+        ),
+      )
       .then(() => self.clients.claim()),
   )
 })
@@ -50,8 +67,10 @@ self.addEventListener('fetch', (event) => {
       fetch(req)
         .then((res) => {
           // keep the shell fresh for the next offline launch
-          const copy = res.clone()
-          void caches.open(CACHE).then((cache) => cache.put('/', copy))
+          if (res.ok && res.headers.get('content-type')?.includes('text/html')) {
+            const copy = res.clone()
+            event.waitUntil(caches.open(CACHE).then((cache) => cache.put('/', copy)))
+          }
           return res
         })
         .catch(() => caches.match('/')),
@@ -64,17 +83,17 @@ self.addEventListener('fetch', (event) => {
     (url.pathname.startsWith('/assets/') || url.pathname === '/midniht/midniht-mark.svg')
   ) {
     event.respondWith(
-      caches.match(req).then(
-        (hit) =>
-          hit ??
-          fetch(req).then((res) => {
-            if (res.ok) {
-              const copy = res.clone()
-              void caches.open(CACHE).then((cache) => cache.put(req, copy))
-            }
-            return res
-          }),
-      ),
+      caches.open(CACHE).then(async (cache) => {
+        const hit = await cache.match(req)
+        if (validAsset(hit, url.pathname)) return hit
+        if (hit) await cache.delete(req)
+        // Also bypass an HTTP-cache entry which may contain the same invalid SPA fallback.
+        const res = await fetch(req, { cache: 'no-cache' })
+        if (validAsset(res, url.pathname)) {
+          event.waitUntil(cache.put(req, res.clone()))
+        }
+        return res
+      }),
     )
   }
 })

@@ -96,7 +96,74 @@
     </script>
   </head>
   <body>
+    <!-- This recovery UI must work even when the application module cannot execute. -->
+    <section
+      id="boot-recovery"
+      hidden
+      aria-labelledby="boot-recovery-title"
+      style="position: fixed; inset: 0; z-index: 9999; overflow: auto; padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left)); background: Canvas; color: CanvasText; font: 16px/1.6 system-ui"
+    >
+      <div style="max-width: 32rem; margin: 12vh auto">
+        <h1 id="boot-recovery-title" style="font: 600 28px/1.2 system-ui">Midniht couldn’t open.</h1>
+        <p>The app files may be out of date or your connection may be interrupted.</p>
+        <p>Reload app files to try again. This keeps your sign-in, library, and saved drafts.</p>
+        <button id="boot-recovery-reload" type="button" style="min-height: 44px; padding: 10px 20px; font: inherit">Reload app files</button>
+        <p id="boot-recovery-status" role="status"></p>
+      </div>
+    </section>
     <div id="root"></div>
+    <script id="boot-recovery-script">
+      ;(function () {
+        var panel = document.getElementById('boot-recovery')
+        var root = document.getElementById('root')
+        var button = document.getElementById('boot-recovery-reload')
+        var status = document.getElementById('boot-recovery-status')
+        function rendered() {
+          return root.childElementCount > 0
+        }
+        function show() {
+          if (!rendered()) panel.hidden = false
+        }
+        // Resource errors can precede React and its error boundary. A timer also covers stalled
+        // module downloads. Never interrupt a mounted screen or discard a reader's open form.
+        var timer = setTimeout(show, 15000)
+        window.addEventListener('error', function (event) {
+          if (event.target instanceof HTMLScriptElement) show()
+        }, true)
+        var observer = new MutationObserver(function () {
+          if (rendered()) {
+            clearTimeout(timer)
+            panel.hidden = true
+            observer.disconnect()
+          }
+        })
+        observer.observe(root, { childList: true })
+        button.addEventListener('click', async function () {
+          button.disabled = true
+          status.textContent = 'Refreshing app files…'
+          try {
+            if ('caches' in window) {
+              var keys = await caches.keys()
+              await Promise.all(keys.filter(function (key) {
+                return /^(midniht|reverie)-shell-v\d+$/.test(key)
+              }).map(function (key) { return caches.delete(key) }))
+            }
+            if ('serviceWorker' in navigator) {
+              var registrations = await navigator.serviceWorker.getRegistrations()
+              await Promise.all(registrations.filter(function (registration) {
+                var worker = registration.active || registration.waiting || registration.installing
+                return worker && new URL(worker.scriptURL).origin === location.origin &&
+                  new URL(worker.scriptURL).pathname === '/sw.js'
+              }).map(function (registration) { return registration.unregister() }))
+            }
+            location.reload()
+          } catch (error) {
+            status.textContent = 'The app files could not be refreshed. Check your connection and try again.'
+            button.disabled = false
+          }
+        })
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
