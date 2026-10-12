@@ -56,8 +56,8 @@ beforeEach(() => {
   state.save.mockResolvedValue('work')
   state.reload.mockResolvedValue({ data: { ...record, fingerprint: 'reloaded' }, isError: false })
 })
-function open() {
-  const view = render(<AdminCorpusPush book={book} />)
+function open(input = book) {
+  const view = render(<AdminCorpusPush book={input} />)
   fireEvent.click(screen.getByRole('button', { name: 'Push to corpus' }))
   fireEvent.change(screen.getByRole('textbox', { name: 'Evidence link' }), {
     target: { value: 'https://publisher.example/book' },
@@ -130,4 +130,36 @@ it('shows the persisted timestamp and never invents a time for missing status', 
   c.rerender(<AdminCorpusPush book={book} />)
   expect(screen.getByText('Last corpus update is unavailable.')).toBeVisible()
   expect(c.container.querySelector('time')).toBeNull()
+})
+it('asks which ISBN-less edition to update instead of silently creating another', async () => {
+  state.record = {
+    ...record,
+    editions: [
+      {
+        id: 'existing-edition',
+        work_id: record.id,
+        isbn: null,
+        details: { publisher: 'Example Press' },
+        reviewed: true,
+        revision: 1,
+        source_url: null,
+      },
+    ],
+  }
+  open({ ...book, isbn: '' })
+  fireEvent.click(screen.getByRole('button', { name: 'Review corpus update' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Choose an existing ISBN-less edition')
+  expect(state.save).not.toHaveBeenCalled()
+  fireEvent.change(screen.getByRole('combobox', { name: /Published edition to update/ }), {
+    target: { value: 'existing-edition' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Review corpus update' }))
+  fireEvent.click(screen.getByRole('checkbox'))
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm push to corpus' }))
+  await screen.findByRole('status')
+  expect(state.save.mock.calls[0]![0].change.value).toMatchObject({
+    id: 'existing-edition',
+    isbn: null,
+    details: { publisher: 'Example Press', pages: 240 },
+  })
 })

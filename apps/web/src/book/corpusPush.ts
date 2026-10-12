@@ -13,6 +13,7 @@ export function bookCorpusProposal(
   kind: 'edition' | 'guidance',
   inventoryEditionId: string,
   newEditionId: string,
+  targetEditionId = '',
 ): CorpusRecordChange {
   if (book.corpusWorkId !== record.id)
     throw new Error('This book is linked to a different corpus record.')
@@ -57,9 +58,18 @@ export function bookCorpusProposal(
     throw new Error('Save an ISBN or published-edition details before pushing an edition.')
   // Exact ISBN equivalence is the only automatic edition match. Keep the attempted new UUID
   // across an explicit reload after an uncertain response, including an ISBN-less edition.
-  const existing = record.editions.find((e) =>
+  let existing = record.editions.find((e) =>
     isbn ? normalizeIsbn(e.isbn || '') === isbn : e.id === newEditionId,
   )
+  if (!isbn && targetEditionId && targetEditionId !== 'new') {
+    existing = record.editions.find((e) => e.id === targetEditionId && !e.isbn)
+    if (!existing)
+      throw new Error(
+        'The selected ISBN-less edition is no longer available. Reload the corpus for review.',
+      )
+  }
+  if (!isbn && !targetEditionId && !existing && record.editions.some((e) => !e.isbn))
+    throw new Error('Choose an existing ISBN-less edition or explicitly create a new one.')
   const details: CorpusEditionDetails = { ...existing?.details }
   if (pages != null) details.pages = pages
   if (publication) details.publication = publication

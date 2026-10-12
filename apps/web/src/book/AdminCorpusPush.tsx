@@ -118,6 +118,7 @@ function PushReview({
     book.copyInventory?.editions.length === 1 ? book.copyInventory.editions[0]!.id : '',
   )
   const [newEditionId] = useState(() => crypto.randomUUID())
+  const [targetEditionId, setTargetEditionId] = useState('')
   const [source, setSource] = useState('')
   const [note, setNote] = useState('')
   const [proposal, setProposal] = useState<CorpusRecordChange | null>(null)
@@ -135,7 +136,7 @@ function PushReview({
       return
     }
     try {
-      setProposal(bookCorpusProposal(book, record, kind, editionId, newEditionId))
+      setProposal(bookCorpusProposal(book, record, kind, editionId, newEditionId, targetEditionId))
       setConfirmed(false)
     } catch (e) {
       setError(catalogError(e))
@@ -158,7 +159,11 @@ function PushReview({
     if (busy || inflight.current) return
     setReloading(true)
     try {
-      setRecord(await onReload())
+      const next = await onReload()
+      setRecord(next)
+      setTargetEditionId(
+        next.editions.some((e) => e.id === newEditionId && !e.isbn) ? newEditionId : '',
+      )
       setProposal(null)
       setConfirmed(false)
       setAttempted(false)
@@ -170,6 +175,11 @@ function PushReview({
     }
   }
   const field = 'skin-field mt-1 min-h-11 w-full min-w-0 px-3 py-2 text-base'
+  const sourceEdition = book.copyInventory?.editions.find((e) => e.id === editionId)
+  const isbnless =
+    kind === 'edition' &&
+    (book.copyInventory ? sourceEdition && !sourceEdition.isbn.trim() : !book.isbn.trim())
+  const isbnlessEditions = record.editions.filter((e) => !e.isbn)
   return (
     <Modal
       title="Push to corpus"
@@ -217,7 +227,10 @@ function PushReview({
                 <select
                   className={field}
                   value={editionId}
-                  onChange={(e) => setEditionId(e.target.value)}
+                  onChange={(e) => {
+                    setEditionId(e.target.value)
+                    setTargetEditionId('')
+                  }}
                 >
                   <option value="">Choose an edition</option>
                   {book.copyInventory.editions.map((e, i) => (
@@ -227,6 +240,37 @@ function PushReview({
                     </option>
                   ))}
                 </select>
+              </label>
+            )}
+            {isbnless && isbnlessEditions.length > 0 && (
+              <label className="block text-sm">
+                Published edition to update
+                <select
+                  className={field}
+                  value={targetEditionId}
+                  onChange={(e) => setTargetEditionId(e.target.value)}
+                >
+                  <option value="">Choose an existing edition or create one</option>
+                  {isbnlessEditions.map((e, i) => (
+                    <option key={e.id} value={e.id}>
+                      {i + 1}.{' '}
+                      {[
+                        e.details.title,
+                        e.details.publisher,
+                        e.details.statement,
+                        e.details.format,
+                        e.details.publication?.y,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'ISBN-less edition'}
+                    </option>
+                  ))}
+                  <option value="new">Create a different published edition</option>
+                </select>
+                <span className="mt-1 block text-muted">
+                  This book has no ISBN. Choose only after checking the edition against your
+                  evidence.
+                </span>
               </label>
             )}
             <p className="text-sm text-muted">
@@ -271,7 +315,7 @@ function PushReview({
                 {record.editions.some((e) => e.id === proposal.value.id)
                   ? proposal.value.isbn
                     ? 'Update the edition with this exact ISBN.'
-                    : 'Update the edition retained from your earlier attempt.'
+                    : 'Update the selected ISBN-less published edition.'
                   : 'Create a published edition. Check that it is not already listed in the shared catalog.'}
               </p>
             )}

@@ -91,8 +91,9 @@ No production data or provider services were modified during implementation.
 Book details exposes **Push to corpus** to corpus administrators. It uses saved personal
 values in a frozen, explicit review of either a published edition or shared genres/content
 guidance. Multiple private editions require choosing the exact source edition; only a valid,
-equivalent ISBN automatically matches an existing shared edition. No ISBN means a new edition,
-with a retained attempt UUID so a reviewed retry cannot duplicate an uncertain save.
+equivalent ISBN automatically matches an existing shared edition. If ISBN-less editions already
+exist, the administrator explicitly chooses one or creates a different edition. A retained attempt
+UUID prevents a reviewed retry from duplicating an uncertain save.
 Unknown fields preserve the existing shared values. Reading format is not an edition format.
 Personal copy labels, locations, possession, reading history, notes and ratings are excluded.
 

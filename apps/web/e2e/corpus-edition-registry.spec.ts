@@ -129,9 +129,9 @@ async function evidence(page: Page) {
   await page.getByRole('button', { name: 'Save shared change', exact: true }).click()
 }
 
-test('published edition and shared guidance persist; a personal override and ISBN report stay separate', async ({
+test('published edition and shared guidance persist while personal overrides stay separate', async ({
   page,
-}, info) => {
+}) => {
   const c = await fixture(page)
   try {
     await page.goto(`/catalog/metadata?state=all&issue=all&q=&page=0&work=${c.work}`)
@@ -195,6 +195,18 @@ test('published edition and shared guidance persist; a personal override and ISB
       darkness: 0,
       intensity: null,
     })
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('an ISBN report persists through reload and reaches the administrator review queue', async ({
+  page,
+}, info) => {
+  const c = await fixture(page)
+  try {
+    await page.goto(`/book/${c.book}`)
+    await page.getByRole('button', { name: 'Shared catalog & published editions' }).click()
     await page.getByRole('button', { name: 'Report an ISBN problem', exact: true }).click()
     const report = page.getByRole('dialog', { name: 'Report an ISBN problem' })
     await report
@@ -302,6 +314,37 @@ test('an administrator reviews saved book details before pushing them and sees t
     await expect(timestamp).toHaveAttribute('datetime', savedTime.updated_at)
     await page.reload()
     await expect(timestamp).toHaveAttribute('datetime', savedTime.updated_at)
+    expect(
+      await ok(
+        c.admin.from('books').select(protectedFields).eq('id', c.book).single(),
+        'protected personal snapshot',
+      ),
+    ).toEqual(personal)
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('a reviewed guidance push updates shared defaults and preserves personal values', async ({
+  page,
+}) => {
+  const c = await fixture(page)
+  try {
+    await ok(
+      c.admin
+        .from('books')
+        .update({ pages: 321, genre: 'fantasy', genres: ['fantasy'], intensity: 2 })
+        .eq('id', c.book),
+      'saved personal facts',
+    )
+    const protectedFields =
+      'title,isbn,pages,intensity,darkness,ownership,borrowed,wishlist,copy_inventory,rating'
+    const personal = await ok(
+      c.admin.from('books').select(protectedFields).eq('id', c.book).single(),
+      'personal snapshot',
+    )
+    await page.goto(`/book/${c.book}`)
+    const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
     await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
     await dialog.getByRole('radio', { name: 'Genres & content guidance' }).check()
     await dialog
@@ -329,6 +372,73 @@ test('an administrator reviews saved book details before pushing them and sees t
         'protected personal snapshot',
       ),
     ).toEqual(personal)
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('an ISBN-less push updates the explicitly selected published edition without duplicating it', async ({
+  page,
+}) => {
+  const c = await fixture(page)
+  try {
+    await ok(c.admin.from('books').update({ pages: 321 }).eq('id', c.book), 'saved page count')
+    const before = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'corpus snapshot',
+    )
+    // A later ISBN-less push must select an existing published edition deliberately.
+    const isbnlessId = randomUUID()
+    await ok(
+      c.client.rpc('admin_save_corpus_record', {
+        p_work: c.work,
+        p_expected_fingerprint: before.fingerprint,
+        p_action: 'edition',
+        p_value: {
+          id: isbnlessId,
+          isbn: null,
+          details: { publisher: 'Historic Press', pages: 100 },
+        },
+        p_source_url: 'https://publisher.example/historic',
+        p_note: 'A documented ISBN-less edition.',
+        p_confirmed: true,
+      }),
+      'existing ISBN-less edition',
+    )
+    await ok(
+      c.admin.from('books').update({ isbn: '' }).eq('id', c.book),
+      'ISBN-less personal fixture',
+    )
+    const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
+    await page.goto(`/book/${c.book}`)
+    await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
+    await dialog
+      .getByRole('textbox', { name: 'Evidence link' })
+      .fill('https://publisher.example/historic')
+    await dialog
+      .getByRole('textbox', { name: 'Explanation' })
+      .fill('The saved copy matches the Historic Press edition.')
+    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
+    await expect(dialog.getByRole('alert')).toContainText('Choose an existing ISBN-less edition')
+    await dialog
+      .getByRole('combobox', { name: /Published edition to update/ })
+      .selectOption(isbnlessId)
+    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
+    await dialog
+      .getByRole('checkbox', {
+        name: 'I verified these details and want to update the shared corpus.',
+      })
+      .check()
+    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+    await expect(dialog).not.toBeVisible()
+    const isbnlessResult = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'updated ISBN-less edition',
+    )
+    expect(isbnlessResult.editions).toHaveLength(2)
+    expect(
+      isbnlessResult.editions.find((e: { id: string }) => e.id === isbnlessId).details.pages,
+    ).toBe(321)
   } finally {
     await c.cleanup()
   }

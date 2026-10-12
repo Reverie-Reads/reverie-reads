@@ -142,3 +142,22 @@ it('reuses the attempted new edition after an explicit reload finds an ISBN-less
     value: { id: 'new' },
   })
 })
+it('requires a deliberate target when the corpus already has an ISBN-less edition', () => {
+  const record = {
+    ...corpus,
+    editions: [{ ...corpus.editions[0]!, isbn: null }],
+  }
+  const isbnless = { ...book, isbn: '' }
+  expect(() => bookCorpusProposal(isbnless, record, 'edition', '', 'new-id')).toThrow(
+    'Choose an existing ISBN-less edition',
+  )
+  expect(
+    bookCorpusProposal(isbnless, record, 'edition', '', 'new-id', 'shared-edition'),
+  ).toMatchObject({ value: { id: 'shared-edition', isbn: null } })
+  expect(bookCorpusProposal(isbnless, record, 'edition', '', 'new-id', 'new')).toMatchObject({
+    value: { id: 'new-id', isbn: null },
+  })
+  expect(() =>
+    bookCorpusProposal(isbnless, corpus, 'edition', '', 'new-id', 'shared-edition'),
+  ).toThrow('no longer available')
+})
