@@ -290,7 +290,7 @@ test('an exact edition lookup preserves corpus details and the matched ISBN', as
   await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(CORPUS_CANONICAL, {
     timeout: 15_000,
   })
-  await page.getByRole('button', { name: 'Additional information (optional)', exact: true }).click()
+  await page.getByRole('button', { name: 'Show all book information', exact: true }).click()
   await expect(page.getByRole('combobox', { name: 'Series', exact: true })).toHaveValue(
     'The Triage Cycle',
   )
@@ -325,9 +325,7 @@ for (const referenceIsbn of [CORPUS_FIRST_ISBN, CORPUS_RESULT_ISBN])
     await expect.poll(() => labelOf(page, CORPUS), { timeout: 15000 }).toBe('In the corpus')
     await row(page, CORPUS).locator('button').click()
     const sameEdition = referenceIsbn === CORPUS_RESULT_ISBN
-    await page
-      .getByRole('button', { name: 'Additional information (optional)', exact: true })
-      .click()
+    await page.getByRole('button', { name: 'Show all book information', exact: true }).click()
     await expectPublicationDate(page, sameEdition ? '2021' : '')
     await page.getByRole('button', { name: /^Review book$/ }).click()
     await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
@@ -388,7 +386,7 @@ test('a conflicting ISBN result never replaces its identity with corpus details'
   await row(page, conflictingTitle).locator('button').click()
   await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(conflictingTitle)
   await expect(page.getByLabel('Contributor 1 name', { exact: true })).toHaveValue('Another Writer')
-  await page.getByRole('button', { name: 'Additional information (optional)', exact: true }).click()
+  await page.getByRole('button', { name: 'Show all book information', exact: true }).click()
   await expect(page.getByRole('combobox', { name: 'Series', exact: true })).toHaveValue('')
   await expect(page.getByPlaceholder('Book #')).toHaveValue('')
 })

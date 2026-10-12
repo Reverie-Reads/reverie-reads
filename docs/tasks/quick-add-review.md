@@ -62,3 +62,25 @@ iPhone acceptance remains separate from simulated viewport checks. The next bulk
 would be editable, selectable spreadsheet rows and durable cross-device drafts; neither is
 claimed here. No production data was changed; the shared local stack is restored to its standard
 private schema and 290-book seed after each browser run.
+
+## Information visibility refinement
+
+The October 11 refinement restores the cover-led section layout and Book / Genres / Edition /
+Series / Reading / Copies navigation from the shared editor before Quick Add (`16bffc9^`,
+public merge `5cd63b7`). Quick entry remains the default. An always-visible overview names genre,
+pages/publication and series information, displaying the current draft or an explicit missing
+value. “Show all book information” opens the optional metadata and reading controls. Section
+navigation also opens the relevant fields before focusing the heading.
+
+Folding the controls away keeps them mounted and preserves their values, including after a
+Bearded Mode change. Validation reopens an invalid field before focusing it. Review still freezes
+the same payload and destination; confirmation, duplicates, retry identity and saved-book handoff
+are unchanged. No data-layer or schema changes are involved.
+
+Initial refinement validation: the 29-test focused browser run passed 28 checks, including desktop
+and touch walkthroughs, save recovery, duplicates and release-edition handoffs. The new Bearded
+Mode test reopened its invalid field but tested keyboard focus while its separate Settings tab
+was active. Its follow-up explicitly returns to Add, matching the reader action; the original
+failure trace is retained locally. Screenshot review also corrected the overview to use the room's
+card-radius token instead of the pill-shaped control token. Full final validation is recorded in
+the feature PR.

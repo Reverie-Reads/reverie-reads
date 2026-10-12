@@ -69,6 +69,7 @@ import { BarcodeBatch } from '../components/BarcodeBatch'
 import { Modal } from '../components/Modal'
 import { CoverImage } from '../components/CoverImage'
 import {
+  BookEditor,
   BookEditorSection,
   BookMetadataFields,
   BookReadingStatus,
@@ -345,6 +346,8 @@ function AddForm({
   const [extraGenres, setExtraGenres] = useState<string[]>([])
   const [review, setReview] = useState<Incoming | null>(null)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [allInformation, setAllInformation] = useState(false)
+  const [readingOpen, setReadingOpen] = useState(false)
   useBookTourObservation(addedId ? null : reviewOpen ? 'review' : 'details')
   const reviewHousehold = useRef(false)
   const [rating, setRating] = useState(0)
@@ -768,15 +771,71 @@ function AddForm({
         Quick Add
       </h2>
       <p className="mt-1 text-sm text-muted">
-        Start with the basics. Review before saving, then add more from your book.
+        Start with the basics, or open any section to add more. You’ll review everything before
+        saving.
       </p>
       <fieldset
         disabled={saveState.busy || !!dup || !!saveState.error || !!saveState.recoveredBookId}
-        className="min-w-0"
+        className="mt-4 min-w-0"
       >
-        <div className="book-editor">
+        <BookEditor
+          onNavigate={(section) => {
+            if (['classification', 'edition', 'series'].includes(section)) setAllInformation(true)
+            if (section === 'reading') setReadingOpen(true)
+          }}
+        >
           <BookMetadataFields
-            quick
+            overview={
+              <div
+                className="book-add-overview"
+                role="region"
+                aria-label="Available book information"
+              >
+                <dl className="book-add-facts">
+                  <div>
+                    <dt>Genres & subgenres</dt>
+                    <dd>
+                      {[form.genre, ...extraGenres, ...subs].filter(Boolean).join(' · ') ||
+                        'Not set'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Pages & publication</dt>
+                    <dd>
+                      {[form.pages.trim() ? `${form.pages} pages` : '', form.pub]
+                        .filter(Boolean)
+                        .join(' · ') || 'Not supplied'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Series</dt>
+                    <dd>
+                      {form.series
+                        ? `${form.series}${form.position ? ` · Book ${form.position}` : ''}`
+                        : 'Not set'}
+                    </dd>
+                  </div>
+                </dl>
+                <button
+                  type="button"
+                  className="skin-control skin-btn-secondary book-add-expand"
+                  aria-expanded={allInformation}
+                  onClick={() => {
+                    setAllInformation(!allInformation)
+                    setReadingOpen(!allInformation)
+                  }}
+                >
+                  {allInformation ? 'Keep just the basics visible' : 'Show all book information'}
+                  <span aria-hidden="true">{allInformation ? '−' : '+'}</span>
+                </button>
+                <p className="mt-2 text-sm text-muted">
+                  Optional details stay in your draft when folded away. You can also add them after
+                  saving.
+                </p>
+              </div>
+            }
+            quick={!allInformation}
+            onExpandDetails={setAllInformation}
             value={metadata}
             onChange={changeMetadata}
             contributors={contribs}
@@ -903,7 +962,11 @@ function AddForm({
               </>
             }
           />
-          <details className="my-3">
+          <details
+            className="my-3"
+            open={readingOpen}
+            onToggle={(event) => setReadingOpen(event.currentTarget.open)}
+          >
             <summary className="min-h-11 cursor-pointer py-3 text-sm text-ink">
               Reading details (optional)
             </summary>
@@ -982,7 +1045,7 @@ function AddForm({
               </div>
             </div>
           </BookEditorSection>
-        </div>
+        </BookEditor>
       </fieldset>
       {reviewOpen && review && (
         <Modal

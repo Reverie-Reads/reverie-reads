@@ -146,9 +146,7 @@ for (const touch of [false, true]) {
         if (touch) await expect(guide).toHaveAttribute('data-inline', 'true')
         await clearTarget(page, 'book-save')
         expect(await account.rows()).toHaveLength(0)
-        await page
-          .getByRole('button', { name: 'Additional information (optional)', exact: true })
-          .click()
+        await page.getByRole('button', { name: 'Show all book information', exact: true }).click()
         await page.getByRole('textbox', { name: 'Pages', exact: true }).fill('-1')
         await page.getByRole('button', { name: 'Review book', exact: true }).click()
         await expect(page.getByRole('alert')).toContainText(/page|greater|positive|between/i)

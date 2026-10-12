@@ -253,9 +253,7 @@ for (const { width, changeFormat, changeIsbn } of [
         .getByRole('link', { name: 'Add to wishlist', exact: true })
         .click()
       await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue(title)
-      await page
-        .getByRole('button', { name: 'Additional information (optional)', exact: true })
-        .click()
+      await page.getByRole('button', { name: 'Show all book information', exact: true }).click()
       await expectPublicationDate(page, pub)
       await expect(page.getByLabel('Edition format', { exact: true })).toHaveValue(
         width === 1280 ? 'Hardcover' : '',
