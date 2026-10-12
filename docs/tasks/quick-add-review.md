@@ -79,8 +79,11 @@ are unchanged. No data-layer or schema changes are involved.
 
 Initial refinement validation: the 29-test focused browser run passed 28 checks, including desktop
 and touch walkthroughs, save recovery, duplicates and release-edition handoffs. The new Bearded
-Mode test reopened its invalid field but tested keyboard focus while its separate Settings tab
-was active. Its follow-up explicitly returns to Add, matching the reader action; the original
-failure trace is retained locally. Screenshot review also corrected the overview to use the room's
-card-radius token instead of the pill-shaped control token. Full final validation is recorded in
+Mode test exposed a real focus race: the focus call ran before the expanded field was visible.
+Returning to the Add tab did not fix it, and CI reproduced the failure. Validation now waits for
+the expanded fields' DOM commit before focusing the error; the original failure traces are retained
+locally. The follow-up also caught delayed section focus intercepting the rating's first keyboard
+input at 320 px. Section navigation now focuses in the same committed render, before subsequent
+input. Screenshot review corrected the overview to use the room's card-radius token instead of
+the pill-shaped control token. Full final validation is recorded in
 the feature PR.

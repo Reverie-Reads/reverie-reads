@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
   CORE_GENRES,
   SERIES_STATUS_LABELS,
@@ -105,25 +105,22 @@ export function BookEditor({
 }) {
   const root = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState(initialSection)
-  const navigationFrame = useRef<number | null>(null)
-  useEffect(
-    () => () => {
-      if (navigationFrame.current !== null) cancelAnimationFrame(navigationFrame.current)
-    },
-    [],
+  const [navigationRequest, setNavigationRequest] = useState<{ id: BookEditorSectionId } | null>(
+    null,
   )
   function focusSection(id: BookEditorSectionId) {
     setSelected(id)
     onNavigate?.(id)
-    if (navigationFrame.current !== null) cancelAnimationFrame(navigationFrame.current)
-    navigationFrame.current = requestAnimationFrame(() => {
-      const heading = root.current?.querySelector<HTMLElement>(
-        `[data-book-editor-section="${id}"] h3`,
-      )
-      heading?.focus({ preventScroll: true })
-      heading?.scrollIntoView({ block: 'start', behavior: 'instant' })
-    })
+    setNavigationRequest({ id })
   }
+  useLayoutEffect(() => {
+    if (!navigationRequest) return
+    const heading = root.current?.querySelector<HTMLElement>(
+      `[data-book-editor-section="${navigationRequest.id}"] h3`,
+    )
+    heading?.focus({ preventScroll: true })
+    heading?.scrollIntoView({ block: 'start', behavior: 'instant' })
+  }, [navigationRequest])
   useEffect(() => {
     if (initialSection === 'identity') return
     const frame = requestAnimationFrame(() => {
@@ -244,16 +241,17 @@ export function BookMetadataFields({
   const fields = useRef<HTMLDivElement>(null)
   const errorSignature = JSON.stringify(errors)
   const focusedAttempt = useRef(-1)
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (focusedAttempt.current === validationAttempt) return
+    if (Object.values(JSON.parse(errorSignature)).some(Boolean)) {
+      if (quick) {
+        onExpandDetails?.(true)
+        return
+      }
+      fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    }
     focusedAttempt.current = validationAttempt
-    if (!Object.values(JSON.parse(errorSignature)).some(Boolean)) return
-    onExpandDetails?.(true)
-    const frame = requestAnimationFrame(() =>
-      fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
-    )
-    return () => cancelAnimationFrame(frame)
-  }, [errorSignature, validationAttempt, onExpandDetails])
+  }, [errorSignature, validationAttempt, onExpandDetails, quick])
   const [showOtherSubs, setShowOtherSubs] = useState(false)
   const [showOtherGenres, setShowOtherGenres] = useState(false)
   const vocab = f.genre ? subgenresForGenre(f.genre) : []
