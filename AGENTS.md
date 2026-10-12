@@ -268,15 +268,18 @@ myProgress`). Move them into `packages/core` with tests.
   manual choice or route exit cancels the older request so late results cannot replace the current
   task. Short queries explain the minimum rather than pretending to have searched.
 - **Administrator push is reviewed and bound to a saved book.** Book Details offers corpus admins
-  a review of edition facts or shared guidance, with explicit confirmation, evidence, and the
-  existing fingerprint conflict check. A configured inventory requires an exact edition choice;
+  one review with individually selectable edition facts and shared guidance, saved together.
+  Direct administrator updates can omit evidence and the manual verification checklist; optional
+  evidence-backed updates retain their link and explanation. Both modes keep the fingerprint conflict
+  check, exact-edition identity, input validation and honest per-action audit history. A configured inventory requires an exact edition choice;
   private notes, ratings, copy labels and locations never enter the payload. Unknown values preserve
   shared facts. Show the persisted corpus update time, not a fetch time; discard the review when
   the account or book changes. See `docs/tasks/corpus-editions-and-guidance.md`.
 - **Published editions are shared bibliography; individual copies stay private.** `corpus_editions`
   stores work-bound published versions, including ISBN-less versions. Existing unique valid ISBNs
   begin as unreviewed identifiers; work-level scalars never certify every edition. Shared correction
-  requires administrator membership, source, explicit review and a current work/edition fingerprint.
+  requires administrator membership, an explicit save and a current work/edition fingerprint.
+  The direct book-details push may omit a source; other correction workflows retain their evidence requirements.
   Rejected ISBN assignments retain exclusions and history. Reader reports do not change metadata.
   `works.shared_spice` and `shared_darkness` are nullable shared assessments; personal non-null levels
   (including zero) override them. `bookGuidance` is a read-time view, never a backup or write payload.

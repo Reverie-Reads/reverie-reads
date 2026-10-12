@@ -129,3 +129,120 @@ export function corpusProposalRows(record: CorpusRecord, change: CorpusRecordCha
     ['Edition statement', before?.details.statement || unknown, after.statement || unknown],
   ]
 }
+
+export const CORPUS_PUSH_FIELDS = [
+  'edition.identity',
+  'edition.pages',
+  'edition.publication',
+  'edition.format',
+  'edition.publisher',
+  'guidance.genres',
+  'guidance.subgenres',
+  'guidance.spice',
+  'guidance.darkness',
+] as const
+export type CorpusPushField = (typeof CORPUS_PUSH_FIELDS)[number]
+export interface CorpusPushOption {
+  key: CorpusPushField
+  label: string
+  before: string
+  after: string
+}
+export function bookCorpusOptions(
+  book: Book,
+  record: CorpusRecord,
+  inventoryEditionId: string,
+  newEditionId: string,
+  targetEditionId = '',
+) {
+  const guidance = bookCorpusProposal(book, record, 'guidance', inventoryEditionId, newEditionId)
+  if (guidance.action !== 'guidance') throw new Error('Guidance proposal required.')
+  const rows: CorpusPushOption[] = []
+  let edition: Extract<CorpusRecordChange, { action: 'edition' }> | null = null
+  let editionError = ''
+  try {
+    const candidate = bookCorpusProposal(
+      book,
+      record,
+      'edition',
+      inventoryEditionId,
+      newEditionId,
+      targetEditionId,
+    )
+    if (candidate.action !== 'edition') throw new Error('Edition proposal required.')
+    edition = candidate
+    const editionRows = corpusProposalRows(record, candidate)
+    for (const [index, field] of ['pages', 'publication', 'format', 'publisher'].entries()) {
+      const [label, before, after] = editionRows[index + 1]!
+      if (before !== after)
+        rows.push({
+          key: `edition.${field}` as CorpusPushField,
+          label: label!,
+          before: before!,
+          after: after!,
+        })
+    }
+    // An ISBN identifies the destination edition; it is never an independent book-level field.
+    // ISBN-only intake still has one deliberate selectable change.
+    if (!rows.length && !record.editions.some((e) => e.id === candidate.value.id)) {
+      rows.push({
+        key: 'edition.identity',
+        label: 'Add published edition',
+        before: 'Not in the shared catalog',
+        after: candidate.value.isbn || 'Edition without an ISBN',
+      })
+    }
+  } catch (e) {
+    editionError = e instanceof Error ? e.message : 'Edition details are unavailable.'
+  }
+  const guidanceRows = corpusProposalRows(record, guidance)
+  for (const [index, field] of ['genres', 'subgenres', 'spice', 'darkness'].entries()) {
+    const [label, before, after] = guidanceRows[index]!
+    if (before !== after)
+      rows.push({
+        key: `guidance.${field}` as CorpusPushField,
+        label: label!,
+        before: before!,
+        after: after!,
+      })
+  }
+  return { rows, edition, guidance, editionError }
+}
+
+/** Build only the selected differences; everything else comes from the opened shared snapshot. */
+export function selectedCorpusChanges(
+  record: CorpusRecord,
+  options: ReturnType<typeof bookCorpusOptions>,
+  selected: ReadonlySet<CorpusPushField>,
+): import('../data/corpusEditions').CorpusPushChange[] {
+  const keys = new Set(options.rows.filter((row) => selected.has(row.key)).map((row) => row.key))
+  const changes: import('../data/corpusEditions').CorpusPushChange[] = []
+  if (options.edition && [...keys].some((key) => key.startsWith('edition.'))) {
+    const candidate = options.edition.value
+    const existing = record.editions.find((e) => e.id === candidate.id)
+    const details: CorpusEditionDetails = { ...existing?.details }
+    for (const field of ['pages', 'publication', 'format', 'publisher'] as const) {
+      if (keys.has(`edition.${field}`))
+        Object.assign(details, { [field]: candidate.details[field] })
+    }
+    changes.push({ action: 'edition', value: { id: candidate.id, isbn: candidate.isbn, details } })
+  }
+  if ([...keys].some((key) => key.startsWith('guidance.'))) {
+    const value = {
+      genres: record.genres.length ? record.genres : record.genre ? [record.genre] : [],
+      subgenres: record.subgenres.length
+        ? record.subgenres
+        : record.subgenre
+          ? [record.subgenre]
+          : [],
+      spice: record.spice,
+      darkness: record.darkness,
+    }
+    for (const field of ['genres', 'subgenres', 'spice', 'darkness'] as const) {
+      if (keys.has(`guidance.${field}`))
+        Object.assign(value, { [field]: options.guidance.value[field] })
+    }
+    changes.push({ action: 'guidance', value })
+  }
+  return changes
+}

@@ -88,18 +88,34 @@ No production data or provider services were modified during implementation.
 
 ## Administrator push from book details
 
-Book details exposes **Push to corpus** to corpus administrators. It uses saved personal
-values in a frozen, explicit review of either a published edition or shared genres/content
-guidance. Multiple private editions require choosing the exact source edition; only a valid,
-equivalent ISBN automatically matches an existing shared edition. If ISBN-less editions already
-exist, the administrator explicitly chooses one or creates a different edition. A retained attempt
-UUID prevents a reviewed retry from duplicating an uncertain save.
-Unknown fields preserve the existing shared values. Reading format is not an edition format.
-Personal copy labels, locations, possession, reading history, notes and ratings are excluded.
+Book details exposes **Push to corpus** to corpus administrators. The panel shows saved personal
+values beside the shared values, with individual selections across edition details and shared
+content guidance. Different known values start selected; Select all changes and Clear selection
+operate on the visible choices. A single **Save selected changes** action saves the selected fields
+together. Unknown or unchecked values preserve the opened shared values. An ISBN identifies the
+edition destination and accompanies its selected details; it is not a free-floating work field.
 
-The review shows current/proposed values, requires evidence and confirmation, and uses the
-existing fingerprint-bound administrator writer. A failed or uncertain attempt retains its
-draft and requires explicit reload and re-review. The visible update status reads the persisted
-`works.updated_at` timestamp; it never substitutes the query refresh time. Successful writes
-refresh both shared details and status. This UI addition needs no new migration beyond the
-shared-edition registry prerequisite.
+Multiple private editions require choosing the exact source edition; only a valid equivalent ISBN
+automatically matches an existing shared edition. With no ISBN, an administrator explicitly chooses
+an existing ISBN-less edition or creates another. Retained attempt UUIDs prevent uncertain saves
+from reusing one edition's identity for another. After an uncertain response, reload keeps the
+selection and removes already-saved differences; it never automatically resubmits.
+
+The default **Direct admin update** needs no evidence link, explanation, verification checkbox or
+second review screen. Optional supporting evidence retains a real link and explanation. Both paths
+keep administrator membership, valid data, ISBN ownership and stale-snapshot checks. Audit history
+and provenance distinguish direct changes from evidence-backed changes; absent sources remain null.
+Other ISBN correction and report-resolution workflows keep their existing evidence requirements.
+
+`admin_push_corpus_record` accepts at most one edition and one guidance change in a single
+transaction, using the same internal writer as the existing evidence-backed endpoint. It locks the
+edition's ISBNs before the work, checks the opened fingerprint, and either saves all changes or none.
+Only its own locked intermediate fingerprint can be used for the second action. The private helper
+is outside the Data API schema and has no API-role execution privileges.
+
+Private notes, ratings, copy labels, locations, possession and reading history are excluded. The
+update status reads persisted `works.updated_at`, never query refresh time. Account/book changes
+close the draft. Successful saves refresh shared details and status. Database tests cover atomic
+rollback, access, audit provenance and unchanged personal data; UI/browser tests cover independent
+field selections, both categories in one save, optional evidence, conflicts and lost responses.
+Final validation results are recorded in the feature PR.

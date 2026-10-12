@@ -927,6 +927,12 @@ writer. All four new tables (including reports) revoke direct privileges from ev
 `get_corpus_record` returns a work's editions and guidance, the caller's unresolved reports (all for
 an administrator), and administrator-only recent audit events. `admin_save_corpus_record` performs
 reviewed edition/guidance/ISBN/report actions with role checks and a locked fingerprint.
+`admin_push_corpus_record` saves one edition and/or guidance change atomically from the same opened
+fingerprint. Direct admin mode permits absent evidence; optional evidence mode requires a link and
+explanation. `corpus_record_edits.review_mode` and saved provenance distinguish these paths, and an
+absent `source_url` remains null. Both endpoints reuse the inaccessible
+`corpus_admin_private.apply_corpus_record_change` helper. Input checks, work/ISBN ownership and
+conflict protection apply in both modes; direct pushes cannot remove ISBNs or resolve reports.
 `corpus_isbn_reports` belongs to its reporting profile and cascades on account deletion. Reports are
 submitted by the personal book owner or administrator through `report_corpus_isbn`; they do not
 write an identifier. They contribute to the existing metadata review queue and its fingerprint.

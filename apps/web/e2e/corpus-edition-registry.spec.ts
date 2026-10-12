@@ -242,7 +242,7 @@ test('an ISBN report persists through reload and reaches the administrator revie
   }
 })
 
-test('an administrator reviews saved book details before pushing them and sees the persisted corpus update', async ({
+test('an administrator selects edition and guidance changes together without a manual evidence gate', async ({
   page,
 }, info) => {
   await page.setViewportSize({ width: 320, height: 740 })
@@ -271,19 +271,15 @@ test('an administrator reviews saved book details before pushing them and sees t
     const initialTime = await timestamp.getAttribute('datetime')
     await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
-    await dialog
-      .getByRole('textbox', { name: 'Evidence link' })
-      .fill('https://publisher.example/edition')
-    await dialog
-      .getByRole('textbox', { name: 'Explanation' })
-      .fill('The copyright page confirms this published edition.')
-    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
-    await expect(dialog.getByText('Proposed: 321', { exact: true })).toBeVisible()
+
+    await expect(dialog.getByText('Your saved value: 321', { exact: true })).toBeVisible()
     expect(
       (await ok(c.client.rpc('get_corpus_record', { p_work: c.work }), 'before confirmation'))
         .fingerprint,
     ).toBe(before.fingerprint)
-    await expect(dialog.getByRole('button', { name: 'Confirm push to corpus' })).toBeDisabled()
+    await expect(dialog.getByRole('button', { name: 'Save selected changes' })).toBeEnabled()
+    await expect(dialog.getByRole('textbox', { name: 'Evidence link' })).toHaveCount(0)
+    await dialog.getByRole('checkbox', { name: 'Spice / sexual content' }).uncheck()
     expect((await new AxeBuilder({ page }).include('dialog[open]').analyze()).violations).toEqual(
       [],
     )
@@ -292,12 +288,7 @@ test('an administrator reviews saved book details before pushing them and sees t
       path: `/tmp/reverie-corpus-push-${info.project.name}.png`,
       fullPage: true,
     })
-    await dialog
-      .getByRole('checkbox', {
-        name: 'I verified these details and want to update the shared corpus.',
-      })
-      .check()
-    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+    await dialog.getByRole('button', { name: 'Save selected changes' }).click()
     await expect(dialog).not.toBeVisible()
     await expect(page.getByRole('status').filter({ hasText: 'Corpus update saved.' })).toBeVisible()
     const after = await ok(
@@ -305,7 +296,13 @@ test('an administrator reviews saved book details before pushing them and sees t
       'saved corpus edition',
     )
     expect(after.editions[0].details.pages).toBe(321)
-    expect(after.history[0].action).toBe('edition')
+    expect(after).toMatchObject({ genre: 'fantasy', spice: before.spice, darkness: 0 })
+    expect(after.history).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ action: 'edition', review_mode: 'direct', source_url: null }),
+        expect.objectContaining({ action: 'guidance', review_mode: 'direct', source_url: null }),
+      ]),
+    )
     const savedTime = await ok(
       c.admin.from('works').select('updated_at').eq('id', c.work).single(),
       'saved update time',
@@ -346,20 +343,16 @@ test('a reviewed guidance push updates shared defaults and preserves personal va
     await page.goto(`/book/${c.book}`)
     const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
     await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
-    await dialog.getByRole('radio', { name: 'Genres & content guidance' }).check()
+    await dialog.getByRole('checkbox', { name: 'Pages', exact: true }).uncheck()
+    await dialog.getByRole('checkbox', { name: 'Add supporting evidence (optional)' }).check()
     await dialog
       .getByRole('textbox', { name: 'Evidence link' })
       .fill('https://publisher.example/content')
     await dialog
       .getByRole('textbox', { name: 'Explanation' })
       .fill('Reviewed the book content for these shared defaults.')
-    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
-    await dialog
-      .getByRole('checkbox', {
-        name: 'I verified these details and want to update the shared corpus.',
-      })
-      .check()
-    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+
+    await dialog.getByRole('button', { name: 'Save selected changes' }).click()
     await expect(dialog).not.toBeVisible()
     const guidance = await ok(
       c.client.rpc('get_corpus_record', { p_work: c.work }),
@@ -412,24 +405,13 @@ test('an ISBN-less push updates the explicitly selected published edition withou
     const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
     await page.goto(`/book/${c.book}`)
     await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
-    await dialog
-      .getByRole('textbox', { name: 'Evidence link' })
-      .fill('https://publisher.example/historic')
-    await dialog
-      .getByRole('textbox', { name: 'Explanation' })
-      .fill('The saved copy matches the Historic Press edition.')
-    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
-    await expect(dialog.getByRole('alert')).toContainText('Choose an existing ISBN-less edition')
+
+    await expect(dialog.getByText(/Choose an existing ISBN-less edition/)).toBeVisible()
     await dialog
       .getByRole('combobox', { name: /Published edition to update/ })
       .selectOption(isbnlessId)
-    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
-    await dialog
-      .getByRole('checkbox', {
-        name: 'I verified these details and want to update the shared corpus.',
-      })
-      .check()
-    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+
+    await dialog.getByRole('button', { name: 'Save selected changes' }).click()
     await expect(dialog).not.toBeVisible()
     const isbnlessResult = await ok(
       c.client.rpc('get_corpus_record', { p_work: c.work }),
@@ -482,16 +464,10 @@ test('changing inventory editions after a lost push response preserves both publ
     await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
     await dialog.getByRole('combobox', { name: 'Your saved edition' }).selectOption(editions[0]!.id)
-    await dialog
-      .getByRole('textbox', { name: 'Evidence link' })
-      .fill('https://publisher.example/editions')
-    await dialog
-      .getByRole('textbox', { name: 'Explanation' })
-      .fill('Checked the two published hardcover editions.')
-    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
+
     // The first database write succeeds, but the browser cannot confirm its response.
     await page.route(
-      '**/rest/v1/rpc/admin_save_corpus_record',
+      '**/rest/v1/rpc/admin_push_corpus_record',
       async (route) => {
         const saved = await route.fetch()
         expect(saved.ok()).toBe(true)
@@ -499,10 +475,9 @@ test('changing inventory editions after a lost push response preserves both publ
       },
       { times: 1 },
     )
-    await dialog.getByRole('checkbox').check()
-    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+    await dialog.getByRole('button', { name: 'Save selected changes' }).click()
     await expect(dialog.getByRole('alert')).toContainText('The saved response was lost.')
-    await expect(dialog.getByRole('button', { name: 'Confirm push to corpus' })).toBeDisabled()
+    await expect(dialog.getByRole('button', { name: 'Save selected changes' })).toBeDisabled()
     const firstRecord = await ok(
       c.client.rpc('get_corpus_record', { p_work: c.work }),
       'first committed edition',
@@ -513,10 +488,9 @@ test('changing inventory editions after a lost push response preserves both publ
     expect(firstSaved).toBeTruthy()
     await dialog.getByRole('button', { name: 'Reload corpus for review' }).click()
     await dialog.getByRole('combobox', { name: 'Your saved edition' }).selectOption(editions[1]!.id)
-    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
-    await expect(dialog.getByText(/Create a published edition\./)).toBeVisible()
-    await dialog.getByRole('checkbox').check()
-    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+
+    await expect(dialog.getByText(/Create a published edition/)).toBeVisible()
+    await dialog.getByRole('button', { name: 'Save selected changes' }).click()
     await expect(dialog).not.toBeVisible()
     const after = await ok(
       c.client.rpc('get_corpus_record', { p_work: c.work }),
@@ -536,6 +510,72 @@ test('changing inventory editions after a lost push response preserves both publ
       'unchanged personal inventory',
     )
     expect(personal.copy_inventory).toEqual(inventory)
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('corpus selections stay readable and keyboard-operable in every room and mode without saving', async ({
+  page,
+}, info) => {
+  test.skip(info.project.name !== 'rest', 'Registry-wide phone presentation check runs once')
+  // Eighteen real navigations and axe scans, matching the existing appearance sweep budget.
+  test.setTimeout(600_000)
+  await page.setViewportSize({ width: 320, height: 740 })
+  const c = await fixture(page)
+  try {
+    await ok(
+      c.admin
+        .from('books')
+        .update({ pages: 321, genre: 'fantasy', genres: ['fantasy'], intensity: 2 })
+        .eq('id', c.book),
+      'selection fixture',
+    )
+    const before = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'before appearance checks',
+    )
+    const { SKINS } = await import('@reverie/core')
+    for (const skin of Object.keys(SKINS))
+      for (const mode of ['light', 'dark']) {
+        await ok(
+          c.client.from('profiles').update({ skin, mode }).eq('id', c.user.id),
+          'room appearance',
+        )
+        await page.evaluate(
+          ({ skin, mode }) => {
+            localStorage.setItem('reverie.skin', skin)
+            localStorage.setItem('reverie.mode', mode)
+          },
+          { skin, mode },
+        )
+        await page.goto(`/book/${c.book}`)
+        await expect(page.locator('html')).toHaveAttribute('data-skin', skin)
+        await expect(page.locator('html')).toHaveAttribute('data-mode', mode)
+        await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
+        const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
+        const pages = dialog.getByRole('checkbox', { name: 'Pages', exact: true })
+        await pages.focus()
+        await pages.press('Space')
+        await expect(pages).not.toBeChecked()
+        await expect(pages).toBeFocused()
+        await dialog.getByRole('button', { name: 'Clear selection' }).click()
+        await expect(dialog.getByRole('button', { name: 'Save selected changes' })).toBeDisabled()
+        await dialog.getByRole('button', { name: 'Select all changes' }).click()
+        await expect(pages).toBeChecked()
+        expect(await dialog.evaluate((el) => el.scrollWidth > el.clientWidth + 1)).toBe(false)
+        expect(
+          (await new AxeBuilder({ page }).include('dialog[open]').analyze()).violations,
+        ).toEqual([])
+        await dialog.screenshot({ path: info.outputPath(`corpus-push-${skin}-${mode}.png`) })
+        await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+      }
+    const after = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'after appearance checks',
+    )
+    expect(after.fingerprint).toBe(before.fingerprint)
+    expect(after.history).toEqual(before.history)
   } finally {
     await c.cleanup()
   }
