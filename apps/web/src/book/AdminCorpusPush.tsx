@@ -6,13 +6,17 @@ import {
   catalogError,
   useCorpusRecord,
   useCorpusUpdateTime,
-  useSaveCorpusRecord,
+  usePushCorpusRecord,
   type CorpusRecord,
-  type CorpusRecordChange,
 } from '../data/corpusEditions'
 import { Button } from '../components/Button'
 import { Modal } from '../components/Modal'
-import { bookCorpusProposal, corpusProposalRows } from './corpusPush'
+import {
+  bookCorpusOptions,
+  selectedCorpusChanges,
+  CORPUS_PUSH_FIELDS,
+  type CorpusPushField,
+} from './corpusPush'
 
 export function AdminCorpusPush({ book }: { book: Book }) {
   const { session } = useAuth()
@@ -113,7 +117,8 @@ function PushReview({
 }) {
   // This is a deliberate snapshot. Background refreshes cannot change what is being reviewed.
   const [record, setRecord] = useState(initialRecord)
-  const [kind, setKind] = useState<'edition' | 'guidance'>('edition')
+  const [selected, setSelected] = useState<Set<CorpusPushField>>(() => new Set(CORPUS_PUSH_FIELDS))
+  const [reviewMode, setReviewMode] = useState<'direct' | 'evidence'>('direct')
   const [editionId, setEditionId] = useState(
     book.copyInventory?.editions.length === 1 ? book.copyInventory.editions[0]!.id : '',
   )
@@ -132,33 +137,35 @@ function PushReview({
   const [targetEditionId, setTargetEditionId] = useState('')
   const [source, setSource] = useState('')
   const [note, setNote] = useState('')
-  const [proposal, setProposal] = useState<CorpusRecordChange | null>(null)
-  const [confirmed, setConfirmed] = useState(false)
   const [attempted, setAttempted] = useState(false)
   const [error, setError] = useState('')
   const [reloading, setReloading] = useState(false)
-  const save = useSaveCorpusRecord()
+  const save = usePushCorpusRecord()
   const inflight = useRef(false)
   const busy = save.isPending || reloading
-  function prepare() {
+  const options = bookCorpusOptions(book, record, editionId, newEditionId, targetEditionId)
+  const changes = selectedCorpusChanges(record, options, selected)
+  const selectedCount = options.rows.filter((row) => selected.has(row.key)).length
+  async function publish() {
+    if (!changes.length || attempted || busy || inflight.current) return
     setError('')
-    if (!/^https:\/\/[^\s/?#@]+([/?#][^\s]*)?$/.test(source.trim()) || !note.trim()) {
-      setError('Add an HTTPS evidence link and a brief explanation.')
+    if (
+      reviewMode === 'evidence' &&
+      (!/^https:\/\/[^\s/?#@]+([/?#][^\s]*)?$/.test(source.trim()) || !note.trim())
+    ) {
+      setError('Add an HTTPS evidence link and a brief explanation, or use a direct admin update.')
       return
     }
-    try {
-      setProposal(bookCorpusProposal(book, record, kind, editionId, newEditionId, targetEditionId))
-      setConfirmed(false)
-    } catch (e) {
-      setError(catalogError(e))
-    }
-  }
-  async function publish() {
-    if (!proposal || !confirmed || attempted || inflight.current) return
     inflight.current = true
     setAttempted(true)
     try {
-      await save.mutateAsync({ record, change: proposal, sourceUrl: source, note })
+      await save.mutateAsync({
+        record,
+        changes,
+        reviewMode,
+        sourceUrl: reviewMode === 'evidence' ? source : '',
+        note: reviewMode === 'evidence' ? note : '',
+      })
       onSaved()
     } catch (e) {
       setError(catalogError(e))
@@ -173,10 +180,13 @@ function PushReview({
       const next = await onReload()
       setRecord(next)
       setTargetEditionId(
-        next.editions.some((e) => e.id === newEditionId && !e.isbn) ? newEditionId : '',
+        next.editions.some((e) => e.id === newEditionId && !e.isbn)
+          ? newEditionId
+          : targetEditionId === 'new' ||
+              next.editions.some((e) => e.id === targetEditionId && !e.isbn)
+            ? targetEditionId
+            : '',
       )
-      setProposal(null)
-      setConfirmed(false)
       setAttempted(false)
       setError('')
     } catch (e) {
@@ -187,9 +197,9 @@ function PushReview({
   }
   const field = 'skin-field mt-1 min-h-11 w-full min-w-0 px-3 py-2 text-base'
   const sourceEdition = book.copyInventory?.editions.find((e) => e.id === editionId)
-  const isbnless =
-    kind === 'edition' &&
-    (book.copyInventory ? sourceEdition && !sourceEdition.isbn.trim() : !book.isbn.trim())
+  const isbnless = book.copyInventory
+    ? sourceEdition && !sourceEdition.isbn.trim()
+    : !book.isbn.trim()
   const isbnlessEditions = record.editions.filter((e) => !e.isbn)
   return (
     <Modal
@@ -202,187 +212,184 @@ function PushReview({
         className="min-w-0 space-y-4 break-words"
         onSubmit={(e) => {
           e.preventDefault()
-          if (!proposal) prepare()
+          void publish()
         }}
       >
         <p className="text-sm">
-          Review saved details from <strong>{book.title}</strong> for the shared record{' '}
-          <strong>{record.title}</strong> by {record.author}. Save any personal edits before opening
-          this review.
+          Choose which saved details from <strong>{book.title}</strong> should update the shared
+          record <strong>{record.title}</strong> by {record.author}. Save personal edits before
+          opening this panel.
         </p>
-        {!proposal ? (
-          <>
-            <fieldset className="space-y-2">
-              <legend className="mb-2 text-sm font-semibold">What would you like to share?</legend>
-              {(
-                [
-                  ['edition', 'Published edition details'],
-                  ['guidance', 'Genres & content guidance'],
-                ] as const
-              ).map(([value, label]) => (
-                <label key={value} className="flex min-h-11 items-center gap-3 text-sm">
-                  <input
-                    type="radio"
-                    name="corpus-push-kind"
-                    value={value}
-                    checked={kind === value}
-                    onChange={() => setKind(value)}
-                  />
-                  {label}
-                </label>
-              ))}
-            </fieldset>
-            {kind === 'edition' && book.copyInventory && (
-              <label className="block text-sm">
-                Your saved edition
-                <select
-                  className={field}
-                  value={editionId}
-                  onChange={(e) => {
-                    setEditionId(e.target.value)
-                    setTargetEditionId('')
-                  }}
-                >
-                  <option value="">Choose an edition</option>
-                  {book.copyInventory.editions.map((e, i) => (
-                    <option key={e.id} value={e.id}>
-                      {i + 1}. {EDITION_FORMAT_LABELS[e.format]} · {e.isbn || 'No ISBN'}
-                      {e.publisher ? ` · ${e.publisher}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {isbnless && isbnlessEditions.length > 0 && (
-              <label className="block text-sm">
-                Published edition to update
-                <select
-                  className={field}
-                  value={targetEditionId}
-                  onChange={(e) => setTargetEditionId(e.target.value)}
-                >
-                  <option value="">Choose an existing edition or create one</option>
-                  {isbnlessEditions.map((e, i) => (
-                    <option key={e.id} value={e.id}>
-                      {i + 1}.{' '}
-                      {[
-                        e.details.title,
-                        e.details.publisher,
-                        e.details.statement,
-                        e.details.format,
-                        e.details.publication?.y,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ') || 'ISBN-less edition'}
-                    </option>
-                  ))}
-                  <option value="new">Create a different published edition</option>
-                </select>
-                <span className="mt-1 block text-muted">
-                  This book has no ISBN. Choose only after checking the edition against your
-                  evidence.
-                </span>
-              </label>
-            )}
-            <p className="text-sm text-muted">
-              Only the selected details are shared. Unknown fields preserve existing corpus values.
-              Notes, ratings, possession, copy labels and locations stay private.
-            </p>
-            {kind === 'guidance' && (
-              <p className="text-sm text-muted">
-                Your saved content assessments become shared defaults only after this review. Other
-                readers keep their personal overrides.
-              </p>
-            )}
+        <p className="text-sm text-muted">
+          Changed fields are selected below. Everything saves together. Private notes, ratings,
+          copies and reading history stay private.
+        </p>
+        <fieldset disabled={busy || attempted} className="min-w-0 space-y-4">
+          {book.copyInventory && (
             <label className="block text-sm">
-              Evidence link
-              <input
-                type="url"
+              Your saved edition
+              <select
                 className={field}
-                value={source}
-                maxLength={2000}
-                onChange={(e) => setSource(e.target.value)}
-              />
-            </label>
-            <label className="block text-sm">
-              Explanation
-              <textarea
-                className={field}
-                rows={3}
-                value={note}
-                maxLength={1200}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </label>
-            <Button type="submit" disabled={busy}>
-              Review corpus update
-            </Button>
-          </>
-        ) : (
-          <>
-            <h3 className="text-sm font-semibold">Review corpus update</h3>
-            {proposal.action === 'edition' && (
-              <p className="text-sm">
-                {record.editions.some((e) => e.id === proposal.value.id)
-                  ? proposal.value.isbn
-                    ? 'Update the edition with this exact ISBN.'
-                    : 'Update the selected ISBN-less published edition.'
-                  : 'Create a published edition. Check that it is not already listed in the shared catalog.'}
-              </p>
-            )}
-            <dl className="space-y-3">
-              {corpusProposalRows(record, proposal).map(([label, before, after]) => (
-                <div key={label} className="border-b border-line pb-2 text-sm">
-                  <dt className="font-semibold">{label}</dt>
-                  <dd className="mt-1 text-muted">Current: {before}</dd>
-                  <dd>
-                    Proposed: {after}
-                    {before === after ? ' · unchanged' : ''}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <p className="whitespace-pre-wrap text-sm">{note}</p>
-            <a
-              href={source.trim()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block break-all text-sm underline"
-            >
-              Evidence source
-            </a>
-            <label className="flex min-h-11 items-start gap-3 text-sm">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={confirmed}
-                disabled={attempted}
-                onChange={(e) => setConfirmed(e.target.checked)}
-              />
-              I verified these details and want to update the shared corpus.
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <Button disabled={!confirmed || attempted || busy} onClick={() => void publish()}>
-                {save.isPending ? 'Pushing…' : 'Confirm push to corpus'}
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={attempted || busy}
-                onClick={() => setProposal(null)}
+                value={editionId}
+                onChange={(e) => {
+                  setEditionId(e.target.value)
+                  setTargetEditionId('')
+                }}
               >
-                Back to draft
-              </Button>
-            </div>
-          </>
-        )}
+                <option value="">Choose an edition</option>
+                {book.copyInventory.editions.map((e, i) => (
+                  <option key={e.id} value={e.id}>
+                    {i + 1}. {EDITION_FORMAT_LABELS[e.format]} · {e.isbn || 'No ISBN'}
+                    {e.publisher ? ` · ${e.publisher}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {isbnless && isbnlessEditions.length > 0 && (
+            <label className="block text-sm">
+              Published edition to update
+              <select
+                className={field}
+                value={targetEditionId}
+                onChange={(e) => setTargetEditionId(e.target.value)}
+              >
+                <option value="">Choose an existing edition or create one</option>
+                {isbnlessEditions.map((e, i) => (
+                  <option key={e.id} value={e.id}>
+                    {i + 1}.{' '}
+                    {[
+                      e.details.title,
+                      e.details.publisher,
+                      e.details.statement,
+                      e.details.format,
+                      e.details.publication?.y,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || 'ISBN-less edition'}
+                  </option>
+                ))}
+                <option value="new">Create a different published edition</option>
+              </select>
+              <span className="mt-1 block text-muted">
+                With no ISBN, choose the exact edition to avoid creating a duplicate.
+              </span>
+            </label>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setSelected(new Set(options.rows.map((row) => row.key)))}
+            >
+              Select all changes
+            </Button>
+            <Button variant="ghost" onClick={() => setSelected(new Set())}>
+              Clear selection
+            </Button>
+          </div>
+          {(['edition', 'guidance'] as const).map((group) => (
+            <fieldset key={group} className="min-w-0 space-y-2">
+              <legend className="text-sm font-semibold">
+                {group === 'edition' ? 'Published edition details' : 'Genres & content guidance'}
+              </legend>
+              {group === 'edition' &&
+                (options.edition ? (
+                  <p className="text-sm text-muted">
+                    {record.editions.some((e) => e.id === options.edition!.value.id)
+                      ? 'Update this edition'
+                      : 'Create a published edition'}
+                    {' · '}
+                    {options.edition.value.isbn ? `ISBN ${options.edition.value.isbn}` : 'No ISBN'}.
+                    The ISBN identifies the edition for all selected details.
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted">{options.editionError}</p>
+                ))}
+              {options.rows
+                .filter((row) => row.key.startsWith(group + '.'))
+                .map((row) => (
+                  <label
+                    key={row.key}
+                    className="flex min-h-11 min-w-0 items-start gap-3 rounded-[var(--radius-card)] border border-line p-3 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-1 shrink-0"
+                      aria-label={row.label}
+                      checked={selected.has(row.key)}
+                      onChange={(event) =>
+                        setSelected((previous) => {
+                          const next = new Set(previous)
+                          if (event.target.checked) next.add(row.key)
+                          else next.delete(row.key)
+                          return next
+                        })
+                      }
+                    />
+                    <span className="min-w-0 [overflow-wrap:anywhere]">
+                      <span className="block font-semibold">{row.label}</span>
+                      <span className="block text-muted">Shared: {row.before}</span>
+                      <span className="block">Your saved value: {row.after}</span>
+                    </span>
+                  </label>
+                ))}
+              {!options.rows.some((row) => row.key.startsWith(group + '.')) &&
+                (group !== 'edition' || !options.editionError) && (
+                  <p className="text-sm text-muted">No different saved values to share.</p>
+                )}
+            </fieldset>
+          ))}
+          <label className="flex min-h-11 items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={reviewMode === 'evidence'}
+              onChange={(e) => setReviewMode(e.target.checked ? 'evidence' : 'direct')}
+            />
+            Add supporting evidence (optional)
+          </label>
+          {reviewMode === 'evidence' ? (
+            <>
+              <label className="block text-sm">
+                Evidence link
+                <input
+                  type="url"
+                  className={field}
+                  value={source}
+                  maxLength={2000}
+                  onChange={(e) => setSource(e.target.value)}
+                />
+              </label>
+              <label className="block text-sm">
+                Explanation
+                <textarea
+                  className={field}
+                  rows={3}
+                  value={note}
+                  maxLength={1200}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </label>
+            </>
+          ) : (
+            <p className="text-sm text-muted">
+              Direct admin update: no evidence link or verification checklist required. Your
+              selected changes are recorded in catalog history.
+            </p>
+          )}
+        </fieldset>
+        <p className="text-sm" aria-live="polite">
+          {selectedCount
+            ? `${selectedCount} ${selectedCount === 1 ? 'field' : 'fields'} selected`
+            : 'No changes selected.'}
+        </p>
         {error && (
           <div role="alert" className="space-y-2 text-sm">
             <p>{error}</p>
             {attempted && (
               <>
                 <p>
-                  Your draft is retained. Reload the corpus and review it again before another
-                  attempt.
+                  Your selection is retained. Reload the shared record before another attempt; saved
+                  changes will no longer appear as differences.
                 </p>
                 <Button variant="secondary" disabled={busy} onClick={() => void reload()}>
                   Reload corpus for review
@@ -391,9 +398,14 @@ function PushReview({
             )}
           </div>
         )}
-        <Button variant="secondary" disabled={busy} onClick={onClose}>
-          Close
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={!changes.length || attempted || busy}>
+            {save.isPending ? 'Saving…' : 'Save selected changes'}
+          </Button>
+          <Button variant="secondary" disabled={busy} onClick={onClose}>
+            Close
+          </Button>
+        </div>
       </form>
     </Modal>
   )

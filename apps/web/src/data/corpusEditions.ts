@@ -44,7 +44,7 @@ export interface CorpusRecord {
   fingerprint: string
   editions: CorpusEdition[]
   reports: CorpusIsbnReport[]
-  history: { id: string; action: string; source_url: string; note: string; created_at: string }[]
+  history: { id: string; action: string; source_url: string | null; note: string; created_at: string; review_mode?: 'direct' | 'evidence' }[]
 }
 export const corpusRecordKey = ['corpus-record'] as const
 /** The database's catalog timestamp, never the query's last fetch time. */
@@ -77,6 +77,42 @@ export type CorpusRecordChange =
   | { action: 'guidance'; value: { genres: string[]; subgenres: string[]; spice: number | null; darkness: number | null } }
   | { action: 'remove_isbn'; value: { isbn: string } }
   | { action: 'resolve_report'; value: { reportId: string } }
+export type CorpusGuidanceField = 'genres' | 'subgenres' | 'spice' | 'darkness'
+export type CorpusPushChange =
+  | Extract<CorpusRecordChange, { action: 'edition' }>
+  | (Extract<CorpusRecordChange, { action: 'guidance' }> & { fields: CorpusGuidanceField[] })
+export function usePushCorpusRecord() {
+  const client = useQueryClient()
+  return useMutation({
+    networkMode: 'always',
+    retry: false,
+    meta: { action: 'Shared catalog changes' },
+    mutationFn: async (input: {
+      record: CorpusRecord
+      changes: CorpusPushChange[]
+      reviewMode: 'direct' | 'evidence'
+      sourceUrl: string
+      note: string
+    }) => {
+      const { data, error } = await supabase.rpc('admin_push_corpus_record', {
+        p_work: input.record.id,
+        p_expected_fingerprint: input.record.fingerprint,
+        p_changes: input.changes,
+        p_review_mode: input.reviewMode,
+        p_source_url: input.sourceUrl.trim() || null,
+        p_note: input.note.trim() || null,
+      })
+      if (error) throw error
+      return data as string
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        corpusRecordKey, ['catalog-metadata-review'], ['works'], ['works-browse'],
+        ['works-lookup'], ['works-lookup-isbns'], ['discover-details'], ['household'], ['books'],
+      ].map((queryKey) => client.invalidateQueries({ queryKey })))
+    },
+  })
+}
 export function useSaveCorpusRecord() {
   const client = useQueryClient()
   return useMutation({

@@ -566,6 +566,7 @@ function RegistryWorkspace({
               <li key={h.id}>
                 <time>{new Date(h.created_at).toLocaleString()}</time> ·{' '}
                 {h.action.replace('_', ' ')}
+                {h.review_mode === 'direct' && <span> · Direct admin update</span>}
                 <p className="whitespace-pre-wrap break-words">{h.note}</p>
               </li>
             ))}

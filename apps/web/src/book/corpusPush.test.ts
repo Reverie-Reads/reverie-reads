@@ -170,3 +170,69 @@ it('never reassigns a retry identifier that now belongs to another ISBN', () => 
     bookCorpusProposal({ ...book, isbn: '' }, corpus, 'edition', '', 'shared-edition'),
   ).toThrow('previous push')
 })
+
+it('combines only selected differences, including zero, while preserving every unchecked field', async () => {
+  const { bookCorpusOptions, selectedCorpusChanges } = await import('./corpusPush')
+  const input = { ...book, genre: 'horror', genres: ['horror'], intensity: 0 }
+  const options = bookCorpusOptions(input, corpus, '', 'new')
+  const changes = selectedCorpusChanges(
+    corpus,
+    options,
+    new Set(['edition.pages', 'guidance.spice']),
+  )
+  expect(changes).toEqual([
+    {
+      action: 'edition',
+      value: {
+        id: 'shared-edition',
+        isbn: '9780306406157',
+        details: {
+          publisher: 'Known publisher',
+          language: 'en',
+          statement: 'Second printing',
+          pages: 240,
+        },
+      },
+    },
+    {
+      action: 'guidance',
+      fields: ['spice'],
+      value: { genres: ['fantasy'], subgenres: [], spice: 0, darkness: 4 },
+    },
+  ])
+  expect(JSON.stringify(changes)).not.toContain('PRIVATE NOTE')
+  expect(selectedCorpusChanges(corpus, options, new Set())).toEqual([])
+})
+it('lets guidance proceed independently when edition identity needs correction', async () => {
+  const { bookCorpusOptions, selectedCorpusChanges } = await import('./corpusPush')
+  const options = bookCorpusOptions({ ...book, isbn: 'invalid' }, corpus, '', 'new')
+  expect(options.editionError).toContain('Correct the ISBN')
+  expect(
+    selectedCorpusChanges(corpus, options, new Set(['edition.pages', 'guidance.darkness'])),
+  ).toEqual([
+    {
+      action: 'guidance',
+      fields: ['darkness'],
+      value: { genres: ['fantasy'], subgenres: [], spice: 3, darkness: 0 },
+    },
+  ])
+})
+it('offers no replacement for unknown fields and no duplicate edition after an uncertain save is found', async () => {
+  const { bookCorpusOptions, selectedCorpusChanges, CORPUS_PUSH_FIELDS } =
+    await import('./corpusPush')
+  const input = {
+    ...book,
+    isbn: '',
+    pages: 240,
+    pub: { y: null, m: null, d: null },
+    darkness: null,
+  }
+  const saved = {
+    ...corpus,
+    editions: [{ ...corpus.editions[0]!, id: 'attempt', isbn: null, details: { pages: 240 } }],
+  }
+  const options = bookCorpusOptions(input, saved, '', 'attempt')
+  expect(options.editionError).toBe('')
+  expect(options.rows).toEqual([])
+  expect(selectedCorpusChanges(saved, options, new Set(CORPUS_PUSH_FIELDS))).toEqual([])
+})
