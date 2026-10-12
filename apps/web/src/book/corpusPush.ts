@@ -59,7 +59,7 @@ export function bookCorpusProposal(
   // Exact ISBN equivalence is the only automatic edition match. Keep the attempted new UUID
   // across an explicit reload after an uncertain response, including an ISBN-less edition.
   let existing = record.editions.find((e) =>
-    isbn ? normalizeIsbn(e.isbn || '') === isbn : e.id === newEditionId,
+    isbn ? normalizeIsbn(e.isbn || '') === isbn : e.id === newEditionId && !e.isbn,
   )
   if (!isbn && targetEditionId && targetEditionId !== 'new') {
     existing = record.editions.find((e) => e.id === targetEditionId && !e.isbn)
@@ -70,6 +70,10 @@ export function bookCorpusProposal(
   }
   if (!isbn && !targetEditionId && !existing && record.editions.some((e) => !e.isbn))
     throw new Error('Choose an existing ISBN-less edition or explicitly create a new one.')
+  if (!existing && record.editions.some((e) => e.id === newEditionId))
+    throw new Error(
+      'The previous push was saved to a different edition. Close this review and start a new push.',
+    )
   const details: CorpusEditionDetails = { ...existing?.details }
   if (pages != null) details.pages = pages
   if (publication) details.publication = publication

@@ -443,3 +443,100 @@ test('an ISBN-less push updates the explicitly selected published edition withou
     await c.cleanup()
   }
 })
+
+test('changing inventory editions after a lost push response preserves both published editions', async ({
+  page,
+}) => {
+  const c = await fixture(page)
+  try {
+    const editions = [0, 1].map((i) => ({
+      id: randomUUID(),
+      label: '',
+      format: 'hardcover',
+      isbn: isbn(),
+      publisher: `Edition ${i + 1} Press`,
+      published: '',
+      pages: 200 + i,
+      cover: '',
+    }))
+    const inventory = {
+      version: 1,
+      editions,
+      copies: editions.map((e) => ({
+        id: randomUUID(),
+        editionId: e.id,
+        state: 'owned',
+        label: '',
+        location: 'Home',
+      })),
+    }
+    await ok(
+      c.client.rpc('save_copy_inventory', {
+        p_book: c.book,
+        p_expected_revision: 0,
+        p_inventory: inventory,
+      }),
+      'saved inventory fixture',
+    )
+    await page.goto(`/book/${c.book}`)
+    await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
+    await dialog.getByRole('combobox', { name: 'Your saved edition' }).selectOption(editions[0]!.id)
+    await dialog
+      .getByRole('textbox', { name: 'Evidence link' })
+      .fill('https://publisher.example/editions')
+    await dialog
+      .getByRole('textbox', { name: 'Explanation' })
+      .fill('Checked the two published hardcover editions.')
+    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
+    // The first database write succeeds, but the browser cannot confirm its response.
+    await page.route(
+      '**/rest/v1/rpc/admin_save_corpus_record',
+      async (route) => {
+        const saved = await route.fetch()
+        expect(saved.ok()).toBe(true)
+        await route.fulfill({ status: 503, json: { message: 'The saved response was lost.' } })
+      },
+      { times: 1 },
+    )
+    await dialog.getByRole('checkbox').check()
+    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+    await expect(dialog.getByRole('alert')).toContainText('The saved response was lost.')
+    await expect(dialog.getByRole('button', { name: 'Confirm push to corpus' })).toBeDisabled()
+    const firstRecord = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'first committed edition',
+    )
+    const firstSaved = firstRecord.editions.find(
+      (e: { isbn: string | null }) => e.isbn === editions[0]!.isbn,
+    )
+    expect(firstSaved).toBeTruthy()
+    await dialog.getByRole('button', { name: 'Reload corpus for review' }).click()
+    await dialog.getByRole('combobox', { name: 'Your saved edition' }).selectOption(editions[1]!.id)
+    await dialog.getByRole('button', { name: 'Review corpus update' }).click()
+    await expect(dialog.getByText(/Create a published edition\./)).toBeVisible()
+    await dialog.getByRole('checkbox').check()
+    await dialog.getByRole('button', { name: 'Confirm push to corpus' }).click()
+    await expect(dialog).not.toBeVisible()
+    const after = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'two separate editions',
+    )
+    expect(after.editions).toHaveLength(3)
+    expect(after.editions.find((e: { id: string }) => e.id === firstSaved.id)).toEqual(firstSaved)
+    const secondSaved = after.editions.find(
+      (e: { isbn: string | null }) => e.isbn === editions[1]!.isbn,
+    )
+    expect(secondSaved.id).not.toBe(firstSaved.id)
+    expect(after.isbns).toEqual(
+      expect.arrayContaining([c.reference, editions[0]!.isbn, editions[1]!.isbn]),
+    )
+    const personal = await ok(
+      c.admin.from('books').select('copy_inventory').eq('id', c.book).single(),
+      'unchanged personal inventory',
+    )
+    expect(personal.copy_inventory).toEqual(inventory)
+  } finally {
+    await c.cleanup()
+  }
+})

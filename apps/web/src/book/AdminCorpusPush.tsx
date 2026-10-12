@@ -117,7 +117,18 @@ function PushReview({
   const [editionId, setEditionId] = useState(
     book.copyInventory?.editions.length === 1 ? book.copyInventory.editions[0]!.id : '',
   )
-  const [newEditionId] = useState(() => crypto.randomUUID())
+  // A lost response may already have saved this UUID. Keep one retry identity per saved
+  // inventory edition so switching editions cannot correct/reassign the first one's ISBN.
+  const [newEditionIds] = useState(
+    () =>
+      new Map(
+        (book.copyInventory ? book.copyInventory.editions.map((e) => e.id) : ['']).map((id) => [
+          id,
+          crypto.randomUUID(),
+        ]),
+      ),
+  )
+  const newEditionId = newEditionIds.get(editionId) || ''
   const [targetEditionId, setTargetEditionId] = useState('')
   const [source, setSource] = useState('')
   const [note, setNote] = useState('')

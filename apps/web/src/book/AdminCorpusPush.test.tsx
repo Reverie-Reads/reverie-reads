@@ -163,3 +163,63 @@ it('asks which ISBN-less edition to update instead of silently creating another'
     details: { publisher: 'Example Press', pages: 240 },
   })
 })
+
+it('keeps uncertain new-edition retry identities separate when the saved inventory selection changes', async () => {
+  const first = {
+    id: 'first-personal-edition',
+    label: '',
+    format: 'hardcover' as const,
+    isbn: '9780143117841',
+    publisher: 'First Press',
+    published: '',
+    pages: 200,
+    cover: '',
+  }
+  const second = { ...first, id: 'second-personal-edition', isbn: '9780306406157' }
+  const input = {
+    ...book,
+    copyInventory: { version: 1 as const, editions: [first, second], copies: [] },
+  }
+  state.record = { ...record, editions: [] }
+  state.save.mockImplementationOnce(async (saved) => {
+    state.reload.mockResolvedValue({
+      data: {
+        ...record,
+        fingerprint: 'first-edition-saved',
+        editions: [
+          {
+            ...saved.change.value,
+            work_id: record.id,
+            reviewed: true,
+            revision: 1,
+            source_url: null,
+          },
+        ],
+      },
+      isError: false,
+    })
+    throw new Error('The response was lost.')
+  })
+  open(input)
+  fireEvent.change(screen.getByRole('combobox', { name: 'Your saved edition' }), {
+    target: { value: first.id },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Review corpus update' }))
+  fireEvent.click(screen.getByRole('checkbox'))
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm push to corpus' }))
+  await screen.findByRole('alert')
+  const firstAttempt = state.save.mock.calls[0]![0].change.value
+  fireEvent.click(screen.getByRole('button', { name: 'Reload corpus for review' }))
+  await screen.findByRole('combobox', { name: 'Your saved edition' })
+  fireEvent.change(screen.getByRole('combobox', { name: 'Your saved edition' }), {
+    target: { value: second.id },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Review corpus update' }))
+  expect(screen.getByText('Create a published edition.', { exact: false })).toBeVisible()
+  fireEvent.click(screen.getByRole('checkbox'))
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm push to corpus' }))
+  await screen.findByRole('status')
+  const secondAttempt = state.save.mock.calls[1]![0].change.value
+  expect(secondAttempt.isbn).toBe(second.isbn)
+  expect(secondAttempt.id).not.toBe(firstAttempt.id)
+})

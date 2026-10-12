@@ -161,3 +161,12 @@ it('requires a deliberate target when the corpus already has an ISBN-less editio
     bookCorpusProposal(isbnless, corpus, 'edition', '', 'new-id', 'shared-edition'),
   ).toThrow('no longer available')
 })
+
+it('never reassigns a retry identifier that now belongs to another ISBN', () => {
+  expect(() =>
+    bookCorpusProposal({ ...book, isbn: '9780143117841' }, corpus, 'edition', '', 'shared-edition'),
+  ).toThrow('previous push')
+  expect(() =>
+    bookCorpusProposal({ ...book, isbn: '' }, corpus, 'edition', '', 'shared-edition'),
+  ).toThrow('previous push')
+})
