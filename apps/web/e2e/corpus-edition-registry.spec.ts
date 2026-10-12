@@ -568,7 +568,7 @@ test('corpus selections stay readable and keyboard-operable in every room and mo
           (await new AxeBuilder({ page }).include('dialog[open]').analyze()).violations,
         ).toEqual([])
         await dialog.screenshot({ path: info.outputPath(`corpus-push-${skin}-${mode}.png`) })
-        await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+        await dialog.locator('form').getByRole('button', { name: 'Close', exact: true }).click()
       }
     const after = await ok(
       c.client.rpc('get_corpus_record', { p_work: c.work }),
