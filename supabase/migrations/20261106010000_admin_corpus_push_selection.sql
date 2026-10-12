@@ -7,12 +7,12 @@ alter table public.corpus_record_edits alter column source_url drop not null;
 alter table public.corpus_record_edits add column review_mode text not null default 'evidence'
   check (review_mode in ('direct','evidence'));
 
-create function corpus_admin_private.apply_corpus_record_change(p_work uuid,p_expected_fingerprint text,p_action text,p_value jsonb,p_source_url text,p_note text,p_confirmed boolean,p_review_mode text)
+create function corpus_admin_private.apply_corpus_record_change(p_work uuid,p_expected_fingerprint text,p_action text,p_value jsonb,p_source_url text,p_note text,p_confirmed boolean,p_review_mode text,p_guidance_fields text[])
 returns uuid language plpgsql security invoker set search_path='' as $$
 declare caller uuid := (select auth.uid()); w public.works; old_record jsonb; next_record jsonb;
   e public.corpus_editions; eid uuid; reference text; old_isbn text; isbns_to_lock text[];
   preserve_catalog_before text := current_setting('reverie.series_review_preserve_catalog',true);
-  desired_genres text[]; subs text[]; spice integer; darkness integer; report_id uuid;
+  desired_genres text[]; subs text[]; reviewed_fields text[]; spice integer; darkness integer; report_id uuid;
 begin
   if caller is null then raise exception 'authentication required' using errcode='42501'; end if;
   perform 1 from public.profiles where id=caller for key share;
@@ -88,8 +88,24 @@ begin
     select coalesce(array_agg(name order by ord),'{}') into desired_genres from (select lower(btrim(value)) name,min(ord) ord from jsonb_array_elements_text(p_value->'genres') with ordinality a(value,ord) where nullif(btrim(value),'') is not null group by lower(btrim(value))) g;
     select coalesce(array_agg(name order by ord),'{}') into subs from (select (array_agg(btrim(value) order by ord))[1] name,min(ord) ord from jsonb_array_elements_text(p_value->'subgenres') with ordinality a(value,ord) where nullif(btrim(value),'') is not null group by lower(btrim(value))) g;
     spice := (p_value->>'spice')::integer; darkness := (p_value->>'darkness')::integer;
-    update public.works set genre=desired_genres[1],genres=desired_genres,subgenre=subs[1],subgenres=subs,shared_spice=spice,shared_darkness=darkness,
-      metadata_provenance=coalesce(metadata_provenance,'{}') || jsonb_build_object('sharedGuidance',jsonb_build_object('source','administrator','reviewMode',p_review_mode,'sourceRef',p_source_url,'observedAt',now())) where id=p_work;
+    -- Retain earlier reviewed fields while attributing this update only to its own selection.
+    select array_agg(distinct field order by field) into reviewed_fields from unnest(
+      coalesce(p_guidance_fields,array['genres','subgenres','spice','darkness']) ||
+      case when w.metadata_provenance ? 'sharedGuidance' then
+        case when jsonb_typeof(w.metadata_provenance->'sharedGuidance'->'reviewedFields')='array'
+          then array(select jsonb_array_elements_text(w.metadata_provenance->'sharedGuidance'->'reviewedFields'))
+          else array['genres','subgenres','spice','darkness'] end
+        else '{}'::text[] end
+    ) field;
+    -- Preserve unchecked fields byte-for-byte, including legacy primary/secondary differences.
+    update public.works set
+      genre=case when p_guidance_fields is null or 'genres'=any(p_guidance_fields) then desired_genres[1] else w.genre end,
+      genres=case when p_guidance_fields is null or 'genres'=any(p_guidance_fields) then desired_genres else w.genres end,
+      subgenre=case when p_guidance_fields is null or 'subgenres'=any(p_guidance_fields) then subs[1] else w.subgenre end,
+      subgenres=case when p_guidance_fields is null or 'subgenres'=any(p_guidance_fields) then subs else w.subgenres end,
+      shared_spice=case when p_guidance_fields is null or 'spice'=any(p_guidance_fields) then spice else w.shared_spice end,
+      shared_darkness=case when p_guidance_fields is null or 'darkness'=any(p_guidance_fields) then darkness else w.shared_darkness end,
+      metadata_provenance=coalesce(metadata_provenance,'{}') || jsonb_build_object('sharedGuidance',jsonb_build_object('source','administrator','reviewMode',p_review_mode,'fields',coalesce(p_guidance_fields,array['genres','subgenres','spice','darkness']),'reviewedFields',reviewed_fields,'sourceRef',p_source_url,'observedAt',now())) where id=p_work;
   else
     if p_value-array['reportId']<>'{}'::jsonb then raise exception 'Choose a report to resolve.' using errcode='22023'; end if;
     report_id := (p_value->>'reportId')::uuid;
@@ -104,12 +120,12 @@ begin
 end;
 $$;
 
-revoke all on function corpus_admin_private.apply_corpus_record_change(uuid,text,text,jsonb,text,text,boolean,text) from public,anon,authenticated,service_role;
+revoke all on function corpus_admin_private.apply_corpus_record_change(uuid,text,text,jsonb,text,text,boolean,text,text[]) from public,anon,authenticated,service_role;
 
 -- Preserve the established evidence-backed API and its confirmation requirement.
 create or replace function public.admin_save_corpus_record(p_work uuid,p_expected_fingerprint text,p_action text,p_value jsonb,p_source_url text,p_note text,p_confirmed boolean default false)
 returns uuid language sql security definer set search_path='' as $$
-  select corpus_admin_private.apply_corpus_record_change(p_work,p_expected_fingerprint,p_action,p_value,p_source_url,p_note,p_confirmed,'evidence');
+  select corpus_admin_private.apply_corpus_record_change(p_work,p_expected_fingerprint,p_action,p_value,p_source_url,p_note,p_confirmed,'evidence',null);
 $$;
 revoke all on function public.admin_save_corpus_record(uuid,text,text,jsonb,text,text,boolean) from public,anon,authenticated,service_role;
 grant execute on function public.admin_save_corpus_record(uuid,text,text,jsonb,text,text,boolean) to authenticated;
@@ -126,12 +142,24 @@ begin
     raise exception 'Select edition or guidance changes.' using errcode='22023'; end if;
   if jsonb_array_length(p_changes) not between 1 and 2
     or exists(select 1 from jsonb_array_elements(p_changes) c where jsonb_typeof(c) is distinct from 'object'
-      or not c ?& array['action','value'] or c-array['action','value']<>'{}'::jsonb
+      or not c ?& array['action','value'] or c-array['action','value','fields']<>'{}'::jsonb
       or c->>'action' is null or c->>'action' not in ('edition','guidance'))
     or (select count(distinct c->>'action') from jsonb_array_elements(p_changes) c)<>jsonb_array_length(p_changes) then
     raise exception 'Select at most one edition and one guidance change.' using errcode='22023'; end if;
+  for change in select c from jsonb_array_elements(p_changes) c loop
+    if change->>'action'='edition' then
+      if change ? 'fields' then raise exception 'Edition fields belong in its reviewed details.' using errcode='22023'; end if;
+    else
+      if jsonb_typeof(change->'fields') is distinct from 'array' then
+        raise exception 'Select the guidance fields to change.' using errcode='22023'; end if;
+      if jsonb_array_length(change->'fields') not between 1 and 4
+        or exists(select 1 from jsonb_array_elements(change->'fields') f where jsonb_typeof(f) is distinct from 'string' or f#>>'{}' not in ('genres','subgenres','spice','darkness'))
+        or (select count(distinct f) from jsonb_array_elements(change->'fields') f)<>jsonb_array_length(change->'fields') then
+        raise exception 'Select valid, distinct guidance fields.' using errcode='22023'; end if;
+    end if;
+  end loop;
   for change in select c from jsonb_array_elements(p_changes) c order by case c->>'action' when 'edition' then 0 else 1 end loop
-    perform corpus_admin_private.apply_corpus_record_change(p_work,expected,change->>'action',change->'value',p_source_url,p_note,true,p_review_mode);
+    perform corpus_admin_private.apply_corpus_record_change(p_work,expected,change->>'action',change->'value',p_source_url,p_note,true,p_review_mode,case when change->>'action'='guidance' then array(select jsonb_array_elements_text(change->'fields')) else null end);
     -- This is the transaction's own locked intermediate revision, never a client stale-edit rebase.
     expected := public.corpus_record_fingerprint(p_work);
   end loop;
@@ -140,4 +168,25 @@ end;
 $$;
 revoke all on function public.admin_push_corpus_record(uuid,text,jsonb,text,text,text) from public,anon,authenticated,service_role;
 grant execute on function public.admin_push_corpus_record(uuid,text,jsonb,text,text,text) to authenticated;
+-- A level-only review must not freeze unreviewed genres. Legacy full reviews keep all protection.
+do $patch$
+declare definition text; anchor text; replacement text; column_name text; field_name text;
+begin
+  definition := pg_get_functiondef('public.complete_corpus_work_metadata_without_series_review(uuid,jsonb,timestamptz)'::regprocedure);
+  anchor := 'if before_value->''metadata_provenance'' ? ''sharedGuidance'' then p_patch := p_patch-array[''genre'',''genres'']; end if;';
+  replacement := 'if before_value->''metadata_provenance'' ? ''sharedGuidance'' and (not (before_value->''metadata_provenance''->''sharedGuidance'' ? ''reviewedFields'') or before_value->''metadata_provenance''->''sharedGuidance''->''reviewedFields'' ? ''genres'') then p_patch := p_patch-array[''genre'',''genres'']; end if;';
+  if position(anchor in definition)=0 then raise exception 'corpus completion changed'; end if;
+  execute replace(definition,anchor,replacement);
+  definition := pg_get_functiondef('public.preserve_personal_book_objective_metadata(uuid)'::regprocedure);
+  foreach column_name in array array['genre','subgenre','genres','subgenres'] loop
+    field_name := case when column_name in ('genre','genres') then 'genres' else 'subgenres' end;
+    anchor := column_name || ' = case when w.metadata_provenance ? ''sharedGuidance'' then w.' || column_name;
+    replacement := column_name || ' = case when w.metadata_provenance ? ''sharedGuidance'' and (not (w.metadata_provenance->''sharedGuidance'' ? ''reviewedFields'') or w.metadata_provenance->''sharedGuidance''->''reviewedFields'' ? ' || quote_literal(field_name) || ') then w.' || column_name;
+    if position(anchor in definition)=0 then raise exception 'personal metadata preservation changed: %',column_name; end if;
+    definition := replace(definition,anchor,replacement);
+  end loop;
+  execute definition;
+end;
+$patch$;
+
 commit;

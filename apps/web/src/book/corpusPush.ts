@@ -242,7 +242,10 @@ export function selectedCorpusChanges(
       if (keys.has(`guidance.${field}`))
         Object.assign(value, { [field]: options.guidance.value[field] })
     }
-    changes.push({ action: 'guidance', value })
+    const fields = (['genres', 'subgenres', 'spice', 'darkness'] as const).filter((field) =>
+      keys.has(`guidance.${field}`),
+    )
+    changes.push({ action: 'guidance', value, fields })
   }
   return changes
 }

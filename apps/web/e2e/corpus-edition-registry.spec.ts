@@ -329,6 +329,18 @@ test('a reviewed guidance push updates shared defaults and preserves personal va
   try {
     await ok(
       c.admin
+        .from('works')
+        .update({
+          genre: 'literary',
+          genres: ['fiction'],
+          subgenre: 'Classic',
+          subgenres: ['Historical'],
+        })
+        .eq('id', c.work),
+      'legacy primary and secondary guidance',
+    )
+    await ok(
+      c.admin
         .from('books')
         .update({ pages: 321, genre: 'fantasy', genres: ['fantasy'], intensity: 2 })
         .eq('id', c.book),
@@ -344,6 +356,7 @@ test('a reviewed guidance push updates shared defaults and preserves personal va
     const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
     await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
     await dialog.getByRole('checkbox', { name: 'Pages', exact: true }).uncheck()
+    await dialog.getByRole('checkbox', { name: 'Genres', exact: true }).uncheck()
     await dialog.getByRole('checkbox', { name: 'Add supporting evidence (optional)' }).check()
     await dialog
       .getByRole('textbox', { name: 'Evidence link' })
@@ -358,7 +371,14 @@ test('a reviewed guidance push updates shared defaults and preserves personal va
       c.client.rpc('get_corpus_record', { p_work: c.work }),
       'saved corpus guidance',
     )
-    expect(guidance).toMatchObject({ genre: 'fantasy', spice: 2, darkness: 0 })
+    expect(guidance).toMatchObject({
+      genre: 'literary',
+      genres: ['fiction'],
+      subgenre: 'Classic',
+      subgenres: ['Historical'],
+      spice: 2,
+      darkness: 0,
+    })
     expect(
       await ok(
         c.admin.from('books').select(protectedFields).eq('id', c.book).single(),

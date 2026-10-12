@@ -930,7 +930,11 @@ reviewed edition/guidance/ISBN/report actions with role checks and a locked fing
 `admin_push_corpus_record` saves one edition and/or guidance change atomically from the same opened
 fingerprint. Direct admin mode permits absent evidence; optional evidence mode requires a link and
 explanation. `corpus_record_edits.review_mode` and saved provenance distinguish these paths, and an
-absent `source_url` remains null. Both endpoints reuse the inaccessible
+absent `source_url` remains null. Guidance changes carry a bounded field selection; unchecked
+primary/secondary values remain unchanged. Provenance records the latest selected `fields` and
+cumulative `reviewedFields`, so later partial updates preserve earlier review protection while
+unreviewed genres retain the existing provider/removal completion behavior. Legacy reviews without
+this list retain full protection. Both endpoints reuse the inaccessible
 `corpus_admin_private.apply_corpus_record_change` helper. Input checks, work/ISBN ownership and
 conflict protection apply in both modes; direct pushes cannot remove ISBNs or resolve reports.
 `corpus_isbn_reports` belongs to its reporting profile and cascades on account deletion. Reports are

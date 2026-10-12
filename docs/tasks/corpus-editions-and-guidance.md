@@ -110,7 +110,10 @@ Other ISBN correction and report-resolution workflows keep their existing eviden
 `admin_push_corpus_record` accepts at most one edition and one guidance change in a single
 transaction, using the same internal writer as the existing evidence-backed endpoint. It locks the
 edition's ISBNs before the work, checks the opened fingerprint, and either saves all changes or none.
-Only its own locked intermediate fingerprint can be used for the second action. The private helper
+Only its own locked intermediate fingerprint can be used for the second action. Guidance carries
+an explicit field selection: unchecked primary/secondary values remain byte-for-byte unchanged,
+and only selected fields gain review protection. Earlier reviewed fields retain that protection
+through later partial updates; legacy full reviews keep their existing protections. The private helper
 is outside the Data API schema and has no API-role execution privileges.
 
 Private notes, ratings, copy labels, locations, possession and reading history are excluded. The

@@ -77,7 +77,10 @@ export type CorpusRecordChange =
   | { action: 'guidance'; value: { genres: string[]; subgenres: string[]; spice: number | null; darkness: number | null } }
   | { action: 'remove_isbn'; value: { isbn: string } }
   | { action: 'resolve_report'; value: { reportId: string } }
-export type CorpusPushChange = Extract<CorpusRecordChange, { action: 'edition' | 'guidance' }>
+export type CorpusGuidanceField = 'genres' | 'subgenres' | 'spice' | 'darkness'
+export type CorpusPushChange =
+  | Extract<CorpusRecordChange, { action: 'edition' }>
+  | (Extract<CorpusRecordChange, { action: 'guidance' }> & { fields: CorpusGuidanceField[] })
 export function usePushCorpusRecord() {
   const client = useQueryClient()
   return useMutation({

@@ -271,7 +271,9 @@ myProgress`). Move them into `packages/core` with tests.
   one review with individually selectable edition facts and shared guidance, saved together.
   Direct administrator updates can omit evidence and the manual verification checklist; optional
   evidence-backed updates retain their link and explanation. Both modes keep the fingerprint conflict
-  check, exact-edition identity, input validation and honest per-action audit history. A configured inventory requires an exact edition choice;
+  check, exact-edition identity, input validation and honest per-action audit history. Guidance carries
+  an explicit field selection: unchecked primary/secondary values and prior review protections stay
+  unchanged, while unreviewed fields retain their normal completion behavior. A configured inventory requires an exact edition choice;
   private notes, ratings, copy labels and locations never enter the payload. Unknown values preserve
   shared facts. Show the persisted corpus update time, not a fetch time; discard the review when
   the account or book changes. See `docs/tasks/corpus-editions-and-guidance.md`.

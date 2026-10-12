@@ -194,7 +194,11 @@ it('combines only selected differences, including zero, while preserving every u
         },
       },
     },
-    { action: 'guidance', value: { genres: ['fantasy'], subgenres: [], spice: 0, darkness: 4 } },
+    {
+      action: 'guidance',
+      fields: ['spice'],
+      value: { genres: ['fantasy'], subgenres: [], spice: 0, darkness: 4 },
+    },
   ])
   expect(JSON.stringify(changes)).not.toContain('PRIVATE NOTE')
   expect(selectedCorpusChanges(corpus, options, new Set())).toEqual([])
@@ -206,7 +210,11 @@ it('lets guidance proceed independently when edition identity needs correction',
   expect(
     selectedCorpusChanges(corpus, options, new Set(['edition.pages', 'guidance.darkness'])),
   ).toEqual([
-    { action: 'guidance', value: { genres: ['fantasy'], subgenres: [], spice: 3, darkness: 0 } },
+    {
+      action: 'guidance',
+      fields: ['darkness'],
+      value: { genres: ['fantasy'], subgenres: [], spice: 3, darkness: 0 },
+    },
   ])
 })
 it('offers no replacement for unknown fields and no duplicate edition after an uncertain save is found', async () => {
