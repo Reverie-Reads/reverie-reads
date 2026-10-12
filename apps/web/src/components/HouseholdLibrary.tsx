@@ -266,7 +266,7 @@ function CorpusEditForm({
           setValidationError('')
           setOpen(true)
         }}
-        className="skin-control w-full border border-line px-3 py-2.5 text-left text-[12.5px] font-semibold text-primary"
+        className="skin-control min-h-11 w-full border border-line px-4 py-2.5 text-left text-[13px] font-semibold text-primary"
         style={{ background: 'var(--field)' }}
       >
         Edit shared details
@@ -280,7 +280,7 @@ function CorpusEditForm({
             owner chooses the shared version.
           </p>
           <form
-            className="mt-5 space-y-4"
+            className="mt-6 space-y-6"
             onSubmit={(event) => {
               event.preventDefault()
               const parsed = parseNumericFields({
@@ -434,11 +434,12 @@ function CorpusEditForm({
                 Shared cover
               </legend>
               {coverChoices.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
                   {coverChoices.map((option, index) => (
-                    <div key={option.url}>
+                    <div key={option.url} className="min-w-0">
                       <input
                         id={`shared-cover-${book.id}-${index}`}
+                        aria-labelledby={`shared-cover-label-${book.id}-${index}`}
                         type="radio"
                         name={`shared-cover-${book.id}`}
                         value={option.url}
@@ -448,15 +449,22 @@ function CorpusEditForm({
                       />
                       <label
                         htmlFor={`shared-cover-${book.id}-${index}`}
-                        className="skin-control block cursor-pointer border border-line p-1.5 text-center text-[10.5px] text-muted peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
+                        className="block cursor-pointer text-center text-[12px] leading-relaxed text-muted peer-checked:[&_.cover-frame]:border-primary peer-focus-visible:[&_.cover-frame]:outline peer-focus-visible:[&_.cover-frame]:outline-2 peer-focus-visible:[&_.cover-frame]:outline-offset-2 peer-focus-visible:[&_.cover-frame]:outline-primary"
                       >
-                        <img
-                          src={option.url}
-                          alt=""
-                          className="mx-auto aspect-[2/3] w-full rounded object-cover"
-                        />
-                        <span className="mt-1 block break-words">
+                        <span className="cover-frame skin-tile relative block aspect-[2/3] overflow-hidden border-2 border-line bg-field">
+                          <img src={option.url} alt="" className="h-full w-full object-contain" />
+                        </span>
+                        <span
+                          id={`shared-cover-label-${book.id}-${index}`}
+                          className="mt-2 block break-words"
+                        >
                           {option.source ? titleCase(option.source) : 'Shared'} cover {index + 1}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className={`block min-h-[1.5em] font-semibold text-ink ${coverUrl === option.url ? '' : 'invisible'}`}
+                        >
+                          ✓ Selected
                         </span>
                       </label>
                     </div>
@@ -600,7 +608,7 @@ export function HouseholdBookDetail({
       {book.owners.length > 0 && (
         <div className="mt-4">
           <div className="mb-1.5 text-[11px] uppercase tracking-[0.2em] text-muted">Copies</div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {book.owners.map((owner) => {
               const details = [...householdPossessionLabels(owner), ...householdFormatLabels(owner)]
               const reviewed =
@@ -611,8 +619,8 @@ export function HouseholdBookDetail({
                 <Surface
                   key={owner.bookId}
                   tone="field"
-                  radius="control"
-                  pad={2}
+                  radius="card"
+                  pad={3}
                   data-household-copy-book-id={owner.bookId}
                 >
                   <div className="flex items-start gap-2.5">
@@ -730,12 +738,12 @@ export function HouseholdBookDetail({
               value={corpusTropeName}
               onChange={(event) => setCorpusTropeName(event.target.value)}
               placeholder="Trope name"
-              className="skin-control min-w-0 flex-1 border border-line bg-field px-3 py-2 text-[13px] text-ink"
+              className="skin-field min-h-11 min-w-0 flex-1 border border-line bg-field px-3 py-2 text-[13px] text-ink"
             />
             <button
               type="submit"
               disabled={addingCorpusTrope || !corpusTropeName.trim()}
-              className="skin-control skin-btn-primary px-3 py-2 text-[12px] font-semibold disabled:opacity-50"
+              className="skin-control skin-btn-primary min-h-11 px-4 py-2 text-[13px] font-semibold disabled:opacity-50"
             >
               {addingCorpusTrope ? 'Adding…' : 'Add'}
             </button>
@@ -747,22 +755,29 @@ export function HouseholdBookDetail({
         <CorpusEditForm key={book.id} book={book} onSave={onEditCorpus} saving={editingCorpus} />
       ) : null}
 
-      <Surface tone="field" radius="control" pad={2} className="mt-auto text-[12px] text-muted">
-        {book.owners.some((owner) => owner.ownership === 'owned')
-          ? 'An owned personal copy keeps this work in the household. Change or remove that personal copy first.'
-          : 'Removing this household entry never removes anyone’s personal book or the corpus record.'}
-      </Surface>
-      {onRemove && (
-        <button
-          type="button"
-          disabled={removing}
-          onClick={onRemove}
-          className="skin-control mt-3 border border-line px-4 py-2 text-[13px] font-semibold disabled:opacity-50"
-          style={{ background: 'var(--card)', color: 'var(--accent-ink)' }}
+      <div className="mt-auto space-y-3 pt-5">
+        <Surface
+          tone="field"
+          radius="card"
+          pad={3}
+          className="text-[12px] leading-relaxed text-muted"
         >
-          {removing ? 'Removing…' : 'Remove from household'}
-        </button>
-      )}
+          {book.owners.some((owner) => owner.ownership === 'owned')
+            ? 'An owned personal copy keeps this work in the household. Change or remove that personal copy first.'
+            : 'Removing this household entry never removes anyone’s personal book or the corpus record.'}
+        </Surface>
+        {onRemove && (
+          <button
+            type="button"
+            disabled={removing}
+            onClick={onRemove}
+            className="skin-control min-h-11 w-full border border-line px-4 py-2 text-[13px] font-semibold disabled:opacity-50"
+            style={{ background: 'var(--card)', color: 'var(--accent-ink)' }}
+          >
+            {removing ? 'Removing…' : 'Remove from household'}
+          </button>
+        )}
+      </div>
     </div>
   )
 }
