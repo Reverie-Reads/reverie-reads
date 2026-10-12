@@ -688,9 +688,9 @@ export function BookDetailScreen() {
           household.members.length > 0 && (
             <Surface
               tone="field"
-              radius="control"
+              radius="card"
               pad={2}
-              className="mt-4 text-[12.5px] text-muted"
+              className="mt-4 text-[12.5px] leading-relaxed text-muted"
             >
               Included in the household library automatically because you own a copy.
             </Surface>
@@ -965,7 +965,12 @@ export function BookDetailScreen() {
         <PlanEditor key={book.id} book={book} />
 
         {householdWork ? (
-          <Surface tone="field" radius="control" pad={2} className="mt-4 text-[12.5px] text-muted">
+          <Surface
+            tone="field"
+            radius="card"
+            pad={2}
+            className="mt-4 text-[12.5px] leading-relaxed text-muted"
+          >
             <p>
               Choose whether to use shared genre, cover, and compatible publication details.
               Verified series can update an automatic default; a series you chose or imported stays
