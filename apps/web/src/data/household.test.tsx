@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, render, renderHook, waitFor, screen } from '@testing-library/react'
 import { onlineManager, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,6 +22,9 @@ vi.mock('../lib/supabase', () => ({
 vi.mock('../lib/covers', () => ({
   ingestCorpusCover: mocked.ingestCorpusCover,
 }))
+
+import { HouseholdDestinations } from '../components/HouseholdDestinations'
+import { useAddDestinations } from '../components/householdDestinationsContext'
 
 import {
   householdBooksKey,
@@ -781,7 +784,7 @@ describe('Add destination authorization', () => {
 
   it('does not reveal cached members when revalidation is paused offline', async () => {
     const { client, wrapper } = queryHarness()
-    client.setQueryData(householdRosterKey('reader-a'), [toHouseholdMember(rosterRow())])
+    client.setQueryData(['household', 'destinations', 'reader-a'], [toHouseholdMember(rosterRow())])
     onlineManager.setOnline(false)
     const { result } = renderHook(() => useHouseholdDestinationAuthorization(), { wrapper })
     await waitFor(() => expect(result.current.paused).toBe(true))
@@ -806,4 +809,32 @@ describe('Add destination authorization', () => {
     expect(result.current.authorized).toBe(false)
     expect(result.current.members).toEqual([])
   })
+  it('warms membership before Add and retains one observer across route visits', async () => {
+    mocked.rpc.mockResolvedValue({ data: [rosterRow()], error: null })
+    const { wrapper } = queryHarness()
+    function Choice() { const state = useAddDestinations(); return <p>{state.authorized ? state.members[0]?.displayName : 'checking'}</p> }
+    const tree = (show: boolean) => <HouseholdDestinations>{show ? <Choice /> : <p>Home</p>}</HouseholdDestinations>
+    const view = render(tree(false), { wrapper })
+    await waitFor(() => expect(mocked.rpc).toHaveBeenCalledTimes(1))
+    await act(async () => {})
+    view.rerender(tree(true))
+    expect(screen.getByText('Avery')).toBeInTheDocument()
+    view.rerender(tree(false))
+    view.rerender(tree(true))
+    expect(mocked.rpc).toHaveBeenCalledTimes(1)
+    act(() => onlineManager.setOnline(false))
+    expect(screen.getByText('checking')).toBeInTheDocument()
+  })
+
+  it('keeps full-library authorization independent from warmed destinations', async () => {
+    mocked.rpc.mockResolvedValue({ data: [rosterRow()], error: null })
+    const { wrapper } = queryHarness()
+    const { result } = renderHook(() => useHouseholdDestinationAuthorization(), { wrapper })
+    await waitFor(() => expect(result.current.authorized).toBe(true))
+    const library = renderHook(() => useHouseholdRoster(), { wrapper })
+    await waitFor(() => expect(mocked.rpc).toHaveBeenCalledTimes(2))
+    library.unmount()
+    expect(result.current.authorized).toBe(true)
+  })
+
 })

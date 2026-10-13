@@ -12,6 +12,7 @@ import {
   newCopy,
   validEditionCover,
   inventoryPossession,
+  isAuthorRole,
   parseNumericField,
   parseNumericFields,
   PUB_YEAR,
@@ -80,6 +81,7 @@ import { CopyEditor } from '../book/EditionCopies'
 import { OWNERSHIP_LABELS, subgenreGradient } from '../library/constants'
 import { Surface } from '../components/Surface'
 import { LevelPicker } from '../components/LevelPicker'
+import { useAddDestinations } from '../components/householdDestinationsContext'
 import { AddDestinationPicker } from '../components/AddDestinationPicker'
 import { delegatedMemberId, type AddDestination } from '../components/addDestination'
 import { GoogleBooksAttribution, GoogleBooksResultLink } from '../components/GoogleBooksAttribution'
@@ -263,10 +265,68 @@ function RefineAdded({
   )
 }
 
+function DestinationChoices({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: AddDestination
+  onChange: (next: AddDestination) => void
+  disabled?: boolean
+}) {
+  const household = useAddDestinations()
+  const { session } = useAuth()
+  return (
+    <fieldset disabled={disabled} className="min-w-0">
+      <AddDestinationPicker
+        value={value}
+        onChange={onChange}
+        members={household.members}
+        householdStatus={
+          household.loading
+            ? 'loading'
+            : household.paused
+              ? 'offline'
+              : household.error
+                ? 'error'
+                : 'ready'
+        }
+        onRetry={() => void household.retry()}
+        currentReaderId={session?.user.id ?? ''}
+      />
+    </fieldset>
+  )
+}
+
+function destinationLabel(
+  destination: AddDestination,
+  members: ReturnType<typeof useHouseholdDestinationAuthorization>['members'],
+) {
+  if (destination === 'mine') return 'My library'
+  if (destination === 'both') return 'My library + Household'
+  if (destination === 'household') return 'Household only'
+  const member = members.find((member) => member.userId === delegatedMemberId(destination))
+  return member ? `${member.displayName}’s library + Household` : 'Selected member’s library'
+}
+
+function destinationAllowed(
+  destination: AddDestination,
+  members: ReturnType<typeof useHouseholdDestinationAuthorization>['members'],
+  readerId: string,
+) {
+  if (destination === 'mine') return true
+  if (!members.some((member) => member.userId === readerId)) return false
+  const target = delegatedMemberId(destination)
+  return (
+    !target || members.some((member) => member.userId === target && member.allowMemberLibraryAdds)
+  )
+}
+
 function AddForm({
   hit,
   defaultUnowned = false,
-  addToHousehold = false,
+  destination,
+  onDestinationChange,
   onAdded,
   onSaved,
   returnLabel,
@@ -274,12 +334,14 @@ function AddForm({
 }: {
   hit: Picked
   defaultUnowned?: boolean
-  addToHousehold?: boolean
+  destination: AddDestination
+  onDestinationChange: (next: AddDestination) => void
   onAdded: () => void
   onSaved?: (bookId: string) => void
   returnLabel: string
   batchPending?: boolean
 }) {
+  const household = useAddDestinations()
   const intake = useIntake()
   const { session } = useAuth()
   const saveState = useAddSave(session?.user.id)
@@ -346,6 +408,21 @@ function AddForm({
   const [extraGenres, setExtraGenres] = useState<string[]>([])
   const [review, setReview] = useState<Incoming | null>(null)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [reviewDestination, setReviewDestination] = useState<AddDestination>(destination)
+  const [sharedSaved, setSharedSaved] = useState(false)
+  const [sharedBusy, setSharedBusy] = useState(false)
+  const [sharedLocked, setSharedLocked] = useState(false)
+  const reviewShared = reviewDestination === 'household' || !!delegatedMemberId(reviewDestination)
+  const reviewPicker = (disabled: boolean) => (
+    <DestinationChoices
+      value={reviewDestination}
+      disabled={disabled}
+      onChange={(next) => {
+        setReviewDestination(next)
+        onDestinationChange(next)
+      }}
+    />
+  )
   const [allInformation, setAllInformation] = useState(false)
   const [readingOpen, setReadingOpen] = useState(false)
   useBookTourObservation(addedId ? null : reviewOpen ? 'review' : 'details')
@@ -676,7 +753,9 @@ function AddForm({
           : parsedPages.value,
       ...(inventory ? { copyInventory: inventory, ...inventoryPossession(inventory) } : {}),
     }
-    reviewHousehold.current = addToHousehold
+    setSharedSaved(false)
+    setSharedLocked(false)
+    setReviewDestination(destination)
     setReview(book)
     setReviewOpen(true)
   }
@@ -684,6 +763,16 @@ function AddForm({
   async function confirmReview() {
     if (!review) return
     await saveState.run('save', async (newId) => {
+      if (reviewDestination !== 'mine') {
+        const verified = await household.retry()
+        if (
+          verified.status !== 'success' ||
+          verified.fetchStatus !== 'idle' ||
+          !destinationAllowed(reviewDestination, verified.data ?? [], session?.user.id ?? '')
+        )
+          throw new Error('Household access could not be verified. Your information is preserved.')
+      }
+      reviewHousehold.current = reviewDestination === 'both'
       await refreshBooks({ throwOnError: true })
       const res = await intake(review, 'review', newId, true, session?.user.id)
       if (res.outcome === 'review' && res.review) {
@@ -765,7 +854,7 @@ function AddForm({
     <Surface radius="panel" tone="card" pad={3} className="mt-4">
       {!saveState.recoveredBookId &&
         (batchPending || hasDraftChanges || saveState.busy || !!saveState.error) && (
-          <DraftExitGuard busy={saveState.busy} />
+          <DraftExitGuard busy={saveState.busy || sharedBusy} canLeave={() => sharedSaved} />
         )}
       <h2 className="text-xl text-ink" style={{ fontFamily: 'var(--font-display)' }}>
         Quick Add
@@ -1049,15 +1138,25 @@ function AddForm({
       </fieldset>
       {reviewOpen && review && (
         <Modal
-          title="Review your book"
+          title={
+            sharedSaved
+              ? 'The household entry was saved'
+              : reviewShared
+                ? 'Review household entry'
+                : 'Review your book'
+          }
           onClose={() => {
-            if (!saveState.busy) setReviewOpen(false)
+            if (saveState.busy || sharedBusy) return
+            if (sharedSaved) onAdded()
+            else setReviewOpen(false)
           }}
         >
           <p data-book-add-review className="text-sm text-muted">
-            {saveState.error
-              ? 'Check the save result below before continuing. Your original information is preserved.'
-              : 'Nothing is saved until you confirm. Check the information below; you can add the rest later.'}
+            {sharedSaved
+              ? 'The shared entry is saved. Your personal reading details were not included.'
+              : saveState.error
+                ? 'Check the save result below before continuing. Your original information is preserved.'
+                : 'Nothing is saved until you confirm. Check the information below; you can add the rest later.'}
           </p>
           <p className="mt-2 text-sm text-muted">
             Starting information:{' '}
@@ -1071,46 +1170,95 @@ function AddForm({
             . Check it against your copy.
           </p>
           {coverNote && <p className="mt-2 text-sm text-ink">{coverNote}</p>}
-          <BookAddReview
-            book={review}
-            destination={reviewHousehold.current ? 'Your library + Household' : 'Your library'}
-          />
-          {saveState.error && (
-            <p role="alert" className="mt-3 text-sm text-ink">
-              {saveState.error}
-            </p>
+          {!sharedSaved && (
+            <div className="mt-4">
+              {reviewPicker(
+                saveState.busy || !!saveState.error || !!dup || sharedBusy || sharedLocked,
+              )}
+            </div>
           )}
-          {saveState.recoveredBookId ? (
-            <Link
-              to="/book/$bookId"
-              params={{ bookId: saveState.recoveredBookId }}
-              className="mt-3 block min-h-11 text-ink underline"
-            >
-              Review saved book
-            </Link>
+          {reviewShared ? (
+            <HouseholdAddForm
+              household={household}
+              hit={{
+                ...hit,
+                title: review.title,
+                authors: (review.contributors ?? [])
+                  .filter((c) => isAuthorRole(c.role))
+                  .map((c) => c.name),
+                isbn: review.isbn ?? '',
+                cover: review.cover ?? '',
+                corpusWorkId:
+                  review.title === hit.title &&
+                  (review.isbn ?? '') === (hit.isbn ?? '') &&
+                  formatAuthors(review.contributors ?? []) ===
+                    formatAuthors(contributorsFromAuthors(hit.authors ?? []))
+                    ? hit.corpusWorkId
+                    : undefined,
+              }}
+              targetMemberId={delegatedMemberId(reviewDestination)}
+              targetMemberName={
+                household.members.find((m) => m.userId === delegatedMemberId(reviewDestination))
+                  ?.displayName
+              }
+              onBusy={setSharedBusy}
+              onLocked={setSharedLocked}
+              onSaved={() => setSharedSaved(true)}
+              onCancel={() => setReviewOpen(false)}
+              onAdded={onAdded}
+            />
           ) : (
-            <button
-              type="button"
-              disabled={saveState.busy}
-              data-book-tour="book-confirm"
-              onClick={() => void confirmReview()}
-              className="mt-4 min-h-11 w-full skin-control skin-btn-primary px-4 text-sm font-semibold"
-            >
-              {saveState.busy
-                ? 'Saving…'
-                : saveState.error
-                  ? 'Try saving again'
-                  : 'Confirm and add'}
-            </button>
+            <>
+              <BookAddReview
+                book={review}
+                destination={destinationLabel(reviewDestination, household.members)}
+              />
+              {saveState.error && (
+                <p role="alert" className="mt-3 text-sm text-ink">
+                  {saveState.error}
+                </p>
+              )}
+              {saveState.recoveredBookId ? (
+                <Link
+                  to="/book/$bookId"
+                  params={{ bookId: saveState.recoveredBookId }}
+                  className="mt-3 block min-h-11 text-ink underline"
+                >
+                  Review saved book
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled={
+                    saveState.busy ||
+                    (reviewDestination !== 'mine' &&
+                      !destinationAllowed(
+                        reviewDestination,
+                        household.members,
+                        session?.user.id ?? '',
+                      ))
+                  }
+                  data-book-tour="book-confirm"
+                  onClick={() => void confirmReview()}
+                  className="mt-4 min-h-11 w-full skin-control skin-btn-primary px-4 text-sm font-semibold"
+                >
+                  {saveState.busy
+                    ? 'Saving…'
+                    : saveState.error
+                      ? 'Try saving again'
+                      : 'Confirm and add'}
+                </button>
+              )}
+              <button
+                type="button"
+                disabled={saveState.busy}
+                onClick={() => setReviewOpen(false)}
+                className="mt-2 min-h-11 w-full skin-control skin-btn-secondary px-4 text-sm"
+              >
+                {saveState.error ? 'Close review' : 'Back to information'}
+              </button>
+            </>
           )}
-          <button
-            type="button"
-            disabled={saveState.busy}
-            onClick={() => setReviewOpen(false)}
-            className="mt-2 min-h-11 w-full skin-control skin-btn-secondary px-4 text-sm"
-          >
-            {saveState.error ? 'Close review' : 'Back to information'}
-          </button>
         </Modal>
       )}
       {dup && (
@@ -1351,17 +1499,28 @@ function TriageRow({
   )
 }
 
+/** Reuses the existing household writers with only the reviewed bibliographic identity.
+ * Personal ownership, annotations and optional metadata never enter a shared add payload.
+ */
 function HouseholdAddForm({
   household,
   hit,
   targetMemberId,
   targetMemberName,
+  onBusy,
+  onLocked,
+  onCancel,
+  onSaved,
   onAdded,
 }: {
   household: ReturnType<typeof useHouseholdDestinationAuthorization>
   hit: Picked
   targetMemberId?: string | null
   targetMemberName?: string
+  onBusy: (busy: boolean) => void
+  onLocked: (locked: boolean) => void
+  onCancel: () => void
+  onSaved: () => void
   onAdded: () => void
 }) {
   const { session } = useAuth()
@@ -1369,256 +1528,146 @@ function HouseholdAddForm({
   const addToMember = useAddCorpusWorkToMemberLibrary()
   const createWork = useCreateHouseholdCatalogWork()
   const { data: isCorpusAdmin = false } = useCorpusAdminStatus()
-  const [title, setTitle] = useState(hit.title ?? '')
-  const [author, setAuthor] = useState(formatAuthors(contributorsFromAuthors(hit.authors ?? [])))
-  const [isbn, setIsbn] = useState(hit.isbn ?? '')
   const [coverWarning, setCoverWarning] = useState('')
   const [saveError, setSaveError] = useState('')
-  const [reviewing, setReviewing] = useState(false)
+  const [pending, setPending] = useState(false)
   const [saved, setSaved] = useState(false)
   const saving = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
   const currentMember = household.members.find((member) => member.userId === session?.user.id)
-  const canCreate = !!currentMember
   const canPersistPickedCover =
     hit.source !== 'google' && (currentMember?.role === 'owner' || isCorpusAdmin)
-  const pending = addExisting.isPending || createWork.isPending || addToMember.isPending
-  const completed = useRef(false)
-  const initialDraft = useRef(JSON.stringify([title, author, isbn]))
-  const hasDraftChanges = JSON.stringify([title, author, isbn]) !== initialDraft.current
-
-  async function save() {
-    let workId = hit.corpusWorkId
-    if (workId) await addExisting.mutateAsync(workId)
-    else {
-      const result = await createWork.mutateAsync({
-        title: title.trim(),
-        author: author.trim(),
-        isbn: isbn.trim(),
-        coverUrl: canPersistPickedCover ? hit.cover : undefined,
-        coverSource: canPersistPickedCover ? hit.source : undefined,
-      })
-      if (result.coverWarning) {
-        setCoverWarning(result.coverWarning)
-        // The shared work already committed. A delegated personal add is independent of its
-        // optional cover ingest, so finish that requested destination before pausing on the warning.
-        if (!targetMemberId) {
-          completed.current = true
-          setSaved(true)
-          setReviewing(false)
-          return
-        }
-      }
-      workId = result.workId
-    }
-    if (targetMemberId && workId) {
-      await addToMember.mutateAsync({ workId, memberId: targetMemberId })
-    }
-    completed.current = true
-    setSaved(true)
-    setReviewing(false)
-  }
-
+  const destination: AddDestination = targetMemberId ? `member:${targetMemberId}` : 'household'
+  const title = hit.title ?? ''
+  const author = formatAuthors(contributorsFromAuthors(hit.authors ?? []))
   async function handleSave() {
     if (saving.current) return
     saving.current = true
+    setPending(true)
+    onBusy(true)
+    onLocked(true)
     setSaveError('')
     try {
-      await save()
-    } catch {
-      setSaveError(
-        targetMemberId
-          ? `The shared entry may have been added, but ${targetMemberName ?? 'the selected member'}’s personal book could not be created. Reconnect and try that destination again.`
-          : 'The household entry could not be added. Reconnect and try again.',
+      const verified = await household.retry()
+      if (!mounted.current) return
+      if (
+        verified.status !== 'success' ||
+        verified.fetchStatus !== 'idle' ||
+        !destinationAllowed(destination, verified.data ?? [], session?.user.id ?? '')
       )
+        throw new Error('Household permission changed')
+      const verifiedCoverAccess =
+        hit.source !== 'google' &&
+        (verified.data?.find((member) => member.userId === session?.user.id)?.role === 'owner' ||
+          isCorpusAdmin)
+      if (canPersistPickedCover && !verifiedCoverAccess && hit.cover)
+        throw new Error('Cover permission changed; review again')
+      let workId = hit.corpusWorkId
+      if (workId) await addExisting.mutateAsync(workId)
+      else {
+        const result = await createWork.mutateAsync({
+          title: title.trim(),
+          author: author.trim(),
+          isbn: hit.isbn?.trim() ?? '',
+          coverUrl: canPersistPickedCover ? hit.cover : undefined,
+          coverSource: canPersistPickedCover ? hit.source : undefined,
+        })
+        setCoverWarning(result.coverWarning ?? '')
+        workId = result.workId
+      }
+      if (!mounted.current) return
+      if (targetMemberId && workId)
+        await addToMember.mutateAsync({ workId, memberId: targetMemberId })
+      if (!mounted.current) return
+      setSaved(true)
+      onSaved()
+    } catch {
+      if (mounted.current)
+        setSaveError(
+          targetMemberId
+            ? `The shared entry may have been added, but ${targetMemberName ?? 'the selected member'}’s personal book could not be confirmed. Reconnect and retry.`
+            : 'The household entry could not be confirmed. Your information is preserved; reconnect and retry.',
+        )
     } finally {
       saving.current = false
+      if (mounted.current) {
+        setPending(false)
+        onBusy(false)
+      }
     }
   }
-
-  if (saved)
-    return (
-      <Surface radius="panel" tone="card" pad={3} className="mt-4">
-        <h2 className="text-xl text-ink">The household entry was saved</h2>
-        <p className="mt-2 text-sm text-ink [overflow-wrap:anywhere]">{title}</p>
-        {coverWarning && (
-          <p role="status" className="mt-2 text-sm text-muted">
-            {coverWarning}
-          </p>
-        )}
-        <button
-          type="button"
-          onClick={onAdded}
-          className="mt-4 min-h-11 w-full skin-control skin-btn-primary px-4 text-sm"
-        >
-          View household library
-        </button>
-      </Surface>
-    )
-
   return (
-    <Surface radius="panel" tone="card" pad={3} className="mt-4">
-      {(hasDraftChanges || pending || !!saveError) && (
-        <DraftExitGuard busy={pending} canLeave={() => completed.current || !!coverWarning} />
-      )}
-      {reviewing && (
-        <Modal
-          title="Review household entry"
-          onClose={() => {
-            if (!saving.current) setReviewing(false)
-          }}
-        >
+    <>
+      {saved ? (
+        <>
+          <p className="text-lg text-ink [overflow-wrap:anywhere]">{title}</p>
+          {coverWarning && (
+            <p role="status" className="mt-2 text-sm text-muted">
+              {coverWarning}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={onAdded}
+            className="mt-4 min-h-11 w-full skin-control skin-btn-primary px-4 text-sm"
+          >
+            View household library
+          </button>
+        </>
+      ) : (
+        <>
           <BookAddReview
             book={{
               title,
-              contributors: contributorsFromAuthors([author]),
-              isbn,
+              contributors: contributorsFromAuthors(hit.authors ?? []),
+              isbn: hit.isbn,
               cover: canPersistPickedCover ? hit.cover : '',
               ownership: 'unowned',
               readStatus: 'unset',
             }}
-            destination={
-              targetMemberId ? `${targetMemberName ?? 'Member'} + Household` : 'Household only'
-            }
+            destination={destinationLabel(destination, household.members)}
           />
           <p className="mt-3 text-sm text-muted">
-            This creates a shared catalog entry. It does not say that anyone owns or has read the
-            book.
+            {hit.corpusWorkId
+              ? 'Adds the selected shared catalog record without changing its details.'
+              : 'Creates a shared record from the title, author and ISBN shown above, plus an eligible cover.'}{' '}
+            Personal ownership, ratings and other reading details stay out of this shared entry.{' '}
             {targetMemberId
-              ? ' A neutral personal book is also added for the selected member.'
-              : ' No personal book will be created.'}
+              ? 'A neutral personal book is also added for the selected member.'
+              : 'No personal book will be created.'}
           </p>
           {saveError && (
             <p role="alert" className="mt-3 text-sm text-ink">
               {saveError}
             </p>
           )}
-          {coverWarning && (
-            <p role="status" className="mt-3 text-sm text-ink">
-              {coverWarning}
-            </p>
-          )}
           <button
             type="button"
-            disabled={pending}
+            disabled={
+              pending || !destinationAllowed(destination, household.members, session?.user.id ?? '')
+            }
             onClick={() => void handleSave()}
-            className="mt-4 min-h-11 w-full skin-control skin-btn-primary px-4 text-sm"
+            className="mt-4 min-h-11 w-full skin-control skin-btn-primary px-4 text-sm font-semibold"
           >
             {pending ? 'Adding…' : 'Confirm and add'}
           </button>
           <button
             type="button"
             disabled={pending}
-            onClick={() => setReviewing(false)}
+            onClick={onCancel}
             className="mt-2 min-h-11 w-full skin-control skin-btn-secondary px-4 text-sm"
           >
             Back to information
           </button>
-        </Modal>
+        </>
       )}
-      <div className="flex gap-4">
-        <div className="aspect-[2/3] w-20 flex-none overflow-hidden rounded-lg border border-line">
-          <CoverImage book={{ title, cover: hit.cover ?? '' }} thumb />
-        </div>
-        <div className="min-w-0 flex-1 space-y-2">
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            readOnly={!!hit.corpusWorkId}
-            placeholder="Title"
-            className="h-10 w-full skin-card border border-line px-3 text-[14px] text-ink outline-none read-only:opacity-75"
-            style={{ background: 'var(--field)' }}
-          />
-          <input
-            value={author}
-            onChange={(event) => setAuthor(event.target.value)}
-            readOnly={!!hit.corpusWorkId}
-            placeholder="Author"
-            aria-label="Author"
-            className="h-10 w-full skin-card border border-line px-3 text-[14px] text-ink outline-none read-only:opacity-75"
-            style={{ background: 'var(--field)' }}
-          />
-          {!hit.corpusWorkId ? (
-            <input
-              value={isbn}
-              onChange={(event) => setIsbn(event.target.value)}
-              placeholder="ISBN — optional"
-              aria-label="ISBN"
-              className="h-10 w-full skin-card border border-line px-3 text-[14px] text-ink outline-none"
-              style={{ background: 'var(--field)' }}
-            />
-          ) : null}
-        </div>
-      </div>
-
-      {hit.source === 'google' && hit.sourceUrl && (
-        <div className="mt-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <GoogleBooksAttribution />
-            <GoogleBooksResultLink result={hit} />
-          </div>
-          <p className="mt-2 text-[12px] text-muted">
-            {APP_NAME} will keep the book details and look for a cover that can stay with the shared
-            library.
-          </p>
-        </div>
-      )}
-
-      <p className="mt-3 text-[12.5px] text-muted">
-        {targetMemberId
-          ? `This adds one shared entry and a neutral personal book for ${targetMemberName ?? 'the selected member'}. It does not say they own, borrowed, want, or have read it.`
-          : 'This adds one shared household entry. It does not create a personal book or say that anyone owns, borrowed, wants, or has read it.'}
-      </p>
-      {hit.cover && !canPersistPickedCover ? (
-        <p role="status" className="mt-3 text-[12.5px] text-muted">
-          This preview needs a household owner or corpus admin to save it as the shared cover. The
-          shared record can still be added without it.
-        </p>
-      ) : null}
-      {coverWarning ? (
-        <p role="status" className="mt-3 text-[12.5px] text-accent-ink">
-          {coverWarning}{' '}
-          <Link
-            to="/library"
-            search={{ scope: 'household' }}
-            className="font-semibold underline underline-offset-2"
-          >
-            View household library
-          </Link>
-        </p>
-      ) : null}
-      {saveError ? (
-        <p role="alert" className="mt-3 text-[12.5px] text-accent-ink">
-          {saveError}
-        </p>
-      ) : null}
-      {!household.authorized ? (
-        <p role="status" className="mt-3 text-[12.5px] text-muted">
-          Connect to a verified household before adding shared books.
-        </p>
-      ) : !hit.corpusWorkId && !canCreate ? (
-        <p role="status" className="mt-3 text-[12.5px] text-muted">
-          This title is not in the shared catalog yet. Reconnect with an active household membership
-          before creating its provisional shared record.
-        </p>
-      ) : (
-        <button
-          type="button"
-          disabled={pending || !title.trim()}
-          onClick={() => setReviewing(true)}
-          className="skin-control skin-btn-primary mt-4 h-11 w-full px-4 text-[14px] font-semibold disabled:opacity-50"
-        >
-          {pending
-            ? 'Adding…'
-            : hit.corpusWorkId
-              ? targetMemberId
-                ? `Add to ${targetMemberName ?? 'member'} + Household`
-                : 'Add to household library'
-              : targetMemberId
-                ? `Create shared record and add to ${targetMemberName ?? 'member'}`
-                : 'Create shared record and add'}
-        </button>
-      )}
-    </Surface>
+    </>
   )
 }
 
@@ -1631,19 +1680,11 @@ function AddScreen() {
   // elsewhere in the app — lands here with the form already filled, one tap from saved.
   const prefill = addRoute.useSearch()
   const { session } = useAuth()
-  const household = useHouseholdDestinationAuthorization()
+  const household = useAddDestinations()
   const [destination, setDestination] = useState<AddDestination>(
     prefill.scope === 'household' ? 'household' : 'mine',
   )
-  const destinationChosen = useRef(prefill.scope === 'household')
-  useEffect(() => {
-    if (!destinationChosen.current && household.authorized && household.members.length) {
-      setDestination('both')
-    }
-  }, [household.authorized, household.members.length])
-  const targetMemberId = delegatedMemberId(destination)
-  const targetMember = household.members.find((member) => member.userId === targetMemberId)
-  const householdOnly = destination === 'household' || !!targetMemberId
+  const householdOnly = destination === 'household' || !!delegatedMemberId(destination)
   const collectiveDestination = destination !== 'mine'
   const [q, setQ] = useState('')
   const { results, searched, busy, issue: searchIssue, search, cancel } = useAddSearch()
@@ -1728,25 +1769,15 @@ function AddScreen() {
         </p>
       )}
 
-      <AddDestinationPicker
-        value={destination}
-        onChange={(next) => {
-          destinationChosen.current = true
-          setDestination(next)
-        }}
-        members={household.members}
-        householdStatus={
-          household.loading
-            ? 'loading'
-            : household.paused
-              ? 'offline'
-              : household.error
-                ? 'error'
-                : 'ready'
-        }
-        onRetry={() => void household.retry()}
-        currentReaderId={session?.user.id ?? ''}
-      />
+      {!picked && (
+        <details className="my-3 rounded-[var(--radius-card)] border border-line p-3">
+          <summary className="min-h-11 cursor-pointer text-sm text-ink flex-wrap">
+            Destination: {destinationLabel(destination, household.members)} · Change
+          </summary>
+          <p className="mb-3 text-sm text-muted">You can also choose when you review the book.</p>
+          <DestinationChoices value={destination} onChange={setDestination} />
+        </details>
+      )}
 
       <details open={!picked} className="my-3">
         <summary hidden={!picked} className="min-h-11 cursor-pointer py-2 text-sm text-ink">
@@ -1945,84 +1976,65 @@ function AddScreen() {
           Return to your shortlist
         </Link>
       )}
-      {picked &&
-        (householdOnly ? (
-          <HouseholdAddForm
-            household={household}
-            hit={picked}
-            targetMemberId={targetMemberId}
-            targetMemberName={targetMember?.displayName}
-            onAdded={() => {
-              if (activeBulkId) {
-                setActiveBulkId(null)
-                setPicked(null)
-                return
-              }
-              if (returnToScans()) return
-              if (origin) return origin.returnToOrigin()
-              return prefill.discoverSession
-                ? void navigate({ to: '/discover', search: { session: prefill.discoverSession } })
-                : void navigate({ to: '/library', search: { scope: 'household' } })
-            }}
-          />
-        ) : (
-          <AddForm
-            key={JSON.stringify(picked)}
-            hit={picked}
-            batchPending={bulkRows.some((row) => !row.bookId)}
-            onSaved={(bookId) => {
-              if (activeBulkId)
-                setBulkRows((rows) =>
-                  rows.map((row) => (row.id === activeBulkId ? { ...row, bookId } : row)),
-                )
-            }}
-            defaultUnowned={!!prefill.want}
-            addToHousehold={destination === 'both'}
-            returnLabel={
-              activeBulkId
-                ? 'Continue with your list'
-                : activeCapture && scanItems.some((item) => item.id === activeCapture)
-                  ? 'Continue with scanned books'
-                  : bookTour.status !== 'off' && bookTour.bookId
-                    ? 'Return to your library'
-                    : prefill.releaseWindow
-                      ? 'Return to releases'
-                      : prefill.discoverSession
-                        ? 'Return to your shortlist'
-                        : (origin?.label ?? 'Return to your library')
-            }
-            onAdded={() => {
-              if (activeBulkId) {
-                setActiveBulkId(null)
-                setPicked(null)
-                return
-              }
-              if (returnToScans()) return
-              return bookTour.status !== 'off' && bookTour.bookId
-                ? void navigate({ to: '/library', search: {} })
-                : origin
-                  ? origin.returnToOrigin()
+      {picked && (
+        <AddForm
+          key={JSON.stringify(picked)}
+          hit={picked}
+          batchPending={bulkRows.some((row) => !row.bookId)}
+          onSaved={(bookId) => {
+            if (activeBulkId)
+              setBulkRows((rows) =>
+                rows.map((row) => (row.id === activeBulkId ? { ...row, bookId } : row)),
+              )
+          }}
+          defaultUnowned={!!prefill.want}
+          destination={destination}
+          onDestinationChange={setDestination}
+          returnLabel={
+            activeBulkId
+              ? 'Continue with your list'
+              : activeCapture && scanItems.some((item) => item.id === activeCapture)
+                ? 'Continue with scanned books'
+                : bookTour.status !== 'off' && bookTour.bookId
+                  ? 'Return to your library'
                   : prefill.releaseWindow
+                    ? 'Return to releases'
+                    : prefill.discoverSession
+                      ? 'Return to your shortlist'
+                      : (origin?.label ?? 'Return to your library')
+          }
+          onAdded={() => {
+            if (activeBulkId) {
+              setActiveBulkId(null)
+              setPicked(null)
+              return
+            }
+            if (returnToScans()) return
+            return bookTour.status !== 'off' && bookTour.bookId
+              ? void navigate({ to: '/library', search: {} })
+              : origin
+                ? origin.returnToOrigin()
+                : prefill.releaseWindow
+                  ? void navigate({
+                      to: '/discover',
+                      search: {
+                        view: 'releases',
+                        window: prefill.releaseWindow,
+                        editions: prefill.releaseEditions,
+                      },
+                    })
+                  : prefill.discoverSession
                     ? void navigate({
                         to: '/discover',
-                        search: {
-                          view: 'releases',
-                          window: prefill.releaseWindow,
-                          editions: prefill.releaseEditions,
-                        },
+                        search: { session: prefill.discoverSession },
                       })
-                    : prefill.discoverSession
-                      ? void navigate({
-                          to: '/discover',
-                          search: { session: prefill.discoverSession },
-                        })
-                      : void navigate({
-                          to: '/library',
-                          search: destination === 'both' ? { scope: 'household' } : {},
-                        })
-            }}
-          />
-        ))}
+                    : void navigate({
+                        to: '/library',
+                        search: destination !== 'mine' ? { scope: 'household' } : {},
+                      })
+          }}
+        />
+      )}
 
       <BulkAddQueue
         rows={bulkRows}

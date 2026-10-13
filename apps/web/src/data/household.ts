@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { onlineManager, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { normalizeSeriesStatus, type SeriesStatus } from '@reverie/core'
 import { useAuth } from '../auth/AuthProvider'
 import { ingestCorpusCover } from '../lib/covers'
@@ -356,16 +356,16 @@ const authorizationSensitiveQueryOptions = {
   refetchOnWindowFocus: 'always' as const,
 }
 
-export function useHouseholdRoster() {
+function useRosterQuery(kind: 'roster' | 'destinations') {
   const { session } = useAuth()
   const readerId = session?.user.id ?? ''
   const queryClient = useQueryClient()
-  const queryKey = householdRosterKey(readerId)
+  const queryKey = ['household', kind, readerId] as const
 
   useEffect(() => {
-    const mountedQueryKey = householdRosterKey(readerId)
+    const mountedQueryKey = ['household', kind, readerId] as const
     return () => queryClient.removeQueries({ queryKey: mountedQueryKey, exact: true })
-  }, [queryClient, readerId])
+  }, [queryClient, readerId, kind])
 
   return useQuery({
     queryKey,
@@ -379,15 +379,20 @@ export function useHouseholdRoster() {
   })
 }
 
+export function useHouseholdRoster() {
+  return useRosterQuery('roster')
+}
+
 /** Destination choices need fresh membership, not a download of household books.
- * Keep this observer in the Add screen and pass its result to nested forms: mounting a second
- * roster observer would force another authorization-sensitive fetch and briefly hide choices.
+ * Keep one observer in the account-keyed app provider and read it through context in Add.
+ * Its separate key leaves full-library authorization and cleanup independent.
  */
 export function useHouseholdDestinationAuthorization() {
   const { session } = useAuth()
-  const roster = useHouseholdRoster()
-  const authorized = !!session?.user.id && householdQueryIsAuthorized(roster)
-  const paused = roster.fetchStatus === 'paused'
+  const roster = useRosterQuery('destinations')
+  const online = useSyncExternalStore(onlineManager.subscribe, () => onlineManager.isOnline(), () => false)
+  const authorized = online && !!session?.user.id && householdQueryIsAuthorized(roster)
+  const paused = !online || roster.fetchStatus === 'paused'
   return {
     members: authorized ? (roster.data ?? []) : [],
     authorized,

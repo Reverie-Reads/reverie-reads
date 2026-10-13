@@ -14,6 +14,7 @@ import { useVoice } from '../skin/labels'
 import { PersonalLibrarySync } from '../components/PersonalLibrarySync'
 import { BookTourProvider } from '../guidance/BookTourProvider'
 import { BookTour } from '../guidance/BookTour'
+import { HouseholdDestinations } from '../components/HouseholdDestinations'
 import { AddReturnProvider } from '../components/AddReturnContext'
 import { ReadingModeProvider } from '../design/ReadingMode'
 
@@ -107,16 +108,18 @@ function RootLayout() {
       ) : (
         <ReadingModeProvider key={session.user.id} accountId={session.user.id}>
           <BookTourProvider key={session.user.id}>
-            <AddReturnProvider>
-              {onboarding ? (
-                <Outlet />
-              ) : (
-                <AppShell>
+            <HouseholdDestinations key={session.user.id}>
+              <AddReturnProvider>
+                {onboarding ? (
                   <Outlet />
-                  <BookTour />
-                </AppShell>
-              )}
-            </AddReturnProvider>
+                ) : (
+                  <AppShell>
+                    <Outlet />
+                    <BookTour />
+                  </AppShell>
+                )}
+              </AddReturnProvider>
+            </HouseholdDestinations>
           </BookTourProvider>
         </ReadingModeProvider>
       )}

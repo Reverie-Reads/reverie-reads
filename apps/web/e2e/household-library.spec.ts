@@ -747,9 +747,9 @@ test('a member never receives or requests another reader’s arbitrary cover hot
   }
 })
 
-test('Add destinations wait only for membership and preserve an early personal choice', async ({
+test('Add entry stays stable while membership loads and destinations change only in review', async ({
   page,
-}) => {
+}, info) => {
   await signIn(page, owner.session)
   let releaseRoster!: () => void
   const rosterGate = new Promise<void>((resolve) => {
@@ -758,38 +758,79 @@ test('Add destinations wait only for membership and preserve an early personal c
   let rosterRequests = 0
   let bookRequests = 0
   await page.route('**/rest/v1/rpc/household_roster', async (route) => {
-    rosterRequests += 1
+    rosterRequests++
     await rosterGate
     await route.continue()
   })
   await page.route('**/rest/v1/rpc/household_library_works', async (route) => {
-    bookRequests += 1
+    bookRequests++
     await route.abort()
   })
   try {
-    await page.goto('/add')
-    await expect(page.getByText('Checking household destinations…')).toBeVisible()
-    await expect(page.getByText(/Link this account to a household/)).toHaveCount(0)
-    await page.getByRole('radio', { name: /My library only/ }).check()
-    // Clicking an already selected default must still mark the reader's deliberate choice.
-    await page.getByRole('radio', { name: /My library only/ }).click()
+    await page.goto('/shelves')
+    await expect.poll(() => rosterRequests).toBe(1)
+    await page.getByTestId('persistent-add').filter({ visible: true }).click()
+    const search = page.getByLabel('Search for a book')
+    const before = await search.boundingBox()
+    await expect(search).toBeEnabled()
+    await expect(page.getByRole('radio', { name: /Household only/ })).toBeHidden()
+    await search.fill('Destination loading fixture')
     releaseRoster()
+    await expect.poll(() => rosterRequests).toBe(1)
+    await page.getByText('Destination: My library · Change', { exact: true }).click()
     await expect(page.getByRole('radio', { name: /Household only/ })).toBeVisible()
     await expect(page.getByRole('radio', { name: /My library only/ })).toBeChecked()
-    expect(bookRequests).toBe(0)
+    await page.getByText('Destination: My library · Change', { exact: true }).click()
+    expect((await search.boundingBox())?.y).toBe(before?.y)
+    await page.getByRole('button', { name: 'Add manually', exact: true }).click()
+    await page.getByRole('button', { name: /Add contributor/ }).click()
+    await page.getByLabel('Contributor 1 name').fill('Draft Author')
+    await page.getByRole('button', { name: 'Review book', exact: true }).click()
     await page.getByRole('radio', { name: /Household only/ }).check()
-    await page.getByLabel('Search for a book').fill('Destination loading fixture')
-    await page.getByRole('button', { name: 'Add manually' }).click()
-    await expect(page.getByLabel('Author', { exact: true })).toBeVisible()
-    await expect(page.getByRole('radio', { name: /Household only/ })).toBeChecked()
+    const shared = page.getByRole('dialog', { name: 'Review household entry' })
+    await expect(shared).toContainText('Draft Author')
+    await shared.getByRole('radio', { name: /My library only/ }).check()
+    await expect(page.getByRole('radio', { name: /My library only/ })).toBeFocused()
+    await page.getByRole('button', { name: 'Back to information', exact: true }).click()
+    await expect(page.getByLabel('Contributor 1 name')).toHaveValue('Draft Author')
+    await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
+      'Destination loading fixture',
+    )
     expect(rosterRequests).toBe(1)
     expect(bookRequests).toBe(0)
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-    ).toBe(true)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: info.outputPath('add-ready-entry.png') })
   } finally {
     releaseRoster()
   }
+})
+
+test('a revoked destination at confirmation cannot create a personal or shared book', async ({
+  page,
+}) => {
+  await signIn(page, owner.session)
+  await page.goto('/add')
+  const title = `Revoked destination ${projectName}`
+  await page.getByLabel('Search for a book').fill(title)
+  await page.getByRole('button', { name: 'Add manually', exact: true }).click()
+  await page.getByRole('button', { name: 'Review book', exact: true }).click()
+  await page.getByRole('radio', { name: /My library \+ Household/ }).check()
+  await page.route('**/rest/v1/rpc/household_roster', (route) => route.fulfill({ json: [] }))
+  await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('Your draft is still here')
+  expect(
+    await okData(
+      admin.from('books').select('id').eq('owner_id', owner.uid).eq('title', title),
+      'revoked destination personal check',
+    ),
+  ).toHaveLength(0)
+  expect(
+    await okData(
+      admin.from('works').select('id').eq('title', title),
+      'revoked destination shared check',
+    ),
+  ).toHaveLength(0)
+  await expect(page.getByRole('dialog', { name: 'Review your book' })).toContainText(title)
 })
 
 test('persistent Add creates a household-only work and explicit adoption updates one personal copy', async ({
@@ -819,12 +860,15 @@ test('persistent Add creates a household-only work and explicit adoption updates
     await persistentAdd.click()
     await expect(page).toHaveURL(/\/add\?scope=household$/)
     await expect(page.getByRole('heading', { name: 'Add a book' })).toBeVisible()
-    await expect(page.getByRole('radio', { name: /Household only/ })).toBeChecked()
+    await expect(
+      page.getByText('Destination: Household only · Change', { exact: true }),
+    ).toBeVisible()
 
     await page.getByLabel('Search for a book').fill(title)
     await page.getByRole('button', { name: 'Add manually' }).click()
-    await page.getByLabel('Author').fill('Flow Reviewer')
-    await page.getByRole('button', { name: 'Create shared record and add' }).click()
+    await page.getByRole('button', { name: /Add contributor/ }).click()
+    await page.getByLabel('Contributor 1 name').fill('Flow Reviewer')
+    await page.getByRole('button', { name: 'Review book', exact: true }).click()
     await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'The household entry was saved' })).toBeVisible()
     await page.getByRole('button', { name: 'View household library', exact: true }).click()
