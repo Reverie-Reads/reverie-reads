@@ -853,7 +853,12 @@ function AddForm({
   return (
     <Surface radius="panel" tone="card" pad={3} className="mt-4">
       {!saveState.recoveredBookId &&
-        (batchPending || hasDraftChanges || saveState.busy || !!saveState.error) && (
+        (batchPending ||
+          hasDraftChanges ||
+          saveState.busy ||
+          !!saveState.error ||
+          sharedBusy ||
+          sharedLocked) && (
           <DraftExitGuard busy={saveState.busy || sharedBusy} canLeave={() => sharedSaved} />
         )}
       <h2 className="text-xl text-ink" style={{ fontFamily: 'var(--font-display)' }}>

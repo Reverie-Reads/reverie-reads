@@ -775,6 +775,7 @@ test('Add entry stays stable while membership loads and destinations change only
     await expect(search).toBeEnabled()
     await expect(page.getByRole('radio', { name: /Household only/ })).toBeHidden()
     await search.fill('Destination loading fixture')
+    await page.screenshot({ path: info.outputPath('add-entry-loading.png') })
     releaseRoster()
     await expect.poll(() => rosterRequests).toBe(1)
     await page.getByText('Destination: My library · Change', { exact: true }).click()
@@ -789,6 +790,7 @@ test('Add entry stays stable while membership loads and destinations change only
     await page.getByRole('radio', { name: /Household only/ }).check()
     const shared = page.getByRole('dialog', { name: 'Review household entry' })
     await expect(shared).toContainText('Draft Author')
+    await page.screenshot({ path: info.outputPath('add-destination-review.png') })
     await shared.getByRole('radio', { name: /My library only/ }).check()
     await expect(page.getByRole('radio', { name: /My library only/ })).toBeFocused()
     await page.getByRole('button', { name: 'Back to information', exact: true }).click()
@@ -831,6 +833,44 @@ test('a revoked destination at confirmation cannot create a personal or shared b
     ),
   ).toHaveLength(0)
   await expect(page.getByRole('dialog', { name: 'Review your book' })).toContainText(title)
+})
+
+test('an unchanged book keeps navigation guarded while its household permission check is pending', async ({
+  page,
+}) => {
+  await signIn(page, owner.session)
+  await page.goto('/shelves')
+  await page.getByTestId('persistent-add').filter({ visible: true }).click()
+  await page.getByLabel('Search for a book').fill('Unchanged household draft')
+  await page.getByRole('button', { name: 'Add manually', exact: true }).click()
+  await page.getByRole('button', { name: 'Review book', exact: true }).click()
+  await page.getByRole('radio', { name: /Household only/ }).check()
+  let release!: () => void
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let requested = false
+  await page.route('**/rest/v1/rpc/household_roster', async (route) => {
+    requested = true
+    await held
+    await route.fulfill({ json: [] })
+  })
+  try {
+    await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
+    await expect.poll(() => requested).toBe(true)
+    await page.goBack()
+    const guard = page.getByRole('dialog', { name: 'Saving your book' })
+    await expect(guard).toBeVisible()
+    await expect(guard.getByRole('button', { name: 'Leave draft' })).toBeHidden()
+    await guard.getByRole('button', { name: 'Keep editing' }).click()
+    release()
+    await expect(page.getByRole('dialog', { name: 'Review household entry' })).toContainText(
+      'The household entry could not be confirmed',
+    )
+    await expect(page).toHaveURL(/\/add/)
+  } finally {
+    release()
+  }
 })
 
 test('persistent Add creates a household-only work and explicit adoption updates one personal copy', async ({
