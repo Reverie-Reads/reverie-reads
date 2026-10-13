@@ -157,6 +157,10 @@ async function recordWrites(page: Page, action: () => Promise<void>): Promise<st
     if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return
     const { pathname } = new URL(r.url())
     if (!pathname.startsWith('/rest/v1/')) return
+    // The signed-in shell warms Add destinations through this SELECT-only STABLE RPC
+    // (20260906010000_household_add_destinations.sql). Supabase sends RPC reads as POST.
+    // Exclude only that exact read; all other RPCs and table mutations remain observable.
+    if (method === 'POST' && pathname === '/rest/v1/rpc/household_roster') return
     seen.push(`${method} ${pathname.replace('/rest/v1/', '')}`)
   }
   page.on('request', onRequest)
