@@ -87,3 +87,20 @@ input at 320 px. Section navigation now focuses in the same committed render, be
 input. Screenshot review corrected the overview to use the room's card-radius token instead of
 the pill-shaped control token. Full final validation is recorded in
 the feature PR.
+
+## Immediate entry and reviewed destination
+
+Add begins with a stable compact destination control and an immediately usable search/scanner.
+The signed-in, account-keyed provider starts membership/delegation lookup before Add opens; it
+fetches no household books. Its separate query key does not weaken full-library authorization.
+Offline transitions hide protected destination data immediately; focus/reconnect and household
+mutations revalidate. Leaving Add no longer discards the startup check.
+
+The default remains My library unless an explicit household entry supplies the destination.
+No arriving response changes a selection. Review presents the full destination picker. A single
+mounted book draft survives switches between personal, household and delegated destinations.
+Shared review shows only the bibliographic fields its existing writers receive, and explains
+that personal reading details are excluded. Every shared confirmation rechecks membership and
+delegation; the server writers retain their authority checks. Failed attempts lock the reviewed
+destination until the reader returns to information. There is no persistent permission cache,
+new migration, or promise of zero network latency on first load.
