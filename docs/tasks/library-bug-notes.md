@@ -23,7 +23,7 @@ Gray text is completed history; the document's original-design appendix is backg
   navigation. A stored series with multiple authors appears once, addressing the duplicate-card
   screenshot. Existing explicit series merge remains the way to combine genuinely separate records.
 - Contributor arrows preserve the requested order and roles. Personal tag names preserve entered
-  acronym/capitalization choices. Book merging opens the per-field comparison with both books visible.
+  acronym/capitalization choices and refresh the open vocabulary after rename or deletion. Book merging opens the per-field comparison with both books visible.
 - Household details have a full-page view and an owner-only link to the current reader's book.
 - Edition covers have a preview, visible image-failure state and image upload alternative to a URL.
   Upload changes the edition draft; the existing explicit inventory save remains required.
@@ -68,4 +68,23 @@ not establish physical-device Safari acceptance.
   passed in an isolated follow-up; the two workflow checks also passed. Initial cover-upload test
   type errors were corrected before the follow-up typecheck.
 
-Focused browser and database follow-up results are recorded below when complete.
+- Fresh public-schema SQL verification passed **69 files / 2,204 assertions**. The corrected
+  household concurrency harness passed **25 scenarios** and series archive/restore passed **3**.
+  The harness now expects bounded application conflicts and the current exact archive/identity
+  refusal paths; archived-row assertions run outside reader RLS. Earlier failed logs remain saved.
+- The first focused browser pass had **66 passed, 3 failed, 1 skipped and 11 not run**. It found a
+  real stale-vocabulary display after tag rename, now fixed, plus two test defects: the animation
+  sampler stopped before the delayed pointer reveal finished, and the Planner selector omitted
+  its accessible subtitle. The final rerun covers those complete specs, including skipped cases.
+- Add/Back and corpus-series publishing/search passed **5 desktop/phone checks**. WebKit passed
+  **6 simulated device checks**, including opaque top safe areas and reachable dialog controls.
+  Desktop calendar labels, phone shelf handles and household detail screenshots were inspected.
+- Local reset health timeouts and a private/seeded-schema SQL attempt were setup failures, not
+  successful validation. One extra browser attempt was interrupted after a source/build refresh
+  invalidated its in-page measurement. It is excluded from final verification; its output remains
+  separate. The final browser rerun uses frozen application and test code.
+
+The frozen final rerun passed **all 35 checks** across the complete spine, navigation and personal
+tag specs on desktop/phone. Final lint, typecheck and build passed; formatting is checked again by
+the push hook. The development stack is restored to the private baseline and its 290-book seed
+after verification. No production data is changed.
