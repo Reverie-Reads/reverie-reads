@@ -117,3 +117,21 @@ describe('reading progress input', () => {
     expect(input).toHaveValue(45)
   })
 })
+
+describe('progress from an edition coordinate', () => {
+  it('calculates pages only on request and writes only after explicit Save', () => {
+    render(<ReadingProgressDialog book={book(20)} onClose={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('Enter progress using'), { target: { value: 'pages' } })
+    fireEvent.change(screen.getByLabelText('Pages completed'), { target: { value: '123' } })
+    fireEvent.change(screen.getByLabelText('Total pages'), { target: { value: '300' } })
+    expect(state.mutate).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate percent' }))
+    expect(screen.getByLabelText('Progress (%)')).toHaveValue(41)
+    expect(state.mutate).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Save progress' }))
+    expect(state.mutate).toHaveBeenCalledWith(
+      { id: 'b1', patch: { progress: 41 } },
+      expect.anything(),
+    )
+  })
+})

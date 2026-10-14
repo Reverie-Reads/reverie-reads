@@ -146,9 +146,9 @@ test('an overridden field reaches the surviving row; untouched fields stay the e
   await expect(page.getByText('Review the merge')).toBeVisible()
   await expect(page.getByText('4.5★', { exact: true })).toBeVisible()
 
-  // Open the picker and take the loser's rating. The preview row must follow the pick — that is
+  // The picker opens with both values visible. Take the loser's rating; the preview follows —
   // the "rows above update as you pick" contract, asserted before anything is written.
-  await page.getByText(/Choose fields \(\d+\)/).click()
+  await expect(page.getByTestId('merge-book-picker')).toBeVisible()
   const pickerRow = page.getByTestId('merge-book-picker').locator('label', { hasText: 'Rating' })
   await pickerRow.getByRole('checkbox').check()
   await expect(page.getByText('5★', { exact: true })).toBeVisible()

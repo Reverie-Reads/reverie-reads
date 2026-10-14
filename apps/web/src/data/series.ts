@@ -263,6 +263,7 @@ export function useArchiveSeries(permanent = false) {
       void qc.invalidateQueries({ queryKey: archivedSeriesListKey })
       void qc.invalidateQueries({ queryKey: seriesKey(series.name) })
       void qc.invalidateQueries({ queryKey: booksKey })
+      void qc.invalidateQueries({ queryKey: ['household'] })
       void qc.invalidateQueries({ queryKey: ['series-strip'] })
       void qc.invalidateQueries({ queryKey: ['book-series-memberships'] })
     },
@@ -285,6 +286,7 @@ export function useRestoreSeries() {
       void qc.invalidateQueries({ queryKey: archivedSeriesListKey })
       void qc.invalidateQueries({ queryKey: seriesKey(series.name) })
       void qc.invalidateQueries({ queryKey: booksKey })
+      void qc.invalidateQueries({ queryKey: ['household'] })
       void qc.invalidateQueries({ queryKey: ['series-strip'] })
       void qc.invalidateQueries({ queryKey: ['book-series-memberships'] })
     },
@@ -349,6 +351,7 @@ export function useReviewSeriesClaims(name: string) {
       void qc.invalidateQueries({ queryKey: seriesKey(name) })
       void qc.invalidateQueries({ queryKey: seriesListKey })
       void qc.invalidateQueries({ queryKey: booksKey })
+      void qc.invalidateQueries({ queryKey: ['household'] })
     },
   })
 }
@@ -368,6 +371,7 @@ export function useSetPrimarySeriesMembership(name: string) {
       void qc.invalidateQueries({ queryKey: seriesKey(name) })
       void qc.invalidateQueries({ queryKey: seriesListKey })
       void qc.invalidateQueries({ queryKey: booksKey })
+      void qc.invalidateQueries({ queryKey: ['household'] })
       void qc.invalidateQueries({ queryKey: ['series-strip'] })
       void qc.invalidateQueries({ queryKey: ['book-series-memberships'] })
     },
@@ -450,6 +454,7 @@ export function useUpdateSeries(name: string) {
       if (input.name) void qc.invalidateQueries({ queryKey: seriesKey(input.name) })
       void qc.invalidateQueries({ queryKey: seriesListKey })
       void qc.invalidateQueries({ queryKey: booksKey })
+      void qc.invalidateQueries({ queryKey: ['household'] })
     },
   })
 }
@@ -598,6 +603,7 @@ export function useRemoveEntry(name: string) {
     onSuccess: () => {
       invalidate()
       void qc.invalidateQueries({ queryKey: booksKey })
+      void qc.invalidateQueries({ queryKey: ['household'] })
       void qc.invalidateQueries({ queryKey: ['series-strip'] })
       void qc.invalidateQueries({ queryKey: ['book-series-memberships'] })
     },
@@ -640,6 +646,7 @@ export function useSyncBookSeries() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: seriesListKey })
       void qc.invalidateQueries({ queryKey: booksKey })
+      void qc.invalidateQueries({ queryKey: ['household'] })
       void qc.invalidateQueries({ queryKey: ['series-strip'] })
       void qc.invalidateQueries({ queryKey: ['book-series-memberships'] })
       // REMOVE rather than invalidate: the series query is persisted to IndexedDB and staleTime keeps
@@ -733,6 +740,7 @@ export function useAddSeriesEntries(name: string) {
     onSuccess: () => {
       invalidate()
       void qc.invalidateQueries({ queryKey: booksKey })
+      void qc.invalidateQueries({ queryKey: ['household'] })
       void qc.invalidateQueries({ queryKey: ['series-strip'] })
       void qc.invalidateQueries({ queryKey: ['book-series-memberships'] })
     },
@@ -826,6 +834,7 @@ export function useAcquireGhost(name: string) {
     onSuccess: () => {
       invalidate()
       void qc.invalidateQueries({ queryKey: booksKey })
+      void qc.invalidateQueries({ queryKey: ['household'] })
       void qc.invalidateQueries({ queryKey: allListItemsKey })
       void qc.invalidateQueries({ queryKey: ['series-strip'] })
       void qc.invalidateQueries({ queryKey: ['book-series-memberships'] })

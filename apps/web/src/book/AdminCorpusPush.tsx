@@ -287,10 +287,14 @@ function PushReview({
               Clear selection
             </Button>
           </div>
-          {(['edition', 'guidance'] as const).map((group) => (
+          {(['series', 'edition', 'guidance'] as const).map((group) => (
             <fieldset key={group} className="min-w-0 space-y-2">
               <legend className="text-sm font-semibold">
-                {group === 'edition' ? 'Published edition details' : 'Genres & content guidance'}
+                {group === 'series'
+                  ? 'Series membership'
+                  : group === 'edition'
+                    ? 'Published edition details'
+                    : 'Genres & content guidance'}
               </legend>
               {group === 'edition' &&
                 (options.edition ? (

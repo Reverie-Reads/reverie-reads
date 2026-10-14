@@ -137,7 +137,7 @@ test('hiding spice removes the mark and the filter, and neutralizes a filter set
   // ── visible by default ───────────────────────────────────────────────────────────────────────
   await page.goto('/library')
   await expect(page.getByRole('button', { name: `Open ${SPICY}` })).toBeVisible({ timeout: 30_000 })
-  await expect(page.locator('[title="Spice 4/5"]').first()).toBeVisible()
+  await expect(page.locator('[title^="Spice 4/5 — "]').first()).toBeVisible()
 
   // ── a filter set BEFORE hiding — the state that must not survive ─────────────────────────────
   await page.getByRole('button', { name: /^Filters/ }).click()
@@ -169,7 +169,7 @@ test('hiding spice removes the mark and the filter, and neutralizes a filter set
   // ── mark gone, group gone, and the stale filter no longer constrains ─────────────────────────
   await page.goto('/library')
   await expect(page.getByRole('button', { name: `Open ${SPICY}` })).toBeVisible({ timeout: 30_000 })
-  await expect(page.locator('[title="Spice 4/5"]')).toHaveCount(0)
+  await expect(page.locator('[title^="Spice 4/5 — "]')).toHaveCount(0)
   // THE POINT: the level-4 filter selected earlier is neutralized, so the plain book is back.
   await expect(page.getByRole('button', { name: `Open ${PLAIN}` })).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: /^Filters/ }).click()

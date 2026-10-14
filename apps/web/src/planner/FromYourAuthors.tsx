@@ -279,10 +279,13 @@ function TrackRelease({ suggestedAuthor }: { suggestedAuthor?: string }) {
 // discovery and PRH confirms its own catalog when configured. Provider results stay in the shared
 // cache; the reader sees where a date came from before adding the book.
 export function FromYourAuthors({ books }: { books: Book[] }) {
+  const navigate = useNavigate()
   const followsQ = useAuthorFollows()
   const setFollow = useSetFollow()
   const follows = followsQ.data ?? {}
-  const authors = yourAuthors(books, follows)
+  const [authorQuery, setAuthorQuery] = useState('')
+  const [searchedAuthor, setSearchedAuthor] = useState('')
+  const authors = searchedAuthor ? [searchedAuthor] : yourAuthors(books, follows)
   const releases = useAuthorReleases(authors)
   const { upcoming, recent, uncertain } = releaseWindow(releases.shelves, books, Date.now())
   const [manageOpen, setManageOpen] = useState(false)
@@ -293,13 +296,15 @@ export function FromYourAuthors({ books }: { books: Book[] }) {
       <header className="release-section-heading">
         <div>
           <p className="plan-eyebrow">A little beyond your shelves</p>
-          <h2 id="release-authors-heading">From authors you return to.</h2>
+          <h2 id="release-authors-heading">
+            {searchedAuthor ? `Releases by ${searchedAuthor}` : 'From authors you return to.'}
+          </h2>
           <p>
             A small, source-labelled lookout for books that are coming into view. Opening one lets
             you review it before anything joins your library.
           </p>
         </div>
-        {authors.length > 0 && (
+        {!searchedAuthor && authors.length > 0 && (
           <button
             type="button"
             onClick={() => setManageOpen((open) => !open)}
@@ -313,7 +318,45 @@ export function FromYourAuthors({ books }: { books: Book[] }) {
         )}
       </header>
 
-      {manageOpen && (
+      <form
+        className="mt-4 flex flex-wrap items-end gap-2"
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSearchedAuthor(authorQuery.trim())
+        }}
+      >
+        <label className="min-w-0 flex-1 text-sm text-ink">
+          Find releases by author
+          <input
+            type="search"
+            value={authorQuery}
+            onChange={(event) => setAuthorQuery(event.target.value)}
+            placeholder="Full author name"
+            className="skin-input mt-1 min-h-11 w-full px-3"
+          />
+        </label>
+        <button type="submit" className="skin-control skin-btn-primary min-h-11 px-4 text-sm">
+          Search releases
+        </button>
+        {searchedAuthor && (
+          <button
+            type="button"
+            className="min-h-11 text-sm text-ink underline"
+            onClick={() => {
+              setAuthorQuery('')
+              setSearchedAuthor('')
+            }}
+          >
+            Show my authors
+          </button>
+        )}
+      </form>
+      {searchedAuthor && (
+        <p className="mt-2 text-sm text-muted">
+          Author: {searchedAuthor}. Provider dates and coverage may be incomplete.
+        </p>
+      )}
+      {manageOpen && !searchedAuthor && (
         <Surface radius="card" tone="field" pad={3} className="release-author-manager">
           <p>Mute an author to leave them out of this lookout.</p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -368,8 +411,11 @@ export function FromYourAuthors({ books }: { books: Book[] }) {
 
       {authors.length > 0 && releases.status === 'ready' && !hasReleases && (
         <Surface radius="card" tone="field" pad={3} className="release-status">
-          Nothing new from your authors right now. Indie dates often appear first in newsletters, so
-          you can add one below and keep the date flexible.
+          {searchedAuthor
+            ? `No new releases found for ${searchedAuthor}.`
+            : 'Nothing new from your authors right now.'}{' '}
+          Indie dates often appear first in newsletters, so you can add one below and keep the date
+          flexible.
         </Surface>
       )}
       {authors.length === 0 && (
@@ -378,6 +424,13 @@ export function FromYourAuthors({ books }: { books: Book[] }) {
         </Surface>
       )}
 
+      <button
+        type="button"
+        className="plan-text-button min-h-11"
+        onClick={() => void navigate({ to: '/discover', search: { view: 'releases' } })}
+      >
+        Browse new & upcoming
+      </button>
       <TrackRelease suggestedAuthor={authors[0]} />
     </section>
   )

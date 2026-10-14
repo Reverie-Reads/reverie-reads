@@ -131,6 +131,7 @@ export function corpusProposalRows(record: CorpusRecord, change: CorpusRecordCha
 }
 
 export const CORPUS_PUSH_FIELDS = [
+  'series.membership',
   'edition.identity',
   'edition.pages',
   'edition.publication',
@@ -206,7 +207,51 @@ export function bookCorpusOptions(
         after: after!,
       })
   }
-  return { rows, edition, guidance, editionError }
+  const series =
+    book.series.trim() && record.series
+      ? {
+          bookId: book.id,
+          name: book.series,
+          position: book.position === '' ? null : book.position,
+          count: book.seriesCount,
+          status: book.status,
+        }
+      : null
+  if (
+    series &&
+    (!record.series?.confirmed ||
+      series.name !== record.series?.name ||
+      series.position !== record.series?.position ||
+      series.count !== record.series?.count ||
+      series.status !== record.series?.status)
+  ) {
+    const describe = (
+      name: string | null,
+      position: number | null,
+      count: number | null,
+      status: string | null,
+    ) =>
+      [
+        name || 'No series recorded',
+        position == null ? '' : `Book ${position}`,
+        count == null ? '' : `${count} in series`,
+        status,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    rows.push({
+      key: 'series.membership',
+      label: 'Series, position, length and status',
+      before: describe(
+        record.series!.name,
+        record.series!.position,
+        record.series!.count,
+        record.series!.status,
+      ),
+      after: describe(series.name, series.position, series.count, series.status),
+    })
+  }
+  return { rows, edition, guidance, editionError, series }
 }
 
 /** Build only the selected differences; everything else comes from the opened shared snapshot. */
@@ -247,5 +292,7 @@ export function selectedCorpusChanges(
     )
     changes.push({ action: 'guidance', value, fields })
   }
+  if (options.series && keys.has('series.membership'))
+    changes.push({ action: 'series', value: options.series })
   return changes
 }

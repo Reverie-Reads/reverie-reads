@@ -372,7 +372,7 @@ export function BookDetailScreen() {
       <div className="px-6 py-16 text-center text-muted">
         <p>That book isn’t in your library.</p>
         <BackLink fallback="/library" className="mt-3 inline-block text-primary">
-          ← Back to library
+          ← Back
         </BackLink>
       </div>
     )
@@ -419,7 +419,7 @@ export function BookDetailScreen() {
     <section className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 lg:py-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <BackLink fallback="/library" className="text-[13px] text-muted hover:text-ink">
-          ← Library
+          ← Back
         </BackLink>
         <StartReadingTour quiet />
       </div>

@@ -190,3 +190,24 @@ describe('the canonical series browser', () => {
     expect(sections[0]?.rows[0]?.series.name).toBe('Secondary Saga')
   })
 })
+
+it('renders one series when its members have different authors', () => {
+  const first = member('first', 4)
+  const second = {
+    ...member('second', 4),
+    contributors: [{ name: 'Another Writer', role: 'author' as const, position: 0 }],
+  }
+  const row = seriesRow('one-series', 'Shared saga', [
+    entry('e1', first.id, 1),
+    entry('e2', second.id, 2),
+  ])
+  const sections = buildStructuredSeriesSections(
+    new Map([[row.series.id, row]]),
+    new Map([
+      [first.id, first],
+      [second.id, second],
+    ]),
+  )
+  expect(sections.flatMap((section) => section.rows)).toEqual([row])
+  expect(sections[0]?.name).toContain('Another Writer')
+})

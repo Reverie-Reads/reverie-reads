@@ -146,7 +146,7 @@ async function stub(page: Page) {
   await page.route('**/books/v1/volumes**', (r) => r.fulfill({ json: { items: [] } }))
 }
 
-const tab = (page: Page, name: string | RegExp) => page.getByRole('button', { name })
+const tab = (page: Page, name: string | RegExp) => page.getByRole('button', { name, exact: true })
 
 for (const phone of [false, true]) {
   test.describe(phone ? 'phone shelf arrival' : 'desktop shelf arrival', () => {

@@ -143,6 +143,12 @@ for (const width of [320, 390, 1440]) {
         expect(beforeConfirm.data).toEqual([])
         await reviewDialog.getByRole('button', { name: 'Back to information' }).click()
         await expect(page.getByLabel('Pages', { exact: true })).toHaveValue('352')
+        const afterBack = await account.reader
+          .from('books')
+          .select('id')
+          .eq('owner_id', account.uid)
+        expect(afterBack.error).toBeNull()
+        expect(afterBack.data).toEqual([])
         await page.getByRole('button', { name: 'Review book', exact: true }).click()
         await reviewDialog.getByRole('button', { name: 'Confirm and add', exact: true }).click()
         await expect(page.locator('[data-book-tour="book-save"]')).toBeDisabled()
@@ -181,6 +187,27 @@ for (const width of [320, 390, 1440]) {
         pub_m: 2,
         pub_d: 28,
         isbn: '9780316580793',
+      })
+      await page.getByRole('button', { name: 'Plan this book', exact: true }).click()
+      const plan = page.getByRole('dialog', { name: 'Make a little room' })
+      await plan.getByRole('radio', { name: 'A day', exact: true }).check()
+      await plan.getByLabel('Planned day').fill('2027-03-14')
+      await plan.getByPlaceholder('What draws you to this book?').fill('Book club discussion')
+      await plan.getByRole('button', { name: 'Save plan', exact: true }).click()
+      await expect(page.getByText('Reading plan saved.', { exact: true })).toBeVisible()
+      const savedPlan = await okData(
+        account.reader
+          .from('books')
+          .select('plan_y,plan_m,plan_d,plan_intention')
+          .eq('id', row.id)
+          .single(),
+        'Saved Add calendar handoff',
+      )
+      expect(savedPlan).toEqual({
+        plan_y: 2027,
+        plan_m: 3,
+        plan_d: 14,
+        plan_intention: 'Book club discussion',
       })
       await page.goto(`/book/${row.id}`)
       await page.getByRole('button', { name: 'Edit genres & subgenres', exact: true }).click()

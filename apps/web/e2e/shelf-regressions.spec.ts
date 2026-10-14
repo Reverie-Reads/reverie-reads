@@ -493,3 +493,66 @@ test('Shelves page: dragging a book cover does not move the shelf — only the g
     await reset(c)
   }
 })
+
+for (const touch of [false, true]) {
+  test(`dedicated shelf handle persists only on drop (${touch ? 'touch at 390px' : 'mouse'})`, async ({
+    page,
+  }) => {
+    const c = await client()
+    await reset(c)
+    const { listId, order } = await shelfOf(c, 'Handle order', ['Alpha Book', 'Bravo Book'])
+    await page.setViewportSize({ width: touch ? 390 : 1280, height: 1000 })
+    await stubBackends(page)
+    try {
+      await signIn(page, c.session)
+      await page.goto(`/shelf/${listId}`)
+      await page.getByRole('button', { name: 'Arrange books', exact: true }).click()
+      const handle = page.getByRole('button', { name: 'Drag Alpha Book to reorder', exact: true })
+      await handle.scrollIntoViewIfNeeded()
+      const source = await handle.boundingBox()
+      const target = await page
+        .getByRole('button', { name: 'Drag Bravo Book to reorder', exact: true })
+        .boundingBox()
+      expect(source).not.toBeNull()
+      expect(target).not.toBeNull()
+      const from = { x: source!.x + source!.width / 2, y: source!.y + source!.height / 2 }
+      const to = { x: target!.x + target!.width / 2, y: target!.y + target!.height / 2 }
+      const cdp = touch ? await page.context().newCDPSession(page) : null
+      if (cdp) {
+        await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 })
+        await cdp.send('Input.dispatchTouchEvent', {
+          type: 'touchStart',
+          touchPoints: [{ ...from, id: 1 }],
+        })
+        for (let step = 1; step <= 12; step++) {
+          await cdp.send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            touchPoints: [
+              {
+                x: from.x + ((to.x - from.x) * step) / 12,
+                y: from.y + ((to.y - from.y) * step) / 12,
+                id: 1,
+              },
+            ],
+          })
+        }
+      } else {
+        await page.mouse.move(from.x, from.y)
+        await page.mouse.down()
+        await page.mouse.move(to.x, to.y, { steps: 12 })
+      }
+      expect(await order()).toEqual(['Alpha Book', 'Bravo Book'])
+      await expect(handle).toHaveAttribute('aria-pressed', 'true')
+      await page.screenshot({ path: `test-results/shelf-handle-${touch ? 'touch' : 'mouse'}.png` })
+      if (cdp) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+        await cdp.detach()
+      } else await page.mouse.up()
+      await expect.poll(order).toEqual(['Bravo Book', 'Alpha Book'])
+      await page.reload()
+      expect(await order()).toEqual(['Bravo Book', 'Alpha Book'])
+    } finally {
+      await reset(c)
+    }
+  })
+}

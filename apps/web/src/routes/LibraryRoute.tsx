@@ -534,6 +534,7 @@ function HouseholdDetailDrawer({
 }
 
 function HouseholdLibraryScreen() {
+  const { work: fullWorkId } = libraryRoute.useSearch()
   const { session } = useAuth()
   const currentReaderId = session?.user.id ?? ''
   const household = useHouseholdLibraryAuthorization()
@@ -766,6 +767,43 @@ function HouseholdLibraryScreen() {
     </div>
   )
 
+  if (fullWorkId && !household.loading && !household.error && !household.paused) {
+    const fullBook = availableBooks.find((book) => book.id === fullWorkId)
+    return (
+      <section className="mx-auto w-full max-w-4xl px-4 py-6">
+        <Link
+          to="/library"
+          search={{ scope: 'household' }}
+          className="inline-flex min-h-11 items-center text-ink underline"
+        >
+          ← Household library
+        </Link>
+        {fullBook ? (
+          <HouseholdBookDetail
+            book={fullBook}
+            currentReaderId={currentReaderId}
+            fullPage
+            onEditCorpus={canEditCorpus ? (patch) => editCorpus(fullBook, patch) : undefined}
+            editingCorpus={updateCorpus.isPending}
+            onAddCorpusTrope={
+              isCorpusAdmin
+                ? async (name) => {
+                    await addCorpusTrope.mutateAsync({ workId: fullBook.id, name })
+                  }
+                : undefined
+            }
+            addingCorpusTrope={addCorpusTrope.isPending}
+          />
+        ) : (
+          <p role="status" className="mt-4 text-ink">
+            {household.loading
+              ? 'Loading shared details…'
+              : 'This book is not available in your household library.'}
+          </p>
+        )}
+      </section>
+    )
+  }
   return (
     <>
       <section
@@ -854,6 +892,7 @@ const SHELF_LINK_VALUES: readonly LibraryShelfLink[] = ['owned', 'borrowed', 're
 export interface LibraryRouteSearch {
   shelf?: LibraryShelfLink
   scope?: 'household'
+  work?: string
 }
 
 export const validateLibrarySearch = (search: Record<string, unknown>): LibraryRouteSearch => ({
@@ -862,6 +901,11 @@ export const validateLibrarySearch = (search: Record<string, unknown>): LibraryR
     : undefined,
   // Personal is represented by absence. Every unknown or array-valued input fails closed to it.
   scope: search.scope === 'household' ? 'household' : undefined,
+  ...(search.scope === 'household' &&
+  typeof search.work === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(search.work)
+    ? { work: search.work }
+    : {}),
 })
 
 export const libraryRoute = createRoute({

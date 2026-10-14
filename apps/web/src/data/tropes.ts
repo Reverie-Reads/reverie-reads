@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   resolveTrope,
-  titleCase,
   type Book,
   type TropeEmphasis,
   type TropeFacet,
@@ -144,10 +143,8 @@ export function useCreatePersonalTrope() {
         .from('tropes')
         .insert({
           owner_id: ownerId,
-          // Normalized on the way IN, so a personal trope sits in the picker looking like the
-          // canonical vocabulary beside it — the reader cannot tell which is which, and
-          // "enemies to lovers" typed in lowercase should not be the tell.
-          name: titleCase(input.name),
+          // Normalize spacing while retaining the reader's spelling and acronym casing.
+          name: input.name.trim().replace(/\s+/g, ' '),
           facet: input.facet ?? 'vibe',
           canonical_id: input.canonicalId ?? null,
         })
@@ -274,9 +271,7 @@ export function useResolveSuggestion() {
  * trope shows the new name immediately. There is no per-book copy to migrate, and no window where
  * some books say one thing and some another.
  *
- * The new name goes through the SAME `titleCase` normalizer as creation. Skipping it here would let
- * a rename reintroduce exactly the casing the create path exists to prevent — the reader would
- * simply have to rename something to get "enemies to lovers" back into the vocabulary.
+ * Personal spelling and capitalization belong to the reader, including acronyms.
  *
  * CANONICAL TROPES ARE NOT RENAMEABLE, and that is enforced at the query rather than only in the UI:
  * `.not('owner_id', 'is', null)` means a canonical row cannot be renamed even if a caller passes its
@@ -289,7 +284,7 @@ export function useRenamePersonalTrope() {
   return useMutation({
     meta: { action: 'Tropes' },
     mutationFn: async (input: { id: string; name: string }): Promise<void> => {
-      const name = titleCase(input.name)
+      const name = input.name.trim().replace(/\s+/g, ' ')
       if (!name) throw new Error('A trope needs a name')
       const { error } = await supabase
         .from('tropes')

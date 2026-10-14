@@ -341,3 +341,50 @@ test('a delayed successful save is not credited to a replayed guide', async ({ p
     await account.cleanup()
   }
 })
+
+test('desktop calendar names its books and release search reaches beyond followed authors', async ({
+  page,
+}) => {
+  const account = await setup(page)
+  try {
+    await page.setViewportSize({ width: 1280, height: 1000 })
+    const today = new Date()
+    const saved = await account.reader
+      .from('books')
+      .update({
+        plan_y: today.getFullYear(),
+        plan_m: today.getMonth() + 1,
+        plan_d: 15,
+      })
+      .eq('id', account.books[0]!.id)
+    expect(saved.error).toBeNull()
+    await page.goto('/planner?tab=calendar')
+    await expect(
+      page.locator('.plan-day-titles').getByText('The Quiet Lantern', { exact: true }),
+    ).toBeVisible()
+    await page.screenshot({ path: 'test-results/calendar-book-titles.png', fullPage: true })
+    await page.getByRole('button', { name: /Releases Watch what is coming/ }).click()
+    const requested: string[][] = []
+    await page.route('**/functions/v1/releases**', async (route) => {
+      const names = route.request().postDataJSON()?.names ?? []
+      requested.push(names)
+      await route.fulfill({
+        json: { authors: Object.fromEntries(names.map((name: string) => [name, []])), pending: [] },
+      })
+    })
+    await page.getByRole('searchbox', { name: 'Find releases by author' }).fill('Ursula K. Le Guin')
+    await page.getByRole('button', { name: 'Search releases', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Releases by Ursula K. Le Guin' })).toBeVisible()
+    await expect
+      .poll(() => requested.some((names) => names.includes('Ursula K. Le Guin')))
+      .toBe(true)
+    await expect(
+      page.getByText('No new releases found for Ursula K. Le Guin.', { exact: false }),
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Browse new & upcoming', exact: true }).click()
+    await expect(page).toHaveURL(/discover\?view=releases/)
+    expect(await account.rows('books')).toHaveLength(2)
+  } finally {
+    await account.cleanup()
+  }
+})

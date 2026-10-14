@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
   CORE_GENRES,
@@ -549,6 +550,7 @@ export function HouseholdBookDetail({
   editingCorpus = false,
   onReviewCover,
   reviewingCoverBookId = null,
+  fullPage = false,
 }: {
   book: HouseholdBook | null
   currentReaderId: string
@@ -560,6 +562,7 @@ export function HouseholdBookDetail({
   editingCorpus?: boolean
   onReviewCover?: (owner: HouseholdBookOwner) => Promise<void>
   reviewingCoverBookId?: string | null
+  fullPage?: boolean
 }) {
   const [corpusTropeName, setCorpusTropeName] = useState('')
   if (!book) {
@@ -578,6 +581,15 @@ export function HouseholdBookDetail({
 
   return (
     <div className="flex h-full flex-col overflow-y-auto px-4 py-5 [&>*]:shrink-0">
+      {!fullPage && (
+        <Link
+          to="/library"
+          search={{ scope: 'household', work: book.id }}
+          className="mb-4 inline-flex min-h-11 items-center justify-center skin-control skin-btn-secondary px-4 text-sm"
+        >
+          Open full details
+        </Link>
+      )}
       <div
         className="mx-auto aspect-[2/3] w-36 overflow-hidden rounded-xl border border-line"
         style={{ background: `linear-gradient(150deg, ${g0}, ${g1})` }}
@@ -640,6 +652,15 @@ export function HouseholdBookDetail({
                       )}
                     </div>
                   </div>
+                  {owner.userId === currentReaderId && (
+                    <Link
+                      to="/book/$bookId"
+                      params={{ bookId: owner.bookId }}
+                      className="mt-2 inline-flex min-h-11 items-center text-sm text-ink underline"
+                    >
+                      Open my book
+                    </Link>
+                  )}
                   {onReviewCover && owner.cover ? (
                     <CorpusCoverReviewToggle
                       scope="household"
@@ -752,7 +773,12 @@ export function HouseholdBookDetail({
       ) : null}
 
       {onEditCorpus ? (
-        <CorpusEditForm key={book.id} book={book} onSave={onEditCorpus} saving={editingCorpus} />
+        <CorpusEditForm
+          key={book.id}
+          book={book.corpusBibliography ?? book}
+          onSave={onEditCorpus}
+          saving={editingCorpus}
+        />
       ) : null}
 
       <div className="mt-auto space-y-3 pt-5">

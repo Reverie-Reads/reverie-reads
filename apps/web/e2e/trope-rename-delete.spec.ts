@@ -152,24 +152,26 @@ test('renaming a personal trope updates it for every book carrying it', async ({
   await signIn(page, c.session)
 
   // The rename prompt is a window.prompt; answer it before the click that opens it.
-  page.once('dialog', (d) => void d.accept('brand new coinage'))
+  page.once('dialog', (d) => void d.accept('found family LGBTQ+'))
   await page.goto(`/tropes/${tropeId}`)
   await expect(page.getByRole('heading', { name: 'Old Coinage Here' })).toBeVisible({
     timeout: 20_000,
   })
   await page.getByRole('button', { name: /^Rename$/ }).click()
 
-  // Stored title-cased, via the same normalizer creation uses — a rename must not be a way to put
-  // un-normalized casing back into the vocabulary.
+  // The reader's lowercase words and acronym capitalization must survive the saved rename.
   await expect
     .poll(
       async () =>
         (
           (await c.sb.from('tropes').select('name').eq('id', tropeId)).data as { name: string }[]
         )?.[0]?.name,
-      { message: 'the rename did not persist (or was not normalized)', timeout: 10_000 },
+      { message: 'the rename did not preserve its capitalization', timeout: 10_000 },
     )
-    .toBe('Brand New Coinage')
+    .toBe('found family LGBTQ+')
+  await expect(
+    page.getByRole('heading', { name: 'found family LGBTQ+', exact: true }),
+  ).toBeVisible()
 
   // ONE row, so both carriers follow. Asserted through the join rather than by re-reading the
   // trope: this is the property a per-book copy would break.

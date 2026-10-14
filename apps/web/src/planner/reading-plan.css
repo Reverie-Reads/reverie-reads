@@ -777,3 +777,33 @@
     gap: 1rem;
   }
 }
+
+/* A month overview names its books while day selection keeps the complete list reachable. */
+.plan-calendar-grid .plan-day-titles {
+  display: none;
+}
+@media (min-width: 640px) {
+  .plan-calendar-grid button {
+    min-height: 96px;
+    aspect-ratio: auto;
+    align-items: start;
+    justify-content: start;
+    padding: 8px;
+  }
+  .plan-calendar-grid .plan-day-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    width: 100%;
+    font-size: 10px;
+    line-height: 1.3;
+    text-align: left;
+  }
+  .plan-calendar-grid .plan-day-titles > span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+}

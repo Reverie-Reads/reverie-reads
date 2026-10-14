@@ -246,7 +246,7 @@ describe('household query identity and RPC boundary', () => {
     const { result } = renderHook(() => useHouseholdBooks('house-1'), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-    expect(mocked.rpc).toHaveBeenCalledWith('household_library_works')
+    expect(mocked.rpc).toHaveBeenCalledWith('household_library_works_v2')
     expect(result.current.data?.[0]).toMatchObject({
       id: 'work-1',
       position: 2.5,
@@ -462,7 +462,7 @@ describe('household query identity and RPC boundary', () => {
     let failing = true
     let householdId = 'house-before-retry'
     mocked.rpc.mockImplementation(async (name: string) => {
-      if (failing && name === (failure === 'roster' ? 'household_roster' : 'household_library_works'))
+      if (failing && name === (failure === 'roster' ? 'household_roster' : 'household_library_works_v2'))
         return { data: null, error: new Error('temporarily unavailable') }
       if (name === 'household_roster') return {
         data: [{ household_id: householdId, household_name: 'Readers', user_id: 'reader-a', display_name: 'Avery', member_role: 'owner', allow_member_library_adds: false }], error: null,

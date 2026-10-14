@@ -1,3 +1,4 @@
+import { ShelfDragHandle } from '../components/ShelfDragHandle'
 import { useMemo, useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
 import { type Book } from '@reverie/core'
@@ -209,6 +210,20 @@ function ShelfScreen() {
         </div>
       </header>
 
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setView(view === 'grid' ? 'spines' : 'grid')}
+          className="skin-control min-h-11 border border-line px-4 text-sm text-ink"
+        >
+          {view === 'grid' ? 'Back to the shelf' : 'Arrange books'}
+        </button>
+        {view === 'grid' && (
+          <p className="text-sm text-muted">
+            Drag a handle onto another book to move it. The arrows work with a keyboard.
+          </p>
+        )}
+      </div>
       <SectionHeader
         className="mb-3 mt-6"
         label={view === 'spines' ? 'The shelf' : 'Arrange'}
@@ -236,10 +251,11 @@ function ShelfScreen() {
           onReorder={applyOrder}
         />
       ) : (
-        <div style={COVER_GRID}>
+        <div style={COVER_GRID} data-shelf-reorder>
           {shelfBooks.map((b, i) => (
             <div
               key={b.id}
+              data-shelf-book={b.id}
               draggable
               onDragStart={() => setDragIdx(i)}
               onDragOver={(e) => e.preventDefault()}
@@ -254,7 +270,18 @@ function ShelfScreen() {
                 onToggleFave={() => updateBook.mutate({ id: b.id, patch: { fave: !b.fave } })}
               />
               <div className="mt-1 flex items-center justify-between">
-                <span className="flex gap-0.5">
+                <span className="flex flex-wrap gap-0.5">
+                  <ShelfDragHandle
+                    title={b.title}
+                    onDrop={(targetId) => {
+                      const target = shelfBooks.findIndex((book) => book.id === targetId)
+                      if (target < 0 || target === i) return
+                      const ids = shelfBooks.map((book) => book.id)
+                      const [moved] = ids.splice(i, 1)
+                      ids.splice(target, 0, moved!)
+                      applyOrder(ids)
+                    }}
+                  />
                   <button
                     type="button"
                     onClick={() => move(i, -1)}

@@ -406,7 +406,14 @@ test('two linked personal libraries appear together without exposing personal co
     await expect(
       detail.getByRole('button', { name: /favourite|favorite|personal cover|shelf/i }),
     ).toHaveCount(0)
-    await expect(detail.getByRole('link')).toHaveCount(0)
+    await expect(detail.getByRole('link', { name: 'Open my book', exact: true })).toHaveAttribute(
+      'href',
+      `/book/${seeded!.ownerBookId}`,
+    )
+    await expect(
+      detail.getByRole('link', { name: 'Open full details', exact: true }),
+    ).toHaveAttribute('href', /scope=household/)
+    await expect(detail.locator(`a[href="/book/${seeded!.memberBookId}"]`)).toHaveCount(0)
     await expect(detail.getByText(seeded.sentinels.note, { exact: false })).toHaveCount(0)
     await expect(detail.getByText(seeded.sentinels.mood, { exact: false })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('hidden')
@@ -486,7 +493,7 @@ test('retrying household books revalidates unchanged membership and restores the
   test.setTimeout(60_000)
   if (!seeded) throw new Error('household-library seed missing')
   await signIn(page, owner.session)
-  const pattern = '**/rest/v1/rpc/household_library_works'
+  const pattern = '**/rest/v1/rpc/household_library_works_v2'
   await page.route(pattern, (route) =>
     route.fulfill({
       status: 503,
@@ -762,7 +769,7 @@ test('Add entry stays stable while membership loads and destinations change only
     await rosterGate
     await route.continue()
   })
-  await page.route('**/rest/v1/rpc/household_library_works', async (route) => {
+  await page.route('**/rest/v1/rpc/household_library_works_v2', async (route) => {
     bookRequests++
     await route.abort()
   })
@@ -1076,6 +1083,28 @@ test('persistent Add creates a household-only work and explicit adoption updates
   }
 })
 
+test('household details open a full page with only the current reader personal-book link', async ({
+  page,
+}, info) => {
+  await signIn(page, owner.session)
+  await page.goto('/library?scope=household')
+  const title = `Household Duplicate ${projectName}`
+  await page
+    .getByRole('button', { name: `View ${title} in the household library`, exact: true })
+    .click()
+  await page.getByRole('link', { name: 'Open full details', exact: true }).click()
+  await expect(page).toHaveURL(/scope=household.*work=/)
+  await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Open my book', exact: true })).toHaveAttribute(
+    'href',
+    `/book/${seeded!.ownerBookId}`,
+  )
+  await expect(page.locator(`a[href="/book/${seeded!.memberBookId}"]`)).toHaveCount(0)
+  await page.screenshot({ path: info.outputPath('household-full-details.png'), fullPage: true })
+  await page.getByRole('link', { name: '← Household library', exact: true }).click()
+  await expect(page).toHaveURL(/\/library\?scope=household$/)
+})
+
 test('the second reader gets the same household view with their own identity marked', async ({
   page,
 }, testInfo) => {
@@ -1094,7 +1123,14 @@ test('the second reader gets the same household view with their own identity mar
   await expect(detail).toContainText(
     `Active copies: ${owner.displayName}, ${member.displayName} (you)`,
   )
-  await expect(detail.getByRole('link')).toHaveCount(0)
+  await expect(detail.getByRole('link', { name: 'Open my book', exact: true })).toHaveAttribute(
+    'href',
+    `/book/${seeded!.memberBookId}`,
+  )
+  await expect(
+    detail.getByRole('link', { name: 'Open full details', exact: true }),
+  ).toHaveAttribute('href', /scope=household/)
+  await expect(detail.locator(`a[href="/book/${seeded!.ownerBookId}"]`)).toHaveCount(0)
   await expect(detail.getByRole('button', { name: 'Edit shared details' })).toHaveCount(0)
   if (seeded) {
     await expect(detail).toContainText(seeded.sentinels.tag)
@@ -1198,7 +1234,7 @@ test('an already-open tab never repaints a revoked household while a replacement
     markBooksRequested = resolve
   })
   const rosterPattern = '**/rest/v1/rpc/household_roster'
-  const booksPattern = '**/rest/v1/rpc/household_library_works'
+  const booksPattern = '**/rest/v1/rpc/household_library_works_v2'
   await page.route(rosterPattern, async (route) => {
     await rosterGate
     await route.continue()

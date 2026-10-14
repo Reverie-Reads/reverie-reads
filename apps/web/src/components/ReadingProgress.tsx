@@ -18,6 +18,31 @@ export function ProgressFields({
   inputRef?: Ref<HTMLInputElement>
 }) {
   const id = useId()
+  const [unit, setUnit] = useState('percent')
+  const [place, setPlace] = useState('')
+  const [total, setTotal] = useState('')
+  const [conversionError, setConversionError] = useState('')
+  const convert = () => {
+    const current = Number(place)
+    const length = Number(total)
+    if (
+      !place.trim() ||
+      !total.trim() ||
+      !Number.isFinite(current) ||
+      !Number.isFinite(length) ||
+      current < 0 ||
+      length <= 0 ||
+      current > length ||
+      (unit !== 'minutes' && (!Number.isInteger(current) || !Number.isInteger(length)))
+    ) {
+      setConversionError(
+        'Enter your current place and a total greater than zero. Your place cannot exceed the total.',
+      )
+      return
+    }
+    setConversionError('')
+    onChange(String(Math.round((current / length) * 100)))
+  }
   const progress = parseProgress(value)
   const meterValue = progress ?? 0
   const change = (next: string) => onChange(next)
@@ -25,6 +50,66 @@ export function ProgressFields({
 
   return (
     <div>
+      <label className="mb-3 block text-sm text-ink">
+        Enter progress using
+        <select
+          className="skin-input ml-2 min-h-11 px-3"
+          value={unit}
+          onChange={(event) => {
+            setUnit(event.target.value)
+            setConversionError('')
+          }}
+        >
+          <option value="percent">Percent</option>
+          <option value="pages">Pages</option>
+          <option value="chapters">Chapters</option>
+          <option value="minutes">Audio minutes</option>
+        </select>
+      </label>
+      {unit !== 'percent' && (
+        <div className="mb-4 space-y-2 border border-line p-3">
+          <p className="text-sm text-muted">
+            Use the total from the edition you are reading. This calculates the percent saved below;
+            it does not store an exact page, chapter, or audio position.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="text-sm text-ink">
+              {unit === 'minutes'
+                ? 'Minutes listened'
+                : unit === 'chapters'
+                  ? 'Chapters completed'
+                  : 'Pages completed'}
+              <input
+                type="number"
+                min="0"
+                step={unit === 'minutes' ? 'any' : '1'}
+                value={place}
+                onChange={(event) => setPlace(event.target.value)}
+                className="skin-input mt-1 min-h-11 w-full min-w-0 px-3"
+              />
+            </label>
+            <label className="text-sm text-ink">
+              Total {unit}
+              <input
+                type="number"
+                min="1"
+                step={unit === 'minutes' ? 'any' : '1'}
+                value={total}
+                onChange={(event) => setTotal(event.target.value)}
+                className="skin-input mt-1 min-h-11 w-full min-w-0 px-3"
+              />
+            </label>
+          </div>
+          <Button variant="secondary" onClick={convert}>
+            Calculate percent
+          </Button>
+          {conversionError && (
+            <p role="alert" className="text-sm text-ink">
+              {conversionError}
+            </p>
+          )}
+        </div>
+      )}
       <div className="flex items-baseline justify-between gap-3">
         <label htmlFor={`${id}-number`} className="text-[13.5px] font-semibold text-ink">
           Progress (%)

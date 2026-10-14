@@ -30,6 +30,14 @@ for (const screen of screens) {
       await page.addStyleTag({
         content: `:root { --safe-top: ${screen.top}px; --safe-right: ${screen.right}px; --safe-bottom: ${screen.bottom}px; --safe-left: ${screen.left}px; }`,
       })
+      const cameraArea = await page.evaluate(() => {
+        const style = getComputedStyle(document.body, '::before')
+        return { position: style.position, height: style.height, background: style.backgroundColor }
+      })
+      expect(cameraArea.position).toBe('fixed')
+      expect(cameraArea.height).toBe(`${screen.top}px`)
+      expect(cameraArea.background).not.toBe('rgba(0, 0, 0, 0)')
+      expect(cameraArea.background).not.toBe('transparent')
       const inSafeArea = async (control: Locator) => {
         await expect(control).toBeVisible()
         const box = await control.boundingBox()
