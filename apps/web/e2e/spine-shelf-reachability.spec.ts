@@ -513,6 +513,8 @@ test('reduced motion: the wave is binary — picked at full scale, the rest exac
 test('cover aspect: the rendered cover box keeps the cover ratio at every visible wave position', async ({
   page,
 }) => {
+  // Install before navigation so every application timer uses the same clock.
+  await page.clock.install()
   // fix/spine-magnify-geometry, defect 1. The button's scale is non-uniform by necessity (spine
   // ratio → cover ratio), and the first implementation let the cover inherit it: every visible
   // wave position except exactly t=1 rendered the bitmap squat (measured 0.45 vs 0.68 intrinsic
@@ -597,24 +599,21 @@ test('cover aspect: the rendered cover box keeps the cover ratio at every visibl
     return spines[i >= 18 ? i - 3 : i + 3]!.dataset.spine!
   })
   const spine = page.locator(`[data-spine="${targetId}"]`)
-  const widths = spine.evaluate(async (el) => {
-    const values: number[] = []
-    const start = performance.now()
-    let pickedAt: number | null = null
-    while (performance.now() - start < 6_000) {
-      const now = performance.now()
-      values.push(el.getBoundingClientRect().width)
-      if (el.hasAttribute('data-spine-picked')) pickedAt ??= now
-      // Playwright may spend hundreds of milliseconds aligning the real pointer. Sample
-      // through the observed selection plus its reveal, not from the command's start time.
-      if (pickedAt != null && now - pickedAt > 300) break
-      await new Promise((resolve) => requestAnimationFrame(resolve))
-    }
-    return values
-  })
+  // A reader simply hovers or taps the spine. We control elapsed time only to measure the
+  // reveal: a busy CI browser may render too few real frames in its 160ms duration to sample
+  // two intermediate widths. Keep the real gesture and geometry assertions, but deliver every
+  // animation frame rather than weakening the assertion or extending the product animation.
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1_000)
+  const observed = [await spine.evaluate((el) => el.getBoundingClientRect().width)]
   if (test.info().project.use.hasTouch) await spine.tap({ timeout: 5_000 })
   else await spine.hover({ timeout: 5_000 })
-  const observed = await widths
+  // Includes hover intent, the reveal and a settled tail. runFor fires every scheduled frame;
+  // fastForward would skip those frames and would not test the transition.
+  for (let frame = 0; frame < 25; frame++) {
+    await page.clock.runFor(16)
+    observed.push(await spine.evaluate((el) => el.getBoundingClientRect().width))
+  }
+  await page.clock.resume()
   const low = Math.min(...observed),
     high = Math.max(...observed)
   const intermediate = new Set(
