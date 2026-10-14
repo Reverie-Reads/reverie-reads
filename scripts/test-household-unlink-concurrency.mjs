@@ -1,7 +1,7 @@
 // Deterministic local two-session regressions for household revocation and corpus ISBN resolution.
 // Real writes run in explicit transactions behind controller-owned lock barriers. The harness reads
 // pg_locks before releasing transactions, so lock state rather than elapsed-time delay proves each
-// race was reached.
+// race was reached. Application conflicts use PT409; 40001 would ask PostgREST to retry.
 
 import assert from 'node:assert/strict'
 import { execFileSync, spawn } from 'node:child_process'
@@ -198,7 +198,7 @@ const authenticatedCall = (userId, statement) => `
   begin
     begin
       ${statement};
-    exception when sqlstate '40001' or sqlstate 'P0002' then
+    exception when sqlstate 'PT409' or sqlstate 'P0002' then
       rejected := true;
     end;
     if not rejected then
@@ -702,7 +702,7 @@ async function exercisePersonalCoverAdminCorpusEditLockOrdering(ownerId, memberI
           '${ownerBookId}'::uuid, '${workId}'::uuid, '${displayedCover}'
         );
         raise exception 'expected stale exact-cover review refusal';
-      exception when sqlstate '40001' then
+      exception when sqlstate 'PT409' then
         null;
       end;
       $review$;
@@ -797,7 +797,7 @@ async function exercisePersonalCoverAdminCorpusEditLockOrdering(ownerId, memberI
           '${ownerBookId}'::uuid, '${workId}'::uuid, '${replacementCover}'
         );
         raise exception 'expected unresolved ISBN identity refusal';
-      exception when sqlstate '40001' then
+      exception when sqlstate 'PT409' then
         null;
       end;
       $review$;
@@ -1971,7 +1971,7 @@ async function exerciseReconciliationLockOrdering(ownerId, memberId) {
           ${reconciliationFenceArguments(ownerId, memberId)}
         );
         raise exception 'expected a changed-snapshot refusal';
-      exception when sqlstate '40001' then
+      exception when sqlstate 'PT409' then
         null;
       end;
       $reconcile$;
@@ -2134,7 +2134,7 @@ async function exerciseReconciliationInsertLockOrdering(ownerId, memberId) {
           ${reconciliationFenceArguments(ownerId, memberId)}
         );
         raise exception 'expected a concurrent-book serialization refusal';
-      exception when sqlstate '40001' then
+      exception when sqlstate 'PT409' then
         null;
       end;
       $reconcile$;
@@ -2482,7 +2482,7 @@ async function exerciseReconciliationRosterChange(ownerId, memberId) {
           ${reconciliationFenceArguments(ownerId, memberId)}
         );
         raise exception 'expected a changed-roster refusal';
-      exception when sqlstate '42501' or sqlstate '40001' then
+      exception when sqlstate '42501' or sqlstate 'PT409' then
         null;
       end;
       $reconcile$;
