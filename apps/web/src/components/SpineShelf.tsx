@@ -149,6 +149,9 @@ export function SpineShelf({
     onReorder(ids)
   }
 
+  const waveCenterRef = useRef<number | null>(null)
+  const pointerWaveFrameRef = useRef(0)
+  const animateReturnRef = useRef(false)
   const nodesCache = useRef(new WeakMap<HTMLElement, SlotNodes>())
   const nodesFor = (slot: HTMLElement): SlotNodes | null => {
     const cached = nodesCache.current.get(slot)
@@ -192,6 +195,7 @@ export function SpineShelf({
     if (n === 0) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const cx = cxRaw
+    waveCenterRef.current = cx
 
     // Pass 1: magnification factor and the width each slot's scale visually adds.
     const t = new Array<number>(n)
@@ -410,7 +414,11 @@ export function SpineShelf({
       // The wave follows the window in the SAME frame the scroll was sampled — no React
       // round-trip (the #146 bar), and no second regime: this is the only place scroll-driven
       // magnification is ever computed. A live pointer pin keeps its in-place bloom instead.
-      if (pointerIdRef.current == null) renderWaveRef.current(cx)
+      if (pointerIdRef.current == null) {
+        cancelAnimationFrame(pointerWaveFrameRef.current)
+        animateReturnRef.current = false
+        renderWaveRef.current(cx)
+      }
       // When no scroll event lands for 140ms the gesture is over; ease the SCROLL so the nearest
       // book centres in the window and the settled state ends fully open.
       window.clearTimeout(idleTimerRef.current)
@@ -423,6 +431,13 @@ export function SpineShelf({
     el.addEventListener('scroll', onScroll, { passive: true })
     const onUserInput = () => {
       settlingRef.current = false
+      animateReturnRef.current = false
+      cancelAnimationFrame(pointerWaveFrameRef.current)
+      // Finish an interrupted reveal without changing the two-tap touch selection contract.
+      const pinned = pointerIdRef.current
+        ? el.querySelector<HTMLElement>(`[data-spine="${CSS.escape(pointerIdRef.current)}"]`)
+        : null
+      if (pinned) renderWaveRef.current(pinned.offsetLeft + pinned.offsetWidth / 2)
     }
     el.addEventListener('wheel', onUserInput, { passive: true })
     el.addEventListener('touchstart', onUserInput, { passive: true })
@@ -484,18 +499,37 @@ export function SpineShelf({
     return () => ro.disconnect()
   }, [books])
 
-  // Pointer picks (hover, tap, :focus-visible) bloom IN PLACE — the wave renders around the
-  // pinned slot's own centre in the same frame its aria flips, so the magnified state and the
-  // accessible state agree; when the pin clears, the wave returns to the window.
+  // Ease deliberate pointer reveals through the same geometry renderer. Never interpolate
+  // parent/child CSS transforms separately: that distorts covers mid-transition. Scroll keeps
+  // its existing same-frame renderer and cancels this animation as soon as it takes over.
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
-    if (pointerId != null) {
-      const slot = el.querySelector<HTMLElement>(`[data-spine="${CSS.escape(pointerId)}"]`)
-      if (slot) renderWaveRef.current(slot.offsetLeft + slot.offsetWidth / 2)
-    } else {
-      renderWaveRef.current(el.scrollLeft + windowW(el))
+    cancelAnimationFrame(pointerWaveFrameRef.current)
+    const slot =
+      pointerId != null
+        ? el.querySelector<HTMLElement>(`[data-spine="${CSS.escape(pointerId)}"]`)
+        : null
+    const target = slot ? slot.offsetLeft + slot.offsetWidth / 2 : el.scrollLeft + windowW(el)
+    const from = waveCenterRef.current ?? target
+    const animate =
+      (slot != null || animateReturnRef.current) &&
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      Math.abs(target - from) > 0.5
+    animateReturnRef.current = false
+    if (!animate) {
+      renderWaveRef.current(target)
+      return
     }
+    const start = performance.now()
+    const frame = (now: number) => {
+      const elapsed = Math.min(1, (now - start) / 160)
+      const eased = 1 - Math.pow(1 - elapsed, 3)
+      renderWaveRef.current(from + (target - from) * eased)
+      if (elapsed < 1) pointerWaveFrameRef.current = requestAnimationFrame(frame)
+    }
+    pointerWaveFrameRef.current = requestAnimationFrame(frame)
+    return () => cancelAnimationFrame(pointerWaveFrameRef.current)
   }, [pointerId, books])
 
   const shownIndex = Math.max(
@@ -650,6 +684,7 @@ export function SpineShelf({
             if (e.pointerType !== 'mouse') return
             window.clearTimeout(hoverTimerRef.current)
             hoverPinnedPointRef.current = null
+            animateReturnRef.current = pointerIdRef.current != null
             setPointerId(null)
           }}
           // Track-level intent is deliberate. Per-spine pointerenter depends on which transformed

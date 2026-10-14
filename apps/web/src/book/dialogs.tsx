@@ -814,7 +814,7 @@ function MergePreview({
   const titleDropped = loser.title.trim() !== primary.title.trim()
 
   return (
-    <Modal title="Review the merge" onClose={onClose}>
+    <Modal title="Review the merge" wide onClose={onClose}>
       <p className="-mt-2 mb-3 text-[13px] text-muted">
         <span className="font-semibold text-ink">{loser.title}</span> folds into{' '}
         <span className="font-semibold text-ink">{primary.title}</span>, then it’s removed. This
@@ -885,7 +885,7 @@ function MergePreview({
       </Surface>
 
       {options.length > 0 && (
-        <details className="mt-2">
+        <details open className="mt-2">
           <summary className="cursor-pointer list-none text-[12.5px] text-muted marker:content-none">
             <span className="underline">Choose fields ({options.length})</span> — the rows above
             update as you pick
@@ -902,17 +902,16 @@ function MergePreview({
                   />
                   <span className="min-w-0">
                     <span className="text-ink">{o.label}</span>{' '}
-                    {o.kind === 'add' ? (
-                      <span className="text-muted">
-                        {o.theirs ? `take “${o.theirs}”` : 'take the other book’s'}
+                    <span className="mt-1 grid grid-cols-2 gap-3">
+                      <span className="min-w-0 break-words text-muted">
+                        <span className="block font-semibold">Keep this book</span>
+                        {o.mine || 'Not recorded'}
                       </span>
-                    ) : (
-                      <span className="text-muted">
-                        {o.mine || o.theirs
-                          ? `keep “${o.mine}” — or take “${o.theirs}”`
-                          : 'take the other book’s'}
+                      <span className="min-w-0 break-words text-muted">
+                        <span className="block font-semibold">Take the other book</span>
+                        {o.theirs || 'Not recorded'}
                       </span>
-                    )}
+                    </span>
                   </span>
                 </label>
               </li>

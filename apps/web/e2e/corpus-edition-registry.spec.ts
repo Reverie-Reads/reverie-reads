@@ -600,3 +600,59 @@ test('corpus selections stay readable and keyboard-operable in every room and mo
     await c.cleanup()
   }
 })
+
+test('Push to corpus publishes the saved series relationship and My series searches its books', async ({
+  page,
+}, info) => {
+  const c = await fixture(page)
+  try {
+    await ok(
+      c.client.rpc('set_book_series_membership', {
+        p_book: c.book,
+        p_series: null,
+        p_series_name: 'The Quiet Islands',
+        p_position: 2,
+        p_length: 4,
+        p_make_primary: true,
+        p_membership_claim: { origin: 'reader' },
+        p_position_claim: { origin: 'reader' },
+      }),
+      'saved personal series',
+    )
+    await ok(
+      c.client.from('books').update({ status: 'ongoing' }).eq('id', c.book),
+      'saved series status',
+    )
+    await page.goto(`/book/${c.book}`)
+    await expect(page.getByText('← Back', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'Push to corpus' })
+    await dialog.getByRole('button', { name: 'Clear selection', exact: true }).click()
+    await dialog.getByRole('checkbox', { name: 'Series, position, length and status' }).check()
+    await dialog.screenshot({ path: info.outputPath('series-push-review.png') })
+    await dialog.getByRole('button', { name: 'Save selected changes', exact: true }).click()
+    await expect(dialog).toBeHidden()
+    const shared = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'saved shared series',
+    )
+    expect(shared.series).toMatchObject({
+      name: 'The Quiet Islands',
+      position: 2,
+      count: 4,
+      status: 'ongoing',
+      confirmed: true,
+    })
+    await page.goto('/series')
+    await page.getByRole('searchbox', { name: 'Find a series' }).fill(c.title)
+    await expect(page.getByRole('link', { name: /The Quiet Islands/ }).first()).toBeVisible()
+    await page.getByRole('searchbox', { name: 'Find a series' }).fill('no matching series fixture')
+    await expect(
+      page.getByText('No series match. Try a series name, a book title, an author, or an ISBN.', {
+        exact: true,
+      }),
+    ).toBeVisible()
+  } finally {
+    await c.cleanup()
+  }
+})

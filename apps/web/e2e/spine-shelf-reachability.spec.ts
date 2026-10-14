@@ -597,9 +597,35 @@ test('cover aspect: the rendered cover box keeps the cover ratio at every visibl
     return spines[i >= 18 ? i - 3 : i + 3]!.dataset.spine!
   })
   const spine = page.locator(`[data-spine="${targetId}"]`)
+  const widths = spine.evaluate(async (el) => {
+    const values: number[] = []
+    const start = performance.now()
+    let pickedAt: number | null = null
+    while (performance.now() - start < 6_000) {
+      const now = performance.now()
+      values.push(el.getBoundingClientRect().width)
+      if (el.hasAttribute('data-spine-picked')) pickedAt ??= now
+      // Playwright may spend hundreds of milliseconds aligning the real pointer. Sample
+      // through the observed selection plus its reveal, not from the command's start time.
+      if (pickedAt != null && now - pickedAt > 300) break
+      await new Promise((resolve) => requestAnimationFrame(resolve))
+    }
+    return values
+  })
   if (test.info().project.use.hasTouch) await spine.tap({ timeout: 5_000 })
   else await spine.hover({ timeout: 5_000 })
-  await page.waitForTimeout(450)
+  const observed = await widths
+  const low = Math.min(...observed),
+    high = Math.max(...observed)
+  const intermediate = new Set(
+    observed
+      .filter((width) => width > low + 1 && width < high - 1)
+      .map((width) => width.toFixed(1)),
+  )
+  expect(
+    intermediate.size,
+    'a pointer reveal should ease through intermediate sizes, not jump',
+  ).toBeGreaterThanOrEqual(2)
   await expect.poll(async () => pickedId(page)).toBe(targetId)
   const tapped = await track(page).evaluate((el) => {
     const cover = el.querySelector<HTMLElement>('[data-spine-picked] [data-mag-cover]')!

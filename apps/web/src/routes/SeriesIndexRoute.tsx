@@ -30,6 +30,7 @@ import {
 } from '../series/SeriesManagement'
 import { isSeriesMergeEligible } from '../series/seriesManagementPolicy'
 import { SharedSeriesCatalogBrowser } from '../series/SharedSeriesCatalogBrowser'
+import { matchesSeriesSearch } from '../series/seriesSearch'
 import { LibraryNavigation } from '../components/LibraryNavigation'
 
 interface StructuredSeriesSection {
@@ -55,15 +56,19 @@ export function buildStructuredSeriesSections(
     })
     const authors = seriesAuthorKeys(linkedBooks, row.entries)
     const filing = authors.length ? authors : [{ key: 'author-not-set', name: 'Author not set' }]
-    for (const author of filing) {
-      const section = byAuthor.get(author.key) ?? {
-        key: author.key,
-        name: author.name,
-        rows: [],
-      }
-      section.rows.push(row)
-      byAuthor.set(author.key, section)
+    // One series belongs to one contributor group, even when books have different authors.
+    // Author spelling never splits the stored membership or duplicates its card.
+    const key = filing
+      .map((author) => author.key)
+      .sort()
+      .join('::')
+    const section = byAuthor.get(key) ?? {
+      key,
+      name: filing.map((author) => author.name).join(' · '),
+      rows: [],
     }
+    section.rows.push(row)
+    byAuthor.set(key, section)
   }
   return [...byAuthor.values()]
     .map((section) => ({
@@ -256,11 +261,11 @@ export function SeriesCard({
 }
 
 export function SeriesIndexScreen() {
-  const { scope: selectedScope } = seriesIndexRoute.useSearch()
+  const { scope: selectedScope, q = '' } = seriesIndexRoute.useSearch()
   const scope = selectedScope ?? 'personal'
   const navigate = seriesIndexRoute.useNavigate()
   const { data: books } = useBooks()
-  const { data: seriesList } = useSeriesList()
+  const { data: seriesList, isLoading, isError, refetch } = useSeriesList()
   const { data: lists } = useLists()
   const { data: items } = useAllListItems()
   const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set())
@@ -279,9 +284,42 @@ export function SeriesIndexScreen() {
     return out
   }, [lists, items])
 
+  const bookSearchBySeries = useMemo(() => {
+    const fields = new Map<string, string[]>()
+    for (const book of books ?? []) {
+      const values = fields.get(book.series) ?? []
+      values.push(book.title, book.isbn, ...book.contributors.map((c) => c.name))
+      fields.set(book.series, values)
+    }
+    return fields
+  }, [books])
+
+  const matchingSeries = useMemo(
+    () =>
+      new Map(
+        [...(seriesList ?? new Map<string, SeriesListRow>())].filter(([, row]) =>
+          matchesSeriesSearch(q, [
+            row.series.name,
+            ...row.entries.flatMap((entry) => {
+              const book = entry.bookId ? byId.get(entry.bookId) : undefined
+              return [
+                entry.title,
+                entry.author,
+                book?.title ?? '',
+                book?.isbn ?? '',
+                ...(book?.contributors?.map((c) => c.name) ?? []),
+              ]
+            }),
+            // Legacy memberships remain review-only but can still be found by their saved books.
+            ...(bookSearchBySeries.get(row.series.name) ?? []),
+          ]),
+        ),
+      ),
+    [seriesList, byId, bookSearchBySeries, q],
+  )
   const sections = useMemo(
-    () => buildStructuredSeriesSections(seriesList ?? new Map(), byId),
-    [seriesList, byId],
+    () => buildStructuredSeriesSections(matchingSeries, byId),
+    [matchingSeries, byId],
   )
 
   const managementRows = useMemo<SeriesManagementRow[]>(() => {
@@ -316,8 +354,8 @@ export function SeriesIndexScreen() {
   )
 
   const unreviewedSeries = useMemo(
-    () => [...(seriesList ?? new Map()).values()].filter((row) => row.unreviewed > 0),
-    [seriesList],
+    () => [...matchingSeries.values()].filter((row) => row.unreviewed > 0),
+    [matchingSeries],
   )
 
   const consolidationRows = useMemo<ConsolidationSeries[]>(
@@ -365,7 +403,7 @@ export function SeriesIndexScreen() {
                 type="button"
                 aria-pressed={scope === value}
                 onClick={() =>
-                  void navigate({ search: { scope: value === 'shared' ? 'shared' : undefined } })
+                  void navigate({ search: { q, scope: value === 'shared' ? 'shared' : undefined } })
                 }
                 className="skin-control min-h-11 px-3 text-[13px] font-semibold text-ink"
                 style={{
@@ -387,9 +425,49 @@ export function SeriesIndexScreen() {
       <LibraryNavigation current="series" className="mb-4 mt-4" />
 
       {scope === 'shared' ? (
-        <SharedSeriesCatalogBrowser />
+        <SharedSeriesCatalogBrowser
+          query={q}
+          onQueryChange={(query) =>
+            void navigate({
+              search: { scope: 'shared', q: query || undefined },
+              replace: true,
+              resetScroll: false,
+            })
+          }
+        />
       ) : (
         <>
+          <label className="mt-4 block max-w-xl text-sm font-semibold text-ink">
+            Find a series
+            <input
+              type="search"
+              value={q}
+              onChange={(event) =>
+                void navigate({
+                  search: { q: event.target.value || undefined },
+                  replace: true,
+                  resetScroll: false,
+                })
+              }
+              placeholder="Series, book, author, or ISBN"
+              className="skin-input mt-1 min-h-11 w-full px-3 py-2 text-sm"
+            />
+          </label>
+          <p role="status" className="mt-2 text-sm text-muted">
+            {isLoading
+              ? 'Loading your series…'
+              : isError
+                ? 'Series unavailable'
+                : `${sections.reduce((sum, section) => sum + section.rows.length, 0)} confirmed series${q.trim() ? ' found' : ''}${unreviewedSeries.length ? ` · ${unreviewedSeries.length} awaiting review` : ''}`}
+          </p>
+          {isError && (
+            <div role="alert" className="mt-3 text-ink">
+              Your series could not be loaded.
+              <Button variant="secondary" onClick={() => void refetch()}>
+                Retry series
+              </Button>
+            </div>
+          )}
           <ConsolidationQueue rows={consolidationRows} />
 
           {!!unreviewedSeries.length && (
@@ -418,10 +496,13 @@ export function SeriesIndexScreen() {
             </section>
           )}
 
-          {!sections.length ? (
+          {!isLoading && !isError && !sections.length ? (
             <p className="mt-8 text-[13.5px] text-muted">
-              No confirmed series yet. Add a series through a book’s details, or review an older
-              label above.
+              {q.trim()
+                ? unreviewedSeries.length
+                  ? 'Matching older labels need membership review above.'
+                  : 'No series match. Try a series name, a book title, an author, or an ISBN.'
+                : 'No confirmed series yet. Add a series through a book’s details, or review an older label above.'}
             </p>
           ) : (
             <div className="mt-7 flex flex-col gap-8" data-testid="confirmed-series-browser">
@@ -482,8 +563,14 @@ export function SeriesIndexScreen() {
   )
 }
 
-export function validateSeriesIndexSearch(search: Record<string, unknown>): { scope?: 'shared' } {
-  return { scope: search.scope === 'shared' ? 'shared' : undefined }
+export function validateSeriesIndexSearch(search: Record<string, unknown>): {
+  scope?: 'shared'
+  q?: string
+} {
+  return {
+    scope: search.scope === 'shared' ? 'shared' : undefined,
+    ...(typeof search.q === 'string' && search.q ? { q: search.q.slice(0, 200) } : {}),
+  }
 }
 
 export const seriesIndexRoute = createRoute({

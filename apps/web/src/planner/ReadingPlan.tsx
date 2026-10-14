@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router'
 import { ReadingTips } from '../components/ReadingTips'
 import { useMemo, useState } from 'react'
 import { StartPlannerTour } from '../guidance/BookTour'
@@ -652,6 +653,19 @@ function PlanCalendar({
                 >
                   <span>{day}</span>
                   {total > 0 && (
+                    <span className="plan-day-titles" aria-hidden="true">
+                      {[
+                        ...entries.map((book) => book.title),
+                        ...finished.map((read) => read.book.title),
+                      ]
+                        .slice(0, 2)
+                        .map((title, i) => (
+                          <span key={i}>{title}</span>
+                        ))}
+                      {total > 2 && <span>+{total - 2} more</span>}
+                    </span>
+                  )}
+                  {total > 0 && (
                     <small aria-hidden="true">
                       {entries.length > 0 && <i className="is-plan">{entries.length}</i>}
                       {finished.length > 0 && <i className="is-finished">{finished.length}</i>}
@@ -794,6 +808,7 @@ function PlanPicker({
   view: PlanView
 }) {
   usePlannerTourContext({ kind: 'picker', view })
+  const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const normalized = query.trim().toLocaleLowerCase()
   const available = useMemo(
@@ -827,6 +842,16 @@ function PlanPicker({
           style={{ background: 'var(--field)' }}
         />
       </label>
+      <Button
+        variant="secondary"
+        className="mt-3"
+        onClick={() => void navigate({ to: '/add', search: { want: true } })}
+      >
+        Add a new book
+      </Button>
+      <p className="mt-2 text-xs text-muted">
+        Review the new book, then choose “Plan this book” to add its timing and notes.
+      </p>
       <ul className="mt-4 grid max-h-[52vh] gap-2 overflow-y-auto pr-1">
         {available.map((book) => (
           <li key={book.id} className="flex items-center gap-3 border-b border-line pb-2">

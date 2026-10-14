@@ -37,7 +37,8 @@ export function ContributorEditor({
     if (j < 0 || j >= rows.length) return
     const next = [...rows]
     ;[next[i], next[j]] = [next[j]!, next[i]!]
-    onChange(renumber(next))
+    // The swapped array is the new order; old positions must not sort it back.
+    onChange(next.map((contributor, position) => ({ ...contributor, position })))
   }
 
   const fieldClass = 'skin-field h-9 border border-line px-2 text-[13px] text-ink outline-none'

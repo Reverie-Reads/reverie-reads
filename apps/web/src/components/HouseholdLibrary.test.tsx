@@ -3,6 +3,26 @@ import { describe, expect, it, vi } from 'vitest'
 import type { HouseholdBook } from '../data/household'
 import { HouseholdBookCard, HouseholdBookDetail, LibraryScopeControl } from './HouseholdLibrary'
 
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({
+    children,
+    to,
+    params,
+    search,
+  }: {
+    children?: React.ReactNode
+    to: string
+    params?: { bookId: string }
+    search?: { work: string }
+  }) => (
+    <a
+      href={params ? `/book/${params.bookId}` : `${to}?scope=household&work=${search?.work ?? ''}`}
+    >
+      {children}
+    </a>
+  ),
+}))
+
 const book = (ownerId: string, ownerName: string): HouseholdBook => ({
   id: `book-${ownerId}`,
   title: 'Duplicate Title',

@@ -13,6 +13,7 @@ import {
 } from '@reverie/core'
 import { Modal } from '../components/Modal'
 import { Surface } from '../components/Surface'
+import { ingestCover } from '../lib/covers'
 import { useSaveCopyInventory } from '../data/copyInventory'
 
 const control =
@@ -45,7 +46,9 @@ function EditionArtwork({ edition }: { edition: LibraryEdition }) {
           onError={() => setFailed(true)}
         />
       ) : (
-        <span className="px-1 leading-relaxed">{EDITION_FORMAT_LABELS[edition.format]}</span>
+        <span className="px-1 leading-relaxed">
+          {failed ? 'Image unavailable' : EDITION_FORMAT_LABELS[edition.format]}
+        </span>
       )}
     </div>
   )
@@ -154,6 +157,8 @@ export function CopyEditor({
   )
   const [revision] = useState(book.copyInventoryRevision ?? 0)
   const [error, setError] = useState('')
+  const [uploading, setUploading] = useState<string | null>(null)
+  const uploadPending = useRef(false)
   const [dirty, setDirty] = useState(!!initialInventory)
   const [confirmClose, setConfirmClose] = useState(false)
   const saving = useRef(false)
@@ -169,12 +174,12 @@ export function CopyEditor({
       editions: draft.editions.map((e) => (e.id === id ? { ...e, ...patch } : e)),
     })
   const requestClose = () => {
-    if (saving.current) return
+    if (saving.current || uploadPending.current) return
     if (dirty) setConfirmClose(true)
     else onClose()
   }
   async function submit() {
-    if (saving.current) return
+    if (saving.current || uploadPending.current) return
     if (!parseCopyInventory(draft)) {
       setError(
         'Check ISBNs, publication dates (YYYY, YYYY-MM or YYYY-MM-DD), page counts (1–20,000) and HTTPS cover links. Google Books images cannot be saved as edition covers. Release links must be Hardcover or Penguin Random House book pages.',
@@ -207,7 +212,7 @@ export function CopyEditor({
           void submit()
         }}
       >
-        <fieldset disabled={save.isPending} className="min-w-0 space-y-5">
+        <fieldset disabled={save.isPending || !!uploading} className="min-w-0 space-y-5">
           {draft.editions.map((edition, index) => (
             <section
               key={edition.id}
@@ -318,7 +323,45 @@ export function CopyEditor({
                       verification of edited details.
                     </p>
                   </div>
-                  <div className="sm:col-span-2">
+                  <div className="sm:col-span-2 space-y-3">
+                    <EditionArtwork key={`${edition.id}:${edition.cover}`} edition={edition} />
+                    <Field label="Upload an edition cover">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={!!uploading}
+                        onChange={async (event) => {
+                          const file = event.target.files?.[0]
+                          event.target.value = ''
+                          if (!file || uploadPending.current) return
+                          uploadPending.current = true
+                          setUploading(edition.id)
+                          setError('')
+                          try {
+                            const result = await ingestCover({
+                              bookId: book.id,
+                              source: 'upload',
+                              file,
+                            })
+                            if (result.status !== 'ok') throw new Error('Upload failed')
+                            editionChange(edition.id, { cover: result.data.cover })
+                          } catch {
+                            setError(
+                              'The cover could not be uploaded. Your edition information is still here. Try another image.',
+                            )
+                          } finally {
+                            uploadPending.current = false
+                            setUploading(null)
+                          }
+                        }}
+                        className="block min-h-11 w-full min-w-0 text-sm text-ink"
+                      />
+                    </Field>
+                    {uploading === edition.id && (
+                      <p role="status" className="text-sm text-muted">
+                        Uploading cover…
+                      </p>
+                    )}
                     <Field label="Cover image link (HTTPS)">
                       <input
                         className={field}
@@ -328,6 +371,10 @@ export function CopyEditor({
                         onChange={(e) => editionChange(edition.id, { cover: e.target.value })}
                       />
                     </Field>
+                    <p className="text-xs text-muted">
+                      Paste a direct image link, not a book page. If a site blocks linked images,
+                      upload the image instead. Save editions &amp; copies to keep this cover.
+                    </p>
                   </div>
                 </div>
               </details>

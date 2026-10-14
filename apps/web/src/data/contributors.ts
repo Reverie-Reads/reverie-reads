@@ -38,6 +38,6 @@ export function useSetContributors() {
     meta: { action: 'Contributors' },
     mutationFn: ({ bookId, contributors }: { bookId: string; contributors: Contributor[] }) =>
       persistContributors(bookId, contributors),
-    onSuccess: () => qc.invalidateQueries({ queryKey: booksKey }),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: booksKey }), qc.invalidateQueries({ queryKey: ['household'] })]),
   })
 }

@@ -233,8 +233,8 @@ export function useSetFollow() {
 }
 
 /** Per-author shelves via the releases fn — accumulates until nothing is pending (cached names
- *  return instantly; each call spends a small upstream budget). Progressive: partial shelves
- *  render as they land, while status keeps loading and provider unavailability explicit. */
+ *  return instantly; each call spends a small upstream budget). Shelves publish together
+ *  so results stay still while status keeps loading and provider unavailability explicit. */
 export type AuthorReleaseStatus = 'idle' | 'loading' | 'ready' | 'unavailable'
 
 export function useAuthorReleases(names: readonly string[]) {
@@ -261,40 +261,38 @@ export function useAuthorReleases(names: readonly string[]) {
     let cancelled = false
     void (async () => {
       let remaining = keyNames
+      const shelves: Record<string, ReleaseHit[]> = {}
       let misses = 0
       for (let call = 0; call < 10 && remaining.length && !cancelled; call++) {
         try {
           const { data, error } = await supabase.functions.invoke('releases', { body: { mode: 'authors', names: remaining } })
+          if (cancelled) return
           // one flaky call must not discard the run — skip it and let the next call retry
           if (error || !(data as { authors?: unknown })?.authors) {
             if (++misses >= 3) {
               setResult((old) =>
-                old.key === namesKey ? { ...old, status: 'unavailable' } : old,
+                old.key === namesKey ? { ...old, shelves: { ...shelves }, status: 'unavailable' } : old,
               )
               return
             }
             continue
           }
           const d = data as { authors: Record<string, ReleaseHit[]>; pending?: string[] }
-          if (!cancelled) {
-            setResult((old) =>
-              old.key === namesKey
-                ? { ...old, shelves: { ...old.shelves, ...d.authors } }
-                : old,
-            )
-          }
+          // Publish one stable shelf after the bounded acquisition, not a new ordering per batch.
+          Object.assign(shelves, d.authors)
           remaining = d.pending ?? []
         } catch {
+          if (cancelled) return
           if (++misses >= 3) {
             setResult((old) =>
-              old.key === namesKey ? { ...old, status: 'unavailable' } : old,
+              old.key === namesKey ? { ...old, shelves: { ...shelves }, status: 'unavailable' } : old,
             )
             return // enhancement only
           }
         }
       }
       if (!cancelled) {
-        setResult((old) => (old.key === namesKey ? { ...old, status: 'ready' } : old))
+        setResult((old) => (old.key === namesKey ? { ...old, shelves, status: remaining.length ? 'unavailable' : 'ready' } : old))
       }
     })()
     return () => {

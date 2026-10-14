@@ -106,7 +106,7 @@ export function BookDetailRail({
               background: 'color-mix(in srgb, var(--primary) 14%, transparent)',
               color: 'var(--ink)',
             }}
-            title={`${labels.intensity} ${intensity}/5`}
+            title={`${labels.intensity} ${intensity}/5 — ${labels.intensityLevels[intensity]}`}
           >
             {labels.intensityGlyph.repeat(intensity)}
           </span>

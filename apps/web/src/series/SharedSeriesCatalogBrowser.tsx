@@ -1,22 +1,26 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { APP_NAME, SERIES_STATUS_LABELS } from '@reverie/core'
+import { matchesSeriesSearch } from './seriesSearch'
 import { Surface } from '../components/Surface'
 import { useCorpusSeriesCatalog } from '../data/corpusSeriesCatalog'
 
-export function SharedSeriesCatalogBrowser() {
+export function SharedSeriesCatalogBrowser({
+  query: externalQuery,
+  onQueryChange,
+}: { query?: string; onQueryChange?: (query: string) => void } = {}) {
   const { data: rows = [], isLoading, isError } = useCorpusSeriesCatalog()
-  const [query, setQuery] = useState('')
+  const [localQuery, setLocalQuery] = useState('')
+  const query = externalQuery ?? localQuery
+  const setQuery = onQueryChange ?? setLocalQuery
   const deferredQuery = useDeferredValue(query)
   const filtered = useMemo(() => {
-    const needle = deferredQuery.trim().toLocaleLowerCase()
-    if (!needle) return rows
     return rows.filter((row) =>
-      [
+      matchesSeriesSearch(deferredQuery, [
         row.name,
         ...row.aliases,
         ...row.entries.flatMap((entry) => [entry.title, entry.author]),
-      ].some((value) => value.toLocaleLowerCase().includes(needle)),
+      ]),
     )
   }, [deferredQuery, rows])
 

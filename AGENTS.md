@@ -275,13 +275,17 @@ myProgress`). Move them into `packages/core` with tests.
   manual choice or route exit cancels the older request so late results cannot replace the current
   task. Short queries explain the minimum rather than pretending to have searched.
 - **Administrator push is reviewed and bound to a saved book.** Book Details offers corpus admins
-  one review with individually selectable edition facts and shared guidance, saved together.
+  one review with individually selectable edition facts, shared guidance and the saved series
+  relationship, saved together.
   Direct administrator updates can omit evidence and the manual verification checklist; optional
   evidence-backed updates retain their link and explanation. Both modes keep the fingerprint conflict
   check, exact-edition identity, input validation and honest per-action audit history. Guidance carries
   an explicit field selection: unchecked primary/secondary values and prior review protections stay
-  unchanged, while unreviewed fields retain their normal completion behavior. A configured inventory requires an exact edition choice;
-  private notes, ratings, copy labels and locations never enter the payload. Unknown values preserve
+  unchanged, while unreviewed fields retain their normal completion behavior. Edition updates from a
+  configured inventory require an exact edition choice;
+  private notes, ratings, copy labels and locations never enter the payload. Series publication rechecks
+  the exact saved personal membership and preserves reader/import choices during reconciliation.
+  Unknown values preserve
   shared facts. Show the persisted corpus update time, not a fetch time; discard the review when
   the account or book changes. See `docs/tasks/corpus-editions-and-guidance.md`.
 - **Published editions are shared bibliography; individual copies stay private.** `corpus_editions`
@@ -326,7 +330,10 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
   existing corpus work—or create one attributed provisional identity—directly to `household_works`
   without creating `books` or implying owned/borrowed/wishlist/read state. Existing corpus metadata
   is editable only by a household owner or corpus administrator. Routine edits to an active
-  personal row stay personal; the existing fill-only removal/account-deletion preservation may
+  personal row do not change the corpus; an allowlisted bibliography patch also updates an
+  already-admitted household work (title/contributors, series, genres, ISBN and publication date).
+  This household overlay is not corpus evidence and never copies private reading/copy information.
+  The existing fill-only removal/account-deletion preservation may
   still populate missing objective corpus gaps before the last source disappears, but series is no
   longer treated as objective without relational evidence. Trusted corpus
   series/position/count is a default for personal rows only while their claim remains

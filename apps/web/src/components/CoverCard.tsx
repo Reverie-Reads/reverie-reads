@@ -174,7 +174,7 @@ export function CoverCard({
           <div
             className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 text-[10px] backdrop-blur"
             style={{ background: markBg, color: '#fff', borderRadius: 'var(--mark-radius)' }}
-            title={`${labels.intensity} ${intensity}/5`}
+            title={`${labels.intensity} ${intensity}/5 — ${labels.intensityLevels[intensity]}`}
           >
             {labels.intensityGlyph.repeat(intensity)}
           </div>

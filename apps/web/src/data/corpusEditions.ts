@@ -42,6 +42,7 @@ export interface CorpusRecord {
   guidanceSource: { sourceRef?: string; observedAt?: string } | null
   isbns: string[]
   fingerprint: string
+  series?: { confirmed?: boolean; name: string | null; position: number | null; count: number | null; status: string | null }
   editions: CorpusEdition[]
   reports: CorpusIsbnReport[]
   history: { id: string; action: string; source_url: string | null; note: string; created_at: string; review_mode?: 'direct' | 'evidence' }[]
@@ -79,6 +80,7 @@ export type CorpusRecordChange =
   | { action: 'resolve_report'; value: { reportId: string } }
 export type CorpusGuidanceField = 'genres' | 'subgenres' | 'spice' | 'darkness'
 export type CorpusPushChange =
+  | { action: 'series'; value: { bookId: string; name: string; position: number | null; count: number | null; status: string } }
   | Extract<CorpusRecordChange, { action: 'edition' }>
   | (Extract<CorpusRecordChange, { action: 'guidance' }> & { fields: CorpusGuidanceField[] })
 export function usePushCorpusRecord() {
@@ -108,7 +110,7 @@ export function usePushCorpusRecord() {
     onSuccess: async () => {
       await Promise.all([
         corpusRecordKey, ['catalog-metadata-review'], ['works'], ['works-browse'],
-        ['works-lookup'], ['works-lookup-isbns'], ['discover-details'], ['household'], ['books'],
+        ['corpus-series-catalog'], ['series'], ['seriesList'], ['series-strip'], ['book-series-memberships'], ['works-lookup'], ['works-lookup-isbns'], ['discover-details'], ['household'], ['books'],
       ].map((queryKey) => client.invalidateQueries({ queryKey })))
     },
   })
@@ -140,7 +142,7 @@ export function useSaveCorpusRecord() {
     onSuccess: async () => {
       await Promise.all([
         corpusRecordKey, ['catalog-metadata-review'], ['works'], ['works-browse'],
-        ['works-lookup'], ['works-lookup-isbns'], ['discover-details'], ['household'], ['books'],
+        ['corpus-series-catalog'], ['series'], ['seriesList'], ['series-strip'], ['book-series-memberships'], ['works-lookup'], ['works-lookup-isbns'], ['discover-details'], ['household'], ['books'],
       ].map((queryKey) => client.invalidateQueries({ queryKey })))
     },
   })

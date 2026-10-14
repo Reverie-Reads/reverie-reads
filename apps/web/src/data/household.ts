@@ -17,6 +17,8 @@ export interface HouseholdMember {
 }
 
 export interface HouseholdBook {
+  /** Original catalog snapshot for explicit corpus edits, never household overlay values. */
+  corpusBibliography?: HouseholdBook
   id: string
   title: string
   author: string
@@ -85,6 +87,7 @@ interface HouseholdRosterRow {
 }
 
 interface HouseholdBookRow {
+  corpus_bibliography?: HouseholdBookRow
   work_id: string
   title: string
   author: string | null
@@ -162,6 +165,7 @@ export const toHouseholdMember = (row: HouseholdRosterRow): HouseholdMember => (
 })
 
 export const toHouseholdBook = (row: HouseholdBookRow): HouseholdBook => ({
+  ...(row.corpus_bibliography ? { corpusBibliography: toHouseholdBook(row.corpus_bibliography) } : {}),
   id: row.work_id,
   title: row.title,
   author: row.author?.trim() ?? '',
@@ -419,7 +423,7 @@ export function useHouseholdBooks(householdId: string | null) {
     enabled: !!readerId && !!householdId,
     ...authorizationSensitiveQueryOptions,
     queryFn: async (): Promise<HouseholdBook[]> => {
-      const { data, error } = await supabase.rpc('household_library_works')
+      const { data, error } = await supabase.rpc('household_library_works_v2')
       if (error) throw error
       return ((data ?? []) as HouseholdBookRow[]).map(toHouseholdBook)
     },

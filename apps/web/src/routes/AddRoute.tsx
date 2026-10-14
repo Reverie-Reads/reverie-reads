@@ -87,6 +87,7 @@ import { delegatedMemberId, type AddDestination } from '../components/addDestina
 import { GoogleBooksAttribution, GoogleBooksResultLink } from '../components/GoogleBooksAttribution'
 import { BookAddReview } from '../book/BookAddReview'
 import { BulkAddQueue, type BulkAddRow } from '../book/BulkAddQueue'
+import { PlanEditorDialog } from '../planner/ReadingPlan'
 import { StartBookTour } from '../guidance/BookTour'
 import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 
@@ -170,6 +171,8 @@ function RefineAdded({
 }) {
   const { data: books, isFetching, isError, fetchStatus, refetch } = useBooks()
   const book = books?.find((b) => b.id === bookId)
+  const [planning, setPlanning] = useState(false)
+  const [planSaved, setPlanSaved] = useState(false)
   // This screen only mounts after a confirmed save. Loading is not a loaded-book observation.
   useBookTourObservation(editionAdded ? null : book ? 'saved' : 'saved-loading', bookId)
 
@@ -248,6 +251,35 @@ function RefineAdded({
       >
         Open your book
       </Link>
+      <button
+        type="button"
+        onClick={() => setPlanning(true)}
+        className="mt-2 min-h-11 w-full skin-control skin-btn-secondary px-4 text-sm font-semibold"
+      >
+        Plan this book
+      </button>
+      {planSaved && (
+        <p role="status" className="mt-2 text-sm text-muted">
+          Reading plan saved.
+        </p>
+      )}
+      {planning && (
+        <PlanEditorDialog
+          key={book.id}
+          book={book}
+          books={books ?? []}
+          view="calendar"
+          onClose={() => setPlanning(false)}
+          onSaved={() => {
+            setPlanSaved(true)
+            setPlanning(false)
+          }}
+          onRemoved={() => {
+            setPlanSaved(false)
+            setPlanning(false)
+          }}
+        />
+      )}
       <button
         type="button"
         onClick={onDone}
@@ -1755,10 +1787,7 @@ function AddScreen() {
         }
         className="mb-3 min-h-11 text-[14px] text-ink underline"
       >
-        {(
-          origin?.label ??
-          (prefill.scope === 'household' ? 'Return to your household' : 'Return to your library')
-        ).replace('Return to', 'Back to')}
+        ← Back
       </button>
       {!householdOnly && <StartBookTour label="Guide me through adding" quiet />}
       <h1
@@ -2006,7 +2035,7 @@ function AddScreen() {
                     ? 'Return to releases'
                     : prefill.discoverSession
                       ? 'Return to your shortlist'
-                      : (origin?.label ?? 'Return to your library')
+                      : 'Back'
           }
           onAdded={() => {
             if (activeBulkId) {
@@ -2015,6 +2044,10 @@ function AddScreen() {
               return
             }
             if (returnToScans()) return
+            if (destination === 'household' || delegatedMemberId(destination)) {
+              void navigate({ to: '/library', search: { scope: 'household' } })
+              return
+            }
             return bookTour.status !== 'off' && bookTour.bookId
               ? void navigate({ to: '/library', search: {} })
               : origin

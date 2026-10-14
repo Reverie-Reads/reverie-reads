@@ -92,7 +92,7 @@ export function useUpdateBook(scopeBookId?: string) {
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(booksKey, ctx.previous)
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: booksKey }),
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: booksKey }), qc.invalidateQueries({ queryKey: ['household'] })]),
   })
 }
 

@@ -236,3 +236,40 @@ it('offers no replacement for unknown fields and no duplicate edition after an u
   expect(options.rows).toEqual([])
   expect(selectedCorpusChanges(saved, options, new Set(CORPUS_PUSH_FIELDS))).toEqual([])
 })
+
+it('offers an unconfirmed saved series even when legacy corpus text matches, as one selected relationship', async () => {
+  const { bookCorpusOptions, selectedCorpusChanges } = await import('./corpusPush')
+  const input = {
+    ...book,
+    series: 'Quiet Islands',
+    position: 1,
+    seriesCount: 4,
+    status: 'ongoing' as const,
+  }
+  const record = {
+    ...corpus,
+    series: {
+      name: 'Quiet Islands',
+      position: 1,
+      count: 4,
+      status: 'ongoing' as const,
+      confirmed: false,
+    },
+  }
+  const options = bookCorpusOptions(input, record, '', 'new')
+  expect(options.rows.some((row) => row.key === 'series.membership')).toBe(true)
+  expect(selectedCorpusChanges(record, options, new Set(['series.membership']))).toEqual([
+    {
+      action: 'series',
+      value: { bookId: book.id, name: 'Quiet Islands', position: 1, count: 4, status: 'ongoing' },
+    },
+  ])
+  expect(
+    bookCorpusOptions(
+      input,
+      { ...record, series: { ...record.series, confirmed: true } },
+      '',
+      'new',
+    ).rows.some((row) => row.key === 'series.membership'),
+  ).toBe(false)
+})

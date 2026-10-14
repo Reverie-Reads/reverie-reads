@@ -383,7 +383,7 @@ household_works      (household_id fk, work_id fk→works, added_by, inclusion_s
 household_book_shares(book_id fk→books, household_id fk, work_id fk, shared_by, shared_at,
                      removed_at, removed_by)          -- per-person borrowed checkbox source
 household_work_enrichment
-                    (household_id, work_id, tags text[], tropes jsonb, updated_by, updated_at,
+                    (household_id, work_id, tags text[], tropes jsonb, bibliography jsonb, updated_by, updated_at,
                      primary key (household_id, work_id))
 
 works                (id pk, work_key unique, work_id, title, contributors jsonb, author_text,
@@ -469,10 +469,11 @@ they are not part of the built schema described here.
 copies ensure household membership. Borrowed copies create a per-book share only after the reader
 checks the household control. Wishlist and reading state never create household membership.
 
-`household_library_works()` returns one curated row per work plus only active possession/copy
+`household_library_works()` retains its compatibility response with one curated row per work plus only active possession/copy
 attribution. It deliberately omits ratings, favourites, read state/logs, notes, intensity/darkness,
 plans/progress, wishlist, moods, and lists. Household tags/tropes live in the household overlay;
-genre, subgenre, and cover candidates flow to the corpus through an attributable allowlisted path.
+corpus changes retain their separate authorized, attributable correction path. Routine personal
+bibliography edits update only the household overlay described below.
 An eligible copy's personal cover URL, thumbnail, and color are included inside that copy's
 already-authorized owner projection; its original source URL stays private. A reader may see their
 own personal URL, but a peer receives only a real project-hosted `u/{owner}/{book}/` object or an
@@ -484,6 +485,17 @@ An owned row is visible as a copy; a borrowed row is visible only when an active
 `household_book_shares` row exists for that exact book, work, and household. A different copy that
 admits the same work cannot reveal it. The legacy `household_library_books()` compatibility RPC uses
 those same sources and returns its retained `wishlist` field as false.
+
+`household_library_works_v2()` overlays the allowlisted household bibliography on that authorized
+response. New owned intake, explicit personal-to-household Add and subsequent saved bibliography
+edits synchronize title/contributor display, series tuple, genres/subgenres, ISBN and publication
+date. Initial unknowns preserve shared values; later deliberate changes/clears travel field-by-field,
+with series/date as complete groups. The overlay remains household-local and never certifies the
+corpus or alters another reader's personal book. `corpus_bibliography` retains the original catalog
+projection for the separate authorized corpus editor. The internal synchronizer locks the personal
+book before membership/household, rechecks live membership, and is not callable by API roles.
+No historical bibliography is published by deploying the migration. Copy covers retain the existing
+trusted-host display boundary; notes, ratings, progress and private inventory stay outside this overlay.
 
 Migration deployment does not synthesize `household_work_enrichment` from historical personal tags
 or tropes. Historical sharing is an owner-approved, target-scoped reconciliation data fix after an
@@ -924,11 +936,17 @@ edition title/statement, format, publisher, language, pages and the exact partia
 `corpus_record_edits` retains administrator before/after snapshots and evidence, with no reader-copy
 writer. All four new tables (including reports) revoke direct privileges from every API role.
 
-`get_corpus_record` returns a work's editions and guidance, the caller's unresolved reports (all for
+`get_corpus_record` returns a work's editions, guidance and series tuple/confirmed-graph flag,
+the caller's unresolved reports (all for
 an administrator), and administrator-only recent audit events. `admin_save_corpus_record` performs
 reviewed edition/guidance/ISBN/report actions with role checks and a locked fingerprint.
-`admin_push_corpus_record` saves one edition and/or guidance change atomically from the same opened
-fingerprint. Direct admin mode permits absent evidence; optional evidence mode requires a link and
+`admin_push_corpus_record` saves one edition, guidance and/or saved series relationship atomically
+from the same opened fingerprint. A series proposal includes the caller-owned personal book ID and
+its exact saved name/position/count/status, and must match its active primary structured membership.
+It reuses manual administrator series evidence and shared-graph reconciliation, including an unchanged
+legacy tuple without a confirmed graph. Matching existing graph identity stays stable; personal
+reader/import choices remain protected. The series audit retains the before/after tuple. Direct
+admin mode permits absent evidence; optional evidence mode requires a link and
 explanation. `corpus_record_edits.review_mode` and saved provenance distinguish these paths, and an
 absent `source_url` remains null. Guidance changes carry a bounded field selection; unchecked
 primary/secondary values remain unchanged. Provenance records the latest selected `fields` and
