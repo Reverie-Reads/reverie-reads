@@ -251,16 +251,19 @@ test('/planner keeps the Releases tab across back-navigation', async ({ page }) 
   await signIn(page, c.session)
 
   await page.goto('/planner')
-  await tab(page, 'releases').click()
-  await expect(tab(page, 'releases')).toHaveAttribute('aria-pressed', 'true')
+  await tab(page, 'Releases Watch what is coming').click()
+  await expect(tab(page, 'Releases Watch what is coming')).toHaveAttribute('aria-pressed', 'true')
 
   await page.goto('/library') // navigate away; any route unmounts the screen
   await expect(page).toHaveURL(/\/library/)
 
   await page.goBack()
   await expect(page).toHaveURL(/\/planner/)
-  await expect(tab(page, 'releases')).toHaveAttribute('aria-pressed', 'true')
-  await expect(tab(page, 'calendar')).toHaveAttribute('aria-pressed', 'false')
+  await expect(tab(page, 'Releases Watch what is coming')).toHaveAttribute('aria-pressed', 'true')
+  await expect(tab(page, 'Calendar See the year and month')).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
 })
 
 test('/shelf/$listId keeps the Grid view across back-navigation', async ({ page }) => {

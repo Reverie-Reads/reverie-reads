@@ -600,8 +600,14 @@ test('cover aspect: the rendered cover box keeps the cover ratio at every visibl
   const widths = spine.evaluate(async (el) => {
     const values: number[] = []
     const start = performance.now()
-    while (performance.now() - start < 450) {
+    let pickedAt: number | null = null
+    while (performance.now() - start < 6_000) {
+      const now = performance.now()
       values.push(el.getBoundingClientRect().width)
+      if (el.hasAttribute('data-spine-picked')) pickedAt ??= now
+      // Playwright may spend hundreds of milliseconds aligning the real pointer. Sample
+      // through the observed selection plus its reveal, not from the command's start time.
+      if (pickedAt != null && now - pickedAt > 300) break
       await new Promise((resolve) => requestAnimationFrame(resolve))
     }
     return values

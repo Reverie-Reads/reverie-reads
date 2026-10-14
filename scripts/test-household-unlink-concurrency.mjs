@@ -797,8 +797,8 @@ async function exercisePersonalCoverAdminCorpusEditLockOrdering(ownerId, memberI
           '${ownerBookId}'::uuid, '${workId}'::uuid, '${replacementCover}'
         );
         raise exception 'expected unresolved ISBN identity refusal';
-      exception when sqlstate 'PT409' then
-        null;
+      exception when sqlstate '22023' then
+        if sqlerrm <> 'personal book corpus binding is ambiguous' then raise; end if;
       end;
       $review$;
       commit;

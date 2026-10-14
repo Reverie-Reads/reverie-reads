@@ -88,11 +88,12 @@ export function useAllBookTropes() {
   })
 }
 
-function useInvalidateTropes() {
+function useInvalidateTropes(includeVocabulary = false) {
   const qc = useQueryClient()
   return () => {
     void qc.invalidateQueries({ queryKey: booksKey })
     void qc.invalidateQueries({ queryKey: bookTropesKey })
+    if (includeVocabulary) void qc.invalidateQueries({ queryKey: tropesKey })
   }
 }
 
@@ -280,7 +281,7 @@ export function useResolveSuggestion() {
  * step with the source of truth.
  */
 export function useRenamePersonalTrope() {
-  const invalidate = useInvalidateTropes()
+  const invalidate = useInvalidateTropes(true)
   return useMutation({
     meta: { action: 'Tropes' },
     mutationFn: async (input: { id: string; name: string }): Promise<void> => {
@@ -311,7 +312,7 @@ export function useRenamePersonalTrope() {
  * trusting the UI to have hidden the control.
  */
 export function useDeletePersonalTrope() {
-  const invalidate = useInvalidateTropes()
+  const invalidate = useInvalidateTropes(true)
   return useMutation({
     meta: { action: 'Tropes' },
     mutationFn: async (id: string): Promise<void> => {

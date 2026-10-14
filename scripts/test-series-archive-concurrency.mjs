@@ -282,8 +282,16 @@ async function exerciseRestoreBookBeforeSeriesOrder() {
             '{"origin":"reader","source":"restore_race_writer"}'::jsonb
           );
           raise exception 'expected archived-parent refusal';
-        exception when sqlstate '55000' then
-          if sqlerrm <> 'series is archived; restore it first' then raise; end if;
+        exception when sqlstate '55000' or sqlstate 'P0001' then
+          -- The active-series lookup now rejects an archived ID as unavailable. Require
+          -- this exact owned archived row so another ownership failure cannot pass the race.
+          if sqlerrm not in ('series is archived; restore it first', 'not owner of series') then raise; end if;
+          reset role;
+          if not exists (
+            select 1 from public.series where id = '${firstSeriesId}'::uuid
+              and owner_id = '${ownerId}'::uuid and archived_at is not null
+          ) then raise; end if;
+          set local role authenticated;
         end;
       end;
       $writer$;
@@ -387,8 +395,16 @@ async function exerciseLateMembershipRefusal() {
             '{"origin":"reader","source":"late_writer"}'::jsonb
           );
           raise exception 'expected archived-parent refusal';
-        exception when sqlstate '55000' then
-          if sqlerrm <> 'series is archived; restore it first' then raise; end if;
+        exception when sqlstate '55000' or sqlstate 'P0001' then
+          -- The active-series lookup now rejects an archived ID as unavailable. Require
+          -- this exact owned archived row so another ownership failure cannot pass the race.
+          if sqlerrm not in ('series is archived; restore it first', 'not owner of series') then raise; end if;
+          reset role;
+          if not exists (
+            select 1 from public.series where id = '${secondSeriesId}'::uuid
+              and owner_id = '${ownerId}'::uuid and archived_at is not null
+          ) then raise; end if;
+          set local role authenticated;
         end;
       end;
       $writer$;
