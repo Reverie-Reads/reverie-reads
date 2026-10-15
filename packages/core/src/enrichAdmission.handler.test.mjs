@@ -383,3 +383,45 @@ it('withholds editions when identical title and author identify competing works'
   expect(calls.filter((c) => c.url.hostname === 'api.hardcover.app')).toHaveLength(1)
   expect(cache.size).toBe(0)
 })
+
+// Exercise provider prechecks as well as the shared admission helper.
+it.each(['fast', 'full'])(
+  'admits edition formatting through the actual Open Library handler in %s',
+  async (mode) => {
+    override = (u) =>
+      u.pathname.startsWith('/isbn/')
+        ? edition({ title: `${TITLE}: A Novel` })
+        : u.pathname.startsWith('/authors/')
+          ? Response.json({ key: '/authors/OL1A', name: 'Author, Test' })
+          : null
+    await boot()
+    const result = await request({ ...identity, mode })
+    expect(result.pageCount).toBe(123)
+    expect(result.isbn13).toBe(ISBN)
+  },
+)
+it('does not let a descriptive title bypass a missing initial in the actual handler', async () => {
+  override = (u) =>
+    u.pathname.startsWith('/isbn/') ? edition({ title: `${TITLE}: A Novel` }) : null
+  await boot()
+  const result = await request({ ...identity, author: 'Test A. Author' })
+  expect(result.identityUnresolved).toBe(true)
+  expect(result.pageCount).toBeNull()
+  expect(cache.size).toBe(0)
+})
+it('admits edition formatting through the Hardcover adapter precheck', async () => {
+  env.HARDCOVER_TOKEN = 'synthetic-token'
+  override = (u) => {
+    if (u.pathname.startsWith('/isbn/')) return new Response('', { status: 404 })
+    if (u.pathname === '/search.json') return Response.json({ docs: [] })
+    if (u.hostname === 'api.hardcover.app') {
+      const row = hcEdition()
+      row.title = `${TITLE}: A Novel`
+      row.book.contributions = [{ contribution: 'Author', author: { name: 'Author, Test' } }]
+      return Response.json({ data: { editions: [row] } })
+    }
+    return null
+  }
+  await boot()
+  expect(await request(identity)).toMatchObject({ pageCount: 345, isbn13: ISBN })
+})

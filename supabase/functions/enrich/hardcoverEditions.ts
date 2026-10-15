@@ -83,7 +83,10 @@ export function hardcoverEditionRecord(
   if (!authors.length) return null
   // A translated/different edition title must not inherit the parent identity silently.
   const title = e.title?.trim() || book.title
-  if (target.title?.trim() && !sourceTitleMatches(target.title, { title, subtitle: e.subtitle }))
+  if (
+    target.title?.trim() &&
+    !sourceTitleMatches(target.title, { title, subtitle: e.subtitle }, !!target.author?.trim())
+  )
     return null
   const isbns = [e.isbn_13, e.isbn_10].filter(
     (v): v is string => typeof v === 'string' && !!v.trim(),

@@ -47,6 +47,81 @@ for (const [name, admit] of [
       ).not.toBeNull()
       expect(admit(target, { ...edition, title: 'A Quiet Library: Collected Essays' })).toBeNull()
     })
+    it.each([
+      ['surname first', target, { ...edition, authors: ['Smith, Jane'] }],
+      ['surname-first input', { ...target, author: 'Smith, Jane' }, edition],
+      [
+        'compound surname',
+        { ...target, author: 'María de la Cruz' },
+        { ...edition, authors: ['de la Cruz, María'] },
+      ],
+      ['ampersand', { ...target, title: 'Ink and Stars' }, { ...edition, title: 'Ink & Stars' }],
+      ['novel description', target, { ...edition, title: 'A Quiet Library A Novel' }],
+      [
+        'genre description',
+        target,
+        { ...edition, title: 'A Quiet Library: An Epic Fantasy Romance' },
+      ],
+      [
+        'hyphenated description',
+        target,
+        { ...edition, title: 'A Quiet Library: A Small-Town Mystery' },
+      ],
+      [
+        'nonfiction description',
+        target,
+        { ...edition, title: 'A Quiet Library: A Personal Memoir' },
+      ],
+      ['description in input', { ...target, title: 'A Quiet Library (A Novel)' }, edition],
+    ])('accepts %s only with the exact edition and full contributor', (_label, input, record) => {
+      expect(admit(input, record)).toMatchObject({ isbn13: isbn, pageCount: 256 })
+      expect(admit(input, { ...record, isbn13: '9781649374042' })).toBeNull()
+      expect(admit(input, { ...record, isbns: ['not-an-isbn'] })).toBeNull()
+      expect(admit(input, { ...record, isbns: ['9781649374042'] })).toBeNull()
+      expect(admit(input, { ...record, authors: ['Another Person'] })).toBeNull()
+      expect(admit({ ...input, isbn: '' }, record)).toBeNull()
+      expect(admit({ ...input, isbn: undefined }, { ...record, scope: 'work' })).toBeNull()
+    })
+    it.each([
+      'A Quiet Library Book One of the Lantern Series',
+      'A Quiet Library: Volume II',
+      'A Quiet Library: Expanded Edition',
+      'A Quiet Library: A Revised Novel',
+      'A Quiet Library: An Abridged Novel',
+      'A Quiet Library: An Illustrated Novel',
+      'A Quiet Library: A Graphic Novel',
+      'A Quiet Library: A Large Print Novel',
+      'A Quiet Library: A Collector’s Novel',
+      'A Quiet Library: A Special Anniversary Novel',
+      'A Quiet Library: A Translated Novel',
+      'A Quiet Library: A Retelling Novel',
+      'A Quiet Library: A Companion Novel',
+      'A Quiet Library: A Sequel Novel',
+      'A Quiet Library: A Novel and a Novella',
+      'A Quiet Library: A 2026 Novel',
+      'A Quiet Library: Collected Essays',
+      'A Quiet Library Returns',
+      'A Quiet Library: A Tale of Another Library',
+      'A Quiet Librarian: A Novel',
+    ])('preserves meaningful title qualifiers: %s', (title) => {
+      expect(admit(target, { ...edition, title })).toBeNull()
+    })
+    it.each([
+      ['Jane A. Smith', 'Jane Smith'],
+      ['Jane Smith', 'J. Smith'],
+      ['Jane A. Smith', 'Smith, Jane B.'],
+      ['Jane Smith', 'Smith'],
+      ['Jane Smith', 'Jane Smith, John Jones'],
+      ['Jane Smith', 'Smith, Jane, Jr.'],
+      ['Jr Jane Smith', 'Jane Smith, Jr.'],
+    ])('keeps ambiguous names under review: %s / %s', (author, actual) => {
+      expect(admit({ ...target, author }, { ...edition, authors: [actual] })).toBeNull()
+    })
+    it('does not strip a description without full-author confirmation', () => {
+      expect(
+        admit({ ...target, author: '' }, { ...edition, title: 'A Quiet Library: A Novel' }),
+      ).toBeNull()
+    })
     it('keeps work fields without promoting pages, dates, ISBN arrays or search series labels', () => {
       expect(
         admit(target, {

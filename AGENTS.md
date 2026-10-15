@@ -270,6 +270,11 @@ myProgress`). Move them into `packages/core` with tests.
   silently changes the selected destination. Review keeps one mounted book draft across personal,
   household and delegated choices; shared writers receive only the reviewed bibliographic subset.
 
+- **Edition identity tolerates formatting, not missing evidence.** Exact returned ISBN agreement
+  plus a complete author permits surname-first comma forms, standalone ampersands and bounded
+  descriptive title phrases. Missing/changed initials, volume labels and edition/format qualifiers
+  remain under review. Work-only matching stays strict; these comparison forms never rewrite
+  stored identity keys or supply series membership. See `docs/tasks/book-source-admission.md`.
 - **Add search distinguishes failure from absence.** Only a successful empty response means no
   matches. Keep the entered query available for explicit retry or manual entry; a newer search,
   manual choice or route exit cancels the older request so late results cannot replace the current

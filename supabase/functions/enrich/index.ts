@@ -220,7 +220,8 @@ async function adapterOpenLibrary(input: EnrichInput, tr?: Trace): Promise<Sourc
     isbns.some((value) => normalizeIsbn(value) !== isbn) ||
     typeof edition.key !== 'string' ||
     !/^\/books\/OL\d+M$/.test(edition.key) ||
-    (input.title?.trim() && !sourceTitleMatches(input.title, { title, subtitle }))
+    (input.title?.trim() &&
+      !sourceTitleMatches(input.title, { title, subtitle }, !!input.author?.trim()))
   )
     throw new IdentityUnresolved('Edition identity differs')
   if (!Array.isArray(edition.authors) || !edition.authors.length || edition.authors.length > 8)
