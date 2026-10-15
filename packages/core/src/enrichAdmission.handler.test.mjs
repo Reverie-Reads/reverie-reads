@@ -141,11 +141,6 @@ const edition = (extra = {}) =>
     number_of_pages: 123,
     ...extra,
   })
-const hc = (documents) =>
-  Response.json({
-    data: { search: { results: { hits: documents.map((document) => ({ document })) } } },
-  })
-
 it.each(['fast', 'full'])(
   'rejects a wrong returned ISBN before reading authors in %s',
   async (mode) => {
@@ -207,32 +202,27 @@ it('keeps work search medians, arbitrary ISBNs and series labels out of selected
   expect(result.editionId).toBe('')
   expect(result.pubY).toBeNull()
 })
-it('checks every source, admits a later exact hit and rejects an unrelated first hit', async () => {
+it('fills exact edition details independently from Hardcover after an Open Library miss', async () => {
   env.HARDCOVER_TOKEN = 'synthetic-token'
-  override = (u) =>
-    u.hostname === 'api.hardcover.app'
-      ? hc([
-          {
-            title: 'Unrelated',
-            author_names: ['Someone Else'],
-            isbns: [ISBN],
-            description: 'WRONG DESCRIPTION',
-          },
-          {
-            title: TITLE,
-            author_names: [AUTHOR],
-            isbns: [ISBN],
-            description: 'Matching work description',
-            pages: 999,
-          },
-        ])
-      : null
+  override = (u) => {
+    if (u.pathname.startsWith('/isbn/')) return new Response('', { status: 404 })
+    if (u.pathname === '/search.json') return Response.json({ docs: [] })
+    if (u.hostname === 'api.hardcover.app')
+      return Response.json({ data: { editions: [hcEdition()] } })
+    return null
+  }
   await boot()
   const result = await request(identity)
-  expect(result.description).toBe('Matching work description')
-  expect(result.pageCount).toBe(123)
+  expect(result).toMatchObject({
+    description: 'Matching work description',
+    pageCount: 345,
+    isbn13: ISBN,
+    publisher: 'Example Press',
+    source: 'hardcover',
+    confidence: 'high',
+  })
   expect(result.authors).toEqual([AUTHOR])
-  expect(result.admissionVersion).toBe(2)
+  expect(result.provenance.pageCount.source).toBe('hardcover')
 })
 it('does not cache a partial response when HTTP-200 GraphQL errors accompany an otherwise valid edition', async () => {
   env.HARDCOVER_TOKEN = 'synthetic-token'
@@ -244,6 +234,7 @@ it('does not cache a partial response when HTTP-200 GraphQL errors accompany an 
   const result = await request(identity)
   expect(result.pageCount).toBe(123)
   expect(result.source).toBe('openlibrary')
+  expect(result.sourcesIncomplete).toBe(true)
   expect(cache.size).toBe(0)
 })
 it.each(['fast', 'full'])(
@@ -295,4 +286,100 @@ it('sends the identified Open Library headers on edition and each contributor fe
   expect(requests.map((c) => c.url.pathname)).toEqual([`/isbn/${ISBN}.json`, '/authors/OL1A.json'])
   for (const c of requests)
     expect(new Headers(c.init.headers).get('user-agent')).toMatch(/Midniht.*@/)
+})
+
+function hcEdition(extra = {}) {
+  return {
+    id: 1,
+    title: TITLE,
+    isbn_13: ISBN,
+    pages: 345,
+    compilation: false,
+    publisher: { name: 'Example Press' },
+    release_date: '2024-05-01',
+    book: {
+      id: 42,
+      title: TITLE,
+      description: 'Matching work description',
+      contributions: [{ contribution: 'Author', author: { name: AUTHOR } }],
+    },
+    ...extra,
+  }
+}
+it.each([
+  [hcEdition({ title: 'Another Book' })],
+  [hcEdition({ isbn_13: '9780306406157' })],
+  [hcEdition({ compilation: true })],
+  [hcEdition(), hcEdition({ id: 2 })],
+])(
+  'refuses conflicting or competing Hardcover editions without falling back to a work: %j',
+  async (editions) => {
+    env.HARDCOVER_TOKEN = 'synthetic-token'
+    env.ENRICH_SOURCES = 'hardcover'
+    override = (u) =>
+      u.hostname === 'api.hardcover.app' ? Response.json({ data: { editions } }) : null
+    await boot()
+    const result = await request(identity)
+    expect(result.confidence).toBe('none')
+    expect(result.pageCount).toBeNull()
+    expect(cache.size).toBe(0)
+    expect(calls.filter((c) => c.url.hostname === 'api.hardcover.app')).toHaveLength(1)
+  },
+)
+it('uses exact work facts after a genuine ISBN absence without selecting an edition', async () => {
+  env.HARDCOVER_TOKEN = 'synthetic-token'
+  env.ENRICH_SOURCES = 'hardcover'
+  override = (u, init) =>
+    u.hostname === 'api.hardcover.app'
+      ? Response.json({
+          data: JSON.parse(init.body).query.includes('IntakeEdition(')
+            ? { editions: [] }
+            : { books: [hcEdition().book] },
+        })
+      : null
+  await boot()
+  const result = await request(identity)
+  expect(result).toMatchObject({
+    confidence: 'high',
+    title: TITLE,
+    description: 'Matching work description',
+    isbn13: '',
+    pageCount: null,
+    pubY: null,
+    publisher: '',
+  })
+})
+it('returns explicit edition choices without donating their pages to a work-only request', async () => {
+  env.HARDCOVER_TOKEN = 'synthetic-token'
+  env.ENRICH_SOURCES = 'hardcover'
+  override = (u, init) =>
+    u.hostname === 'api.hardcover.app'
+      ? Response.json({
+          data: JSON.parse(init.body).query.includes('IntakeEditions(')
+            ? { editions: [hcEdition()] }
+            : { books: [hcEdition().book] },
+        })
+      : null
+  await boot()
+  const result = await request({ title: TITLE, author: AUTHOR, includeEditions: true })
+  expect(result.pageCount).toBeNull()
+  expect(result.isbn13).toBe('')
+  expect(result.editions).toHaveLength(1)
+  expect(result.editions[0]).toMatchObject({ isbn13: ISBN, pageCount: 345 })
+  expect(result.editionStatus).toBe('available')
+})
+
+it('withholds editions when identical title and author identify competing works', async () => {
+  env.HARDCOVER_TOKEN = 'synthetic-token'
+  env.ENRICH_SOURCES = 'hardcover'
+  override = (u) =>
+    u.hostname === 'api.hardcover.app'
+      ? Response.json({ data: { books: [hcEdition().book, { ...hcEdition().book, id: 43 }] } })
+      : null
+  await boot()
+  const result = await request({ title: TITLE, author: AUTHOR, includeEditions: true })
+  expect(result.editions).toEqual([])
+  expect(result.editionStatus).toBe('unavailable')
+  expect(calls.filter((c) => c.url.hostname === 'api.hardcover.app')).toHaveLength(1)
+  expect(cache.size).toBe(0)
 })

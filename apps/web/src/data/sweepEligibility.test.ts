@@ -22,9 +22,7 @@ const iso = (daysAgo: number) => new Date(Date.now() - daysAgo * DAY).toISOStrin
 
 // An incomplete book missing everything (no cover → the PARTIAL 3-day window applies).
 const partial = (id: string) => makeBook({ id, title: `Partial ${id}` })
-// Incomplete but holding its high-value fields (cover + standalone → the 30-day COMPLETE window):
-// still isIncomplete via the missing isbn/pub/genres, which is what makes the window distinction
-// testable at all — a fully complete book is never a candidate under any stamp.
+// A cover and standalone status do not make missing bibliography complete.
 const highValue = (id: string) =>
   makeBook({ id, title: `HighValue ${id}`, cover: 'https://x/c.jpg', status: 'standalone' })
 
@@ -45,9 +43,9 @@ describe('sweepCandidates — the one predicate', () => {
     expect(sweepCandidates([partial('a')], stamps({ a: iso(2) }))).toHaveLength(0)
   })
 
-  it('a high-value book rests for 30 days: resting at 20, stale at 31', () => {
-    expect(sweepCandidates([highValue('a')], stamps({ a: iso(20) }))).toHaveLength(0)
-    expect(sweepCandidates([highValue('a')], stamps({ a: iso(31) }))).toHaveLength(1)
+  it('missing bibliography retries after three days even when a cover is present', () => {
+    expect(sweepCandidates([highValue('a')], stamps({ a: iso(2) }))).toHaveLength(0)
+    expect(sweepCandidates([highValue('a')], stamps({ a: iso(4) }))).toHaveLength(1)
   })
 
   it('a complete book is never a candidate, stamped or not', () => {

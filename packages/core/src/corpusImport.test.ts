@@ -143,7 +143,7 @@ describe('runBackfill', () => {
         return [{ work_key: 'legacy', work_id: null, cover_url: null, isbns: [] }]
       },
       async fetchEnrichments(keys) {
-        expect(keys).toEqual(['identity-admitted-v2:ta:legacy'])
+        expect(keys).toEqual(['identity-admitted-v3:ta:legacy'])
         return [
           { key: 'ta:legacy', work_id: 'old:1', record: { cover: 'https://old.invalid/a.jpg' } },
         ]
@@ -170,10 +170,10 @@ describe('runBackfill', () => {
         ]
       },
       async fetchEnrichments(keys) {
-        expect(keys).toEqual(['identity-admitted-v2:ta:complete-work'])
+        expect(keys).toEqual(['identity-admitted-v3:ta:complete-work'])
         return [
           {
-            key: 'identity-admitted-v2:ta:complete-work',
+            key: 'identity-admitted-v3:ta:complete-work',
             work_id: 'hc:work:1',
             record: { isbns: ['9780306406157', '9781649374042'] },
           },
@@ -200,11 +200,11 @@ describe('runBackfill', () => {
       async fetchEnrichments() {
         return [
           {
-            key: 'identity-admitted-v2:ta:one',
+            key: 'identity-admitted-v3:ta:one',
             work_id: null,
             record: { isbn13: '9780306406157' },
           },
-          { key: 'identity-admitted-v2:ta:two', work_id: null, record: { isbn10: '0306406152' } },
+          { key: 'identity-admitted-v3:ta:two', work_id: null, record: { isbn10: '0306406152' } },
         ]
       },
       async updateWork() {

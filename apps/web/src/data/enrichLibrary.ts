@@ -23,9 +23,7 @@ const MAX_PER_RUN = 400
 // Consecutive all-sources-failed books before the run gives up. One is a flaky book; several in a
 // row is an outage, and continuing only spends the rest of the library's recheck windows on it.
 const FAILURE_STREAK_LIMIT = 5
-// A book with its high-value fields (cover + series position) is "complete" — recheck rarely.
-const COMPLETE_RECHECK_DAYS = 30
-// Still missing a high-value field after a check → retry sooner (sources update; a 429 may clear).
+// Incomplete bibliography remains eligible for a short retry window, including missing pages.
 const PARTIAL_RETRY_DAYS = 3
 const DAY = 86_400_000
 
@@ -40,16 +38,9 @@ export function isIncomplete(b: Book): boolean {
   return false
 }
 
-/** The high-value fields that decide the recheck window — cover, and (for a series) its position. */
-function hasHighValue(b: Book): boolean {
-  return !!b.cover && (b.status === 'standalone' || (!!b.series && b.position !== ''))
-}
-
-/** Should we (re)check this book now? Unchecked → yes; otherwise depends on the completeness window. */
-function shouldCheck(b: Book, enrichedAt: string | null): boolean {
-  if (!enrichedAt) return true
-  const window = hasHighValue(b) ? COMPLETE_RECHECK_DAYS : PARTIAL_RETRY_DAYS
-  return Date.parse(enrichedAt) < Date.now() - window * DAY
+/** Unchecked books and incomplete books last checked more than three days ago are due. */
+function shouldCheck(_b: Book, enrichedAt: string | null): boolean {
+  return !enrichedAt || Date.parse(enrichedAt) < Date.now() - PARTIAL_RETRY_DAYS * DAY
 }
 
 /**
@@ -236,6 +227,7 @@ export async function bulkComplete(
     ]
   const total = candidates.length
   let scanned = 0
+  let attempted = 0
   let filled = 0
   let nothing = 0
   let failed = 0
@@ -256,7 +248,7 @@ export async function bulkComplete(
       stopReason = 'user'
       break
     }
-    if (scanned >= ceiling) {
+    if (attempted >= ceiling) {
       stopReason = 'limit'
       break
     }
@@ -264,6 +256,7 @@ export async function bulkComplete(
     const bookT0 = now()
     let coverSource = ''
     const t0 = now()
+    attempted++
     const outcome = await enrichBookOutcome({
       title: b.title,
       author: [b.first, b.last].filter(Boolean).join(' '),
@@ -297,6 +290,7 @@ export async function bulkComplete(
     consecutiveFailures = 0
     const checkedAt = new Date().toISOString()
     let didFill = false
+    const partial = outcome.status === 'ok' && outcome.data.sourcesIncomplete === true
     if (outcome.status === 'ok') {
       const { patch } = mergeImport(b, toIncoming(outcome.data, b))
       // Record confidence only when THIS run actually filled the cover — so a trusted user/seed cover
@@ -332,16 +326,18 @@ export async function bulkComplete(
         coverSource = origin
       }
 
-      const t2 = now()
-      const { error: ue } = await supabase
-        .from('books')
-        .update({ ...toBookRow(patch), enriched_at: checkedAt })
-        .eq('id', b.id)
-      spans.push({ s: 'client.update', ms: now() - t2 })
-      if (ue) {
-        stopReason = 'error'
-        errorMessage = ue.message
-        break
+      if (Object.keys(patch).length || !partial) {
+        const t2 = now()
+        const { error: ue } = await supabase
+          .from('books')
+          .update({ ...toBookRow(patch), ...(partial ? {} : { enriched_at: checkedAt }) })
+          .eq('id', b.id)
+        spans.push({ s: 'client.update', ms: now() - t2 })
+        if (ue) {
+          stopReason = 'error'
+          errorMessage = ue.message
+          break
+        }
       }
       didFill = Object.keys(patch).length > 0
     } else {
@@ -355,8 +351,11 @@ export async function bulkComplete(
       }
     }
     if (didFill) filled++
-    else nothing++
-    scanned++
+    else if (!partial) nothing++
+    if (partial) {
+      failed++
+      errorMessage ??= 'Some catalog sources were unavailable. Incomplete checks remain retryable.'
+    } else scanned++
     // The trace row is written LAST and never throws: a measurement must not be able to fail the
     // thing it is measuring. `bookT0` spans the whole iteration, so `total_ms` includes the gaps
     // BETWEEN the timed stages — if the spans don't add up to it, the missing time is real and is

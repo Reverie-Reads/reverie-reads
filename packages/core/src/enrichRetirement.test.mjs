@@ -206,14 +206,14 @@ describe('retired providers at the actual enrichment handler', () => {
     const writes = calls.filter(({ init }) => init.method === 'POST')
     expect(writes).toHaveLength(1)
     expect(JSON.parse(writes[0].init.body).key).toBe(
-      `identity-admitted-v2:${oldKey}${input.isbn ? ':|' : ''}`,
+      `identity-admitted-v3:${oldKey}${input.isbn ? ':|' : ''}`,
     )
     expect(cache.get(oldKey)).toBe(oldRow)
     const reads = calls.filter(
       ({ url, init }) => url.hostname === 'database.invalid' && !init.method,
     )
     expect(reads[0].url.searchParams.get('key')).toBe(
-      `eq.identity-admitted-v2:${oldKey}${input.isbn ? ':|' : ''}`,
+      `eq.identity-admitted-v3:${oldKey}${input.isbn ? ':|' : ''}`,
     )
 
     calls.length = 0

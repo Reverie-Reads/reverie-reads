@@ -6,7 +6,7 @@ import { SKIN_TOKENS } from './skinTokens.fixture'
 describe('barcode capture controls across every room', () => {
   for (const skin of Object.keys(SKINS) as SkinId[])
     for (const mode of ['light', 'dark'] as const) {
-      it(`${skin}/${mode}: labels, focus and borders are visible on the solid panel`, () => {
+      it(`${skin}/${mode}: labels, focus, aiming outline and borders are visible on the solid panel`, () => {
         const t = SKIN_TOKENS[`${skin}/${mode}`]
         expect(t).toBeDefined()
         expect(contrastRatio(parseColor(t.ink)!, parseColor(t.cardSolid)!)).toBeGreaterThanOrEqual(

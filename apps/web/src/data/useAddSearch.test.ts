@@ -1,7 +1,9 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { searchEverywhere, type SearchResult } from '../lib/search'
-import { useAddSearch } from './useAddSearch'
+import { searchAddCatalog, useAddSearch } from './useAddSearch'
+import { enrichBookOutcome } from '../lib/enrich'
+vi.mock('../lib/enrich', () => ({ enrichBookOutcome: vi.fn() }))
 
 vi.mock('../lib/search', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/search')>()),
@@ -98,5 +100,27 @@ describe('submitted Add searches', () => {
     const { result } = renderHook(() => useAddSearch())
     await act(() => result.current.search('Books'))
     expect(result.current.results).toEqual([...catalog.slice(0, 8), ...google])
+  })
+})
+
+describe('ISBN intake', () => {
+  it('offers an admitted exact edition without selecting a work search ISBN', async () => {
+    vi.mocked(enrichBookOutcome).mockResolvedValue({ status: 'ok', data: {
+      title: 'A Quiet Atlas', authors: ['Avery Reader'], isbn13: '9780306406157',
+      cover: '', pubY: 2024, provenance: { isbn13: { source: 'hardcover', at: '2026-10-14' } },
+    } } as Awaited<ReturnType<typeof enrichBookOutcome>>)
+    const results = await searchAddCatalog('9780306406157')
+    expect(results).toEqual([expect.objectContaining({ editionIsbn: '9780306406157', source: 'hardcover' })])
+    expect(lookup).not.toHaveBeenCalled()
+  })
+  it('does not label an unavailable edition lookup as no matches after an empty fallback', async () => {
+    vi.mocked(enrichBookOutcome).mockResolvedValue({ status: 'failed', reason: 'offline' })
+    lookup.mockResolvedValue([])
+    await expect(searchAddCatalog('9780306406157')).rejects.toThrow('unavailable')
+  })
+  it('retains successful empty fallback after a genuine edition absence', async () => {
+    vi.mocked(enrichBookOutcome).mockResolvedValue({ status: 'empty' })
+    lookup.mockResolvedValue([])
+    await expect(searchAddCatalog('9780306406157')).resolves.toEqual([])
   })
 })

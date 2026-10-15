@@ -1,9 +1,25 @@
+import { bookBarcode } from '@reverie/core'
+import { enrichBookOutcome } from '../lib/enrich'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { partitionSearchResults, searchEverywhere, type SearchResult } from '../lib/search'
 
 /** Shared by single-book and bulk Add; search hits never establish series membership. */
 export async function searchAddCatalog(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
+  const isbn = bookBarcode(query)
+  let editionUnavailable = false
+  if (isbn) {
+    const outcome = await enrichBookOutcome({ isbn }, signal)
+    if (signal?.aborted) return []
+    editionUnavailable = outcome.status === 'failed' || outcome.status === 'rate_limited'
+    if (outcome.status === 'ok' && outcome.data.isbn13 === isbn) {
+      const r = outcome.data
+      const source = r.provenance?.isbn13?.source === 'hardcover' ? 'hardcover' : 'openlibrary'
+      return [{ source, title: r.title, authors: r.authors, isbn, editionIsbn: isbn, cover: r.cover, year: r.pubY ? String(r.pubY) : '' }]
+    }
+  }
   const hits = await searchEverywhere(query, signal)
+  if (editionUnavailable && !hits.some((hit) => hit.title))
+    throw new Error('Edition lookup was unavailable; absence is unconfirmed')
   const sections = partitionSearchResults(hits.filter((hit) => hit.title))
   // Limit catalog matches only; preserve Google's complete attributed result order.
   return [...sections.catalog.slice(0, 8), ...sections.google]

@@ -14,13 +14,21 @@
 import {
   mergeRecords,
   parsePubDate,
-  normalizeHardcoverSearch,
   normalizeOpenLibrary,
   type EnrichedRecord,
   type EnrichSource,
   type SourceRecord,
   type StampedSource,
 } from './merge.ts'
+import {
+  exactEditionQuery,
+  equivalentIsbn10,
+  hardcoverEditionRecord,
+  editionRows,
+  exactWorkQuery,
+  hardcoverWorkRecord,
+  workEditionsQuery,
+} from './hardcoverEditions.ts'
 import type { Confidence } from './resolve.ts'
 import { admitSourceRecord, normalizeIsbn, sourceTitleMatches } from './admission.ts'
 import { envInt, rateLimit, tooMany } from '../_shared/ratelimit.ts'
@@ -58,6 +66,7 @@ interface EnrichInput {
   isbn?: string
   mode?: 'fast' | 'full'
   refresh?: boolean
+  includeEditions?: boolean
 }
 
 const norm = workIdentityPart
@@ -184,7 +193,10 @@ async function adapterOpenLibrary(input: EnrichInput, tr?: Trace): Promise<Sourc
   try {
     raw = await olJson(`/isbn/${isbn}.json`, tr)
   } catch (error) {
-    if (error instanceof SourceHttpError && error.status === 404) return null
+    if (error instanceof SourceHttpError && error.status === 404)
+      return input.title && input.author
+        ? adapterOpenLibrary({ ...input, isbn: undefined }, tr)
+        : null
     throw error
   }
   if (!raw || typeof raw !== 'object')
@@ -270,40 +282,49 @@ async function adapterOpenLibrary(input: EnrichInput, tr?: Trace): Promise<Sourc
   return admitted
 }
 
-// Hardcover text search. Their API BLOCKS `_ilike` filters ("not permitted on this server"), so a
-// title search must go through the `search` query (Typesense-backed); each hit's `document` is the
-// search-doc shape → normalizeHardcoverSearch. Shared by the single-fetch adapter + the multi-candidate
-// search adapter. Best romance/indie cover coverage in this catalog.
-async function hardcoverSearchRecords(
-  title: string | undefined,
-  limit: number,
+async function hardcoverQuery(
+  query: string,
+  variables: Record<string, string>,
   tr?: Trace,
-): Promise<SourceRecord[]> {
+): Promise<unknown> {
   if (!(await paceSource('hardcover', tr)))
     throw new SourceHttpError(429, 'https://api.hardcover.app')
-  const auth = hardcoverAuth()
-  if (!auth || !title) return []
-  const j = (await time(tr, 'fetch.hardcover', () =>
-    fetchJson('https://api.hardcover.app/v1/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: auth },
-      body: JSON.stringify({
-        query:
-          'query($q:String!,$n:Int!){ search(query:$q, query_type:"Book", per_page:$n){ results } }',
-        variables: { q: title, n: limit },
-      }),
-    }),
-  )) as { errors?: unknown; data?: { search?: { results?: { hits?: { document?: unknown }[] } } } }
-  if (j?.errors || !Array.isArray(j?.data?.search?.results?.hits))
-    throw new SourceBodyError(200, 'https://api.hardcover.app/v1/graphql')
-  const hits = j.data.search.results.hits
-  if (hits.length >= limit) throw new IdentityUnresolved('Search response reached its cap')
-  return hits.map((h) => normalizeHardcoverSearch(h?.document)).filter((r) => r.title)
+  return fetchJson('https://api.hardcover.app/v1/graphql', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: hardcoverAuth()! },
+    body: JSON.stringify({ query, variables }),
+  })
+}
+async function hardcoverWork(input: EnrichInput, tr?: Trace): Promise<SourceRecord | null> {
+  if (!input.title || !input.author) return null
+  return hardcoverWorkRecord(
+    await hardcoverQuery(exactWorkQuery, { title: input.title, author: input.author }, tr),
+    input,
+  )
 }
 
 async function adapterHardcover(input: EnrichInput, tr?: Trace): Promise<SourceRecord | null> {
-  if (!input.title || !input.author) return null
-  return chooseAdmitted(input, await hardcoverSearchRecords(input.title, SEARCH_LIMIT, tr))
+  const isbn = normalizeIsbn(input.isbn ?? '')
+  if (input.isbn?.trim() && !isbn) throw new IdentityUnresolved('Invalid requested ISBN')
+  if (isbn) {
+    if (!(await paceSource('hardcover', tr)))
+      throw new SourceHttpError(429, 'https://api.hardcover.app')
+    const body = await fetchJson('https://api.hardcover.app/v1/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: hardcoverAuth()! },
+      body: JSON.stringify({
+        query: exactEditionQuery,
+        variables: { isbn, isbn10: equivalentIsbn10(isbn) || 'no-isbn10' },
+      }),
+    })
+    const rows = editionRows(body)
+    if (!rows.length) return hardcoverWork(input, tr)
+    if (rows.length !== 1) throw new IdentityUnresolved('Competing ISBN editions')
+    const record = hardcoverEditionRecord(rows[0], input)
+    if (!record) throw new IdentityUnresolved('Edition identity differs')
+    return record
+  }
+  return hardcoverWork(input, tr)
 }
 
 // Keep historical EnrichSource/provenance shapes readable; only these durable adapters can make
@@ -347,7 +368,7 @@ Deno.serve(async (req: Request) => {
     const key = cacheKeyFor(input)
 
     // 1) Cache: a fresh hit returns immediately — ZERO external calls (the main cost lever).
-    if (!input.refresh) {
+    if (!input.refresh && !input.includeEditions) {
       const cached = await tr.time('enrich.readCache', () => readCache(key))
       if (
         cached &&
@@ -393,14 +414,50 @@ Deno.serve(async (req: Request) => {
     }
     const sourceList = stamped.map((s) => s.source).join('+') || null
     const confidence: Confidence = sourceList ? 'high' : 'none'
+    let editions: SourceRecord[] = []
+    let editionStatus: 'not_requested' | 'unavailable' | 'available' | 'limited' | 'ambiguous' =
+      'not_requested'
+    if (input.includeEditions) {
+      editionStatus = 'unavailable'
+      const matchedWork = stamped.find((s) => s.source === 'hardcover')?.record.ids?.work
+      if (input.title && input.author && hardcoverAuth() && matchedWork) {
+        try {
+          const rows = editionRows(
+            await hardcoverQuery(
+              workEditionsQuery,
+              { title: input.title, author: input.author },
+              tr,
+            ),
+          )
+          editions = rows
+            .slice(0, 50)
+            .map((row) => hardcoverEditionRecord(row, { title: input.title, author: input.author }))
+            .filter((row): row is SourceRecord => !!row)
+          if (editions.some((e) => e.ids?.work !== matchedWork)) {
+            editions = []
+            editionStatus = 'ambiguous'
+          } else {
+            const counts = new Map<string, number>()
+            editions.forEach((e) => counts.set(e.isbn13!, (counts.get(e.isbn13!) || 0) + 1))
+            editions = editions.filter((e) => counts.get(e.isbn13!) === 1)
+            editionStatus =
+              rows.length >= 51 || editions.length !== rows.length ? 'limited' : 'available'
+          }
+        } catch {
+          /* Keep provider failure distinct from an empty edition list. */
+        }
+      }
+    }
     const body = {
       ...toResponse(merged),
+      ...(input.includeEditions ? { editions, editionStatus } : {}),
       source: sourceList,
       confidence,
       alternates: [],
       ...(mode === 'fast' ? { completing: true } : {}),
       ...traceOf(input, tr),
       ...(identityUnresolved ? { identityUnresolved: true } : {}),
+      ...(failed ? { sourcesIncomplete: true } : {}),
     }
     // Partial provider failures never become a reusable completed cache entry.
     if (sourceList && !failed && mode !== 'fast')

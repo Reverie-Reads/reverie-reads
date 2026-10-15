@@ -22,6 +22,7 @@ export interface CoverAlternate {
 /** Full normalized record returned by the enrichment aggregator (docs/reference/ENRICHMENT_STRATEGY.md). */
 export interface EnrichResult {
   admissionVersion?: number
+  sourcesIncomplete?: boolean
   title: string
   authors: string[]
   author: string
@@ -125,19 +126,25 @@ export type EnrichOutcome =
  * Ask the enrichment Edge Function for a record, surfacing whether the upstream sources were
  * rate-limited (so a bulk run can pause and resume rather than burning the book's retry window).
  */
-export async function enrichBookOutcome(input: {
-  title?: string
-  author?: string
-  isbn?: string
-  /** 'fast' = one source by ISBN for an instant record; 'full' (default) = the multi-source merge. */
-  mode?: 'fast' | 'full'
-  /** Ask the function to return its per-stage timings. Off by default; the response is unchanged. */
-  trace?: boolean
-  /** Skip the global enrichment_cache and re-query the sources. Measurement runs only. */
-  refresh?: boolean
-}): Promise<EnrichOutcome> {
+export async function enrichBookOutcome(
+  input: {
+    title?: string
+    author?: string
+    isbn?: string
+    /** 'fast' = one source by ISBN for an instant record; 'full' (default) = the multi-source merge. */
+    mode?: 'fast' | 'full'
+    /** Ask the function to return its per-stage timings. Off by default; the response is unchanged. */
+    trace?: boolean
+    /** Skip the global enrichment_cache and re-query the sources. Measurement runs only. */
+    refresh?: boolean
+  },
+  signal?: AbortSignal,
+): Promise<EnrichOutcome> {
   try {
-    const { data, error } = await supabase.functions.invoke('enrich', { body: input })
+    const { data, error } = await supabase.functions.invoke('enrich', {
+      body: input,
+      ...(signal ? { signal } : {}),
+    })
     if (error) {
       // The function itself refused or fell over. Nothing was checked, so nothing may be recorded
       // as checked — this used to return 'empty' for every status except 429.
@@ -188,4 +195,37 @@ export async function enrichBook(input: {
 }): Promise<EnrichResult | null> {
   const outcome = await enrichBookOutcome(input)
   return outcome.status === 'ok' ? outcome.data : null
+}
+
+export interface EditionCandidate {
+  title: string
+  authors: string[]
+  isbn13: string
+  pageCount?: number | null
+  pubY?: number | null
+  pubM?: number | null
+  pubD?: number | null
+  publisher?: string
+  language?: string
+  binding?: string
+  ids?: { work?: string; edition?: string; slug?: string }
+}
+export async function findEditions(title: string, author: string, signal: AbortSignal) {
+  const { data, error } = await supabase.functions.invoke('enrich', {
+    body: { title, author, includeEditions: true },
+    signal,
+  })
+  if (error || !data || !['available', 'limited'].includes(data.editionStatus))
+    throw new Error(
+      data?.editionStatus === 'ambiguous'
+        ? 'More than one work matches this title and author. Confirm the identity before choosing an edition.'
+        : 'Edition lookup is unavailable. Your draft is unchanged; try again.',
+    )
+  const editions = (Array.isArray(data.editions) ? data.editions : []) as EditionCandidate[]
+  return {
+    editions: editions.filter(
+      (e) => normalizeIsbn(e.isbn13) === e.isbn13 && e.title && e.authors?.length,
+    ),
+    limited: data.editionStatus === 'limited',
+  }
 }

@@ -59,7 +59,13 @@ export function useBarcodeCamera(
         video: {
           facingMode: { ideal: 'environment' },
           width: { ideal: 1280 },
-          height: { ideal: 720 },
+          height: { ideal: 1280 },
+          // Match the large viewfinder without cropping away barcodes the decoder can see.
+          aspectRatio: {
+            ideal: video.current?.clientHeight
+              ? video.current.clientWidth / video.current.clientHeight
+              : 0.75,
+          },
         },
         audio: false,
       })

@@ -83,6 +83,32 @@ describe('only a real answer may stamp enriched_at', () => {
     })
   })
 
+  it('retains useful partial details without stamping a failed source as checked', async () => {
+    outcomes = [{ status: 'ok', data: { sourcesIncomplete: true, pageCount: 240 } }]
+    const result = await run([makeBook({ id: 'b1' })])
+    expect(updates[0]?.patch.pages).toBe(240)
+    expect(stamped()).toHaveLength(0)
+    expect(result).toMatchObject({ filled: 1, failed: 1, scanned: 0, nothing: 0 })
+    expect(result.errorMessage).toContain('retryable')
+  })
+
+  it('does not send an empty update when partial results have no usable fills', async () => {
+    outcomes = [{ status: 'ok', data: { sourcesIncomplete: true } }]
+    const result = await run([makeBook({ id: 'b1' })])
+    expect(updates).toEqual([])
+    expect(result).toMatchObject({ filled: 0, failed: 1, scanned: 0, nothing: 0 })
+  })
+
+  it('counts partial attempts against the per-run ceiling', async () => {
+    outcomes = [{ status: 'ok', data: { sourcesIncomplete: true } }]
+    const result = await bulkComplete(
+      [makeBook({ id: 'one' }), makeBook({ id: 'two' }), makeBook({ id: 'three' })],
+      () => {}, () => false, { limit: 2 },
+    )
+    expect(result).toMatchObject({ failed: 2, scanned: 0, stopReason: 'limit' })
+    expect(outcomeIdx).toBe(2)
+  })
+
   // THE MUTATION TARGET. Drop the `outcome.status === 'failed'` branch in bulkComplete and this
   // fails: the book is stamped and negative-cached for three days because a source was unreachable.
   it('a FAILED check is never stamped — nothing was checked, so nothing may rest', async () => {

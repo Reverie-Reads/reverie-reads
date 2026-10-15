@@ -969,3 +969,12 @@ shared values only when the matching personal value is null. Zero overrides rema
 Displays, library filtering and recommendations use this view; persistence, backups and merges use
 only the personal values. Reviewed shared genres resist automatic provider completion.
 See `../tasks/corpus-editions-and-guidance.md`.
+
+## Intake edition lookup
+
+The scanner and importer share identity-checked enrichment. Exact Hardcover editions now join
+Open Library as a source of selected-ISBN edition facts. Successful ISBN absence may recover only
+work facts through a separate exact title/full-author lookup. Add and saved-book Edit may compare
+bounded edition candidates; no candidate is automatically selected, registered as shared bibliography
+or added to private inventory. Existing personal corrections and explicit save/review remain required.
+See `../tasks/scanner-metadata-completeness.md`.

@@ -110,7 +110,7 @@ describe('maintenance cache admission', () => {
     isbns: [isbn],
   }
   const hit = {
-    key: 'identity-admitted-v2:ta:aquietlibrary|janesmith',
+    key: 'identity-admitted-v3:ta:aquietlibrary|janesmith',
     work_id: 'openlibrary:OL1W',
     confidence: 'high',
     complete: false,
