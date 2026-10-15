@@ -107,8 +107,10 @@ describe('ISBN intake', () => {
   it('offers an admitted exact edition without selecting a work search ISBN', async () => {
     vi.mocked(enrichBookOutcome).mockResolvedValue({ status: 'ok', data: {
       title: 'A Quiet Atlas', authors: ['Avery Reader'], isbn13: '9780306406157',
-      cover: '', pubY: 2024, provenance: { isbn13: { source: 'hardcover', at: '2026-10-14' } },
-    } } as Awaited<ReturnType<typeof enrichBookOutcome>>)
+      cover: '', pubY: 2024, pubM: null, pubD: null, pageCount: null,
+      author: 'Avery Reader', series: '', seriesPosition: null, publisher: '',
+      isbn10: '', isbn: '9780306406157', language: '', genres: [], description: '', source: 'hardcover', provenance: { isbn13: { source: 'hardcover', at: '2026-10-14' } },
+    } })
     const results = await searchAddCatalog('9780306406157')
     expect(results).toEqual([expect.objectContaining({ editionIsbn: '9780306406157', source: 'hardcover' })])
     expect(lookup).not.toHaveBeenCalled()
