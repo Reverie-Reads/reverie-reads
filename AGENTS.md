@@ -751,6 +751,13 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
 
 ## Book-data admission
 
+Shared-catalog completion planning is read-only. `corpus:completion:plan` consumes the private
+inventory projection in `scripts/corpus-completion-inventory.sql`; work-level blanks never select
+an edition or become fill proposals. Preserve stale deferred holds and identity conflicts. A failed
+provider is not successful absence. Only an explicit, fingerprint-matched completed non-LLM
+disposition can schedule `gpt-6-luna` evidence research, and its output still requires independent
+source review. The planner has no acquisition or catalog writer. See `docs/tasks/importer-accuracy.md`.
+
 Every edition enrichment source must independently match the requested title/full contributor and
 canonical valid ISBN. Bounded exact Open Library and Hardcover editions with complete author
 identity may supply selected-edition pages, binding, language and date. After successful ISBN
