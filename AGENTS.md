@@ -784,6 +784,13 @@ come from trusted adapters or reviewers, never model output or client assertions
 resolution to `Incoming` or `Book`; the staged adapter/review cutover and lossless credit persistence
 are still required. See `docs/tasks/intake-evidence-resolver.md`.
 
+`intake:shadow` connects bounded, exact-ISBN Open Library and Hardcover adapters to that resolver.
+Adapter provenance is code-owned, but both sources remain review-only with unknown upstream lineage;
+two APIs do not prove independent support. Freeze provider-independent references and code hashes
+before acquisition. Keep its Git-common-directory attempt markers permanent, including failures.
+Reports retain scores and diagnostic codes, not provider payloads. This is an operator-only pilot,
+not a source license upgrade, production qualification, or Add/scan/import writer.
+
 Selected-edition pages and publication dates retain their ISBN through search, Add and import.
 Hardcover work-search ISBN arrays never select a reader's copy; search labels never establish series.
 Personal fill-only merges and duplicate field choices cannot donate pages/dates across different or

@@ -1,0 +1,199 @@
+import { describe, expect, it } from 'vitest'
+import { adaptOpenLibraryIntake, adaptHardcoverIntake } from './intakeSourceAdapters'
+import { resolveIntakeEvidence } from './intakeResolver'
+import { parseIntakeEvidence } from './intakeEvidenceValidation'
+
+const context = { targetFingerprint: 'a'.repeat(64), retrievedAt: '2026-10-16T12:00:00Z' }
+const isbn = '9780306406157'
+const ol = () => ({
+  key: '/books/OL1M',
+  title: 'A Quiet Library',
+  isbn_13: [isbn],
+  authors: [{ key: '/authors/OL1A' }],
+  number_of_pages: 240,
+  physical_format: 'Paperback',
+  publish_date: 'February 2024',
+  publishers: ['Example Press'],
+})
+const authors = { '/authors/OL1A': { key: '/authors/OL1A', name: 'Jane Smith' } }
+const hc = () => ({
+  data: {
+    editions: [
+      {
+        id: 1,
+        title: 'A Quiet Library',
+        isbn_13: isbn,
+        compilation: false,
+        pages: 240,
+        physical_format: 'Paperback',
+        release_date: '2024-02-29',
+        book: {
+          id: 2,
+          title: 'A Quiet Library',
+          contributions: [{ contribution: 'author', author: { name: 'Jane Smith' } }],
+        },
+      },
+    ],
+  },
+})
+const request = (observations: ReturnType<typeof adaptOpenLibraryIntake>['observations']) => ({
+  version: 1,
+  targetFingerprint: context.targetFingerprint,
+  asOf: context.retrievedAt,
+  target: { isbn, title: 'A Quiet Library', contributors: ['Jane Smith'] },
+  existing: {},
+  observations,
+})
+
+describe('trusted non-LLM intake adapters', () => {
+  it('keeps source policy code-owned and preserves partial dates', () => {
+    const raw = {
+      ...ol(),
+      source: { kind: 'publisher', usage: 'eligible', lineage: 'independent' },
+      ownerId: 'private',
+    }
+    const a = adaptOpenLibraryIntake(raw, authors, context)
+    expect(a.observations[0]?.source).toMatchObject({
+      kind: 'bibliographic',
+      usage: 'review_only',
+      lineage: null,
+      method: 'structured',
+    })
+    expect(a.observations[0]?.claims.find((c) => c.field === 'publication')?.value).toEqual({
+      y: 2024,
+      m: 2,
+      d: null,
+    })
+    expect(JSON.stringify(a)).not.toContain('private')
+    const r = resolveIntakeEvidence(request(a.observations))
+    expect(r.fields.every((f) => f.proposed === undefined)).toBe(true)
+    expect(r.work.reasons).toContain('review_only_source')
+  })
+  it('retains contradictory ISBNs for identity review instead of replacing them with the query', () => {
+    const a = adaptOpenLibraryIntake(
+      { ...ol(), isbn_13: [isbn, '9781649374042'] },
+      authors,
+      context,
+    )
+    expect(a.observations[0]?.identity?.isbns).toHaveLength(2)
+    expect(resolveIntakeEvidence(request(a.observations)).observations[0]?.reasons).toContain(
+      'isbn_conflict',
+    )
+  })
+  it.each([{}, { '/authors/OL1A': { key: '/authors/OL2A', name: 'Jane Smith' } }])(
+    'requires key-bound complete authors: %j',
+    (a) => {
+      expect(adaptOpenLibraryIntake(ol(), a, context).observations[0]?.status).toBe('failed')
+    },
+  )
+  it('refuses author URLs and capped lists without partial identity', () => {
+    expect(
+      adaptOpenLibraryIntake(
+        { ...ol(), authors: [{ key: 'https://evil.example/author' }] },
+        authors,
+        context,
+      ).issues,
+    ).toContain('invalid_author_reference')
+    expect(
+      adaptOpenLibraryIntake(
+        { ...ol(), authors: Array(9).fill({ key: '/authors/OL1A' }) },
+        authors,
+        context,
+      ).observations[0]?.status,
+    ).toBe('capped')
+  })
+  it('never harvests description, cover or series labels in the restricted pilot', () => {
+    const a = adaptOpenLibraryIntake(
+      { ...ol(), description: 'sensitive text', series: ['Unverified'], covers: [42] },
+      authors,
+      context,
+    )
+    expect(a.observations[0]?.claims.map((c) => c.field)).not.toEqual(
+      expect.arrayContaining(['description', 'cover', 'series']),
+    )
+    expect(JSON.stringify(a)).not.toContain('sensitive text')
+  })
+  it('does not choose one of competing Hardcover editions', () => {
+    const raw = hc()
+    raw.data.editions.push({ ...raw.data.editions[0]!, id: 3 })
+    expect(adaptHardcoverIntake(raw, context).observations[0]?.status).toBe('capped')
+  })
+  it('distinguishes GraphQL errors from successful emptiness', () => {
+    expect(
+      adaptHardcoverIntake(
+        { errors: [{ message: 'private error' }], data: { editions: [] } },
+        context,
+      ).observations[0]?.status,
+    ).toBe('failed')
+    expect(adaptHardcoverIntake({ data: { editions: [] } }, context).observations[0]?.status).toBe(
+      'empty',
+    )
+  })
+  it.each(['translator', 'editor', 'narrator', 'foreword', 'playwright', 'original story'])(
+    'retains %s without making it an author',
+    (label) => {
+      const raw = hc()
+      raw.data.editions[0]!.book.contributions.push({
+        contribution: label,
+        author: { name: 'Anne Brown' },
+      })
+      const a = adaptHardcoverIntake(raw, context)
+      expect(a.observations[0]?.identity?.contributors[1]?.role).toBe(
+        label === 'original story' ? 'original_story' : label,
+      )
+      expect(a.observations[0]?.claims[0]?.scope).toBe('edition')
+      expect(() => parseIntakeEvidence(request(a.observations))).not.toThrow()
+    },
+  )
+  it.each([null, '', 'reteller'])(
+    'does not manufacture authorship for an unspecified role: %j',
+    (label) => {
+      const raw = hc() as unknown as { data: { editions: Record<string, unknown>[] } }
+      raw.data.editions[0]!.book = {
+        id: 2,
+        title: 'A Quiet Library',
+        contributions: [{ contribution: label, author: { name: 'Jane Smith' } }],
+      }
+      const a = adaptHardcoverIntake(raw, context)
+      expect(a.observations[0]?.identity?.contributors[0]?.role).toBe('unknown')
+      expect(a.issues).toContain('unqualified_contributor_role')
+    },
+  )
+  it.each([true, null, undefined])('holds compilation/unknown scope %j', (compilation) => {
+    expect(
+      adaptHardcoverIntake(
+        { data: { editions: [{ ...hc().data.editions[0], compilation }] } },
+        context,
+      ).observations[0]?.status,
+    ).toBe('failed')
+  })
+  it('does not inherit identity or facts from a conflicting parent book', () => {
+    const raw = hc()
+    raw.data.editions[0]!.book.title = 'Another Book'
+    expect(adaptHardcoverIntake(raw, context).issues).toContain('edition_parent_title_conflict')
+  })
+  it('does not guess unknown binding or parse impossible dates', () => {
+    const a = adaptOpenLibraryIntake(
+      { ...ol(), physical_format: 'Deluxe', publish_date: '2023-02-29' },
+      authors,
+      context,
+    )
+    expect(a.issues).toEqual(['unknown_format', 'unparsed_publication_date'])
+    expect(a.observations[0]?.claims.some((c) => ['format', 'publication'].includes(c.field))).toBe(
+      false,
+    )
+  })
+  it('does not give audiobooks print pages or select between conflicting formats', () => {
+    expect(
+      adaptOpenLibraryIntake(
+        { ...ol(), physical_format: 'audiobook' },
+        authors,
+        context,
+      ).observations[0]?.claims.some((c) => c.field === 'pages'),
+    ).toBe(false)
+    const raw = { ...hc().data.editions[0], edition_format: 'ebook' }
+    expect(adaptHardcoverIntake({ data: { editions: [raw] } }, context).issues).toContain(
+      'conflicting_edition_formats',
+    )
+  })
+})

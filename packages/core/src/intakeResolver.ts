@@ -91,7 +91,8 @@ function sourceReasons(request: IntakeEvidenceRequest, o: IntakeObservation): In
   return reasons
 }
 
-function identityReasons(
+/** Identity comparison alone is diagnostic, never evidence qualification or permission to fill. */
+export function intakeIdentityReviewReasons(
   request: IntakeEvidenceRequest,
   o: IntakeObservation,
 ): IntakeReviewReason[] {
@@ -221,7 +222,7 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
     id: o.id,
     reasons: unique([
       ...sourceReasons(request, o),
-      ...(o.status === 'ok' ? identityReasons(request, o) : []),
+      ...(o.status === 'ok' ? intakeIdentityReviewReasons(request, o) : []),
     ]),
   }))
   const decisions = new Map(observations.map((o) => [o.id, o]))
@@ -241,7 +242,7 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
         o.status === 'ok' &&
         !sourceReasons(request, o).length &&
         o.identity!.isbns.some((x) => normalizeIsbn(x) === isbn) &&
-        identityReasons(request, o).length,
+        intakeIdentityReviewReasons(request, o).length,
     )
   const workReasons: IntakeReviewReason[] = []
   if (request.existing.title !== undefined || request.existing.contributors !== undefined) {
@@ -258,7 +259,7 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
     }
     if (
       (request.existing.contributors !== undefined && !existingNames?.length) ||
-      matches.some((o) => identityReasons(existingRequest, o).length > 0)
+      matches.some((o) => intakeIdentityReviewReasons(existingRequest, o).length > 0)
     )
       workReasons.push('existing_identity_conflict')
   }

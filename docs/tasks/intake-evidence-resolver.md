@@ -117,5 +117,74 @@ An intentionally incorrect expected answer verifies that the replay actually rep
    reading-history assertions at the actual writer boundary. Known-fixture success alone does not
    authorize silently switching the production paths.
 
-The next slice is adapter/shadow integration. This implementation deliberately has no runtime
-feature flag that could accidentally turn review evidence into writes.
+The exact-ISBN adapter/shadow slice is implemented below. There is no runtime feature flag that
+could accidentally turn review evidence into writes.
+
+## Trusted adapters and independent shadow pilot
+
+`scripts/intake-source-client.mjs` calls the existing Open Library and Hardcover sources, using
+the same exact-edition query constraints, Open Library identity header, ISBN-10 equivalence and
+single-hop edition redirect validation as the existing code. It runs serially, at least 1.1 seconds
+between requests per source, with 15-second timeouts, 512 KiB bodies, no retries, and a maximum of
+80 Open Library / 20 Hardcover requests. Authentication/rate-limit refusals stop that source;
+two consecutive infrastructure failures stop it as well. An ISBN is acquired once per run, including
+failure. Author lookups are key-bound and bounded. No title search or sibling-edition fallback runs
+after a miss, error or conflict. The operator must coordinate this small run with other provider
+traffic; its in-process pace is not the deployed cross-process source budget.
+
+`intakeSourceAdapters.ts` accepts provider-specific shapes, not a caller-supplied source policy.
+It constructs source URLs/record IDs, fixes the extraction method, and always assigns bibliographic,
+review-only qualification with unknown upstream lineage. Neither a response's `verified` label,
+publisher string nor agreement between two APIs grants authority. Hardcover's missing/unknown
+contribution labels stay `unknown`; translator, editor, narrator and other explicit roles survive.
+Open Library's author relation is recorded as an observation, not a guarantee of complete credits.
+Compilations, incomplete authors, competing editions, capped responses and parent-title conflicts
+remain unresolved. Credits are edition-scoped; parent-work credits do not certify edition completeness.
+
+Only objective identity/credit, pages, publication, publisher, format and language observations enter
+memory. Descriptions, covers and series labels are not harvested by this restricted pilot. Unknown
+binding/date representations are diagnostic gaps, not guessed values. ISBN-less intake and work
+search adapters still need separate implementation/evaluation before a general intake cutover.
+
+Run from the repository root, using private paths outside Git:
+
+```sh
+pnpm intake:shadow freeze /private/frame.json /private/lock.json /private/prior-replay.json
+INTAKE_ENV_FILE=/private/existing-provider.env pnpm intake:shadow run /private/frame.json /private/lock.json /private/report.json
+```
+
+The environment file is optional; only `HARDCOVER_TOKEN` is passed to the source client. Missing
+credentials are reported as unavailable, never successful emptiness. There is no LLM or ISBNdb path,
+no database client, and no writer. This pilot uses the already configured provider account; it does
+not purchase usage or change source subscriptions.
+
+Freeze validates at most 20 strictly allowlisted cases, compares identity/ISBN overlap with the prior
+private replay and sanitized development scenarios, and binds the frame, prior-replay and system
+hashes. This is a guard against accidental reuse, not a guarantee that an operator supplied a complete
+history. The system hash includes imported core, edge and trial helpers plus the dependency lock.
+Run refuses changed inputs/code and creates a permanent exclusive attempt marker in the shared Git
+common directory before any request. A different output path, worktree or system hash cannot replay
+the same frame. Do not delete markers or create a new clone to evade this rule. An interrupted run
+remains consumed; automatic resume is deliberately absent.
+
+The resolver sees only the target and acquired observations. Reference URLs, expected decisions and
+edition facts are supplied to scoring afterwards. Scan-only outcomes are checked against the separate
+reference identity, not just the query ISBN. Reports distinguish candidate identity matching from
+source-qualified work resolution; missing/failed candidates do not count as correctly rejected books.
+Pages and format agreement have explicit missing/disagreement counts. A matching page count does not
+prove every edition fact, and matching identity does not certify role completeness. The pilot does
+not measure description or complete-contributor accuracy.
+
+Private reports retain case IDs, decisions, diagnostic codes and scores only. Provider payloads,
+names, titles, credit arrays and field values are transient; neither provider facts nor the human/agent
+reference frame are added to the public corpus. Reports are mode 0600 and create-only reservations;
+the runner finishes only its own reserved report. The JSON frame is local operator input, not a new
+client API or privacy scrubber. Personal fields are rejected before networking.
+
+The October 16 pilot uses a new publisher-referenced, purposive set: eight editions across six works,
+four wrong-author controls and two scan-only probes (14 cases). References were inspected separately
+from provider output and exclude all prior intake replay cases. It is independent of that development
+set, but is agent-reviewed, small, and not an independent human review or population qualification.
+The older 1,000-case series qualification partition and consumed study frames are untouched. Results
+and the non-secret frozen lock are recorded separately. Do not tune against a completed pilot and
+relabel it as unseen evidence; a later tuning pass needs a new holdout.

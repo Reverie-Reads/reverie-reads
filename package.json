@@ -51,7 +51,8 @@
     "series:trial:score": "pnpm --filter @reverie/series-source-trial score",
     "series:sample:audit": "pnpm --filter @reverie/series-source-trial sample:audit",
     "db:test:household-concurrency": "bash scripts/stack-lock.sh node scripts/test-household-unlink-concurrency.mjs",
-    "intake:replay": "vite-node --script scripts/intake-resolver-replay.mjs --"
+    "intake:replay": "vite-node --script scripts/intake-resolver-replay.mjs --",
+    "intake:shadow": "vite-node --script scripts/intake-shadow.mjs --"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
