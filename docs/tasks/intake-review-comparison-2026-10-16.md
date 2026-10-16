@@ -79,8 +79,12 @@ fixtures, with no Save control. Live provider values were not exported or captur
 
 Full unit, typecheck, lint and build checks passed: 3,340 core tests, 1,340 web tests, 498 source-trial
 tests, two Workflow tests and existing recovery/completion checks, including 21 new regression tests.
-The source comparison remains separate from browser integration proof. Local browser startup and
-restoration outcomes are recorded in the PR receipt; a failed startup is not a passing full suite.
+The fresh-database full browser run passed with 434 passed, 11 skipped and zero failures in 43.5
+minutes, using one worker and no retries. An earlier local service startup failed before browser
+invocation; that failure is retained separately. After service recovery, all project services were
+healthy before the normal reset and test run. The source comparison remains separate from browser
+integration proof; remote CI remains unverified because its connector requires account connection.
+The standard local development schema and 290-book seed were restored successfully afterward.
 
 ## Decision and next gates
 
@@ -92,5 +96,5 @@ source-use gates are essential, not a completed automatic importer.
 Before cutover, establish a source-qualified edition-credit path that does not equate an author
 relation with primary authorship, verify unresolved aliases/title variants against authoritative
 sources, add lossless persistent credit storage and a draft-bound approval handoff, cover ISBN-less
-intake, and complete the browser gate. Any matching or role-policy tuning must be tested on another
-new frozen frame; this consumed comparison cannot be relabelled as unseen.
+intake, and verify the eventual integration in the browser. Any matching or role-policy tuning must
+be tested on another new frozen frame; this consumed comparison cannot be relabelled as unseen.
