@@ -23,7 +23,7 @@ export interface DiscoverHit extends DiscoveryBook {
   isbn: string
   pub: string
   /** Search-result provenance. Present when this preview came from live catalog search. */
-  source?: 'hardcover' | 'google'
+  source?: 'hardcover' | 'google' | 'openlibrary'
   sourceUrl?: string
   /** provenance: true only on curated-injection hits (packages/core discoverCurated) — debuggable
    *  in the network tab and the fn's cache rows, never rendered to the reader */

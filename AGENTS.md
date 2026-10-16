@@ -270,6 +270,11 @@ myProgress`). Move them into `packages/core` with tests.
   silently changes the selected destination. Review keeps one mounted book draft across personal,
   household and delegated choices; shared writers receive only the reviewed bibliographic subset.
 
+- **Edition identity tolerates formatting, not missing evidence.** Exact returned ISBN agreement
+  plus a complete author permits surname-first comma forms, standalone ampersands and bounded
+  descriptive title phrases. Missing/changed initials, volume labels and edition/format qualifiers
+  remain under review. Work-only matching stays strict; these comparison forms never rewrite
+  stored identity keys or supply series membership. See `docs/tasks/book-source-admission.md`.
 - **Add search distinguishes failure from absence.** Only a successful empty response means no
   matches. Keep the entered query available for explicit retry or manual entry; a newer search,
   manual choice or route exit cancels the older request so late results cannot replace the current
@@ -746,9 +751,20 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
 
 ## Book-data admission
 
-Every enrichment source must independently match the requested title/full contributor and, when
-provided, canonical valid ISBN. Only a bounded exact Open Library edition and its complete author
-lookups may supply selected-edition pages, binding, language and date. Work search summaries supply
+Shared-catalog completion planning is read-only. `corpus:completion:plan` consumes the private
+inventory projection in `scripts/corpus-completion-inventory.sql`; work-level blanks never select
+an edition or become fill proposals. Preserve stale deferred holds and identity conflicts. A failed
+provider is not successful absence. Only an explicit, fingerprint-matched completed non-LLM
+disposition can schedule `gpt-6-luna` evidence research, and its output still requires independent
+source review. The planner has no acquisition or catalog writer. See `docs/tasks/importer-accuracy.md`.
+
+Every edition enrichment source must independently match the requested title/full contributor and
+canonical valid ISBN. Bounded exact Open Library and Hardcover editions with complete author
+identity may supply selected-edition pages, binding, language and date. After successful ISBN
+absence, an independently exact title/full-author work fallback may supply work facts only; it
+cannot choose an ISBN or edition facts. Conflicting editions and provider failures do not trigger
+that absence fallback. Explicit edition comparison remains bounded and reader-selected; see
+`docs/tasks/scanner-metadata-completeness.md`. Work search summaries supply
 work fields only; never promote their median pages, first language, arbitrary ISBN or edition key.
 Source-declared subtitles may match the combined title; surname, alias, prefix and search-series
 agreement do not establish identity. Competing/capped matches remain unresolved. Fast/full and cache
@@ -773,7 +789,7 @@ must not coalesce publication axes independently; historical repair remains sepa
 
 **ISBNdb retirement (owner, September 9).** Production enrichment no longer has an ISBNdb HTTP
 adapter; old keys/flags/CSV cannot reactivate it. Enrichment and the owner-run corpus backfill share
-the current `identity-admitted-v2:` cache namespace (superseding `durable-sources-v1:`), with no fallback to historical mixed-source rows. Historical
+the current `identity-admitted-v3:` cache namespace (superseding `identity-admitted-v2:` and `durable-sources-v1:`), with no fallback to historical mixed-source rows. Historical
 source types remain readable, not proof of a live provider. Do not delete old cache or catalog rows
 as part of this cutover: incomplete union/personal provenance prevents safe blanket cleanup.
 No further paid trial acquisition without new owner approval; consumed study locks stay intact.

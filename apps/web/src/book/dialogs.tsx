@@ -1,3 +1,4 @@
+import { EditionLookup } from '../components/EditionLookup'
 import { useRef, useState, type ReactNode } from 'react'
 import {
   authorOf,
@@ -487,28 +488,53 @@ export function EditDetails({
               errors={fieldErrors}
               validationAttempt={validationAttempt}
               editionNotice={
-                f.isbn.trim() !== opened.current.f.isbn.trim() ? (
-                  <div className="mb-4 space-y-2 border border-line p-3 text-sm">
-                    <p>
-                      ISBN: {opened.current.f.isbn || 'Not recorded'} →{' '}
-                      {f.isbn.trim() || 'Not recorded'}
-                    </p>
-                    <p>
-                      This changes this book’s selected ISBN. Check its page count and publication
-                      date against the new edition. Individual copies and shared catalog records are
-                      unchanged.
-                    </p>
-                    <label className="flex min-h-11 items-start gap-3">
-                      <input
-                        type="checkbox"
-                        className="mt-1"
-                        checked={isbnReviewed}
-                        onChange={(e) => setIsbnReviewed(e.target.checked)}
-                      />
-                      I reviewed this edition’s ISBN, pages and publication date.
-                    </label>
-                  </div>
-                ) : undefined
+                <>
+                  <EditionLookup
+                    title={f.title}
+                    author={
+                      contribs.find((c) => c.role === 'author' || c.role === 'co_author')?.name ||
+                      ''
+                    }
+                    onSelect={(edition) => {
+                      set('isbn', edition.isbn13)
+                      // Saved corrections are preserved. The existing ISBN-change review remains required.
+                      setF((previous) => ({
+                        ...previous,
+                        pages:
+                          previous.pages || (edition.pageCount ? String(edition.pageCount) : ''),
+                        ...(previous.pubY || previous.pubM || previous.pubD
+                          ? {}
+                          : {
+                              pubY: edition.pubY ? String(edition.pubY) : '',
+                              pubM: edition.pubM ? String(edition.pubM) : '',
+                              pubD: edition.pubD ? String(edition.pubD) : '',
+                            }),
+                      }))
+                    }}
+                  />
+                  {f.isbn.trim() !== opened.current.f.isbn.trim() ? (
+                    <div className="mb-4 space-y-2 border border-line p-3 text-sm">
+                      <p>
+                        ISBN: {opened.current.f.isbn || 'Not recorded'} →{' '}
+                        {f.isbn.trim() || 'Not recorded'}
+                      </p>
+                      <p>
+                        This changes this book’s selected ISBN. Check its page count and publication
+                        date against the new edition. Individual copies and shared catalog records
+                        are unchanged.
+                      </p>
+                      <label className="flex min-h-11 items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={isbnReviewed}
+                          onChange={(e) => setIsbnReviewed(e.target.checked)}
+                        />
+                        I reviewed this edition’s ISBN, pages and publication date.
+                      </label>
+                    </div>
+                  ) : undefined}
+                </>
               }
               cover={
                 <button

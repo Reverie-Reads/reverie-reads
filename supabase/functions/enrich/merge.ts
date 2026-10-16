@@ -140,15 +140,15 @@ const PRECEDENCE: Record<string, EnrichSource[]> = {
   series: ['hardcover', 'openlibrary', 'google'],
   seriesPosition: ['hardcover', 'openlibrary'],
   cover: ['hardcover', 'google', 'openlibrary', 'isbndb'],
-  pageCount: ['isbndb', 'openlibrary', 'google'],
-  publisher: ['isbndb', 'openlibrary', 'google'],
+  pageCount: ['isbndb', 'openlibrary', 'google', 'hardcover'],
+  publisher: ['isbndb', 'openlibrary', 'google', 'hardcover'],
   pubY: ['isbndb', 'openlibrary', 'google', 'hardcover'],
   pubM: ['isbndb', 'openlibrary', 'google', 'hardcover'],
   pubD: ['isbndb', 'openlibrary', 'google', 'hardcover'],
-  binding: ['isbndb', 'openlibrary', 'google'],
-  language: ['isbndb', 'openlibrary', 'google'],
-  isbn13: ['isbndb', 'openlibrary', 'google'],
-  isbn10: ['isbndb', 'openlibrary', 'google'],
+  binding: ['isbndb', 'openlibrary', 'google', 'hardcover'],
+  language: ['isbndb', 'openlibrary', 'google', 'hardcover'],
+  isbn13: ['isbndb', 'openlibrary', 'google', 'hardcover'],
+  isbn10: ['isbndb', 'openlibrary', 'google', 'hardcover'],
 }
 
 const STR_KEYS = [
@@ -181,6 +181,12 @@ function resolveScalar(
     // Most-recent stamp from this source (sources may appear once, but be defensive).
     const hit = stamped.filter((s) => s.source === src).sort((a, b) => (a.at < b.at ? 1 : -1))[0]
     if (!hit) continue
+    if (
+      src === 'hardcover' &&
+      ['pageCount', 'publisher', 'binding', 'language', 'isbn13', 'isbn10'].includes(field) &&
+      hit.record.scope !== 'edition'
+    )
+      continue
     const v = (hit.record as unknown as Record<string, unknown>)[field]
     if (isNum ? nonNullNum(v) : nonEmptyStr(v)) {
       return {

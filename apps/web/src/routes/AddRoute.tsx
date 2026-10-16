@@ -58,7 +58,7 @@ import { publicationDateError } from '../lib/publicationDate'
 import { useCorpusAdminStatus } from '../data/enrichCorpus'
 import { resultIsbn, triageLabel, triageResults, type TriagedResult } from '../lib/addTriage'
 import { resolveCandidate } from '../data/duplicates'
-import { enrichBook, type CoverAlternate } from '../lib/enrich'
+import { enrichBookOutcome, type CoverAlternate } from '../lib/enrich'
 import {
   googleBooksResultUrl,
   partitionSearchResults,
@@ -66,6 +66,7 @@ import {
   type SearchResult,
 } from '../lib/search'
 import { useEffectiveSkin, useLabels, useVoice } from '../skin/labels'
+import { EditionLookup } from '../components/EditionLookup'
 import { BarcodeBatch } from '../components/BarcodeBatch'
 import { Modal } from '../components/Modal'
 import { CoverImage } from '../components/CoverImage'
@@ -92,7 +93,7 @@ import { StartBookTour } from '../guidance/BookTour'
 import { useBookTour, useBookTourObservation } from '../guidance/BookTourContext'
 
 interface SearchHit {
-  source: 'hardcover' | 'google'
+  source: SearchResult['source']
   title: string
   authors: string[]
   cover: string
@@ -565,42 +566,76 @@ function AddForm({
   const currentIdentity = useRef('')
   currentIdentity.current = JSON.stringify([form.title, contribs.map((c) => c.name), form.isbn])
 
+  const detailRun = useRef(0)
+  const reviewActive = useRef(false)
+  reviewActive.current = reviewOpen || !!addedId
+  const fetchInitialDetails = useRef<() => void>(() => undefined)
+  fetchInitialDetails.current = () => {
+    void fetchDetails()
+  }
+  useEffect(() => {
+    // Only a selected catalog record or explicit ISBN starts a lookup; an empty manual draft does not.
+    if (hit.source || hit.isbn) fetchInitialDetails.current()
+    const runs = detailRun
+    return () => {
+      runs.current++
+    }
+  }, [hit])
+
   async function fetchDetails() {
+    const run = ++detailRun.current
     const requestedIdentity = currentIdentity.current
     setEnriching(true)
     setCoverNote(null)
-    const res = await enrichBook({
+    const outcome = await enrichBookOutcome({
       title: form.title,
       author:
         contribs.find((c) => c.role === 'author' || c.role === 'co_author')?.name ||
         contribs[0]?.name,
       isbn: hit.edition && !releaseMatches && !isbnEdited.current ? '' : form.isbn,
     })
+    if (run !== detailRun.current) return
     setEnriching(false)
+    if (reviewActive.current) return
     if (requestedIdentity !== currentIdentity.current) {
       setCoverNote('The title or contributors changed. Fetch details again for this book.')
       return
     }
-    if (!res) {
-      setCoverNote('Couldn’t reach the catalog just now — add details by hand, or try again.')
+    if (outcome.status !== 'ok') {
+      setCoverNote(
+        outcome.status === 'empty'
+          ? 'No verified details found for this identity. Your draft is unchanged; add details or choose an edition.'
+          : outcome.status === 'rate_limited'
+            ? 'The catalog is busy. Your draft is unchanged; try fetching details again shortly.'
+            : 'Couldn’t confirm catalog details. Your draft is unchanged; try again or enter them yourself.',
+      )
       return
     }
+    const res = outcome.data
+    if (res.sourcesIncomplete)
+      setCoverNote('Some catalog sources were unavailable. Check the details below or fetch again.')
     // Seed contributors from enrichment only if the user hasn't entered any names yet.
-    if (res.authors?.length && !contribs.some((c) => c.name.trim()))
-      setContribs(contributorsFromAuthors(res.authors))
+    if (res.authors?.length)
+      setContribs((previous) =>
+        previous.some((c) => c.name.trim()) ? previous : contributorsFromAuthors(res.authors),
+      )
     // Fill only blanks — never overwrite what the user typed. genre is the mapped primary genre
     // (C1 fill); only applied if the user hasn't edited the genre field themselves.
     setForm((p) => ({
       ...p,
       // A resolved book search is not series-membership evidence. Corpus classification fills this
       // later when a relational source contains the book; readers can still enter it explicitly.
-      genre: genreEdited.current ? p.genre : res.genre || p.genre,
+      title: p.title || res.title,
+      genre: genreEdited.current || p.genre ? p.genre : res.genre || '',
       pages:
-        p.title === form.title && !p.pages && res.pageCount != null
+        !releaseFieldsEdited.current.pages &&
+        p.title === form.title &&
+        !p.pages &&
+        res.pageCount != null
           ? String(res.pageCount)
           : p.pages,
       pub:
-        p.title === form.title && !p.pub && res.pubY != null
+        !releaseFieldsEdited.current.pub && p.title === form.title && !p.pub && res.pubY != null
           ? [
               String(res.pubY),
               ...(res.pubM == null ? [] : [String(res.pubM).padStart(2, '0')]),
@@ -614,7 +649,7 @@ function AddForm({
     const alts = res.alternates ?? []
     setAlternates(alts)
     const strong = res.confidence === 'high'
-    if (res.cover && !cover) setCover(res.cover) // tentative preview either way — never overwrites a user pick
+    if (res.cover) setCover((previous) => previous || res.cover) // tentative preview either way — never overwrites a user pick
     if (!strong && res.cover) {
       setCoverNote(
         alts.length
@@ -1004,13 +1039,44 @@ function AddForm({
                     className="mt-1.5 skin-control border border-line px-2.5 py-1 text-[11px] font-semibold text-ink disabled:opacity-50"
                     style={{ background: 'var(--field)' }}
                   >
-                    {enriching ? '…' : '🔎 Fetch details'}
+                    {enriching ? 'Finding details…' : '🔎 Fetch details'}
                   </button>
                 </div>
               </>
             }
             editionNotice={
               <>
+                <EditionLookup
+                  title={form.title}
+                  author={
+                    contribs.find((c) => c.role === 'author' || c.role === 'co_author')?.name || ''
+                  }
+                  onSelect={(edition) => {
+                    detailRun.current++
+                    setEnriching(false)
+                    changeMetadata('isbn', edition.isbn13)
+                    setForm((p) => ({
+                      ...p,
+                      isbn: edition.isbn13,
+                      pages: releaseFieldsEdited.current.pages
+                        ? p.pages
+                        : edition.pageCount
+                          ? String(edition.pageCount)
+                          : '',
+                      pub: releaseFieldsEdited.current.pub
+                        ? p.pub
+                        : edition.pubY
+                          ? [edition.pubY, edition.pubM, edition.pubD]
+                              .filter((v) => v != null)
+                              .map((v, i) => (i ? String(v).padStart(2, '0') : String(v)))
+                              .join('-')
+                          : '',
+                    }))
+                    setCoverNote(
+                      'Selected edition details are ready for review. Details you entered yourself were preserved.',
+                    )
+                  }}
+                />
                 {hit.edition && (
                   <Surface
                     tone="field"
@@ -1203,7 +1269,9 @@ function AddForm({
                 ? 'Hardcover'
                 : hit.source === 'google'
                   ? 'Google Books'
-                  : 'your entry'}
+                  : hit.source === 'openlibrary'
+                    ? 'Open Library'
+                    : 'your entry'}
             . Check it against your copy.
           </p>
           {coverNote && <p className="mt-2 text-sm text-ink">{coverNote}</p>}
@@ -1770,7 +1838,18 @@ function AddScreen() {
 
   function pickBook(book: Picked) {
     cancel()
-    setPicked(book)
+    const observedIsbn = bookBarcode(searched)
+    // The explicit ISBN query is the reader's observation, not an ISBN selected from a work result.
+    // Clear reference-edition dates when carrying it into a different or unidentified edition.
+    setPicked(
+      observedIsbn && book.source
+        ? {
+            ...book,
+            isbn: observedIsbn,
+            pub: normalizeIsbn(book.isbn || '') === observedIsbn ? book.pub : '',
+          }
+        : book,
+    )
   }
 
   return (
@@ -2114,7 +2193,7 @@ interface AddPrefill {
   authors?: string[]
   isbn?: string
   cover?: string
-  source?: 'hardcover' | 'google'
+  source?: 'hardcover' | 'google' | 'openlibrary'
   sourceUrl?: string
   pub?: string
   /** arrival from a wanting context (Discover, a shelf/TBR) — the ownership toggle defaults to
@@ -2182,7 +2261,8 @@ export const validateAddSearch = (s: Record<string, unknown>): AddPrefill => {
         ? String(s.isbn)
         : (str(s.isbn) ?? '')
   if (str(s.cover)) out.cover = str(s.cover)
-  if (s.source === 'hardcover' || s.source === 'google') out.source = s.source
+  if (s.source === 'hardcover' || s.source === 'google' || s.source === 'openlibrary')
+    out.source = s.source
   const sourceUrl = str(s.sourceUrl)
   if (sourceUrl && googleBooksResultUrl({ source: out.source, sourceUrl }))
     out.sourceUrl = sourceUrl
