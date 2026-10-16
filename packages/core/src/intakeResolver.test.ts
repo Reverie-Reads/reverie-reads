@@ -114,6 +114,41 @@ describe('intake identity and edition boundaries', () => {
     expect(result.work.reasons).toContain('competing_identities')
     expect(result.fields.every((f) => f.proposed === undefined)).toBe(true)
   })
+  it('corroborates a scan across harmless title and surname-order variants', () => {
+    const other = observation({
+      id: 'second',
+      identity: {
+        title: `${title}: A Novel`,
+        contributors: [{ ...author, name: 'Smith, Jane' }],
+        scope: 'edition',
+        isbns: [isbn],
+      },
+    })
+    const result = resolveIntakeEvidence(
+      request({ target: { isbn }, observations: [observation(), other] }),
+    )
+    expect(result.work.state).toBe('resolved')
+    expect(result.edition.state).toBe('resolved')
+    expect(field(result, 'pages').proposed).toBe(256)
+  })
+  it.each([
+    { isbn },
+    { title, contributors: [author.name], isbn },
+    { title, contributors: [author.name] },
+  ])('does not collapse competing creator sets through a shared coauthor: %j', (target) => {
+    const other = observation({
+      id: 'second',
+      identity: {
+        title,
+        contributors: [author, { ...author, name: 'Anne Brown' }],
+        scope: 'edition',
+        isbns: [isbn],
+      },
+    })
+    expect(
+      resolveIntakeEvidence(request({ target, observations: [observation(), other] })).work.reasons,
+    ).toContain('competing_identities')
+  })
   it('does not conceal a same-ISBN contradiction even with an otherwise matching publisher', () => {
     const bad = observation({
       id: 'other',

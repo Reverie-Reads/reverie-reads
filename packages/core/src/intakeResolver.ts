@@ -1,6 +1,5 @@
 import { admitSourceRecord } from './enrichAdmission'
 import { normalizeIsbn } from './match'
-import { workIdentityPart } from './normalize'
 import {
   INTAKE_EVIDENCE_VERSION,
   type IntakeClaim,
@@ -150,6 +149,27 @@ function claimReasons(
   return unique(reasons)
 }
 
+function sameObservedWork(a: IntakeObservation, b: IntakeObservation, isbn: string): boolean {
+  const agrees = (left: IntakeObservation, right: IntakeObservation): boolean => {
+    const l = left.identity!
+    const r = right.identity!
+    return creators(l.contributors).every((author) =>
+      admitSourceRecord(
+        { title: l.subtitle ? `${l.title} ${l.subtitle}` : l.title, author, isbn },
+        {
+          title: r.title,
+          subtitle: r.subtitle,
+          authors: creators(r.contributors),
+          scope: isbn ? r.scope : 'work',
+          isbns: r.isbns,
+        },
+      ),
+    )
+  }
+  // Check both directions: a shared coauthor must not collapse two different creator sets.
+  return agrees(a, b) && agrees(b, a)
+}
+
 /** Deterministic, side-effect-free review. No acquisition, writes, personal data or model calls.
  * This is deliberately not an Incoming/Book: callers cannot pass it to existing intake writers. */
 export function resolveIntakeEvidence(input: unknown): IntakeResolution {
@@ -166,19 +186,11 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
   const matches = request.observations.filter(
     (o) => o.status === 'ok' && !decisions.get(o.id)!.reasons.length,
   )
-  const signatures = unique(
-    matches.map((o) => {
-      const r = o.identity!
-      // Formatting was checked against the target first. Different ordered credit lists are
-      // field conflicts; a genuinely different set of creators is an identity ambiguity.
-      const names = creators(r.contributors).map(workIdentityPart).sort()
-      return request.target.title && request.target.contributors?.length
-        ? stable([
-            workIdentityPart(request.target.title),
-            request.target.contributors.map(workIdentityPart).sort(),
-          ])
-        : stable([workIdentityPart(r.title), names])
-    }),
+  // Reuse bounded admission pairwise instead of raw string signatures (which falsely split
+  // surname-first/descriptive-title variants). A query naming one shared coauthor cannot hide
+  // competing complete creator sets, even if both candidates separately match that query.
+  const competing = matches.some((a, i) =>
+    matches.slice(i + 1).some((b) => !sameObservedWork(a, b, isbn)),
   )
   const isbnContradiction =
     !!isbn &&
@@ -209,7 +221,7 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
       workReasons.push('existing_identity_conflict')
   }
   if (request.target.isbn && !isbn) workReasons.push('invalid_isbn')
-  if (signatures.length > 1) workReasons.push('competing_identities')
+  if (competing) workReasons.push('competing_identities')
   if (isbnContradiction) workReasons.push('isbn_conflict')
   if (!matches.length)
     workReasons.push(...observations.flatMap((o) => o.reasons), 'identity_incomplete')
