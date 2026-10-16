@@ -1,0 +1,1055 @@
+{
+  "version": 1,
+  "basis": "synthetic_regression",
+  "cases": [
+    {
+      "id": "format-surname-1",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Jane Smith"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library",
+              "contributors": [
+                {
+                  "name": "Smith, Jane",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["description"]
+      }
+    },
+    {
+      "id": "format-surname-2",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Maria de la Cruz"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library",
+              "contributors": [
+                {
+                  "name": "de la Cruz, Maria",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["description"]
+      }
+    },
+    {
+      "id": "format-surname-3",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Anne Brown"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library",
+              "contributors": [
+                {
+                  "name": "Brown, Anne",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["description"]
+      }
+    },
+    {
+      "id": "format-surname-4",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Robert Green"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library",
+              "contributors": [
+                {
+                  "name": "Green, Robert",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["description"]
+      }
+    },
+    {
+      "id": "format-ampersand",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "Ink and Stars",
+          "contributors": ["Jane Smith"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "Ink & Stars",
+              "contributors": [
+                {
+                  "name": "Smith, Jane",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["description"]
+      }
+    },
+    {
+      "id": "format-novel",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Jane Smith"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library: A Novel",
+              "contributors": [
+                {
+                  "name": "Jane Smith",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["description"]
+      }
+    },
+    {
+      "id": "format-genre-1",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Jane Smith"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library: A Small-Town Mystery",
+              "contributors": [
+                {
+                  "name": "Jane Smith",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["description"]
+      }
+    },
+    {
+      "id": "format-genre-2",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Jane Smith"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library: An Epic Fantasy Romance",
+              "contributors": [
+                {
+                  "name": "Jane Smith",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["description"]
+      }
+    },
+    {
+      "id": "format-middle-initial",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Jane A. Smith"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library",
+              "contributors": [
+                {
+                  "name": "Jane Smith",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "review",
+        "edition": "review",
+        "proposedFields": []
+      }
+    },
+    {
+      "id": "format-series-suffix-1",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Jane Smith"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library: Book 1 of the Lantern Series",
+              "contributors": [
+                {
+                  "name": "Jane Smith",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "review",
+        "edition": "review",
+        "proposedFields": []
+      }
+    },
+    {
+      "id": "format-series-suffix-2",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "A Quiet Library",
+          "contributors": ["Jane Smith"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "A Quiet Library: Book 2 of the Lantern Series",
+              "contributors": [
+                {
+                  "name": "Jane Smith",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "review",
+        "edition": "review",
+        "proposedFields": []
+      }
+    },
+    {
+      "id": "mixed-same-title",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "The Missing Crown",
+          "contributors": ["Ashley Vale"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "The Missing Crown",
+              "contributors": [
+                {
+                  "name": "Tyler Johnson",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "review",
+        "edition": "review",
+        "proposedFields": []
+      }
+    },
+    {
+      "id": "mixed-common-title",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "Tangled",
+          "contributors": ["Emma Morgan"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "Tangled",
+              "contributors": [
+                {
+                  "name": "Jessica Gray",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "description",
+                "field": "description",
+                "value": "An independently inspected synopsis.",
+                "scope": "work",
+                "locator": "Synopsis"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "review",
+        "edition": "review",
+        "proposedFields": []
+      }
+    },
+    {
+      "id": "credits-two-authors",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "The Hollow Wood",
+              "contributors": [
+                {
+                  "name": "Carla Page",
+                  "role": "author",
+                  "scope": "whole"
+                },
+                {
+                  "name": "Susan Vale",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "credits",
+                "field": "contributors",
+                "value": [
+                  {
+                    "name": "Carla Page",
+                    "role": "author",
+                    "scope": "whole"
+                  },
+                  {
+                    "name": "Susan Vale",
+                    "role": "author",
+                    "scope": "whole"
+                  }
+                ],
+                "scope": "work",
+                "locator": "Title page credits"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["contributors"]
+      }
+    },
+    {
+      "id": "credits-missing-coauthor",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "title": "Sorrow and Silence",
+          "contributors": ["Alexis Moon"],
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "Sorrow and Silence",
+              "contributors": [
+                {
+                  "name": "Jean Rose",
+                  "role": "author",
+                  "scope": "whole"
+                },
+                {
+                  "name": "Alexis Moon",
+                  "role": "author",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "credits",
+                "field": "contributors",
+                "value": [
+                  {
+                    "name": "Jean Rose",
+                    "role": "author",
+                    "scope": "whole"
+                  },
+                  {
+                    "name": "Alexis Moon",
+                    "role": "author",
+                    "scope": "whole"
+                  }
+                ],
+                "scope": "work",
+                "locator": "Title page credits"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["contributors"]
+      }
+    },
+    {
+      "id": "credits-play",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "The Cursed Heir",
+              "contributors": [
+                {
+                  "name": "Jack Stone",
+                  "role": "playwright",
+                  "scope": "whole"
+                },
+                {
+                  "name": "Joanne Reed",
+                  "role": "original_story",
+                  "scope": "whole"
+                },
+                {
+                  "name": "John Fisher",
+                  "role": "original_story",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "credits",
+                "field": "contributors",
+                "value": [
+                  {
+                    "name": "Jack Stone",
+                    "role": "playwright",
+                    "scope": "whole"
+                  },
+                  {
+                    "name": "Joanne Reed",
+                    "role": "original_story",
+                    "scope": "whole"
+                  },
+                  {
+                    "name": "John Fisher",
+                    "role": "original_story",
+                    "scope": "whole"
+                  }
+                ],
+                "scope": "work",
+                "locator": "Title page credits"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["contributors"]
+      }
+    },
+    {
+      "id": "credits-anthology",
+      "request": {
+        "version": 1,
+        "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "asOf": "2026-10-16T12:00:00Z",
+        "target": {
+          "isbn": "9780306406157"
+        },
+        "existing": {},
+        "observations": [
+          {
+            "id": "source",
+            "targetFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "status": "ok",
+            "source": {
+              "provider": "synthetic-publisher",
+              "recordId": "synthetic-book",
+              "url": "https://publisher.example/book",
+              "retrievedAt": "2026-10-16T12:00:00Z",
+              "lineage": "synthetic-publisher:book",
+              "kind": "publisher",
+              "usage": "eligible",
+              "method": "inspected"
+            },
+            "identity": {
+              "title": "Forty New Tales",
+              "contributors": [
+                {
+                  "name": "Kate Birch",
+                  "role": "editor",
+                  "scope": "whole"
+                },
+                {
+                  "name": "Brian Evans",
+                  "role": "author",
+                  "scope": "part",
+                  "part": "The Lantern"
+                },
+                {
+                  "name": "Gregory Hill",
+                  "role": "foreword",
+                  "scope": "whole"
+                }
+              ],
+              "scope": "edition",
+              "isbns": ["9780306406157"]
+            },
+            "claims": [
+              {
+                "id": "credits",
+                "field": "contributors",
+                "value": [
+                  {
+                    "name": "Kate Birch",
+                    "role": "editor",
+                    "scope": "whole"
+                  },
+                  {
+                    "name": "Brian Evans",
+                    "role": "author",
+                    "scope": "part",
+                    "part": "The Lantern"
+                  },
+                  {
+                    "name": "Gregory Hill",
+                    "role": "foreword",
+                    "scope": "whole"
+                  }
+                ],
+                "scope": "work",
+                "locator": "Title page credits"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "work": "resolved",
+        "edition": "resolved",
+        "proposedFields": ["contributors"]
+      }
+    }
+  ]
+}

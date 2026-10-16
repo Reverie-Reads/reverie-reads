@@ -777,6 +777,13 @@ See `docs/tasks/book-data-correction-sequence.md` and `docs/tasks/book-source-ad
 
 ## Saved metadata continuity
 
+The new intake evidence resolver is an offline review boundary, consumed by `pnpm intake:replay`.
+It does not replace Add, scan or import writers. Preserve work/edition separation, scoped contributor
+roles, exact ISBN checks, per-claim evidence and existing values. Source qualification and lineage
+come from trusted adapters or reviewers, never model output or client assertions. Do not cast a
+resolution to `Incoming` or `Book`; the staged adapter/review cutover and lossless credit persistence
+are still required. See `docs/tasks/intake-evidence-resolver.md`.
+
 Selected-edition pages and publication dates retain their ISBN through search, Add and import.
 Hardcover work-search ISBN arrays never select a reader's copy; search labels never establish series.
 Personal fill-only merges and duplicate field choices cannot donate pages/dates across different or

@@ -9,6 +9,14 @@ Read this before writing code that touches a book. Several fields changed meanin
 prototype (`spice` → `intensity`, `status` → the series' publication status, ownership from
 two states to four), and the old names are still the intuitive guess.
 
+The versioned, bibliography-only `IntakeEvidenceRequest` and `IntakeResolution` types in
+`packages/core/src/intakeEvidence.ts` are offline review documents, not persisted books or database
+patches. They retain per-claim source/locator, scope, lineage, retrieval state and target revision,
+and distinguish whole-work, part and edition credits. Their expanded credit roles do not change the
+personal `ContributorRole` enum below. The replay tool writes private review artifacts only; Add,
+scan, import and shared-catalog writers have not switched over. See
+[`intake-evidence-resolver.md`](../tasks/intake-evidence-resolver.md) for the trust boundary and rollout.
+
 ---
 
 ## 1. Client state
