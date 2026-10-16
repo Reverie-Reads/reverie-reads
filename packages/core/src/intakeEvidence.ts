@@ -22,6 +22,10 @@ export interface IntakeCredit {
   /** A story in an anthology is not authorship of the whole anthology. */
   scope: 'whole' | 'part'
   part?: string
+  /** Original provider label, including an explicitly absent label. Never an authority grant. */
+  sourceRole?: string | null
+  /** Where this credit was observed; parent-work credits do not certify a selected edition. */
+  basis?: 'work' | 'edition'
 }
 
 export interface IntakeFacts {
@@ -81,6 +85,8 @@ export interface IntakeObservation {
   source: IntakeEvidenceSource
   status: 'ok' | 'empty' | 'failed' | 'capped'
   identity?: IntakeObservedIdentity
+  /** Unparsed source statements: retain for review; never convert prose into guessed credits. */
+  creditStatements?: string[]
   claims: IntakeClaim[]
 }
 
@@ -124,6 +130,7 @@ export type IntakeReviewReason =
   | 'existing_value'
   | 'not_applicable'
   | 'relationship_unverified'
+  | 'credit_scope_unverified'
 
 export interface IntakeClaimDecision {
   observationId: string

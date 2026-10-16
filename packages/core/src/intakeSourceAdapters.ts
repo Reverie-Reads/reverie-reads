@@ -41,9 +41,16 @@ const role = (v: unknown): IntakeCredit['role'] => {
     introduction: 'introduction',
     playwright: 'playwright',
     'original story': 'original_story',
+    contributor: 'contributor',
   }
   // Missing contribution labels do not certify authorship, even if older adapters assumed it.
-  return roles[String(v ?? '').toLowerCase()] ?? 'unknown'
+  return (
+    roles[
+      String(v ?? '')
+        .trim()
+        .toLowerCase()
+    ] ?? 'unknown'
+  )
 }
 
 /** Qualification is code-owned. Neither the response nor a CLI caller can grant authority.
@@ -184,11 +191,20 @@ export function adaptOpenLibraryIntake(
     const a = obj(authors[key]),
       name = text(a.name)
     if (a.key !== key || !name) return failed('openlibrary', context, 'incomplete_author_lookup')
-    credits.push({ name, role: 'author', scope: 'whole' })
+    credits.push({ name, role: 'author', scope: 'whole', sourceRole: 'authors', basis: 'edition' })
   }
   if (new Set(credits.map((c) => c.name)).size !== credits.length)
     return failed('openlibrary', context, 'duplicate_credits')
   const o = intakeSourceObservation('openlibrary', context, 'ok', String(b.key))
+  if (b.contributions !== undefined) {
+    if (
+      !Array.isArray(b.contributions) ||
+      b.contributions.length > 32 ||
+      !b.contributions.every((x) => text(x))
+    )
+      return failed('openlibrary', context, 'unusable_credit_statements')
+    o.creditStatements = [...b.contributions]
+  }
   o.identity = {
     title: text(b.title)!,
     contributors: credits,
@@ -206,6 +222,7 @@ export function adaptOpenLibraryIntake(
     locator: 'authors[] -> key-bound author.name',
   })
   const issues: string[] = []
+  if (o.creditStatements?.length) issues.push('unparsed_credit_statements')
   const publishers = strings(b.publishers)
   const languages = Array.isArray(b.languages) ? b.languages : []
   editionClaims(
@@ -253,7 +270,16 @@ export function adaptHardcoverIntake(raw: unknown, context: IntakeSourceContext)
   for (const c of cs) {
     const name = text(obj(obj(c).author).name)
     if (!name) return failed('hardcover', context, 'incomplete_contributors')
-    credits.push({ name, role: role(obj(c).contribution), scope: 'whole' })
+    const label = obj(c).contribution
+    if (label != null && (typeof label !== 'string' || label.length > 200))
+      return failed('hardcover', context, 'invalid_contributor_role')
+    credits.push({
+      name,
+      role: role(label),
+      scope: 'whole',
+      sourceRole: typeof label === 'string' ? label : null,
+      basis: 'work',
+    })
   }
   if (new Set(credits.map((c) => JSON.stringify(c))).size !== credits.length)
     return failed('hardcover', context, 'duplicate_credits')

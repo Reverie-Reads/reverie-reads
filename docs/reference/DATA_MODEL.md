@@ -16,6 +16,11 @@ and distinguish whole-work, part and edition credits. Their expanded credit role
 personal `ContributorRole` enum below. The replay tool writes private review artifacts only; Add,
 scan, import and shared-catalog writers have not switched over. See
 [`intake-evidence-resolver.md`](../tasks/intake-evidence-resolver.md) for the trust boundary and rollout.
+Evidence credits may retain their original `sourceRole` (including an absent or empty label) and
+`basis` (`work` or `edition`). Unparsed `creditStatements` stay observations. These optional evidence
+fields are not columns or personal contributor roles. Parent-work credits cannot certify an edition
+credit claim; the review view flags unsupported roles/part credits for lossless storage before any
+future writer integration. It never produces a personal book patch.
 
 ---
 

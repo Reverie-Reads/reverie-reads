@@ -155,6 +155,31 @@ describe('bounded intake acquisition', () => {
 })
 
 describe('truth-blind independent shadow scoring', () => {
+  it('scores edition credit evidence only after acquisition and never gives references to review views', async () => {
+    const f = frame()
+    f.cases[0].reference.credits = [
+      { name: 'Jane Smith', role: 'author', scope: 'whole' },
+      { name: 'Reference Only Person', role: 'translator', scope: 'whole' },
+    ]
+    expect(() => validateShadowFrame(f)).not.toThrow()
+    const fetch = fetcher(),
+      views = []
+    const report = await evaluateShadow(
+      f,
+      createIntakeSourceClient({ fetcher: fetch, sleeper }),
+      (v) => views.push(v),
+    )
+    expect(report.cases[0].sources[0].creditChecks).toEqual(['edition_observed', 'missing'])
+    expect(report.cases[0].sources[1].creditChecks).toEqual([
+      'identity_withheld',
+      'identity_withheld',
+    ])
+    expect(report.summary.sources[0].credits).toMatchObject({ edition_observed: 1, missing: 1 })
+    for (const value of [views, fetch.mock.calls, report])
+      expect(JSON.stringify(value)).not.toContain('Reference Only Person')
+    expect(JSON.stringify(report)).not.toContain('Jane Smith')
+    expect(views[0].review.sources[0].identity.contributors[0].name).toBe('Jane Smith')
+  })
   it('does not confuse all scan-only targets with one development identity', () => {
     const f = frame()
     f.cases[0].target = { isbn }
