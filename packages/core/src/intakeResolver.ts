@@ -165,6 +165,7 @@ function claimReasons(
     if (
       member.relationship !== 'explicit_membership' ||
       !member.memberContributors.length ||
+      member.memberContributors.some(ambiguousName) ||
       !titleFormattingSafe(member.memberTitle, r) ||
       member.memberContributors.some(
         (author) => !creators(r.contributors).some((n) => nameKey(n) === nameKey(author)),

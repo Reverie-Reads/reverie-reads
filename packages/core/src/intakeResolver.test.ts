@@ -650,6 +650,36 @@ describe('evidence, provenance and preservation', () => {
       ).reasons,
     ).toContain('relationship_unverified')
   })
+  it('cannot establish series membership through an initial-only secondary creator', () => {
+    const secondary: IntakeCredit = {
+      name: 'J. K. Reed',
+      role: 'original_story',
+      scope: 'whole',
+    }
+    const series = claim({
+      id: 'series',
+      field: 'series',
+      value: {
+        name: 'Library Mysteries',
+        position: 1,
+        relationship: 'explicit_membership',
+        memberTitle: title,
+        memberContributors: [secondary.name],
+      },
+      scope: 'work',
+      locator: 'Books in series',
+    })
+    const source = observation({ claims: [series] })
+    source.identity!.contributors.push(secondary)
+    const result = resolveIntakeEvidence(request({ observations: [source] }))
+    expect(result.work.state).toBe('resolved')
+    expect(field(result, 'series').reasons).toContain('relationship_unverified')
+    expect(field(result, 'series').proposed).toBeUndefined()
+    series.value.memberContributors = [author.name]
+    expect(field(resolveIntakeEvidence(request({ observations: [source] })), 'series').state).toBe(
+      'proposed',
+    )
+  })
   it('applies the same contributor boundary to series membership evidence', () => {
     const series = claim({
       id: 'series',
