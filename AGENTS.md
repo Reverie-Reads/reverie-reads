@@ -790,6 +790,11 @@ two APIs do not prove independent support. Freeze provider-independent reference
 before acquisition. Keep its Git-common-directory attempt markers permanent, including failures.
 Reports retain scores and diagnostic codes, not provider payloads. This is an operator-only pilot,
 not a source license upgrade, production qualification, or Add/scan/import writer.
+`intake:shadow run-review` can expose the current run's evidence through a five-minute, loopback-only,
+read-only view. Close its tab after inspection; do not export provider values from it. Keep original
+credit labels and work/edition basis, leave free-text credit statements unparsed, and never cast
+unsupported roles or part credits into the personal contributor enum. Reference credit checks score
+only the explicitly listed subset after acquisition; they cannot certify a complete roster.
 
 Selected-edition pages and publication dates retain their ISBN through search, Add and import.
 Hardcover work-search ISBN arrays never select a reader's copy; search labels never establish series.

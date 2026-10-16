@@ -160,6 +160,8 @@ function claimReasons(
     if (c.value.some((x) => x.role === 'unknown')) reasons.push('unsupported_claim')
     if (c.scope === 'work' && c.value.some((x) => ['translator', 'narrator'].includes(x.role)))
       reasons.push('wrong_scope')
+    if (c.scope === 'edition' && c.value.some((x) => x.basis === 'work'))
+      reasons.push('credit_scope_unverified')
   }
   if (c.field === 'series') {
     const member = c.value
@@ -186,6 +188,55 @@ function claimReasons(
       reasons.push('relationship_unverified')
   }
   return unique(reasons)
+}
+
+/** Diagnostic axes only. They never relax admission or authorize a saved fact. */
+export function intakeIdentityDiagnostics(request: IntakeEvidenceRequest, o: IntakeObservation) {
+  const r = o.identity,
+    t = request.target
+  const names = r ? creators(r.contributors) : []
+  const isbn = normalizeIsbn(t.isbn ?? '')
+  return {
+    title: !t.title
+      ? 'not_requested'
+      : !r
+        ? 'missing'
+        : t.title === r.title
+          ? 'exact'
+          : titleFormattingSafe(t.title, r) &&
+              admitSourceRecord(
+                { title: t.title, isbn },
+                {
+                  title: r.title,
+                  subtitle: r.subtitle,
+                  scope: r.scope,
+                  isbns: r.isbns,
+                  authors: names,
+                },
+              )
+            ? 'formatting'
+            : 'mismatch',
+    isbn: !t.isbn
+      ? 'not_requested'
+      : !isbn
+        ? 'invalid'
+        : !r?.isbns.length
+          ? 'missing'
+          : r.isbns.every((x) => normalizeIsbn(x) === isbn)
+            ? 'exact'
+            : 'conflict',
+    contributors: (t.contributors ?? []).map((name) => {
+      if (ambiguousName(name)) return 'ambiguous'
+      if (names.some((n) => n === name)) return 'exact'
+      if (names.some((n) => nameKey(n) === nameKey(name))) return 'formatting'
+      const other = r?.contributors.filter((c) => nameKey(c.name) === nameKey(name)) ?? []
+      if (other.some((c) => c.role === 'unknown')) return 'unknown_role'
+      if (other.some((c) => c.scope === 'part')) return 'part_only'
+      if (other.length) return 'secondary_role_only'
+      return r ? 'mismatch' : 'missing'
+    }),
+    reasons: intakeIdentityReviewReasons(request, o),
+  }
 }
 
 function sameObservedWork(a: IntakeObservation, b: IntakeObservation, isbn: string): boolean {

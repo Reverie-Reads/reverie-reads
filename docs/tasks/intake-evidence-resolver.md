@@ -188,3 +188,51 @@ set, but is agent-reviewed, small, and not an independent human review or popula
 The older 1,000-case series qualification partition and consumed study frames are untouched. Results
 and the non-secret frozen lock are recorded separately. Do not tune against a completed pilot and
 relabel it as unseen evidence; a later tuning pass needs a new holdout.
+
+## Evidence review and contributor fidelity
+
+`buildIntakeReview` supplies a defensive, in-memory operator view of requested identity, current
+values, observed identity, per-axis checks, source attribution, original credits and claim decisions.
+It does not convert a review packet into an `Incoming`, `Book`, update or approval. The existing
+matching rules remain in force; diagnostic title/name formatting labels do not weaken admission.
+Initial-only names, wrong creators and exact-ISBN contradictions remain held.
+
+Credits now preserve the source's literal role and its work/edition basis. Open Library's documented
+`authors` relationship remains an author observation; its free-text `contributions` statements are
+kept unparsed in memory, never split into guessed names/roles. Hardcover's explicit roles retain the
+original label; whitespace/case normalization does not assign missing labels to authorship. Its
+parent-work credits have `basis: work`. Even an otherwise eligible source cannot promote those as
+edition contributor facts (`credit_scope_unverified`). Unsupported roles and named-part credits
+are flagged for lossless storage; this slice does not migrate the personal contributor enum or write
+credit arrays. Complete-roster status remains unverified. Original credit order and multiple roles
+for one person survive the review view.
+
+```sh
+INTAKE_ENV_FILE=/private/existing-provider.env pnpm intake:shadow run-review /private/frame.json /private/lock.json /private/report.json
+```
+
+This consumes the same single-use attempt as `run`. After acquisition and report completion, it opens
+a five-minute server bound only to `127.0.0.1` with a random capability path. The operator receives
+the local URL, not provider content on stdout. The view is read-only, escaped, script-free, has no
+external assets or write endpoints, rejects foreign Host/Origin headers and sends no-store headers.
+The server releases its HTML at expiry; the operator must close the tab to discard the browser's
+already displayed document. It is a local operator view, not authenticated multi-user administration
+or a production review queue. It does not grant new source-retention rights.
+
+Saved reports now add title/name/ISBN diagnostic codes and contributor counts, without provider
+names, field values, URLs, record IDs or raw role strings. Optional publisher-reference `credits`
+are validated and scored only after acquisition; neither gold nor URLs enter the resolver or view.
+Scores distinguish edition-observed names/roles from work-scope-only agreement, unknown roles,
+role/part disagreement, missing credits and identity-withheld credits. The denominator is the selected
+reference subset, never all true contributors; extra provider credits are not certified by omission.
+The comparison also retains source-use holds independently of identity agreement.
+
+The new frozen comparison excludes the earlier six inspected development cases, synthetic fixtures
+and both target/reference identities from the first shadow frame. The private prior-exclusion
+manifest is hash-bound by the lock. Frame validation guards the supplied history; it cannot prove an
+operator supplied every past exposure. The first pilot remains consumed and is not reacquired.
+
+Provider contracts checked for this slice: [Open Library edition schema](https://openlibrary.org/type/edition)
+and [API usage guidance](https://openlibrary.org/developers/api). No new inference was made from
+unavailable Hardcover documentation; unknown labels remain unknown and its existing bounded query
+is unchanged. No LLM, ISBNdb, production reads or writes are part of this comparison.

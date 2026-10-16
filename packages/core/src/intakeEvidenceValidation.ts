@@ -60,11 +60,15 @@ function credits(v: unknown): boolean {
   const seen = new Set<string>()
   return v.every((c) => {
     if (
-      !keys(c, ['name', 'role', 'scope'], ['part']) ||
+      !keys(c, ['name', 'role', 'scope'], ['part', 'sourceRole', 'basis']) ||
       !text(c.name) ||
       !oneOf(c.role, roles) ||
       !oneOf(c.scope, ['whole', 'part']) ||
-      (c.scope === 'part' ? !text(c.part) : c.part !== undefined)
+      (c.scope === 'part' ? !text(c.part) : c.part !== undefined) ||
+      (c.sourceRole !== undefined &&
+        c.sourceRole !== null &&
+        (typeof c.sourceRole !== 'string' || c.sourceRole.length > 200)) ||
+      (c.basis !== undefined && !oneOf(c.basis, ['work', 'edition']))
     )
       return false
     const key = JSON.stringify([c.name, c.role, c.scope, c.part])
@@ -167,11 +171,16 @@ export function parseIntakeEvidence(input: unknown): IntakeEvidenceRequest {
   const ids = new Set<string>()
   for (const o of input.observations) {
     if (
-      !keys(o, ['id', 'targetFingerprint', 'source', 'status', 'claims'], ['identity']) ||
+      !keys(
+        o,
+        ['id', 'targetFingerprint', 'source', 'status', 'claims'],
+        ['identity', 'creditStatements'],
+      ) ||
       !text(o.id, 200) ||
       ids.has(o.id) ||
       !fingerprint(o.targetFingerprint) ||
-      !oneOf(o.status, ['ok', 'empty', 'failed', 'capped'])
+      !oneOf(o.status, ['ok', 'empty', 'failed', 'capped']) ||
+      (o.creditStatements !== undefined && !stringList(o.creditStatements, 32))
     )
       return fail()
     ids.add(o.id)
@@ -199,7 +208,8 @@ export function parseIntakeEvidence(input: unknown): IntakeEvidenceRequest {
       return fail()
     if (!Array.isArray(o.claims) || o.claims.length > 30) return fail()
     if (o.status !== 'ok') {
-      if (o.identity !== undefined || o.claims.length) return fail()
+      if (o.identity !== undefined || o.claims.length || o.creditStatements !== undefined)
+        return fail()
       continue
     }
     const identity = o.identity

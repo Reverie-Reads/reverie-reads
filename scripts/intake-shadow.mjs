@@ -10,6 +10,13 @@ import {
 } from '../packages/core/src/intakeResolver.ts'
 import { normalizeIsbn } from '../packages/core/src/match.ts'
 import { createIntakeSourceClient } from './intake-source-client.mjs'
+import {
+  buildIntakeReview,
+  intakeReviewDiagnostics,
+  compareIntakeCredits,
+} from '../packages/core/src/intakeReview.ts'
+import { intakeIdentityDiagnostics } from '../packages/core/src/intakeResolver.ts'
+import { startIntakeReview } from './intake-review-server.mjs'
 import { loadLocalEnvironment } from '../packages/series-source-trial/src/env.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -63,7 +70,13 @@ export function validateShadowFrame(frame, developmentTargets = []) {
       !/^case-\d{2}$/.test(c.id) ||
       ids.has(c.id) ||
       typeof c.expectedIdentity !== 'boolean' ||
-      !exact(c.reference, ['url', 'checkedAt', 'facts', 'identity']) ||
+      !exact(c.reference, [
+        'url',
+        'checkedAt',
+        'facts',
+        'identity',
+        ...(c.reference?.credits === undefined ? [] : ['credits']),
+      ]) ||
       !safeUrl(c.reference.url) ||
       !/^\d{4}-\d\d-\d\d$/.test(c.reference.checkedAt) ||
       !exact(c.reference.facts, ['pages', 'format']) ||
@@ -86,6 +99,15 @@ export function validateShadowFrame(frame, developmentTargets = []) {
       existing: c.reference.facts,
       observations: [],
     })
+    if (c.reference.credits !== undefined)
+      parseIntakeEvidence({
+        version: 1,
+        targetFingerprint: 'a'.repeat(64),
+        asOf: at,
+        target: c.reference.identity,
+        existing: { contributors: c.reference.credits },
+        observations: [],
+      })
     parseIntakeEvidence({
       version: 1,
       targetFingerprint: 'a'.repeat(64),
@@ -151,6 +173,21 @@ export function scoreShadowCase(c, observed) {
       issues: issues[provider],
       identity: !good.length ? 'unobserved' : matches.length ? 'matched' : 'held',
       falseIdentityMatch: (!c.expectedIdentity && !!matches.length) || wrongReference,
+      diagnostics: intakeReviewDiagnostics({ ...request, observations: os }),
+      referenceIdentityDiagnostics: good.map((o) => intakeIdentityDiagnostics(referenceRequest, o)),
+      creditChecks:
+        !c.expectedIdentity || !c.reference.credits
+          ? []
+          : c.reference.credits.map((credit) => {
+              const matching = matches.filter(
+                (o) => !intakeIdentityReviewReasons(referenceRequest, o).length,
+              )
+              if (!matching.length) return 'identity_withheld'
+              return compareIntakeCredits(
+                [credit],
+                matching.flatMap((o) => o.identity.contributors),
+              )[0]
+            }),
       facts,
     }
   })
@@ -165,10 +202,14 @@ export function scoreShadowCase(c, observed) {
   }
 }
 
-export async function evaluateShadow(frame, client) {
+export async function evaluateShadow(frame, client, onReview) {
   const cases = []
-  for (const c of frame.cases)
-    cases.push(scoreShadowCase(c, await resolveShadowTarget(c.target, client)))
+  for (const c of frame.cases) {
+    const observed = await resolveShadowTarget(c.target, client)
+    cases.push(scoreShadowCase(c, observed))
+    // Reference answers never enter the resolver or the review view.
+    onReview?.({ id: c.id, review: buildIntakeReview(observed.request) })
+  }
   const sources = ['openlibrary', 'hardcover'].map((provider) => {
     const pairs = cases.map((c) => ({ c, s: c.sources.find((s) => s.provider === provider) }))
     return {
@@ -181,6 +222,19 @@ export async function evaluateShadow(frame, client) {
       falseIdentityMatches: pairs.filter(({ s }) => s.falseIdentityMatch).length,
       heldNegative: pairs.filter(({ c, s }) => !c.expectedIdentity && s.identity === 'held').length,
       unobserved: pairs.filter(({ s }) => s.identity === 'unobserved').length,
+      credits: Object.fromEntries(
+        [
+          'edition_observed',
+          'scope_unverified',
+          'unknown_role',
+          'role_or_part_conflict',
+          'missing',
+          'identity_withheld',
+        ].map((state) => [
+          state,
+          pairs.flatMap(({ s }) => s.creditChecks).filter((s) => s === state).length,
+        ]),
+      ),
       fields: Object.fromEntries(
         ['agrees', 'disagrees', 'missing'].map((state) => [
           state,
@@ -234,6 +288,7 @@ async function systemFingerprint() {
   files.push(
     'scripts/intake-shadow.mjs',
     'scripts/intake-source-client.mjs',
+    'scripts/intake-review-server.mjs',
     'pnpm-lock.yaml',
     'package.json',
   )
@@ -264,9 +319,9 @@ export async function claimShadowAttempt(common, lock) {
 
 export async function shadowCommand(args) {
   const [command, framePath, lockPath, extra] = args
-  if (!['freeze', 'run'].includes(command) || args.length !== 4)
+  if (!['freeze', 'run', 'run-review'].includes(command) || args.length !== 4)
     throw new Error(
-      'Usage: intake:shadow freeze frame.json lock.json prior-replay.json | run frame.json lock.json output.json',
+      'Usage: intake:shadow freeze frame.json lock.json prior-replay.json | run[-review] frame.json lock.json output.json',
     )
   if ((await stat(framePath)).size > 1024 * 1024) throw new Error('Input exceeds 1 MiB')
   const frameBytes = await readFile(framePath)
@@ -312,12 +367,20 @@ export async function shadowCommand(args) {
   await claimShadowAttempt(common, lock)
   // Environment is optional. It may configure the existing Hardcover account, never the source policy.
   if (process.env.INTAKE_ENV_FILE) await loadLocalEnvironment(process.env.INTAKE_ENV_FILE)
+  const reviews = []
   const report = await evaluateShadow(
     frame,
     createIntakeSourceClient({ hardcoverToken: process.env.HARDCOVER_TOKEN }),
+    command === 'run-review' ? (r) => reviews.push(r) : undefined,
   )
   report.lock = lock
   await writeFile(extra, JSON.stringify(report, null, 2) + '\n', { mode: 0o600 })
+  if (command === 'run-review') {
+    const viewer = await startIntakeReview(reviews)
+    reviews.length = 0
+    console.log(JSON.stringify({ reviewUrl: viewer.url, expiresInSeconds: 300 }))
+    await viewer.closed
+  }
   // The exclusive marker is permanent, including on interruption; no resume/reacquisition command.
   return report.summary
 }
