@@ -13,6 +13,33 @@ import {
 import { intakeFields, parseIntakeEvidence } from './intakeEvidenceValidation'
 
 const unique = <T>(values: T[]): T[] => [...new Set(values)]
+// Comparison-only guards supplement legacy admission without changing stored identity/verdict
+// keys. Strip Latin accents only: vowel signs in other scripts remain identity-bearing.
+const fold = (s: string) =>
+  s
+    .normalize('NFKD')
+    .toLowerCase()
+    .replace(/(\p{Script=Latin})\p{M}+/gu, '$1')
+const words = (s: string) => fold(s).match(/[\p{L}\p{N}\p{M}]+/gu) ?? []
+function nameKey(s: string): string {
+  const parts = s.split(',').map((p) => p.trim())
+  const ordered = parts.length === 2 ? `${parts[1]} ${parts[0]}` : s
+  return words(ordered.replace(/['’]/g, '')).join('|')
+}
+function titleFormattingSafe(title: string, record: { title: string; subtitle?: string }): boolean {
+  const titleWords = (s: string) => words(s.replace(/(^|\s)&(?=\s|$)/g, '$1and'))
+  const a = titleWords(title)
+  return [record.title, ...(record.subtitle ? [`${record.title} ${record.subtitle}`] : [])].some(
+    (t) => {
+      const b = titleWords(t)
+      if (a.join('') === b.join('')) return true
+      const [short, long] = a.length < b.length ? [a, b] : [b, a]
+      // Admission separately validates the descriptive suffix. This only guards its preserved
+      // title prefix against Unicode mark collisions in the older compact comparison key.
+      return short.length >= 2 && short.every((w, i) => w === long[i])
+    },
+  )
+}
 const creators = (credits: IntakeCredit[]) =>
   credits
     .filter(
@@ -72,7 +99,8 @@ function identityReasons(
   const record = o.identity
   if (!record) return ['identity_incomplete']
   const names = creators(record.contributors)
-  if (!names.length) return ['identity_incomplete']
+  if (!names.length || !/[\p{L}\p{N}]/u.test(record.title) || names.some((n) => !/\p{L}/u.test(n)))
+    return ['identity_incomplete']
   // An initialed secondary creator does not erase a separately named full creator. Initial-only
   // identity anchors still cannot establish a match; observed credits never expand initials.
   if (names.every(ambiguousName) || target.contributors?.some(ambiguousName))
@@ -102,6 +130,11 @@ function identityReasons(
       return ['isbn_conflict']
     return ['identity_mismatch']
   }
+  if (
+    (target.title && !titleFormattingSafe(target.title, record)) ||
+    target.contributors?.some((author) => !names.some((n) => nameKey(n) === nameKey(author)))
+  )
+    return ['identity_mismatch']
   return []
 }
 
@@ -132,6 +165,10 @@ function claimReasons(
     if (
       member.relationship !== 'explicit_membership' ||
       !member.memberContributors.length ||
+      !titleFormattingSafe(member.memberTitle, r) ||
+      member.memberContributors.some(
+        (author) => !creators(r.contributors).some((n) => nameKey(n) === nameKey(author)),
+      ) ||
       !member.memberContributors.every((author) =>
         admitSourceRecord(
           { title: member.memberTitle, author },
@@ -153,17 +190,21 @@ function sameObservedWork(a: IntakeObservation, b: IntakeObservation, isbn: stri
   const agrees = (left: IntakeObservation, right: IntakeObservation): boolean => {
     const l = left.identity!
     const r = right.identity!
-    return creators(l.contributors).every((author) =>
-      admitSourceRecord(
-        { title: l.subtitle ? `${l.title} ${l.subtitle}` : l.title, author, isbn },
-        {
-          title: r.title,
-          subtitle: r.subtitle,
-          authors: creators(r.contributors),
-          scope: isbn ? r.scope : 'work',
-          isbns: r.isbns,
-        },
-      ),
+    const title = l.subtitle ? `${l.title} ${l.subtitle}` : l.title
+    if (!titleFormattingSafe(title, r)) return false
+    return creators(l.contributors).every(
+      (author) =>
+        creators(r.contributors).some((n) => nameKey(n) === nameKey(author)) &&
+        admitSourceRecord(
+          { title, author, isbn },
+          {
+            title: r.title,
+            subtitle: r.subtitle,
+            authors: creators(r.contributors),
+            scope: isbn ? r.scope : 'work',
+            isbns: r.isbns,
+          },
+        ),
     )
   }
   // Check both directions: a shared coauthor must not collapse two different creator sets.

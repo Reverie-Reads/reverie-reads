@@ -261,6 +261,55 @@ describe('intake identity and edition boundaries', () => {
 
 describe('formatting recovery without identity guesses', () => {
   it.each([
+    ['Jane Smith', 'Janes Mith'],
+    ['किरण शर्मा', 'करण शर्मा'],
+  ])('preserves contributor word boundaries and non-Latin marks: %s / %s', (expected, actual) => {
+    const source = observation({
+      identity: {
+        title,
+        contributors: [{ ...author, name: actual }],
+        scope: 'edition',
+        isbns: [isbn],
+      },
+    })
+    expect(
+      resolveIntakeEvidence(
+        request({ target: { title, isbn, contributors: [expected] }, observations: [source] }),
+      ).work.state,
+    ).toBe('review')
+  })
+  it.each(['कला घर', 'कला घर: A Novel'])(
+    'preserves non-Latin vowel signs in titles: %s',
+    (actual) => {
+      const source = observation({
+        identity: { title: actual, contributors: [author], scope: 'edition', isbns: [isbn] },
+      })
+      expect(
+        resolveIntakeEvidence(
+          request({
+            target: { title: 'काला घर', isbn, contributors: [author.name] },
+            observations: [source],
+          }),
+        ).work.state,
+      ).toBe('review')
+    },
+  )
+  it('retains safe Latin accent normalization', () => {
+    const source = observation({
+      identity: {
+        title,
+        contributors: [{ ...author, name: 'José Muñoz' }],
+        scope: 'edition',
+        isbns: [isbn],
+      },
+    })
+    expect(
+      resolveIntakeEvidence(
+        request({ target: { title, isbn, contributors: ['Jose Munoz'] }, observations: [source] }),
+      ).work.state,
+    ).toBe('resolved')
+  })
+  it.each([
     ['surname-first', title, 'Smith, Jane'],
     ['punctuation', 'A Quiet Library!', author.name],
     ['descriptive subtitle', 'A Quiet Library: A Novel', author.name],
@@ -600,6 +649,27 @@ describe('evidence, provenance and preservation', () => {
         'series',
       ).reasons,
     ).toContain('relationship_unverified')
+  })
+  it('applies the same contributor boundary to series membership evidence', () => {
+    const series = claim({
+      id: 'series',
+      field: 'series',
+      value: {
+        name: 'Library Mysteries',
+        position: 1,
+        memberTitle: title,
+        memberContributors: ['Janes Mith'],
+        relationship: 'explicit_membership',
+      },
+      scope: 'work',
+      locator: 'Books in series',
+    })
+    const result = resolveIntakeEvidence(
+      request({ observations: [observation({ claims: [series] })] }),
+    )
+    expect(result.work.state).toBe('resolved')
+    expect(field(result, 'series').reasons).toContain('relationship_unverified')
+    expect(field(result, 'series').proposed).toBeUndefined()
   })
 })
 

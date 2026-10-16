@@ -29,6 +29,9 @@ fingerprint and retrieval outcome. Claims retain their exact value, scope and so
 - Work identity and selected-edition identity are independent. Title/full-creator matching reuses
   the tested admission rules, including bounded formatting variants only with exact ISBN support.
   Initial-only identity anchors, arbitrary series suffixes and competing identities remain review.
+  Additional comparison-only guards retain contributor word boundaries and non-Latin vowel signs.
+  They do not change persisted work keys or duplicate verdicts. Cross-source comparisons check both
+  directions so a shared coauthor cannot hide competing creator sets.
 - Credits keep source order, role and whole-work versus named-part scope. Editors, original-story
   creators and playwrights can establish work identity; narrators, foreword writers and individual
   anthology-story authors cannot independently establish whole-work identity. An initialed
@@ -85,11 +88,14 @@ answers are held outside the resolver input; any mismatch makes the command exit
 The fixture suite reconstructs all eleven prior formatting failure patterns: eight resolve and
 three stay held (one omitted middle initial, two numbered-series suffixes). It also covers two
 same-title/wrong-author identities and four distinct contributor problems. Names are synthetic.
+The formatting fixtures deliberately supply a qualified synthetic publisher observation to isolate
+matching behavior. This does not promote a lone ISBNdb result: a bibliographic observation still
+needs independent support, and review-only usage remains held regardless of text agreement.
 The original ISBNdb responses were not retained; this is explicitly **not** a replay of those raw
 responses or a fresh paid-provider comparison.
 
-Six private cases were separately reconstructed from inspected public sources for The Lost Kings,
-Twisted and the four contributor-credit holds. They are not a frozen unseen evaluation set and
+Six private cases were separately reconstructed from inspected public sources for the two mixed
+identities and four contributor-credit holds. They are not a frozen unseen evaluation set and
 must not be reported as a general accuracy percentage. Private bibliographic evidence and reports
 remain outside the repository. No reader history or private annotations enter either fixture set.
 
