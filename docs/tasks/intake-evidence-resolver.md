@@ -272,3 +272,9 @@ not automatic extraction accuracy or independent human verification. Reference a
 provider acquisition, resolver decisions or the review viewer. Reports retain only decision codes
 and counts. The system hash now includes the catalog UI/data code and migrations as well as the
 resolver/adapters. Any policy change after freezing requires a new unseen comparison.
+
+Later work title/creator changes or edition ISBN/title/statement/format/language changes retain
+accepted credits but flag them for renewed review. Source identity remains visible. Removing an
+ISBN from the work also withdraws its credit qualification. Returning old values never revives
+credits automatically; a fresh review may append current support while preserving historical
+entries. Personal fields remain untouched.

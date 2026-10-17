@@ -23,6 +23,8 @@ export interface EditionCreditEvidence {
   confirmations: { sourceChecked: boolean; identityChecked: boolean; creditsChecked: boolean }
 }
 export interface StoredEditionCredit {
+  /** Later catalog identity edits preserve the evidence but require a fresh review. */
+  reviewRequired?: true
   reviewId: string
   position: number
   credit: IntakeCredit
@@ -181,7 +183,7 @@ export function reviewEditionCredits(
       if (credit.role === 'unknown' || !credit.sourceRole?.trim()) held.push('role_unverified')
       if (credit.basis !== 'edition') held.push('credit_scope_unverified')
       if (ambiguous(credit.name)) held.push('ambiguous_name')
-      if (existing.some((c) => creditKey(c.credit) === creditKey(credit)))
+      if (existing.some((c) => !c.reviewRequired && creditKey(c.credit) === creditKey(credit)))
         held.push('existing_credit')
       return { position, credit, reasons: [...new Set(held)], eligible: held.length === 0 }
     }),

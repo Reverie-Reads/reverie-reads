@@ -237,6 +237,37 @@ test('edition credit review preserves literal roles and personal history through
     await expect(page.getByRole('region', { name: 'Reviewed edition credits' })).toContainText(
       'Ann Brown',
     )
+    const current = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'current edition',
+    )
+    await ok(
+      c.client.rpc('admin_save_corpus_record', {
+        p_work: c.work,
+        p_expected_fingerprint: current.fingerprint,
+        p_action: 'edition',
+        p_value: {
+          id: current.editions[0].id,
+          isbn: c.reference,
+          details: { format: 'paperback' },
+        },
+        p_source_url: 'https://publisher.example/corrected-edition',
+        p_note: 'Corrected format fixture',
+        p_confirmed: true,
+      }),
+      'later edition correction',
+    )
+    await page.reload()
+    await page.getByRole('button', { name: 'Edit shared genres, guidance & editions' }).click()
+    await expect(page.getByRole('region', { name: 'Reviewed edition credits' })).toContainText(
+      'Needs renewed review',
+    )
+    expect(
+      await ok(
+        c.admin.from('books').select('*').eq('id', c.book).single(),
+        'personal after correction',
+      ),
+    ).toEqual(before)
   } finally {
     await c.cleanup()
   }

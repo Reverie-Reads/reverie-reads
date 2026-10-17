@@ -24,7 +24,7 @@ export function EditionFacts({ edition }: { edition: CorpusEdition }) {
       </dl>
       {!!edition.credits?.length && (
         <section aria-label="Reviewed edition credits" className="space-y-2 text-sm">
-          <h4 className="font-semibold">Reviewed edition credits</h4>
+          <h4 className="font-semibold">Edition credit evidence</h4>
           <p className="text-muted">
             Individual supported credits; the list may be incomplete. Personal contributors stay
             separate.
@@ -34,8 +34,16 @@ export function EditionFacts({ edition }: { edition: CorpusEdition }) {
               <li key={`${entry.reviewId}:${entry.position}`} className="break-words">
                 {entry.credit.name} · {entry.credit.role.replaceAll('_', ' ')}
                 {entry.credit.part ? ` · ${entry.credit.part}` : ''}
+                {entry.reviewRequired && (
+                  <p className="font-semibold">
+                    Needs renewed review: the work or edition identity changed.
+                  </p>
+                )}
                 <span className="block text-muted">
                   Source label: {entry.credit.sourceRole || 'Not stated'}
+                </span>
+                <span className="block text-muted">
+                  Reviewed source ISBN: {entry.identity.isbn}
                 </span>
                 <a
                   href={entry.source.url}

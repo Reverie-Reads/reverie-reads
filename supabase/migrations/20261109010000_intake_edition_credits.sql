@@ -55,6 +55,41 @@ $$;
 revoke all on function public.edition_credit_key(text), public.edition_credit_ambiguous(text),public.edition_credit_evidence_valid(jsonb) from public,anon,authenticated,service_role;
 
 alter table public.corpus_editions add column credits jsonb not null default '[]' check(jsonb_typeof(credits)='array' and jsonb_array_length(credits)<=256);
+-- Accepted evidence is historical, not authority for a subsequently changed identity.
+-- Preserve every original value and receipt while explicitly withdrawing current qualification.
+create function public.hold_edition_credits_after_identity_change() returns trigger
+language plpgsql security definer set search_path='' as $$
+begin
+  if jsonb_array_length(new.credits)>0 and (
+    new.work_id is distinct from old.work_id or new.isbn is distinct from old.isbn
+    or (new.details->'title') is distinct from (old.details->'title')
+    or (new.details->'statement') is distinct from (old.details->'statement')
+    or (new.details->'format') is distinct from (old.details->'format')
+    or (new.details->'language') is distinct from (old.details->'language')) then
+    select jsonb_agg(c || '{"reviewRequired":true}'::jsonb order by n) into new.credits
+      from jsonb_array_elements(new.credits) with ordinality x(c,n);
+    new.revision:=greatest(new.revision,old.revision+1); new.updated_at:=now();
+  end if;
+  return new;
+end;
+$$;
+create trigger edition_credits_identity_hold before update of work_id,isbn,details on public.corpus_editions
+for each row execute function public.hold_edition_credits_after_identity_change();
+create function public.hold_work_edition_credits_after_identity_change() returns trigger
+language plpgsql security definer set search_path='' as $$
+begin
+  update public.corpus_editions e set credits=(select jsonb_agg(c || '{"reviewRequired":true}'::jsonb order by n)
+    from jsonb_array_elements(e.credits) with ordinality x(c,n)),revision=e.revision+1,updated_at=now()
+    where e.work_id=new.id and exists(select 1 from jsonb_array_elements(e.credits) c where c->'reviewRequired' is distinct from 'true'::jsonb)
+    and (new.title is distinct from old.title or new.author_text is distinct from old.author_text
+      or new.contributors is distinct from old.contributors or e.isbn is null
+      or not e.isbn=any(public.catalog_review_isbns(new.isbns)));
+  return new;
+end;
+$$;
+create trigger work_edition_credits_identity_hold after update of title,author_text,contributors,isbns on public.works
+for each row execute function public.hold_work_edition_credits_after_identity_change();
+revoke all on function public.hold_edition_credits_after_identity_change(),public.hold_work_edition_credits_after_identity_change() from public,anon,authenticated,service_role;
 create table public.corpus_edition_credit_reviews (
   id uuid primary key,
   work_id uuid not null references public.works(id) on delete restrict,
@@ -113,7 +148,7 @@ begin
     if credit_item->>'role'='unknown' or nullif(btrim(credit_item->>'sourceRole'),'') is null then held:=array_append(held,'role_unverified'); end if;
     if credit_item->>'basis' is distinct from 'edition' then held:=array_append(held,'credit_scope_unverified'); end if;
     if public.edition_credit_ambiguous(credit_item->>'name') then held:=array_append(held,'ambiguous_name'); end if;
-    if exists(select 1 from jsonb_array_elements(e.credits) old where
+    if exists(select 1 from jsonb_array_elements(e.credits) old where old->'reviewRequired' is distinct from 'true'::jsonb and
       public.edition_credit_key(old->'credit'->>'name')=public.edition_credit_key(credit_item->>'name')
       and old->'credit'->>'role'=credit_item->>'role' and old->'credit'->>'scope'=credit_item->>'scope'
       and old->'credit'->>'part' is not distinct from credit_item->>'part') then held:=array_append(held,'existing_credit'); end if;

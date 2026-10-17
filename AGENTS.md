@@ -785,7 +785,8 @@ resolution to `Incoming` or `Book`; the staged intake cutover is still required.
 administrator edition-credit handoff accepts manually inspected first-party evidence, freezes the
 exact draft and selection, and appends only explicitly confirmed supported credits. Preserve raw
 role labels, named parts, source order and all unselected evidence. Unknown roles, work-only scope,
-ambiguous names and identity/edition conflicts stay held. This does not expand personal contributor
+ambiguous names and identity/edition conflicts stay held. Later work/edition identity corrections retain historical credits but require renewed review; never
+revive them merely because old identity values return. This does not expand personal contributor
 roles or copy shared credits into reader records. See `docs/tasks/intake-evidence-resolver.md`.
 
 `intake:shadow` connects bounded, exact-ISBN Open Library and Hardcover adapters to that resolver.

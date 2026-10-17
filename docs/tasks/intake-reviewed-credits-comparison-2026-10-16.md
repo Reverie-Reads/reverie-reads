@@ -99,8 +99,10 @@ build passed. Local build output contains the expected local demo endpoint and i
 The new desktop/mobile browser journey passed both cases, with accessibility checks and inspected
 synthetic screenshots. It executes real local prepare/apply endpoints, loses the first successful save
 response, retries the exact confirmation, and confirms one stored credit plus unchanged personal
-book/history. The complete fresh-database browser suite is in progress (447 scheduled tests, one
-worker, retries zero); its result will be recorded before completion. Earlier failures are retained.
+book/history. The first full browser run was deliberately interrupted after 49 passes, one interrupted test and
+397 not run when static review identified the later identity-edit qualification gap. It is retained,
+not counted as a completed gate. The corrected version is covered by the separate
+[revalidation comparison](intake-credit-revalidation-comparison-2026-10-16.md) and its final gate.
 
 Keep Add, scanning and imports on their current paths. This branch adds a manual shared-edition
 handoff only. Neither provider earns automatic edition-credit authority from this comparison.

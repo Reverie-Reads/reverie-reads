@@ -960,7 +960,10 @@ indices. It revokes direct API access and exposes administrator-only prepare/rea
 Prepare writes only the review. Apply rechecks authority, current fingerprint, exact ISBN assignment,
 creator identity, edition conflicts, inspection age and credit eligibility under locks. A same-ID,
 same-selection retry returns the existing receipt without another write. A changed selection or
-draft conflicts. Accepted credits append with a new edition revision; existing values are preserved.
+draft conflicts. Accepted credits append with a new edition revision; existing values are preserved. Later work or
+edition identity changes mark retained entries `reviewRequired: true`; returning the old identity
+does not revive them. A fresh confirmed review may append a current credit while retaining held
+history. Page-count-only edits do not withdraw contributor qualification.
 This manual review requires first-party source inspection and retention confirmation; neither a URL
 nor a provider/model claim supplies that verification. Source adapters remain review-only.
 

@@ -153,6 +153,9 @@ describe('manually reviewed edition credits', () => {
     expect(r.decisions[0]?.reasons).toEqual(['existing_credit'])
     expect(r.decisions[1]?.eligible).toBe(true)
     expect(existing).toEqual(before)
+    existing[0]!.reviewRequired = true
+    expect(reviewEditionCredits(p, target, existing, now).decisions[0]?.eligible).toBe(true)
+    expect(existing[0]!.credit).toEqual(before[0]!.credit)
   })
   it.each(['2026-08-01T00:00:00Z', '2026-10-18T00:00:00Z'])(
     'holds stale or future observation %s',
