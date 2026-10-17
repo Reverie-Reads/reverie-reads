@@ -22,6 +22,9 @@ fields are not personal contributor roles. Parent-work credits cannot certify an
 claim. An editor credit cannot establish creator identity for the roleless intake target; editor-only
 collections remain under review, with their credits preserved. The separate administrator-reviewed
 edition handoff described below persists supported credits without producing a personal book patch.
+Failed observations may carry bounded `withheldCredits` for duplicate normalized credits. These
+preserve original labels and ordering for transient review only; they cannot supply identity or
+claims, and no personal or shared storage shape changes.
 
 ---
 

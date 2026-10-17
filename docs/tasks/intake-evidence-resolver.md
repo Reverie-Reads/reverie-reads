@@ -282,3 +282,23 @@ accepted credits but flag them for renewed review. Source identity remains visib
 ISBN from the work also withdraws its credit qualification. Returning old values never revives
 credits automatically; a fresh review may append current support while preserving historical
 entries. Personal fields remain untouched.
+
+## Adapter contract safeguards
+
+Hardcover format observations now use the one recognized format across its returned format fields,
+while retaining an unknown-format diagnostic for unrecognized labels. A recognized audiobook never
+supplies print pages; conflicting recognized formats still hold the record. Unknown-only formats
+remain unknown.
+
+Duplicate normalized credits, including literal `author`/`co-author` label collisions, now produce
+a failed observation with a bounded `withheldCredits` list. That list preserves order and literal
+labels in the transient review only. It cannot accompany a successful identity, supply claims or
+establish credit qualification. Open Library duplicate credits use the same hold. Normal identity
+and claim credit arrays still reject duplicates. The shadow runner validates each provider packet
+separately: a malformed packet records `invalid_adapter_observation`, leaves acquisition incomplete,
+and preserves its valid peer. Exceptions and malformed payloads are not retained in reports.
+
+Four new assertions reproduced the format/credit defects before the fix. The targeted adapter,
+resolver, review, shadow, replay and edition-credit suites passed afterward. This is synthetic
+regression evidence, not a new frozen provider comparison or a source-qualification upgrade. Earlier
+comparison frames remain consumed; Add, scanning, imports and catalog writers remain unchanged.

@@ -8,7 +8,8 @@ import {
   shadowCommand,
   claimShadowAttempt,
 } from '../../../scripts/intake-shadow.mjs'
-import { adaptOpenLibraryIntake } from './intakeSourceAdapters'
+import { adaptOpenLibraryIntake, adaptHardcoverIntake } from './intakeSourceAdapters'
+import { buildIntakeReview } from './intakeReview'
 import { mkdtemp, writeFile, readFile, stat, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -155,6 +156,79 @@ describe('bounded intake acquisition', () => {
 })
 
 describe('truth-blind independent shadow scoring', () => {
+  it.each(['duplicate credit', 'private field', 'colliding id', 'wrong provider'])(
+    'isolates malformed provider output (%s), preserving the valid peer and honest failure',
+    async (fault) => {
+      const client = {
+        acquire: async (_isbn, fingerprint) => {
+          const context = { targetFingerprint: fingerprint, retrievedAt: new Date().toISOString() }
+          const good = adaptOpenLibraryIntake(edition, { '/authors/OL1A': author }, context)
+          const bad = structuredClone(good)
+          const o = bad.observations[0]
+          o.source.provider = 'hardcover'
+          o.id = 'hardcover:1'
+          if (fault === 'duplicate credit')
+            o.identity.contributors.push({ ...o.identity.contributors[0], sourceRole: 'co-author' })
+          if (fault === 'private field') o.privateNotes = 'Do not retain this private field'
+          if (fault === 'colliding id') o.id = good.observations[0].id
+          if (fault === 'wrong provider') o.source.provider = 'openlibrary'
+          return { openlibrary: good, hardcover: bad }
+        },
+      }
+      const observed = await resolveShadowTarget(target, client)
+      expect(observed.request.observations[0].identity.title).toBe(target.title)
+      expect(observed.request.observations[1]).toMatchObject({ status: 'failed', claims: [] })
+      expect(observed.request.observations[1].identity).toBeUndefined()
+      expect(observed.result.acquisition).toMatchObject({ complete: false, failed: 1 })
+      expect(observed.issues.hardcover).toEqual(['invalid_adapter_observation'])
+      const score = scoreShadowCase(frame().cases[0], observed)
+      expect(score.sources[0].identity).toBe('matched')
+      expect(score.sources[1].identity).toBe('unobserved')
+      expect(JSON.stringify(observed)).not.toContain('Do not retain this private field')
+      expect(JSON.stringify(score)).not.toContain('Jane Smith')
+    },
+  )
+  it('retains colliding literal credit labels in transient review, never scoring them as identity', async () => {
+    const client = {
+      acquire: async (_isbn, fingerprint) => {
+        const context = { targetFingerprint: fingerprint, retrievedAt: new Date().toISOString() }
+        return {
+          openlibrary: adaptOpenLibraryIntake(edition, { '/authors/OL1A': author }, context),
+          hardcover: adaptHardcoverIntake(
+            {
+              data: {
+                editions: [
+                  {
+                    id: 1,
+                    title: target.title,
+                    isbn_13: isbn,
+                    compilation: false,
+                    book: {
+                      id: 1,
+                      title: target.title,
+                      contributions: ['author', 'co-author'].map((contribution) => ({
+                        contribution,
+                        author: { name: 'Jane Smith' },
+                      })),
+                    },
+                  },
+                ],
+              },
+            },
+            context,
+          ),
+        }
+      },
+    }
+    const observed = await resolveShadowTarget(target, client)
+    const review = buildIntakeReview(observed.request)
+    expect(review.sources[1].credits.map((c) => c.sourceRole)).toEqual(['author', 'co-author'])
+    expect(observed.issues.hardcover).toEqual(['duplicate_credits'])
+    const score = scoreShadowCase(frame().cases[0], observed)
+    expect(score.sources[1]).toMatchObject({ identity: 'unobserved', falseIdentityMatch: false })
+    expect(JSON.stringify(score)).not.toContain('co-author')
+    expect(JSON.stringify(score)).not.toContain('Jane Smith')
+  })
   it('keeps manually inspected credits separate from acquisition and reference answers', async () => {
     const f = frame()
     const c = f.cases[0]

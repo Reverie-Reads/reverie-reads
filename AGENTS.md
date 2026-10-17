@@ -802,6 +802,10 @@ read-only view. Close its tab after inspection; do not export provider values fr
 credit labels and work/edition basis, leave free-text credit statements unparsed, and never cast
 unsupported roles or part credits into the personal contributor enum. Reference credit checks score
 only the explicitly listed subset after acquisition; they cannot certify a complete roster.
+Duplicate normalized credits retain their literal labels in bounded `withheldCredits` on a failed
+observation, never identity or field support. Validate provider packets separately so a malformed
+record stays an explicit failure without discarding a valid peer. Inspect every returned edition
+format; an unknown first label cannot hide a later recognized audiobook or license print pages.
 
 Selected-edition pages and publication dates retain their ISBN through search, Add and import.
 Hardcover work-search ISBN arrays never select a reader's copy; search labels never establish series.
