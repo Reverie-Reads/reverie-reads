@@ -89,11 +89,14 @@ checks. New cases prove historical evidence survives later edition/work identity
 returning old identity values never revives qualification, fresh reviewed support can append, and
 page-count-only edits do not withdraw contributor qualification. The desktop/mobile browser journey
 passed both cases with real local RPCs, lost-response retry, later edition correction, accessibility
-checks and unchanged personal book/history. The final full browser run is in progress with a fresh
-database, 447 scheduled tests, one worker and zero retries.
+checks and unchanged personal book/history. The final full browser run passed: **436 passed, 11 skipped, zero failures in 47.0 minutes**,
+using a fresh database, one worker and zero retries. The 11 skips remain visible; this is Chromium
+desktop/mobile coverage, not physical-device or WebKit proof.
 
-The full unit gate passed 3,366 core tests, 1,346 web tests, 498 source-trial tests and two Workflow
-tests. The later safeguard additionally passed the 47 relevant core tests, typecheck, lint and build.
+The final full unit gate passed on the completed implementation: 3,366 core tests, 1,346 web tests,
+498 source-trial tests and two Workflow tests. The later safeguard also passed the 47 relevant core
+tests, typecheck, lint and build. After browser verification, the standard local development database
+was restored successfully with all 290 demonstration books; the stack-lock wrapper exited successfully.
 Initial integration failures and the interrupted pre-safeguard browser run remain retained; neither
 is represented as a completed passing gate. Remote CI could not be inspected because the required
 connector requests GitHub account connection.
