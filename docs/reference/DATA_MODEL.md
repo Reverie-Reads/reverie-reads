@@ -21,8 +21,7 @@ Evidence credits may retain their original `sourceRole` (including an absent or 
 fields are not personal contributor roles. Parent-work credits cannot certify an edition credit
 claim. An editor credit cannot establish creator identity for the roleless intake target; editor-only
 collections remain under review, with their credits preserved. The separate administrator-reviewed
-edition handoff described below persists supported
-credits without producing a personal book patch.
+edition handoff described below persists supported credits without producing a personal book patch.
 
 ---
 
