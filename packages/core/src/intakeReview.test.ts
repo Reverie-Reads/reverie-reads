@@ -68,6 +68,7 @@ describe('intake evidence review', () => {
     ['Smith, Jane', 'author', 'whole', 'formatting'],
     ['Jane Smith', 'unknown', 'whole', 'unknown_role'],
     ['Jane Smith', 'narrator', 'whole', 'secondary_role_only'],
+    ['Jane Smith', 'editor', 'whole', 'secondary_role_only'],
     ['Jane Smith', 'author', 'part', 'part_only'],
     ['Janet Smith', 'author', 'whole', 'mismatch'],
   ] as const)('explains %s/%s/%s without relaxing identity', (name, role, scope, status) => {

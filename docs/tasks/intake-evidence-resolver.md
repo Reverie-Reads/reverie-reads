@@ -32,10 +32,14 @@ fingerprint and retrieval outcome. Claims retain their exact value, scope and so
   Additional comparison-only guards retain contributor word boundaries and non-Latin vowel signs.
   They do not change persisted work keys or duplicate verdicts. Cross-source comparisons check both
   directions so a shared coauthor cannot hide competing creator sets.
-- Credits keep source order, role and whole-work versus named-part scope. Editors, original-story
+- Credits keep source order, role and whole-work versus named-part scope. Original-story
   creators and playwrights can establish work identity; narrators, foreword writers and individual
-  anthology-story authors cannot independently establish whole-work identity. An initialed
-  secondary credit does not negate a separate full creator. Initials are never expanded.
+  anthology-story authors cannot independently establish whole-work identity. Editors cannot stand
+  in for creators in the roleless intake target, even when credited for the whole work. Editor-only
+  collections stay held, including ISBN-only scans, pending an explicit role-aware identity handoff.
+  A separate author credit for the same person remains usable; the editor credit is never converted
+  or discarded. This creator boundary also applies to cross-source identity, existing values and
+  series membership. An initialed secondary credit does not negate a separate full creator. Initials are never expanded.
 - The evidence roles are broader than the persisted personal contributor enum. There is deliberately
   no lossy adapter mapping all of them to `author`. Before writer integration, unsupported roles
   require a lossless persistence/review design. A listed set is not a certification that all credits
