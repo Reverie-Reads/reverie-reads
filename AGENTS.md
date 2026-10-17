@@ -1165,6 +1165,14 @@ test` outright and only fail `tsc`. This has bitten twice, by two different tool
   infrastructure includes one full e2e run** at the default worker count, fresh DB, retries 0. If
   it's red, report it red — do not re-run until it's green. Docs-only branches are exempt, and
   the report should say so explicitly rather than silently omitting the run.
+- **Pin the Docker engine for the entire local browser lifecycle.** Inside the existing stack
+  lock, run reset/test/restore through `scripts/stack-engine.mjs`. It resolves the selected local
+  Docker socket once, checks healthy database/API containers and their configured ports, and
+  passes that endpoint to Docker and Supabase without changing the machine's active context.
+  `pnpm e2e` includes this guard; an outer lifecycle must include it before resetting the database.
+  A missing stack is a preflight failure, never permission to discover, start or reset another
+  engine. Select a known context explicitly when needed. Preserve failure receipts and local
+  backups; do not raise timeouts or add retries to hide a saturated host.
 - **A bulk insert's column set is the UNION of every row's keys, not each row's own.** PostgREST
   sends one `INSERT` for the whole array, and the column list it builds is every key any row in
   the batch supplies — so a row that omits a key the batch is inserting gets an explicit `NULL`

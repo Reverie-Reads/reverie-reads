@@ -223,7 +223,22 @@ for (const width of [320, 390, 1440]) {
         editor.getByRole('button', { name: 'Dark Romance', exact: true }),
       ).toHaveAttribute('aria-pressed', 'true')
       await editor.getByLabel('Pages', { exact: true }).fill('360')
+      // Saving includes the real write and the library refresh. Start the close assertion
+      // after the write response, rather than spending its UI budget on database latency.
+      const edited = page.waitForResponse((response) => {
+        const request = response.request()
+        const url = new URL(response.url())
+        return (
+          request.method() === 'PATCH' &&
+          url.pathname === '/rest/v1/books' &&
+          url.searchParams.get('id') === `eq.${row.id}`
+        )
+      })
       await editor.getByRole('button', { name: 'Save details', exact: true }).click()
+      const editResponse = await edited
+      expect(editResponse.ok()).toBe(true)
+      expect(await editResponse.finished()).toBeNull()
+      expect(editResponse.request().postDataJSON()).toMatchObject({ pages: 360 })
       await expect(editor).toHaveCount(0)
       await page.reload()
       await page.getByRole('button', { name: 'Edit edition details', exact: true }).click()

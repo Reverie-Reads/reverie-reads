@@ -275,7 +275,10 @@ export default defineConfig({
     // Runs from this config's dir (apps/web), so `pnpm dev` boots @reverie/web with its own env
     // files (the committed .env; .env.local overrides if present). The port/strictPort flags override vite.config's default 5173 for e2e only —
     // the normal `pnpm dev` workflow keeps 5173.
-    command: `pnpm dev --port ${PORT} --strictPort`,
+    // This SPA suite retains real local Supabase; admin Settings fixtures explicitly stub the
+    // disabled workflow status reads. Workflow is tested separately, not through this server.
+    // Avoid starting its backend builders and watchers for every browser run.
+    command: `pnpm dev --mode browser-test --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: 120_000,

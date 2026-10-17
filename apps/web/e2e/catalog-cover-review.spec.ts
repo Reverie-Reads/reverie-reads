@@ -7,6 +7,7 @@ import { SKIN_LIST } from '@reverie/core'
 import { expect, test, type Page } from './support/fixtures'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
 import { ok, okUser } from './support/ok'
+import { stubDisabledWorkflowStatusReads } from './support/disabledWorkflowStatus'
 
 const URL = 'http://127.0.0.1:55321'
 const ANON =
@@ -141,7 +142,9 @@ test('an administrator compares and saves a shared cover without altering their 
       c.admin.from('books').select('*').eq('id', personalId).single(),
       'personal baseline',
     )
+    const workflowStatus = await stubDisabledWorkflowStatusReads(page)
     await page.goto('/settings')
+    await workflowStatus.expectBothRequested()
     await page.getByRole('link', { name: 'Review catalog covers' }).click()
     await page.getByLabel('Find a catalog book').fill(c.title)
     await page.getByRole('button', { name: 'Search catalog' }).click()
