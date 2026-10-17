@@ -117,9 +117,19 @@ editions or 29 distinct reference credits.
 
 The final unit gate passed 3,376 core tests, 1,346 web tests, 498 source-trial tests and two Workflow
 tests, along with the root recovery/completion checks. Typecheck, lint and build passed. The full
-fresh-database browser run is in progress at the default worker count with zero retries; its outcome
-will be recorded without replacing a failure with a passing rerun. A private pre-test local database
-snapshot was retained, and the standard local demonstration database will be restored on exit.
+fresh-database browser run completed at the default one worker with zero retries: **435 passed,
+11 skipped and one failed in 58.4 minutes**. This gate is red. The failure is in an unchanged Add
+recovery test: its five-second wait for an injected-error alert expired while the save was still pending.
+The trace records a 4.7-second book read followed by a 1.5-second authentication check; the insert
+then returned 201 and the contributor request was unfinished when the test ended. It never reached
+the injected duplicate-preference failure or retry/count assertions. This is not evidence of an extra
+copy. The Add route does not call the shadow resolver. Preserve the trace and failed gate; no rerun
+was used to erase it. The desktop and mobile edition-credit review journeys passed, including
+literal role preservation, lost-response retry, later identity revalidation and personal-history
+preservation. This is local Chromium evidence, not production, WebKit or physical-device acceptance.
+A private pre-test local database snapshot was retained. The standard local demonstration database
+was restored successfully with 290 books, and the wrapper preserved the failed browser exit status.
+Remote CI could not be inspected: the required checks connector requests a GitHub account connection.
 
 The known explicit-editor matching defect is fixed. Keep the new resolver in shadow mode:
 provider mislabelling, partial/unknown roles, edition scope, malformed records, duplicate credits and
