@@ -12,7 +12,7 @@
     "prepare": "git config core.hooksPath .githooks",
     "dev": "pnpm --filter @reverie/web dev",
     "build": "pnpm --filter @reverie/core build && pnpm --filter @reverie/web build",
-    "test": "pnpm test:series-recovery && pnpm test:corpus-completion && pnpm -r test",
+    "test": "node --test scripts/stack-engine.test.mjs && pnpm test:series-recovery && pnpm test:corpus-completion && pnpm -r test",
     "test:corpus-completion": "node --test scripts/corpus-completion-plan.test.mjs",
     "corpus:completion:plan": "node scripts/corpus-completion-plan.mjs",
     "test:series-recovery": "vite-node scripts/series-recovery.test.mjs",
