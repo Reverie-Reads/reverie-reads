@@ -63,9 +63,14 @@ export default defineConfig(({ command, mode }) => {
     // Vitest imports the workflow module as ordinary TypeScript for the fast orchestration unit
     // suite. Starting Nitro and the production Workflow builder there creates file watchers that
     // are unrelated to the test and can exhaust macOS's per-process descriptor limit. The separate
-    // compiler-backed Workflow suite owns its purpose-built transform and backend.
+    // compiler-backed Workflow suite owns its purpose-built transform and backend. The browser
+    // suite exercises the SPA against local Supabase and mocks /api/bookstores; it does not
+    // exercise Nitro/Workflow server routes. Keep their extra builders/watchers out of that
+    // server too. Ordinary dev and production builds continue to include both plugins.
     plugins: [
-      ...(mode === 'test' ? [] : [nitro(), workflow({ runtime: 'nodejs22.x' })]),
+      ...(['test', 'browser-test'].includes(mode)
+        ? []
+        : [nitro(), workflow({ runtime: 'nodejs22.x' })]),
       react(),
       tailwindcss(),
       emitVersion,
