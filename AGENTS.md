@@ -781,8 +781,13 @@ The new intake evidence resolver is an offline review boundary, consumed by `pnp
 It does not replace Add, scan or import writers. Preserve work/edition separation, scoped contributor
 roles, exact ISBN checks, per-claim evidence and existing values. Source qualification and lineage
 come from trusted adapters or reviewers, never model output or client assertions. Do not cast a
-resolution to `Incoming` or `Book`; the staged adapter/review cutover and lossless credit persistence
-are still required. See `docs/tasks/intake-evidence-resolver.md`.
+resolution to `Incoming` or `Book`; the staged intake cutover is still required. The separate
+administrator edition-credit handoff accepts manually inspected first-party evidence, freezes the
+exact draft and selection, and appends only explicitly confirmed supported credits. Preserve raw
+role labels, named parts, source order and all unselected evidence. Unknown roles, work-only scope,
+ambiguous names and identity/edition conflicts stay held. Later work/edition identity corrections retain historical credits but require renewed review; never
+revive them merely because old identity values return. This does not expand personal contributor
+roles or copy shared credits into reader records. See `docs/tasks/intake-evidence-resolver.md`.
 
 `intake:shadow` connects bounded, exact-ISBN Open Library and Hardcover adapters to that resolver.
 Adapter provenance is code-owned, but both sources remain review-only with unknown upstream lineage;

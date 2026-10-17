@@ -8,6 +8,9 @@ vi.mock('../../data/corpusEditions', async (original) => ({
   useCorpusRecord: () => ({ data: state.record, isPending: false, isError: false }),
   useSaveCorpusRecord: () => ({ mutateAsync: state.save, isPending: false }),
 }))
+vi.mock('../../auth/AuthProvider', () => ({
+  useAuth: () => ({ session: { user: { id: 'admin' } } }),
+}))
 const { CorpusRegistryEditor } = await import('./CorpusRegistryEditor')
 const record: CorpusRecord = {
   id: 'work',

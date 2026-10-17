@@ -18,9 +18,9 @@ scan, import and shared-catalog writers have not switched over. See
 [`intake-evidence-resolver.md`](../tasks/intake-evidence-resolver.md) for the trust boundary and rollout.
 Evidence credits may retain their original `sourceRole` (including an absent or empty label) and
 `basis` (`work` or `edition`). Unparsed `creditStatements` stay observations. These optional evidence
-fields are not columns or personal contributor roles. Parent-work credits cannot certify an edition
-credit claim; the review view flags unsupported roles/part credits for lossless storage before any
-future writer integration. It never produces a personal book patch.
+fields are not personal contributor roles. Parent-work credits cannot certify an edition credit
+claim. The separate administrator-reviewed edition handoff described below persists supported
+credits without producing a personal book patch.
 
 ---
 
@@ -948,6 +948,24 @@ edition title/statement, format, publisher, language, pages and the exact partia
 `corpus_isbn_exclusions` prevents rejected work/ISBN assignments from being reacquired automatically.
 `corpus_record_edits` retains administrator before/after snapshots and evidence, with no reader-copy
 writer. All four new tables (including reports) revoke direct privileges from every API role.
+
+`corpus_editions.credits` is an ordered, bounded JSON array of `StoredEditionCredit`: review ID,
+source position, literal name/role label, normalized role, whole/named-part scope, edition basis,
+source URL/locator/inspection time and the reviewed identity. It is additive shared bibliography;
+the personal contributor enum, `book_authors`, reading history and backup payloads are unchanged.
+The default empty array means no accepted credits, not a complete roster.
+`corpus_edition_credit_reviews` retains the entire frozen bibliography-only evidence document,
+including unsupported and unselected credits, reviewer attribution, target fingerprint and selected
+indices. It revokes direct API access and exposes administrator-only prepare/read/apply functions.
+Prepare writes only the review. Apply rechecks authority, current fingerprint, exact ISBN assignment,
+creator identity, edition conflicts, inspection age and credit eligibility under locks. A same-ID,
+same-selection retry returns the existing receipt without another write. A changed selection or
+draft conflicts. Accepted credits append with a new edition revision; existing values are preserved. Later work or
+edition identity changes mark retained entries `reviewRequired: true`; returning the old identity
+does not revive them. A fresh confirmed review may append a current credit while retaining held
+history. Page-count-only edits do not withdraw contributor qualification.
+This manual review requires first-party source inspection and retention confirmation; neither a URL
+nor a provider/model claim supplies that verification. Source adapters remain review-only.
 
 `get_corpus_record` returns a work's editions, guidance and series tuple/confirmed-graph flag,
 the caller's unresolved reports (all for

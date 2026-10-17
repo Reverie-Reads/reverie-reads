@@ -42,6 +42,7 @@ export const USER_OWNED_TABLES: OwnedTable[] = [
   // Reports are a live shared-catalog review workflow, not portable library content.
   { table: 'corpus_isbn_reports', owner: 'reporter_id', plan: { backup: false, why: 'An ISBN concern is a live catalog moderation request. Restoring it would resubmit a resolved report against potentially changed shared editions. Account deletion removes it.' } },
   { table: 'corpus_record_edits', owner: 'editor_id', collective: true, plan: { backup: false, why: 'Shared bibliographic audit history belongs to the catalog. Administrator account deletion anonymizes attribution; a personal restore must never replay catalog corrections.' } },
+  { table: 'corpus_edition_credit_reviews', owner: 'reviewer_id', collective: true, plan: { backup: false, why: 'Frozen edition-credit evidence and save receipts belong to the shared catalog. Account deletion anonymizes reviewer attribution; personal restore must never replay approvals or catalog writes.' } },
   // ── the library itself ──
   { table: 'discovery_sessions', owner: 'owner_id', plan: { backup: true } },
   { table: 'books', owner: 'owner_id', plan: { backup: true } },

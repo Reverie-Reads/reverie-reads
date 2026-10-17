@@ -236,3 +236,45 @@ Provider contracts checked for this slice: [Open Library edition schema](https:/
 and [API usage guidance](https://openlibrary.org/developers/api). No new inference was made from
 unavailable Hardcover documentation; unknown labels remain unknown and its existing bounded query
 is unchanged. No LLM, ISBNdb, production reads or writes are part of this comparison.
+
+## Manually verified edition credits and save handoff
+
+The administrator's saved-edition editor now offers a separate contributor review when the additive
+edition-credit migration is present. The operator inspects the author/publisher edition listing,
+enters literal bibliography and credits, and confirms both inspection and permitted retention.
+This is an authenticated human-review handoff, not an automatic source-verification service or a
+new provider scraper. The existing Open Library/Hardcover source-use and lineage holds remain.
+
+Prepare freezes a bibliography-only document and a caller-generated retry UUID against the current
+work fingerprint and selected edition. It does not change catalog facts. The server returns separate
+eligibility reasons for every credit. Nothing is preselected. The administrator chooses supported
+credits and explicitly confirms that exact selection. Save rechecks authority, fingerprint, exact
+ISBN assignment, catalog creator consistency, title/full creators, format/language conflicts,
+inspection freshness and roles/scope. No surname/initial/alias inference is added. An edition whose
+own title differs from the work title remains conservatively held in this slice.
+
+Accepted credits append to `corpus_editions.credits`, preserving original order, names, role labels,
+multiple roles for one person, named parts, evidence and source position. Unknown roles, absent
+labels, parent-work scope, ambiguous names and conflicts remain in the frozen review document.
+A partial selection closes that receipt; later decisions require a new source review and current
+fingerprint. There is no destructive replace/delete action. Accepted- and pending-credit history
+are separate from personal contributors. All personal records and reading history remain untouched.
+
+Retries preserve the exact review UUID/payload and then exact selected indices. The server's
+identical retry is read-only, including after catalog revision changes; different payloads conflict.
+A failed or uncertain response offers explicit retry/history inspection, never an automatic rebase.
+Account/work changes discard callbacks. Existing servers without the credits field do not expose
+this control. Production migration remains owner-run; this branch does not deploy it.
+
+The new frozen comparison also includes a separately labelled manual-source policy arm. Its source
+facts are manually transcribed from inspected publisher listings; it validates admission and holds,
+not automatic extraction accuracy or independent human verification. Reference answers do not enter
+provider acquisition, resolver decisions or the review viewer. Reports retain only decision codes
+and counts. The system hash now includes the catalog UI/data code and migrations as well as the
+resolver/adapters. Any policy change after freezing requires a new unseen comparison.
+
+Later work title/creator changes or edition ISBN/title/statement/format/language changes retain
+accepted credits but flag them for renewed review. Source identity remains visible. Removing an
+ISBN from the work also withdraws its credit qualification. Returning old values never revives
+credits automatically; a fresh review may append current support while preserving historical
+entries. Personal fields remain untouched.

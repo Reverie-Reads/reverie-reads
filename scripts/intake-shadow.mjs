@@ -17,6 +17,10 @@ import {
 } from '../packages/core/src/intakeReview.ts'
 import { intakeIdentityDiagnostics } from '../packages/core/src/intakeResolver.ts'
 import { startIntakeReview } from './intake-review-server.mjs'
+import {
+  parseEditionCreditEvidence,
+  reviewEditionCredits,
+} from '../packages/core/src/editionCredits.ts'
 import { loadLocalEnvironment } from '../packages/series-source-trial/src/env.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -66,7 +70,13 @@ export function validateShadowFrame(frame, developmentTargets = []) {
     development = new Set(developmentTargets.map(key).filter(Boolean))
   for (const c of frame.cases) {
     if (
-      !exact(c, ['id', 'target', 'expectedIdentity', 'reference']) ||
+      !exact(c, [
+        'id',
+        'target',
+        'expectedIdentity',
+        'reference',
+        ...(c.reviewedEvidence === undefined ? [] : ['reviewedEvidence']),
+      ]) ||
       !/^case-\d{2}$/.test(c.id) ||
       ids.has(c.id) ||
       typeof c.expectedIdentity !== 'boolean' ||
@@ -91,6 +101,7 @@ export function validateShadowFrame(frame, developmentTargets = []) {
       )
     )
       throw new Error('Invalid or overlapping shadow case')
+    if (c.reviewedEvidence !== undefined) parseEditionCreditEvidence(c.reviewedEvidence)
     parseIntakeEvidence({
       version: 1,
       targetFingerprint: 'a'.repeat(64),
@@ -144,6 +155,24 @@ export async function resolveShadowTarget(target, client, now = () => new Date()
 /** No provider titles, credits, facts or raw payloads are retained. Scores are not source evidence. */
 export function scoreShadowCase(c, observed) {
   const { request, result, issues } = observed
+  // Separately labelled manual-source policy validation. This is not automatic acquisition or
+  // independent extraction accuracy; no reference answer or provider payload grants approval.
+  const manual =
+    c.reviewedEvidence === undefined
+      ? null
+      : reviewEditionCredits(
+          c.reviewedEvidence,
+          {
+            title: c.target.title ?? '',
+            authors: c.target.contributors ?? [],
+            isbn: c.target.isbn,
+            format: c.target.format,
+            language: c.target.language,
+          },
+          [],
+          request.asOf,
+        )
+  const manualCredits = manual?.decisions.filter((d) => d.eligible).map((d) => d.credit) ?? []
   const sources = ['openlibrary', 'hardcover'].map((provider) => {
     const os = request.observations.filter((o) => o.source.provider === provider)
     const good = os.filter((o) => o.status === 'ok')
@@ -199,6 +228,23 @@ export function scoreShadowCase(c, observed) {
     proposedFields: result.fields.filter((f) => f.state === 'proposed').map((f) => f.field),
     heldFields: result.fields.filter((f) => f.state === 'review').map((f) => f.field),
     sources,
+    ...(manual
+      ? {
+          manualReview: {
+            eligibleCredits: manualCredits.length,
+            decisions: manual.decisions.map(({ position, eligible, reasons }) => ({
+              position,
+              eligible,
+              reasons,
+            })),
+            falseIdentityEligibility: !c.expectedIdentity && manualCredits.length > 0,
+            referenceCreditChecks:
+              c.expectedIdentity && c.reference.credits
+                ? compareIntakeCredits(c.reference.credits, manualCredits)
+                : [],
+          },
+        }
+      : {}),
   }
 }
 
@@ -275,7 +321,7 @@ async function systemFingerprint() {
     for (const e of await readdir(join(root, dir), { withFileTypes: true })) {
       const p = `${dir}/${e.name}`
       if (e.isDirectory()) await walk(p)
-      else if (/\.(ts|mjs|json)$/.test(e.name)) files.push(p)
+      else if (/\.(tsx?|mjs|json|sql)$/.test(e.name)) files.push(p)
     }
   }
   for (const dir of [
@@ -283,6 +329,9 @@ async function systemFingerprint() {
     'supabase/functions/enrich',
     'supabase/functions/_shared',
     'packages/series-source-trial/src',
+    'apps/web/src/components/catalog',
+    'apps/web/src/data',
+    'supabase/migrations',
   ])
     await walk(dir)
   files.push(

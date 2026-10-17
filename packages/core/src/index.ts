@@ -81,3 +81,4 @@ export * from './barcodeBatch'
 export * from './productPreferences'
 
 export { bookGuidance } from './contentGuidance'
+export * from './editionCredits'

@@ -33,6 +33,7 @@ export const RECONCILIATION_BACKUP_PRIMARY_KEYS: Record<string, readonly string[
   household_work_enrichment: ['household_id', 'work_id'],
   work_metadata_edits: ['id'],
   corpus_record_edits: ['id'],
+  corpus_edition_credit_reviews: ['id'],
   corpus_isbn_reports: ['id'],
   corpus_admins: ['user_id'],
   corpus_cover_recovery_marks: ['book_id'],

@@ -155,6 +155,65 @@ describe('bounded intake acquisition', () => {
 })
 
 describe('truth-blind independent shadow scoring', () => {
+  it('keeps manually inspected credits separate from acquisition and reference answers', async () => {
+    const f = frame()
+    const c = f.cases[0]
+    c.reviewedEvidence = {
+      version: 1,
+      source: {
+        url: 'https://publisher.example/edition',
+        kind: 'publisher',
+        checkedAt: new Date().toISOString(),
+        locator: 'Edition byline',
+        retentionConfirmed: true,
+      },
+      identity: {
+        title: target.title,
+        authors: target.contributors,
+        isbn,
+        format: 'paperback',
+        language: null,
+      },
+      credits: [
+        {
+          name: 'Manual Only Person',
+          role: 'translator',
+          scope: 'whole',
+          basis: 'edition',
+          sourceRole: 'Translated by',
+        },
+      ],
+      confirmations: { sourceChecked: true, identityChecked: true, creditsChecked: true },
+    }
+    c.reference.credits = [
+      { name: 'Different Reference Person', role: 'translator', scope: 'whole' },
+    ]
+    validateShadowFrame(f)
+    const fetch = fetcher(),
+      views = []
+    const report = await evaluateShadow(
+      f,
+      createIntakeSourceClient({ fetcher: fetch, sleeper }),
+      (v) => views.push(v),
+    )
+    expect(report.cases[0].manualReview).toMatchObject({
+      eligibleCredits: 1,
+      falseIdentityEligibility: false,
+      referenceCreditChecks: ['missing'],
+    })
+    for (const value of [fetch.mock.calls, views, report]) {
+      expect(JSON.stringify(value)).not.toContain('Manual Only Person')
+      expect(JSON.stringify(value)).not.toContain('Different Reference Person')
+    }
+    c.target = { ...target, contributors: ['Wrong Creator'] }
+    c.expectedIdentity = false
+    const held = await evaluateShadow(f, createIntakeSourceClient({ fetcher: fetcher(), sleeper }))
+    expect(held.cases[0].manualReview).toMatchObject({
+      eligibleCredits: 0,
+      falseIdentityEligibility: false,
+    })
+    expect(held.cases[0].manualReview.decisions[0].reasons).toContain('identity_conflict')
+  })
   it('scores edition credit evidence only after acquisition and never gives references to review views', async () => {
     const f = frame()
     f.cases[0].reference.credits = [

@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react'
+import { useAuth } from '../../auth/AuthProvider'
+import { EditionCreditReview } from './EditionCreditReview'
 import { normalizeIsbn, type PubDate } from '@reverie/core'
 import { parseReleasePub } from '../../data/releases'
 import {
@@ -60,6 +62,7 @@ export function CorpusRegistryEditor({
   onDirtyChange: (dirty: boolean) => void
   onSaved: (message: string) => void
 }) {
+  const { session } = useAuth()
   const [open, setOpen] = useState(false)
   const query = useCorpusRecord(workId, open)
   return (
@@ -86,7 +89,7 @@ export function CorpusRegistryEditor({
           </div>
         ) : (
           <RegistryWorkspace
-            key={workId}
+            key={`${session?.user.id}:${workId}`}
             record={query.data}
             blocked={blocked}
             onDirtyChange={onDirtyChange}
@@ -109,6 +112,7 @@ function RegistryWorkspace({
 }) {
   // Keep the reviewed snapshot with the draft. A background response must never rebase it.
   const [record] = useState(loaded)
+  const [creditEdition, setCreditEdition] = useState<CorpusEdition | null>(null)
   const [action, setAction] = useState<CorpusRecordChange['action'] | null>(null)
   const [edition, setEdition] = useState(emptyEdition)
   const [genres, setGenres] = useState(
@@ -130,7 +134,7 @@ function RegistryWorkspace({
   const save = useSaveCorpusRecord()
   const inflight = useRef(false)
   function begin(next: CorpusRecordChange['action']) {
-    if (blocked || action) return
+    if (blocked || action || creditEdition) return
     setAction(next)
     onDirtyChange(true)
     setError('')
@@ -138,7 +142,7 @@ function RegistryWorkspace({
     setConfirmed(false)
   }
   function edit(e?: CorpusEdition) {
-    if (blocked || action) return
+    if (blocked || action || creditEdition) return
     setEdition(
       e
         ? {
@@ -241,7 +245,7 @@ function RegistryWorkspace({
   return (
     <div className="mt-3 min-w-0 space-y-4 break-words">
       <CorpusGuidance record={record} />
-      {!action && (
+      {!action && !creditEdition && (
         <Button variant="secondary" disabled={blocked} onClick={() => begin('guidance')}>
           Edit shared guidance
         </Button>
@@ -260,7 +264,36 @@ function RegistryWorkspace({
               {e.reviewed ? 'Administrator reviewed' : 'Not reviewed'}
             </p>
             <EditionFacts edition={e} />
-            {!action && (
+            {!action && !creditEdition && e.credits !== undefined && (
+              <Button
+                variant="secondary"
+                className="mt-3"
+                disabled={blocked || !e.isbn}
+                onClick={() => {
+                  setCreditEdition(e)
+                  onDirtyChange(true)
+                }}
+              >
+                Review contributors for {e.isbn || 'edition without ISBN'}
+              </Button>
+            )}
+            {!e.isbn && e.credits !== undefined && (
+              <p className="text-sm text-muted">
+                Edition-credit review currently requires a verified ISBN.
+              </p>
+            )}
+            {creditEdition?.id === e.id && (
+              <EditionCreditReview
+                record={record}
+                edition={e}
+                onClose={() => {
+                  setCreditEdition(null)
+                  onDirtyChange(false)
+                }}
+                onSaved={onSaved}
+              />
+            )}
+            {!action && !creditEdition && (
               <Button
                 variant="secondary"
                 className="mt-3"
@@ -273,7 +306,7 @@ function RegistryWorkspace({
           </li>
         ))}
       </ul>
-      {!action && (
+      {!action && !creditEdition && (
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" disabled={blocked} onClick={() => edit()}>
             Add a published edition
@@ -303,7 +336,7 @@ function RegistryWorkspace({
                   {r.proposed_isbn && ` · Suggested: ${r.proposed_isbn}`}
                 </p>
                 <p className="mt-2 whitespace-pre-wrap break-words">{r.note}</p>
-                {!action && (
+                {!action && !creditEdition && (
                   <Button
                     variant="secondary"
                     disabled={blocked}
