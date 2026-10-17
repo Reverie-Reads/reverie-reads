@@ -21,11 +21,12 @@ export function buildIntakeReview(input: unknown) {
       creditStatements: o.creditStatements ?? [],
       identityCheck: intakeIdentityDiagnostics(request, o),
       reasons: result.observations.find((d) => d.id === o.id)!.reasons,
-      credits: (o.identity?.contributors ?? []).map((credit, position) => ({
+      credits: (o.identity?.contributors ?? o.withheldCredits ?? []).map((credit, position) => ({
         ...credit,
         position,
+        withheld: o.status !== 'ok',
         completeness: 'unverified' as const,
-        editionSupport: credit.basis === 'edition' ? 'observed' : 'unverified',
+        editionSupport: o.status === 'ok' && credit.basis === 'edition' ? 'observed' : 'unverified',
         storage:
           credit.scope === 'part' ||
           !['author', 'editor', 'translator', 'illustrator', 'narrator'].includes(credit.role)

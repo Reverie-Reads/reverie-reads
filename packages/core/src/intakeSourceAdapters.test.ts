@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { adaptOpenLibraryIntake, adaptHardcoverIntake } from './intakeSourceAdapters'
 import { intakeIdentityDiagnostics, resolveIntakeEvidence } from './intakeResolver'
 import { parseIntakeEvidence } from './intakeEvidenceValidation'
+import { buildIntakeReview } from './intakeReview'
 
 const context = { targetFingerprint: 'a'.repeat(64), retrievedAt: '2026-10-16T12:00:00Z' }
 const isbn = '9780306406157'
@@ -46,6 +47,122 @@ const request = (observations: ReturnType<typeof adaptOpenLibraryIntake>['observ
 })
 
 describe('trusted non-LLM intake adapters', () => {
+  it.each(['Audiobook', 'Paperback'])(
+    'uses recognized %s after an unknown format without losing the unknown diagnostic',
+    (format) => {
+      const raw = { ...hc().data.editions[0], physical_format: 'Deluxe', edition_format: format }
+      const a = adaptHardcoverIntake({ data: { editions: [raw] } }, context)
+      expect(a.issues).toContain('unknown_format')
+      expect(a.observations[0]?.claims.find((c) => c.field === 'format')?.value).toBe(
+        format.toLowerCase(),
+      )
+      expect(a.observations[0]?.claims.some((c) => c.field === 'pages')).toBe(
+        format !== 'Audiobook',
+      )
+    },
+  )
+  it.each(['co-author', ' Author '])(
+    'withholds duplicate normalized credits while preserving %j',
+    (label) => {
+      const raw = hc()
+      raw.data.editions[0]!.book.contributions.push({
+        contribution: label,
+        author: { name: 'Jane Smith' },
+      })
+      const a = adaptHardcoverIntake(raw, context)
+      expect(a.issues).toContain('duplicate_credits')
+      expect(a.observations[0]?.status).toBe('failed')
+      expect(a.observations[0]?.identity).toBeUndefined()
+      expect(a.observations[0]?.claims).toEqual([])
+      const review = buildIntakeReview(request(a.observations))
+      expect(review.sources[0]?.credits.map((c) => c.sourceRole)).toEqual(['author', label])
+      expect(review.fields.every((f) => f.proposed === undefined)).toBe(true)
+    },
+  )
+  it('keeps withheld credits bounded and unable to become identity or claims', () => {
+    const raw = hc()
+    raw.data.editions[0]!.book.contributions.push({
+      ...raw.data.editions[0]!.book.contributions[0]!,
+    })
+    const input = request(adaptHardcoverIntake(raw, context).observations)
+    const observation = input.observations[0]!
+    expect(() => parseIntakeEvidence(input)).not.toThrow()
+    for (const status of ['ok', 'empty', 'capped'] as const) {
+      expect(() =>
+        parseIntakeEvidence({ ...input, observations: [{ ...observation, status }] }),
+      ).toThrow()
+    }
+    expect(() =>
+      parseIntakeEvidence({
+        ...input,
+        observations: [
+          { ...observation, withheldCredits: Array(101).fill(observation.withheldCredits![0]) },
+        ],
+      }),
+    ).toThrow()
+    expect(() =>
+      parseIntakeEvidence({
+        ...input,
+        observations: [
+          {
+            ...observation,
+            withheldCredits: [{ ...observation.withheldCredits![0], privateNotes: 'private' }],
+          },
+        ],
+      }),
+    ).toThrow()
+    expect(() =>
+      parseIntakeEvidence({
+        ...input,
+        observations: [
+          {
+            ...observation,
+            claims: [
+              { id: 'pages', field: 'pages', value: 240, scope: 'edition', locator: 'pages' },
+            ],
+          },
+        ],
+      }),
+    ).toThrow()
+  })
+  it('retains exact Open Library duplicate credits without claiming an identity', () => {
+    const a = adaptOpenLibraryIntake(
+      { ...ol(), authors: [{ key: '/authors/OL1A' }, { key: '/authors/OL1A' }] },
+      authors,
+      context,
+    )
+    const review = buildIntakeReview(request(a.observations))
+    expect(review.sources[0]?.credits.map((c) => c.name)).toEqual(['Jane Smith', 'Jane Smith'])
+    expect(review.sources[0]?.identity).toBeUndefined()
+    expect(review.sources[0]?.reasons).toContain('source_failed')
+    expect(
+      review.sources[0]?.credits.every((c) => c.withheld && c.editionSupport === 'unverified'),
+    ).toBe(true)
+  })
+  it('accepts agreeing known format representations but keeps unknown-only formats unknown', () => {
+    const agree = adaptHardcoverIntake(
+      { data: { editions: [{ ...hc().data.editions[0], edition_format: 'trade paperback' }] } },
+      context,
+    )
+    expect(agree.observations[0]?.claims.find((c) => c.field === 'format')?.value).toBe('paperback')
+    expect(agree.issues).not.toContain('conflicting_edition_formats')
+    const unknown = adaptHardcoverIntake(
+      {
+        data: {
+          editions: [
+            {
+              ...hc().data.editions[0],
+              physical_format: 'Deluxe',
+              edition_format: 'Special edition',
+            },
+          ],
+        },
+      },
+      context,
+    )
+    expect(unknown.issues).toContain('unknown_format')
+    expect(unknown.observations[0]?.claims.some((c) => c.field === 'format')).toBe(false)
+  })
   it('holds an editor-as-author control through the real Hardcover adapter and resolver', () => {
     const raw = hc()
     raw.data.editions[0]!.book.contributions.unshift({
@@ -222,5 +339,12 @@ describe('trusted non-LLM intake adapters', () => {
     expect(adaptHardcoverIntake({ data: { editions: [raw] } }, context).issues).toContain(
       'conflicting_edition_formats',
     )
+    const audioConflict = adaptHardcoverIntake(
+      { data: { editions: [{ ...raw, edition_format: 'audiobook' }] } },
+      context,
+    )
+    expect(audioConflict.issues).toContain('conflicting_edition_formats')
+    expect(audioConflict.observations[0]?.status).toBe('failed')
+    expect(audioConflict.observations[0]?.claims).toEqual([])
   })
 })

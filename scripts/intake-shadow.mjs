@@ -9,6 +9,7 @@ import {
   intakeIdentityReviewReasons,
 } from '../packages/core/src/intakeResolver.ts'
 import { normalizeIsbn } from '../packages/core/src/match.ts'
+import { intakeSourceObservation } from '../packages/core/src/intakeSourceAdapters.ts'
 import { createIntakeSourceClient } from './intake-source-client.mjs'
 import {
   buildIntakeReview,
@@ -135,20 +136,64 @@ export function validateShadowFrame(frame, developmentTargets = []) {
 /** Receives target only. Reference values, expected decisions and source URLs never reach acquisition. */
 export async function resolveShadowTarget(target, client, now = () => new Date().toISOString()) {
   const targetFingerprint = hash(JSON.stringify({ target, existing: {} }))
-  const acquired = await client.acquire(target.isbn, targetFingerprint)
-  const request = parseIntakeEvidence({
+  const base = parseIntakeEvidence({
     version: 1,
     targetFingerprint,
     asOf: now(),
     target,
     existing: {},
-    observations: Object.values(acquired).flatMap((a) => a.observations),
+    observations: [],
+  })
+  const acquired = await client.acquire(target.isbn, targetFingerprint)
+  // A malformed provider record cannot erase a valid peer or abort an already consumed frame.
+  // Keep the failure visible; do not salvage malformed identity/facts or persist exception text.
+  const checked = Object.fromEntries(
+    ['openlibrary', 'hardcover'].map((provider) => {
+      const candidate = acquired?.[provider]
+      try {
+        if (
+          !candidate ||
+          !Array.isArray(candidate.observations) ||
+          candidate.observations.length !== 1 ||
+          !Array.isArray(candidate.issues) ||
+          !candidate.issues.every((v) => typeof v === 'string' && /^[a-z_]+$/.test(v))
+        )
+          throw new Error('Invalid adapter result')
+        const parsed = parseIntakeEvidence({ ...base, observations: candidate.observations })
+        if (
+          parsed.observations.some(
+            (o) => o.source.provider !== provider || !o.id.startsWith(`${provider}:`),
+          )
+        )
+          throw new Error('Invalid adapter provenance')
+        return [provider, { ...candidate, observations: parsed.observations }]
+      } catch {
+        return [
+          provider,
+          {
+            observations: [
+              intakeSourceObservation(
+                provider,
+                { targetFingerprint, retrievedAt: base.asOf },
+                'failed',
+              ),
+            ],
+            issues: ['invalid_adapter_observation'],
+          },
+        ]
+      }
+    }),
+  )
+  const request = parseIntakeEvidence({
+    ...base,
+    asOf: now(),
+    observations: Object.values(checked).flatMap((a) => a.observations),
   })
   const result = resolveIntakeEvidence(request)
   return {
     request,
     result,
-    issues: Object.fromEntries(Object.entries(acquired).map(([p, a]) => [p, a.issues])),
+    issues: Object.fromEntries(Object.entries(checked).map(([p, a]) => [p, a.issues])),
   }
 }
 

@@ -92,6 +92,22 @@ function failed(
     issues: [issue],
   }
 }
+function duplicateCredits(
+  provider: IntakeSource,
+  context: IntakeSourceContext,
+  recordId: string,
+  credits: IntakeCredit[],
+): IntakeAdaptation {
+  return {
+    observations: [
+      {
+        ...intakeSourceObservation(provider, context, 'failed', recordId),
+        withheldCredits: credits,
+      },
+    ],
+    issues: ['duplicate_credits'],
+  }
+}
 function editionClaims(
   o: IntakeObservation,
   values: {
@@ -194,7 +210,7 @@ export function adaptOpenLibraryIntake(
     credits.push({ name, role: 'author', scope: 'whole', sourceRole: 'authors', basis: 'edition' })
   }
   if (new Set(credits.map((c) => c.name)).size !== credits.length)
-    return failed('openlibrary', context, 'duplicate_credits')
+    return duplicateCredits('openlibrary', context, String(b.key), credits)
   const o = intakeSourceObservation('openlibrary', context, 'ok', String(b.key))
   if (b.contributions !== undefined) {
     if (
@@ -281,8 +297,13 @@ export function adaptHardcoverIntake(raw: unknown, context: IntakeSourceContext)
       basis: 'work',
     })
   }
-  if (new Set(credits.map((c) => JSON.stringify(c))).size !== credits.length)
-    return failed('hardcover', context, 'duplicate_credits')
+  // Match the packet's normalized-credit key. Literal label differences must not let an
+  // invalid duplicate through; preserve every credit separately in the withheld review list.
+  if (
+    new Set(credits.map((c) => JSON.stringify([c.name, c.role, c.scope, c.part]))).size !==
+    credits.length
+  )
+    return duplicateCredits('hardcover', context, String(e.id), credits)
   const isbns = [e.isbn_13, e.isbn_10].filter((x) => x !== null && x !== undefined && x !== '')
   if (isbns.some((x) => !text(x, 100))) return failed('hardcover', context, 'malformed_isbn')
   // Do not use parent title as proof for an edition with an absent title.
@@ -310,6 +331,7 @@ export function adaptHardcoverIntake(raw: unknown, context: IntakeSourceContext)
     .filter((v): v is string => !!v)
   const mapped = new Set(formatValues.map((v) => formats[v]).filter(Boolean))
   if (mapped.size > 1) return failed('hardcover', context, 'conflicting_edition_formats')
+  if (formatValues.some((v) => !formats[v])) issues.push('unknown_format')
   editionClaims(
     o,
     {
@@ -318,7 +340,7 @@ export function adaptHardcoverIntake(raw: unknown, context: IntakeSourceContext)
         e.release_date ?? (Number.isInteger(e.release_year) ? String(e.release_year) : undefined),
       publisher: obj(e.publisher).name,
       language: obj(e.language).code2,
-      format: formatValues[0],
+      format: [...mapped][0],
     },
     issues,
   )

@@ -55,7 +55,7 @@ const https = (v: unknown): boolean => {
   }
 }
 
-function credits(v: unknown): boolean {
+function credits(v: unknown, allowDuplicates = false): boolean {
   if (!Array.isArray(v) || !v.length || v.length > 100) return false
   const seen = new Set<string>()
   return v.every((c) => {
@@ -72,7 +72,7 @@ function credits(v: unknown): boolean {
     )
       return false
     const key = JSON.stringify([c.name, c.role, c.scope, c.part])
-    if (seen.has(key)) return false
+    if (!allowDuplicates && seen.has(key)) return false
     seen.add(key)
     return true
   })
@@ -174,13 +174,15 @@ export function parseIntakeEvidence(input: unknown): IntakeEvidenceRequest {
       !keys(
         o,
         ['id', 'targetFingerprint', 'source', 'status', 'claims'],
-        ['identity', 'creditStatements'],
+        ['identity', 'creditStatements', 'withheldCredits'],
       ) ||
       !text(o.id, 200) ||
       ids.has(o.id) ||
       !fingerprint(o.targetFingerprint) ||
       !oneOf(o.status, ['ok', 'empty', 'failed', 'capped']) ||
-      (o.creditStatements !== undefined && !stringList(o.creditStatements, 32))
+      (o.creditStatements !== undefined && !stringList(o.creditStatements, 32)) ||
+      (o.withheldCredits !== undefined &&
+        (o.status !== 'failed' || !credits(o.withheldCredits, true)))
     )
       return fail()
     ids.add(o.id)

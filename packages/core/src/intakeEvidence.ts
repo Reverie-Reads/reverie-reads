@@ -87,6 +87,8 @@ export interface IntakeObservation {
   identity?: IntakeObservedIdentity
   /** Unparsed source statements: retain for review; never convert prose into guessed credits. */
   creditStatements?: string[]
+  /** Failed record's bounded literal credits, including duplicates. Never identity or claim support. */
+  withheldCredits?: IntakeCredit[]
   claims: IntakeClaim[]
 }
 
