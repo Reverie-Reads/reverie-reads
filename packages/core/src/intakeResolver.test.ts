@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveIntakeEvidence } from './intakeResolver'
+import { intakeIdentityDiagnostics, resolveIntakeEvidence } from './intakeResolver'
 import type {
   IntakeClaim,
   IntakeCredit,
@@ -409,6 +409,56 @@ describe('credit scope and completeness', () => {
       ],
     })
   }
+  it.each(['editor', 'translator', 'introduction', 'unknown'] as const)(
+    'cannot use a whole-work %s as the requested creator, even beside a real author',
+    (role) => {
+      const credits: IntakeCredit[] = [
+        author,
+        { name: 'Anne Brown', role, scope: 'whole', sourceRole: ` ${role} `, basis: 'work' },
+      ]
+      const input = request({
+        target: { title, isbn, contributors: ['Brown, Anne'] },
+        existing: { pages: 123 },
+        observations: [withCredits(credits)],
+      })
+      const before = structuredClone(input)
+      const result = resolveIntakeEvidence(input)
+      expect(result.work.state).toBe('review')
+      expect(result.fields.every((f) => f.proposed === undefined)).toBe(true)
+      expect(field(result, 'pages').current).toBe(123)
+      expect(result.request.observations[0]!.identity!.contributors).toEqual(credits)
+      expect(intakeIdentityDiagnostics(input, input.observations[0]!).contributors).toEqual([
+        role === 'unknown' ? 'unknown_role' : 'secondary_role_only',
+      ])
+      expect(input).toEqual(before)
+    },
+  )
+  it('preserves editor credits without making different editors competing work creators', () => {
+    const first = withCredits([author, { name: 'Anne Brown', role: 'editor', scope: 'whole' }])
+    const second = withCredits([author, { name: 'Kate Birch', role: 'editor', scope: 'whole' }])
+    second.id = 'second'
+    const result = resolveIntakeEvidence(request({ observations: [first, second] }))
+    expect(result.work.state).toBe('resolved')
+    expect(field(result, 'contributors').reasons).toContain('field_conflict')
+    expect(result.request.observations.map((o) => o.identity!.contributors)).toEqual([
+      first.identity!.contributors,
+      second.identity!.contributors,
+    ])
+  })
+  it('accepts a separately explicit author role for someone also credited as editor', () => {
+    const credits: IntakeCredit[] = [{ ...author, role: 'editor' }, author]
+    const result = resolveIntakeEvidence(request({ observations: [withCredits(credits)] }))
+    expect(result.work.state).toBe('resolved')
+    expect(field(result, 'contributors').proposed).toEqual(credits)
+  })
+  it('does not use an existing editor-only record to authorize creator gap filling', () => {
+    const result = resolveIntakeEvidence(
+      request({ existing: { contributors: [{ ...author, role: 'editor' }] } }),
+    )
+    expect(result.work.reasons).toContain('existing_identity_conflict')
+    expect(result.fields.every((f) => f.proposed === undefined)).toBe(true)
+    expect(field(result, 'contributors').current).toEqual([{ ...author, role: 'editor' }])
+  })
   it('preserves both separately credited coauthors in publisher order', () => {
     const credits: IntakeCredit[] = [
       { ...author, name: 'Carla Page' },
@@ -464,8 +514,9 @@ describe('credit scope and completeness', () => {
     const source = withCredits(credits)
     expect(resolveIntakeEvidence(request({ observations: [source] })).work.state).toBe('review')
     const scan = resolveIntakeEvidence(request({ target: { isbn }, observations: [source] }))
-    expect(scan.work.state).toBe('resolved')
-    expect(field(scan, 'contributors').proposed).toEqual(credits)
+    expect(scan.work.state).toBe('review')
+    expect(field(scan, 'contributors').proposed).toBeUndefined()
+    expect(scan.request.observations[0]!.identity!.contributors).toEqual(credits)
   })
   it('rejects a claim naming a different contributor than its observed source identity', () => {
     const source = withCredits([author])
@@ -650,36 +701,42 @@ describe('evidence, provenance and preservation', () => {
       ).reasons,
     ).toContain('relationship_unverified')
   })
-  it('cannot establish series membership through an initial-only secondary creator', () => {
-    const secondary: IntakeCredit = {
-      name: 'J. K. Reed',
-      role: 'original_story',
-      scope: 'whole',
-    }
-    const series = claim({
-      id: 'series',
-      field: 'series',
-      value: {
-        name: 'Library Mysteries',
-        position: 1,
-        relationship: 'explicit_membership',
-        memberTitle: title,
-        memberContributors: [secondary.name],
-      },
-      scope: 'work',
-      locator: 'Books in series',
-    })
-    const source = observation({ claims: [series] })
-    source.identity!.contributors.push(secondary)
-    const result = resolveIntakeEvidence(request({ observations: [source] }))
-    expect(result.work.state).toBe('resolved')
-    expect(field(result, 'series').reasons).toContain('relationship_unverified')
-    expect(field(result, 'series').proposed).toBeUndefined()
-    series.value.memberContributors = [author.name]
-    expect(field(resolveIntakeEvidence(request({ observations: [source] })), 'series').state).toBe(
-      'proposed',
-    )
-  })
+  it.each([
+    { name: 'J. K. Reed', role: 'original_story' },
+    { name: 'Anne Brown', role: 'editor' },
+  ] as const)(
+    'cannot establish series membership through a held $role credit',
+    ({ name, role }) => {
+      const secondary: IntakeCredit = {
+        name,
+        role,
+        scope: 'whole',
+      }
+      const series = claim({
+        id: 'series',
+        field: 'series',
+        value: {
+          name: 'Library Mysteries',
+          position: 1,
+          relationship: 'explicit_membership',
+          memberTitle: title,
+          memberContributors: [secondary.name],
+        },
+        scope: 'work',
+        locator: 'Books in series',
+      })
+      const source = observation({ claims: [series] })
+      source.identity!.contributors.push(secondary)
+      const result = resolveIntakeEvidence(request({ observations: [source] }))
+      expect(result.work.state).toBe('resolved')
+      expect(field(result, 'series').reasons).toContain('relationship_unverified')
+      expect(field(result, 'series').proposed).toBeUndefined()
+      series.value.memberContributors = [author.name]
+      expect(
+        field(resolveIntakeEvidence(request({ observations: [source] })), 'series').state,
+      ).toBe('proposed')
+    },
+  )
   it('applies the same contributor boundary to series membership evidence', () => {
     const series = claim({
       id: 'series',

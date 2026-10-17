@@ -1046,9 +1046,9 @@
         ]
       },
       "expected": {
-        "work": "resolved",
-        "edition": "resolved",
-        "proposedFields": ["contributors"]
+        "work": "review",
+        "edition": "review",
+        "proposedFields": []
       }
     }
   ]

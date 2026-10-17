@@ -779,7 +779,9 @@ See `docs/tasks/book-data-correction-sequence.md` and `docs/tasks/book-source-ad
 
 The new intake evidence resolver is an offline review boundary, consumed by `pnpm intake:replay`.
 It does not replace Add, scan or import writers. Preserve work/edition separation, scoped contributor
-roles, exact ISBN checks, per-claim evidence and existing values. Source qualification and lineage
+roles, exact ISBN checks, per-claim evidence and existing values. Whole-work editors are retained
+as credits but cannot establish creator identity from a roleless target; editor-only collections
+stay under review, including ISBN-only scans. Never relabel editors as authors to increase coverage. Source qualification and lineage
 come from trusted adapters or reviewers, never model output or client assertions. Do not cast a
 resolution to `Incoming` or `Book`; the staged intake cutover is still required. The separate
 administrator edition-credit handoff accepts manually inspected first-party evidence, freezes the

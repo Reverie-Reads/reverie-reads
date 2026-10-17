@@ -71,13 +71,17 @@ describe('offline intake replay', () => {
     const credits = result.cases
       .filter((c) => c.id.startsWith('credits-'))
       .map((c) => c.result.fields.find((f) => f.field === 'contributors').proposed)
-    expect(credits.map((c) => c.length)).toEqual([2, 2, 3, 3])
+    expect(credits.map((c) => c?.length)).toEqual([2, 2, 3, undefined])
     expect(credits[2].map((c) => c.role)).toEqual([
       'playwright',
       'original_story',
       'original_story',
     ])
-    expect(credits[3].map((c) => [c.role, c.scope])).toEqual([
+    const anthology = result.cases.find((c) => c.id === 'credits-anthology').result
+    expect(anthology.work.state).toBe('review')
+    expect(
+      anthology.request.observations[0].identity.contributors.map((c) => [c.role, c.scope]),
+    ).toEqual([
       ['editor', 'whole'],
       ['author', 'part'],
       ['foreword', 'whole'],

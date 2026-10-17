@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { adaptOpenLibraryIntake, adaptHardcoverIntake } from './intakeSourceAdapters'
-import { resolveIntakeEvidence } from './intakeResolver'
+import { intakeIdentityDiagnostics, resolveIntakeEvidence } from './intakeResolver'
 import { parseIntakeEvidence } from './intakeEvidenceValidation'
 
 const context = { targetFingerprint: 'a'.repeat(64), retrievedAt: '2026-10-16T12:00:00Z' }
@@ -46,6 +46,33 @@ const request = (observations: ReturnType<typeof adaptOpenLibraryIntake>['observ
 })
 
 describe('trusted non-LLM intake adapters', () => {
+  it('holds an editor-as-author control through the real Hardcover adapter and resolver', () => {
+    const raw = hc()
+    raw.data.editions[0]!.book.contributions.unshift({
+      contribution: ' Editor ',
+      author: { name: 'Anne Brown' },
+    })
+    const adapted = adaptHardcoverIntake(raw, context)
+    const input = parseIntakeEvidence(request(adapted.observations))
+    input.target.contributors = ['Anne Brown']
+    const diagnostic = intakeIdentityDiagnostics(input, input.observations[0]!)
+    expect(diagnostic).toMatchObject({
+      title: 'exact',
+      isbn: 'exact',
+      contributors: ['secondary_role_only'],
+      reasons: ['identity_mismatch'],
+    })
+    expect(resolveIntakeEvidence(input).fields.every((f) => f.proposed === undefined)).toBe(true)
+    input.target.contributors = ['Jane Smith']
+    expect(intakeIdentityDiagnostics(input, input.observations[0]!).reasons).toEqual([])
+    expect(adapted.observations[0]!.identity!.contributors[0]).toEqual({
+      name: 'Anne Brown',
+      role: 'editor',
+      scope: 'whole',
+      sourceRole: ' Editor ',
+      basis: 'work',
+    })
+  })
   it('keeps source policy code-owned and preserves partial dates', () => {
     const raw = {
       ...ol(),

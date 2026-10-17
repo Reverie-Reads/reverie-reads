@@ -19,7 +19,9 @@ scan, import and shared-catalog writers have not switched over. See
 Evidence credits may retain their original `sourceRole` (including an absent or empty label) and
 `basis` (`work` or `edition`). Unparsed `creditStatements` stay observations. These optional evidence
 fields are not personal contributor roles. Parent-work credits cannot certify an edition credit
-claim. The separate administrator-reviewed edition handoff described below persists supported
+claim. An editor credit cannot establish creator identity for the roleless intake target; editor-only
+collections remain under review, with their credits preserved. The separate administrator-reviewed
+edition handoff described below persists supported
 credits without producing a personal book patch.
 
 ---

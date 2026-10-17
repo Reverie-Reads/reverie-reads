@@ -40,12 +40,13 @@ function titleFormattingSafe(title: string, record: { title: string; subtitle?: 
     },
   )
 }
+// A roleless intake name is a creator anchor, never a match against every credited person.
+// Editing a whole edition does not establish authorship. Editor-led collections stay in review
+// until an explicit role-aware identity handoff exists; retain their full credit arrays unchanged.
 const creators = (credits: IntakeCredit[]) =>
   credits
     .filter(
-      (c) =>
-        c.scope === 'whole' &&
-        ['author', 'editor', 'playwright', 'original_story'].includes(c.role),
+      (c) => c.scope === 'whole' && ['author', 'playwright', 'original_story'].includes(c.role),
     )
     .map((c) => c.name)
 const ambiguousName = (name: string): boolean => {
