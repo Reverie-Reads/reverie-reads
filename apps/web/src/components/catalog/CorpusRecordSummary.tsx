@@ -13,14 +13,44 @@ export function EditionFacts({ edition }: { edition: CorpusEdition }) {
     ['Published', editionPublicationLabel(d.publication ?? undefined)],
   ]
   return (
-    <dl className="grid min-w-0 grid-cols-2 gap-x-5 gap-y-2 text-sm">
-      {facts.map(([label, value]) => (
-        <div key={label} className="min-w-0">
-          <dt className="text-muted">{label}</dt>
-          <dd className="break-words">{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="min-w-0 space-y-3">
+      <dl className="grid min-w-0 grid-cols-2 gap-x-5 gap-y-2 text-sm">
+        {facts.map(([label, value]) => (
+          <div key={label} className="min-w-0">
+            <dt className="text-muted">{label}</dt>
+            <dd className="break-words">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {!!edition.credits?.length && (
+        <section aria-label="Reviewed edition credits" className="space-y-2 text-sm">
+          <h4 className="font-semibold">Reviewed edition credits</h4>
+          <p className="text-muted">
+            Individual supported credits; the list may be incomplete. Personal contributors stay
+            separate.
+          </p>
+          <ol className="space-y-2">
+            {edition.credits.map((entry) => (
+              <li key={`${entry.reviewId}:${entry.position}`} className="break-words">
+                {entry.credit.name} · {entry.credit.role.replaceAll('_', ' ')}
+                {entry.credit.part ? ` · ${entry.credit.part}` : ''}
+                <span className="block text-muted">
+                  Source label: {entry.credit.sourceRole || 'Not stated'}
+                </span>
+                <a
+                  href={entry.source.url}
+                  className="underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Credit source
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+    </div>
   )
 }
 export function CorpusGuidance({ record }: { record: CorpusRecord }) {
