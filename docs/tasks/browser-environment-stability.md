@@ -51,8 +51,13 @@ being interrupted (one interrupted, 433 not run). It is not a completed acceptan
 failure occurred while loading `/skins`, not in an axe assertion; its trace again showed slow
 local module requests. The browser server now uses a dedicated `browser-test` mode that excludes
 Nitro/Workflow builders and watchers. This suite exercises the SPA against real local Supabase;
-its bookstore API requests are explicitly mocked, and Workflow has separate compiler-backed
-tests. Normal development and production builds retain both plugins. The previously failing
+its bookstore API requests are explicitly mocked. Administrator Settings also requests current
+corpus-sweep and series-recovery status. Those two catalog-review fixtures now explicitly stub
+only the exact GET status paths with the normal feature-disabled `{ run: null }` response and
+assert that both responses were exercised. Other paths and methods are not intercepted. Workflow
+has separate compiler-backed tests; these browser fixtures do not establish authenticated,
+feature-enabled browser-to-Workflow integration. Normal development and production builds retain
+both plugins. The previously failing
 Marrow/light case passed in 42 seconds with this mode; that targeted result alone does not
 establish full-suite stability or prove a sole cause for host contention.
 
@@ -62,6 +67,13 @@ Results will be recorded after the final checks. All browser runs use synthetic 
 local database, one worker and zero retries. Pre/post local snapshots and failure traces stay in
 private receipts outside Git. The standard local demo library is restored under the same pinned
 engine and stack lock after each run. Production data and personal reading history are not accessed.
+
+The targeted server-mode run passed its test but returned a cleanup failure: the local reset
+finished applying migrations and timed out while Storage was becoming healthy. The first subsequent
+demo seed also received an Auth timeout. After all local services reported healthy, the seed
+completed under the same engine guard and lock, and readback confirmed 290 books, zero reads and
+one local account. Both failures are retained; the successful seed did not rerun or erase browser
+results. Local service readiness remains a separate concern from browser assertions.
 
 Existing ambiguous identities, contributor roles, source qualifications and unobserved provider
 controls remain under review. Browser acceptance does not authorize intake cutover.

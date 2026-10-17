@@ -64,9 +64,10 @@ export default defineConfig(({ command, mode }) => {
     // suite. Starting Nitro and the production Workflow builder there creates file watchers that
     // are unrelated to the test and can exhaust macOS's per-process descriptor limit. The separate
     // compiler-backed Workflow suite owns its purpose-built transform and backend. The browser
-    // suite exercises the SPA against local Supabase and mocks /api/bookstores; it does not
-    // exercise Nitro/Workflow server routes. Keep their extra builders/watchers out of that
-    // server too. Ordinary dev and production builds continue to include both plugins.
+    // suite exercises the SPA against local Supabase. Bookstore requests and the two disabled
+    // workflow status reads in admin Settings fixtures are explicitly mocked; this does not
+    // establish browser-to-Workflow integration. Keep the extra builders/watchers out of that
+    // server. Ordinary dev and production builds continue to include both plugins.
     plugins: [
       ...(['test', 'browser-test'].includes(mode)
         ? []
