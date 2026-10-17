@@ -63,10 +63,27 @@ establish full-suite stability or prove a sole cause for host contention.
 
 ## Verification
 
-Results will be recorded after the final checks. All browser runs use synthetic accounts, a fresh
-local database, one worker and zero retries. Pre/post local snapshots and failure traces stay in
+The final full browser run on the stacked adapter head `f67f51b` completed with **438 passed,
+11 configured skips and zero failures in 56.4 minutes**. All browser runs use synthetic accounts,
+a fresh local database, one worker and zero retries. Pre/post local snapshots and failure traces stay in
 private receipts outside Git. The standard local demo library is restored under the same pinned
 engine and stack lock after each run. Production data and personal reading history are not accessed.
+
+The corrected edition-credit positive and future-date negative cases also passed on desktop and
+mobile (four targeted tests). The final unit gate passed 3,388 core, 1,346 web, 498 source-trial and
+two compiler-backed Workflow tests, plus 127 recovery checks, nine completion-plan tests and
+11 engine-guard tests. Typecheck, lint, normal production build and repository formatting passed.
+
+The normal compiled Nitro backend was separately exercised for both status routes: with workflows
+disabled each returned HTTP 200 and `{run:null}`; with workflows enabled each refused an
+unauthenticated request with HTTP 401. These four smoke checks do not prove authenticated job
+reads or writes. The full SPA suite's two administrator Settings fixtures explicitly assert their
+disabled-status stubs, rather than silently accepting missing routes. Remote CI could not be
+inspected because the required checks connector requested a GitHub account connection.
+
+The final full-run lifecycle exited successfully. Local restoration readback confirmed 290 demo
+books, zero reading-history rows and one local account, matching the pre-run baseline. Private
+pre/post snapshots remain available. This pass did not access or modify the production database.
 
 The targeted server-mode run passed its test but returned a cleanup failure: the local reset
 finished applying migrations and timed out while Storage was becoming healthy. The first subsequent
