@@ -59,8 +59,46 @@ remains in shadow mode, and the existing writers remain in place.
 - Full unit suite: 3,376 core tests, 1,346 web tests, 498 source-trial tests, two Workflow tests,
   127 recovery checks and nine completion-plan tests passed.
 - Type checking, lint, production build, changed-file formatting and whitespace checks passed.
-- Full fresh-database browser run: in progress; this is not a green full-suite claim.
+- Full fresh-database browser run, one worker, zero retries: **370 passed, 22 failed,
+  11 skipped, 44 did not run**, out of 447 scheduled cases (1.4 hours). Keep both passed
+  again in 3.3 seconds. The full gate is **red**; no passing rerun was substituted.
+- Remote CI could not be inspected: the checks service returned “Connect your GitHub account
+  to continue.” Local results do not establish remote CI success.
 
 All database testing uses the shared stack lock and synthetic accounts. Private pre-run local
 snapshots and failure traces are retained outside Git. Each run restores the standard local demo
 library afterward. No production data is accessed or changed.
+
+## Full-run blockers
+
+The failing cases were in unchanged tests and application paths. This is not evidence that they
+are harmless: each remains unresolved. The retained traces distinguish these groups:
+
+| Group                                                           | Cases | Observed failure                                                                                                         |
+| --------------------------------------------------------------- | ----: | ------------------------------------------------------------------------------------------------------------------------ |
+| Desktop navigation, search, series, shelves and status displays |    11 | Overall test or locator timeout, including the 240-second viewport test while navigating to Tropes                       |
+| Scanner metadata                                                |     1 | Authentication fetch failure                                                                                             |
+| Desktop shared Add/Edit editor                                  |     1 | Edit details dialog still present after the five-second close assertion                                                  |
+| Mobile copy inventory                                           |     1 | `supabase status` failed after the Docker context changed                                                                |
+| Mobile edition registry                                         |     8 | `docker exec` could not find the database container in the active context; two also exhausted their overall test timeout |
+
+The machine's load average was observed above 50 during the timeout cluster; the Vite server
+also logged a connection reset. These are environmental observations, not proof of the cause of
+every failure. No timeout was widened and no failed case was excluded.
+
+During the same run, the active Docker context changed to `orbstack`, whose container list was
+empty when inspected. The original `supabase_db_book-corpus` and its services remained present in
+`desktop-linux`. Browser HTTP requests could still reach the original local stack, while CLI-based
+fixtures looked in the newly active engine. This directly explains the missing-container errors;
+it does not resolve the earlier timeouts or the editor assertion. The 44 unrun cases are blocked
+serial dependents, distinct from the 11 configured skips.
+
+The ordinary post-run restoration failed because the new active context had no running Supabase
+stack. Recovery was then queued under the same shared lock, explicitly pinned to the verified
+original Docker Desktop engine without changing the user's global context. It retains an additional
+post-test database snapshot before restoration. Restoration completed successfully; a direct database count confirms **290 local demo books**.
+The active Docker context remains `orbstack`.
+
+Before another acceptance run, stabilize and explicitly select the intended local engine, then
+investigate the remaining timeout, authentication and editor-close failures. Neither this test repair
+nor the incomplete broader acceptance removes the existing source-evidence intake holds.
