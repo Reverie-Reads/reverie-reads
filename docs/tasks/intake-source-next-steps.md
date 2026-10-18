@@ -23,7 +23,8 @@ contributor tuples keep the remaining publisher identity under review. See the
 The next slice adds distinct duplicate/person-conflict diagnostics and a dated, operation-specific
 [source qualification review](intake-source-qualification-2026-10-18.md). Qualification remains
 incomplete: applicable API reuse terms and claim-level lineage still need evidence. Duplicate
-credits are withheld without silent merging. Next, resolve those source-use holds and test the
+credits are withheld without silent merging. The [new frozen contributor comparison](intake-credit-qualification-comparison-2026-10-18.md)
+retains the resulting source-specific coverage and unresolved failures. Next, resolve those source-use holds and test the
 explicit reviewed handoff against source-qualified evidence. Preserve exact ISBN
 and full-creator checks. No source is qualified for automatic promotion, and Add/scanning/import
 writers remain unchanged. The sections below retain the original research and acceptance rationale;
