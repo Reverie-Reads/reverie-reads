@@ -20,7 +20,12 @@ import { ReadingModeProvider } from '../design/ReadingMode'
 
 function RootLayout() {
   const { session, loading } = useAuth()
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  // Shell authorization must describe the committed child rendered by Outlet. The URL changes
+  // before pending matches commit; using it can expose the old protected child inside a new
+  // public-route branch for one render (and start its private queries while signed out).
+  const pathname = useRouterState({
+    select: (s) => s.matches[s.matches.length - 1]?.pathname ?? s.location.pathname,
+  })
   const navigate = useNavigate()
   const voice = useVoice()
 

@@ -380,11 +380,17 @@ export default function LandingBelowFold({
               ['Privacy policy', '/privacy'],
               ['Terms', '/terms'],
               ['Support', '/support'],
-            ].map(([label, href]) => (
-              <a key={href} href={href} className="text-muted hover:text-ink">
-                {label}
-              </a>
-            ))}
+            ].map(([label, href]) =>
+              href === '/guide' ? (
+                <Link key={href} to="/guide" className="text-muted hover:text-ink">
+                  {label}
+                </Link>
+              ) : (
+                <a key={href} href={href} className="text-muted hover:text-ink">
+                  {label}
+                </a>
+              ),
+            )}
           </nav>
         </div>
         <div className="border-t border-line">
