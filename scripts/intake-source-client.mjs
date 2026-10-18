@@ -4,6 +4,8 @@ import {
   adaptOpenLibraryIntake,
   adaptHardcoverIntake,
   adaptPenguinRandomHouseIntake,
+  prhIntakeTitleRecord,
+  prhIntakeIsbnMatches,
   intakeSourceObservation,
 } from '../packages/core/src/intakeSourceAdapters.ts'
 import { approvedEditionRedirect } from '../packages/series-source-trial/src/metadata/baseline-client.mjs'
@@ -209,9 +211,9 @@ export function createIntakeSourceClient({
     const title = await get(base)
     if (title.status !== 'ok') return observationFailure(provider, c, title.status, true)
     // Refuse a mismatched title before spending a second request or binding credits to it.
-    const data = title.body?.data
-    const record = data?.title && typeof data.title === 'object' ? data.title : data
-    if (title.body?.status !== 'ok' || normalizeIsbn(String(record?.isbn ?? '')) !== isbn)
+    const record = prhIntakeTitleRecord(title.body)
+    if (!record) return observationFailure(provider, c, 'invalid_prh_title_response')
+    if (!prhIntakeIsbnMatches(record, isbn))
       return observationFailure(provider, c, 'prh_edition_identity_mismatch')
     const contributors = await get(`${base}/authors`)
     if (contributors.status !== 'ok') return observationFailure(provider, c, contributors.status)

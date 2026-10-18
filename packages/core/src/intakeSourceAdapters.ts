@@ -369,6 +369,46 @@ const prhRoles: Record<string, [IntakeCredit['role'], string]> = {
   J: ['contributor', 'Contribution by'],
 }
 
+/** PRH envelope success is transport-qualified by the caller. Missing status alone is not an
+ * error; explicit provider failure/error is. Empty/malformed JSON cannot establish a title. */
+function prhResponseOk(body: Obj): boolean {
+  return (
+    (body.status === undefined || body.status === 'ok') && body.error == null && body.errors == null
+  )
+}
+
+/** Shared exact-title envelope guard used before contributor acquisition and during adaptation.
+ * The observed title endpoint wraps one record in data.titles; never choose among multiple rows. */
+export function prhIntakeTitleRecord(raw: unknown): Obj | null {
+  const body = obj(raw),
+    data = obj(body.data)
+  if (!prhResponseOk(body) || (body.recordCount !== undefined && body.recordCount !== 1))
+    return null
+  let record: Obj
+  if (Object.hasOwn(data, 'titles')) {
+    if (!Array.isArray(data.titles) || data.titles.length !== 1 || Object.hasOwn(data, 'title'))
+      return null
+    record = obj(data.titles[0])
+  } else if (typeof data.title === 'object') record = obj(data.title)
+  else record = data
+  return text(record.title) ? record : null
+}
+
+export function prhIntakeIsbnMatches(record: Obj, requested: string): boolean {
+  if (
+    typeof record.isbn !== 'string' &&
+    !(typeof record.isbn === 'number' && Number.isSafeInteger(record.isbn) && record.isbn > 0)
+  )
+    return false
+  const isbn = normalizeIsbn(requested)
+  return (
+    !!isbn &&
+    normalizeIsbn(String(record.isbn ?? '')) === isbn &&
+    (record.isbnStr === undefined ||
+      (typeof record.isbnStr === 'string' && normalizeIsbn(record.isbnStr) === isbn))
+  )
+}
+
 /** Title and title-scoped authors responses fetched from fixed exact-ISBN endpoints.
  * No display-string author fallback, work-credit promotion or completeness assertion.
  * Role mapping: official Enhanced PRH API /concepts/Contributor_role documentation. */
@@ -379,19 +419,13 @@ export function adaptPenguinRandomHouseIntake(
 ): IntakeAdaptation {
   const provider = 'penguin_random_house',
     isbn = normalizeIsbn(context.isbn),
-    titleBody = obj(titlePayload),
     creditBody = obj(contributorsPayload)
   if (!isbn || context.domain !== 'PRH.US') return failed(provider, context, 'invalid_prh_scope')
-  if (titleBody.status !== 'ok' || creditBody.status !== 'ok')
-    return failed(provider, context, 'invalid_prh_response')
-  // Active v2 uses data directly; legacy named envelopes are also documented locally.
-  const titleData = obj(titleBody.data),
-    b =
-      'title' in titleData && typeof titleData.title === 'object'
-        ? obj(titleData.title)
-        : titleData,
+  if (!prhResponseOk(creditBody)) return failed(provider, context, 'invalid_prh_response')
+  const b = prhIntakeTitleRecord(titlePayload),
     rows = Array.isArray(creditBody.data) ? creditBody.data : obj(creditBody.data).authors
-  if (!text(b.title) || !isbn || normalizeIsbn(String(b.isbn ?? '')) !== isbn)
+  if (!b) return failed(provider, context, 'invalid_prh_title_response')
+  if (!prhIntakeIsbnMatches(b, isbn))
     return failed(provider, context, 'prh_edition_identity_mismatch')
   if (b.domain !== undefined && b.domain !== context.domain)
     return failed(provider, context, 'territory_conflict')
@@ -399,7 +433,10 @@ export function adaptPenguinRandomHouseIntake(
   // Never follow them, retain their query strings, or accept a work endpoint as edition evidence.
   for (const [record, suffix] of [
     [b, ''],
+    [obj(titlePayload), ''],
+    [obj(obj(titlePayload).data), ''],
     [creditBody, '/authors'],
+    [obj(creditBody.data), '/authors'],
   ] as const) {
     if (record._links === undefined || record._links === null) continue
     if (!Array.isArray(record._links) || record._links.length > 100)
@@ -418,12 +455,21 @@ export function adaptPenguinRandomHouseIntake(
     }
   }
 
-  if (!Array.isArray(rows) || !rows.length || creditBody.recordCount !== rows.length)
+  if (
+    !Array.isArray(rows) ||
+    !rows.length ||
+    (creditBody.recordCount !== undefined &&
+      (!Number.isSafeInteger(creditBody.recordCount) || (creditBody.recordCount as number) < 0))
+  )
     return failed(provider, context, 'incomplete_contributors')
   if (rows.length > 32) return failed(provider, context, 'contributor_cap', true)
   const credits: IntakeCredit[] = [],
     issues = ['partial_contributor_roster', 'territory_specific_edition'],
     ids = new Set<number>()
+  // Observed title-scoped responses can count the envelope differently from its authors array.
+  // The count's semantics remain unqualified; it never certifies a complete roster.
+  if (creditBody.recordCount !== rows.length) issues.push('contributor_count_unqualified')
+
   for (const raw of rows) {
     const c = obj(raw),
       name = text(c.display),

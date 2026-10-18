@@ -122,6 +122,112 @@ describe('PRH exact title and edition credits', () => {
     expect(parseEditionCreditEvidence(JSON.parse(JSON.stringify(manual))).credits).toEqual(credits)
     // This only proves lossless review parsing. Provider acquisition never supplies these confirmations.
   })
+  it('accepts the observed one-title wrapper and qualified partial-roster count without authority', () => {
+    const raw = {
+      status: 'ok',
+      recordCount: 1,
+      error: null,
+      data: { titles: [{ ...title().data, isbnStr: isbn }], _embeds: null, _links: [] },
+    }
+    const rows = [person(), person('T', 'Translator', 'Ann Brown', 2)]
+    const authors = {
+      status: 'ok',
+      recordCount: 1,
+      error: null,
+      data: { authors: rows, _embeds: null, _links: [] },
+    }
+    const a = adaptPenguinRandomHouseIntake(raw, authors, context)
+    expect(a.observations[0]?.status).toBe('ok')
+    expect(a.issues).toEqual(
+      expect.arrayContaining(['partial_contributor_roster', 'contributor_count_unqualified']),
+    )
+    expect(intakeIdentityDiagnostics(request(a), a.observations[0]!).reasons).toEqual([])
+    expect(resolveIntakeEvidence(request(a)).fields.some((f) => f.state === 'proposed')).toBe(false)
+    const noStatus = { ...raw }
+    delete (noStatus as { status?: string }).status
+    expect(
+      adaptPenguinRandomHouseIntake(noStatus, { ...authors, status: undefined }, context)
+        .observations[0]?.status,
+    ).toBe('ok')
+  })
+  it('rejects empty/competing title wrappers, explicit errors and contradictory ISBN literals', () => {
+    const raw = {
+      status: 'ok',
+      recordCount: 1,
+      error: null,
+      data: { titles: [{ ...title().data, isbnStr: isbn }] },
+    }
+    for (const broken of [
+      {},
+      { data: {} },
+      { ...raw, data: { titles: [] } },
+      { ...raw, data: { titles: [title().data, title().data] } },
+      { ...raw, status: 'failed' },
+      { ...raw, error: { message: 'Not retained' } },
+      { ...raw, recordCount: 2 },
+    ]) {
+      const a = adaptPenguinRandomHouseIntake(broken, roster(), context)
+      expect(a.observations[0]?.status).toBe('failed')
+      expect(a.issues).toContain('invalid_prh_title_response')
+    }
+    raw.data.titles[0]!.isbnStr = '9781649374042'
+    expect(adaptPenguinRandomHouseIntake(raw, roster(), context).issues).toContain(
+      'prh_edition_identity_mismatch',
+    )
+    for (const broken of [
+      { ...roster(), error: { message: 'Not retained' } },
+      { ...roster(), status: 'failed' },
+      { ...roster(), recordCount: -1 },
+      { ...roster(), data: [{}] },
+    ])
+      expect(adaptPenguinRandomHouseIntake(title(), broken, context).observations[0]?.status).toBe(
+        'failed',
+      )
+  })
+  it.each([{ value: [isbn] }, { value: { literal: isbn } }, { value: true }])(
+    'rejects nonliteral ISBN values without coercion',
+    ({ value }) => {
+      const a = adaptPenguinRandomHouseIntake(
+        { status: 'ok', data: { titles: [{ ...title().data, isbn: value }] } },
+        roster(),
+        context,
+      )
+      expect(a.observations[0]?.status).toBe('failed')
+      expect(a.issues).toContain('prh_edition_identity_mismatch')
+    },
+  )
+  it('validates returned self links on nested title and authors envelopes without following them', () => {
+    const root = 'https://api.penguinrandomhouse.com/resources/v2/title/domains/PRH.US'
+    const t = {
+      status: 'ok',
+      recordCount: 1,
+      data: { titles: [title().data], _links: [{ rel: 'self', href: `${root}/titles/${isbn}` }] },
+    }
+    const a = {
+      status: 'ok',
+      recordCount: 1,
+      data: {
+        authors: roster().data,
+        _links: [{ rel: 'self', href: `${root}/titles/${isbn}/authors` }],
+      },
+    }
+    expect(adaptPenguinRandomHouseIntake(t, a, context).observations[0]?.status).toBe('ok')
+    for (const href of [
+      `${root}/works/1/authors`,
+      `${root}/titles/9781649374042/authors`,
+      'https://example.org/authors',
+    ]) {
+      a.data._links[0]!.href = href
+      expect(adaptPenguinRandomHouseIntake(t, a, context).issues).toContain(
+        'prh_endpoint_scope_conflict',
+      )
+    }
+    a.data._links = []
+    t.data._links[0]!.href = `${root.replace('PRH.US', 'PRH.CA')}/titles/${isbn}`
+    expect(adaptPenguinRandomHouseIntake(t, a, context).issues).toContain(
+      'prh_endpoint_scope_conflict',
+    )
+  })
   it('supports the legacy named envelopes without accepting work records', () => {
     const t = title(),
       r = roster()
@@ -225,7 +331,7 @@ describe('PRH exact title and edition credits', () => {
       'unknown',
     ])
     expect(adapt(title(), { ...roster(), recordCount: 2 }).issues).toContain(
-      'incomplete_contributors',
+      'contributor_count_unqualified',
     )
     expect(
       adapt(

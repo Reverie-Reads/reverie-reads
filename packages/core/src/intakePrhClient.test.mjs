@@ -51,6 +51,68 @@ describe('bounded PRH title transport', () => {
     expect(second[provider].observations[0].targetFingerprint).toBe('b'.repeat(64))
     expect(JSON.stringify({ first, second, stats: c.stats })).not.toContain('private-api-key')
   })
+  it('acquires the observed title/authors wrappers without mistaking envelope counts for full rosters', async () => {
+    const raw = {
+      status: 'ok',
+      recordCount: 1,
+      error: null,
+      data: { titles: [{ ...title.data, isbnStr: isbn }], _links: [], _embeds: null },
+    }
+    const authors = {
+      status: 'ok',
+      recordCount: 1,
+      error: null,
+      data: {
+        authors: [
+          ...credits.data,
+          {
+            authorId: 2,
+            display: 'Ann Brown',
+            contribRoleCode: 'T',
+            contribRoleDesc: 'Translator',
+          },
+        ],
+        _links: [],
+        _embeds: null,
+      },
+    }
+    const fetcher = vi.fn(async (url) =>
+      json(new URL(url).pathname.endsWith('/authors') ? authors : raw),
+    )
+    const result = (await setup({ fetcher }).acquire(isbn, fp))[provider]
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(result.observations[0].status).toBe('ok')
+    expect(result.observations[0].identity.isbns).toEqual([isbn])
+    expect(result.observations[0].identity.contributors.map((c) => c.role)).toEqual([
+      'author',
+      'translator',
+    ])
+    expect(result.issues).toContain('contributor_count_unqualified')
+  })
+  it.each([
+    { status: 'ok', data: { titles: [] } },
+    { status: 'ok', data: { titles: [title.data, title.data] } },
+    { status: 'failed', data: { titles: [title.data] } },
+    { status: 'ok', error: { message: 'Not retained' }, data: { titles: [title.data] } },
+    { status: 'ok', data: { titles: [{ ...title.data, isbnStr: '9781649374042' }] } },
+  ])('does not acquire authors for an unusable title envelope', async (raw) => {
+    const fetcher = vi.fn(async () => json(raw)),
+      result = (await setup({ fetcher }).acquire(isbn, fp))[provider]
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(result.observations[0].status).toBe('failed')
+    expect(result.issues[0]).toMatch(/^invalid_prh_title_response|prh_edition_identity_mismatch$/)
+  })
+  it.each([{ value: [isbn] }, { value: { literal: isbn } }, { value: true }])(
+    'rejects malformed ISBN literals before acquiring contributors',
+    async ({ value }) => {
+      const fetcher = vi.fn(async () =>
+        json({ status: 'ok', data: { titles: [{ ...title.data, isbn: value }] } }),
+      )
+      const result = (await setup({ fetcher }).acquire(isbn, fp))[provider]
+      expect(result.issues).toContain('prh_edition_identity_mismatch')
+      expect(fetcher).toHaveBeenCalledTimes(1)
+    },
+  )
   it('does not add PRH to existing clients or acquire missing credentials', async () => {
     const fetcher = vi.fn()
     const c = setup({ fetcher, prhApiKey: undefined })
