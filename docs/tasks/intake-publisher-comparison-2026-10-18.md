@@ -113,9 +113,30 @@ permitted source excerpts. It durably reserves before a request and cannot autom
 uncertain attempt. It interprets supplied evidence only and cannot write catalog or personal data.
 See [the budget contract](intake-budget.md) and [publisher adapter contract](intake-publisher-adapter.md).
 
-Validation is recorded in the final PR receipt. The corrected PRH regressions passed 42/42 and
-independent review found no remaining blocking issue in the parsing path. Full browser verification
-uses the unchanged intake application against an isolated, freshly reset local database. No
+The corrected PRH regressions passed 42/42 and independent review found no remaining blocking
+issue in the parsing path. The full fresh-database browser run used the default single worker and
+zero retries: **436 passed, 11 configured skips, two failures**, in 55.0 minutes. The retained red
+receipt covers a desktop public-guide navigation cold boot and a desktop reading-guide demonstration
+cancelled when late mood controls moved its target. Progress tails missed those earlier failures;
+the final summary is authoritative. The original trace artifacts remain preserved.
+
+The public guide footer now uses the existing internal router link, with a document-preservation
+regression. The first focused run passed all 15 reading-guide checks but failed both public-guide
+privacy checks: client navigation exposed a pre-existing shell/outlet transition mismatch, briefly
+rendering the old protected Home outlet under the new public URL and issuing unauthorized queries.
+That second red receipt is also retained. The root shell now selects the same committed route match
+as its outlet, rather than the pending location. Deterministic transition regressions and a real
+reverse-link privacy check cover this boundary without weakening authentication or request checks.
+
+The reading-guide regression deliberately controls the late response, verifies safe
+cancellation and an unchanged saved read, then demonstrates again after the controls settle. This
+does not weaken the guide's moving-target safety check. The final nonbrowser gate at commit `66aa041` passed: full unit suite, typecheck, lint, production
+build and formatting. It includes 16 budget tests, 42 PRH tests and eight root-route regressions.
+The final fresh-database focused browser group passed **38/38**, default single worker, zero
+retries, in 4.1 minutes. It covers public-guide forward/reverse navigation without private requests,
+landing, first appearance, product entry, reader guidance and the complete reading-tour file. This
+verifies the cause-addressing fixes; the original full run remains red and is not relabeled green.
+The local test stack was restored to 290 seeded books, zero reads and one development account. No
 production database or private reader record was accessed or changed by this implementation.
 
 Next work remains source-use/lineage qualification and a reviewed handling policy for duplicate or
