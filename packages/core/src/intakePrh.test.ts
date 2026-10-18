@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { adaptPenguinRandomHouseIntake } from './intakeSourceAdapters'
 import { intakeIdentityDiagnostics, resolveIntakeEvidence } from './intakeResolver'
 import { parseEditionCreditEvidence } from './editionCredits'
-import { buildIntakeReview } from './intakeReview'
+import { buildIntakeReview, intakeReviewDiagnostics } from './intakeReview'
 import { parseIntakeEvidence } from './intakeEvidenceValidation'
-import type { IntakeEvidenceRequest } from './intakeEvidence'
+import type { IntakeCredit, IntakeEvidenceRequest } from './intakeEvidence'
 
 const isbn = '9780306406157'
 const context = {
@@ -276,6 +276,223 @@ describe('PRH exact title and edition credits', () => {
       'Author',
       ' Author ',
     ])
+  })
+  it('accepts only the documented author label alias with an author code', () => {
+    const p = request(adapt(title(), roster([person('A', ' Written by ')])))
+    expect(intakeIdentityDiagnostics(p, p.observations[0]!).reasons).toEqual([])
+    expect(p.observations[0]!.identity!.contributors[0]).toMatchObject({
+      role: 'author',
+      sourceRole: ' Written by ',
+      sourceRoleCode: 'A',
+      sourceContributorId: '1',
+    })
+    for (const [code, label] of [
+      ['T', 'Written by'],
+      ['A', 'Translated by'],
+      ['unknown', 'Written by'],
+    ]) {
+      const held = request(adapt(title(), roster([person(code, label)])))
+      expect(held.observations[0]!.identity!.contributors[0]!.role).toBe('unknown')
+      expect(intakeIdentityDiagnostics(held, held.observations[0]!).reasons).not.toEqual([])
+    }
+  })
+  it.each([
+    ['1', 'Preface by', 'Preface'],
+    ['D', 'Afterword by', 'Afterword'],
+    ['Q', 'Epilogue by', 'Epilogue'],
+    ['2', 'Prologue by', 'Prologue'],
+    ['A1', 'Appendix by', 'Appendix'],
+  ])(
+    'retains documented named-part credit %s without making its writer the whole-book author',
+    (code, label, part) => {
+      const p = request(adapt(title(), roster([person(), person(code, label, 'Ann Brown', 2)])))
+      expect(parseIntakeEvidence(p)).toEqual(p)
+      expect(p.observations[0]!.identity!.contributors[1]).toMatchObject({
+        role: 'contributor',
+        scope: 'part',
+        part,
+        sourceRole: label,
+        sourceRoleCode: code,
+      })
+      expect(intakeIdentityDiagnostics(p, p.observations[0]!).reasons).toEqual([])
+      p.target.contributors = ['Ann Brown']
+      expect(intakeIdentityDiagnostics(p, p.observations[0]!).contributors).toEqual(['part_only'])
+      expect(resolveIntakeEvidence(p).fields.some((f) => f.state === 'proposed')).toBe(false)
+    },
+  )
+  it.each([
+    [[person(), person()], 'repeated_credit'],
+    [[person('F', 'Annotations by'), person('Z', 'Notes by')], 'role_normalization_collision'],
+    [[person('4', 'Read by'), person('Y', 'Narrated by')], 'role_normalization_collision'],
+    [[person(), person('I', 'Illustrator', 'Jane Smith', 2)], 'person_identifier_conflict'],
+    [[person(), person('I', 'Illustrator', 'Different Person', 1)], 'person_name_conflict'],
+  ] as const)(
+    'explains a credit collision as %s / %s without discarding rows or supporting identity',
+    (people, kind) => {
+      const a = adapt(title(), roster([...people]))
+      const p = request(a),
+        before = structuredClone(p)
+      expect(a.issues).toEqual(
+        expect.arrayContaining([
+          'partial_contributor_roster',
+          'territory_specific_edition',
+          'duplicate_credits',
+          kind,
+        ]),
+      )
+      expect(p.observations[0]).toMatchObject({ status: 'failed', claims: [] })
+      expect(p.observations[0]!.identity).toBeUndefined()
+      const review = buildIntakeReview(p)
+      expect(review.sources[0]!.creditCollisions).toEqual([{ kind, positions: [0, 1] }])
+      expect(review.sources[0]!.credits.map((c) => c.sourceContributorId)).toEqual(
+        people.map((c) => String(c.authorId)),
+      )
+      expect(review.sources[0]!.credits.every((c) => c.withheld)).toBe(true)
+      expect(review.fields.some((f) => f.state === 'proposed')).toBe(false)
+      expect(p).toEqual(before)
+      const diagnostic = JSON.stringify(intakeReviewDiagnostics(p))
+      for (const literal of [
+        'Jane Smith',
+        'Different Person',
+        'Annotations by',
+        'sourceContributorId',
+        'sourceRoleCode',
+      ])
+        expect(diagnostic).not.toContain(literal)
+    },
+  )
+  it('retains prior unknown-role and count warnings when collisions force review', () => {
+    const a = adapt(title(), {
+      ...roster([person('F', 'Annotations by'), person('Z', 'Notes by')]),
+      recordCount: 1,
+    })
+    expect(a.issues).toEqual(
+      expect.arrayContaining([
+        'unqualified_contributor_role',
+        'contributor_count_unqualified',
+        'duplicate_credits',
+      ]),
+    )
+  })
+  it('keeps supported multiple named parts distinct and validates transient person IDs', () => {
+    const p = request(
+      adapt(
+        title(),
+        roster([
+          person(),
+          person('1', 'Preface by', 'Ann Brown', 2),
+          person('D', 'Afterword by', 'Ann Brown', 2),
+        ]),
+      ),
+    )
+    expect(buildIntakeReview(p).sources[0]!.creditCollisions).toEqual([])
+    expect(p.observations[0]!.identity!.contributors).toHaveLength(3)
+    for (const value of ['', 'x'.repeat(101), 1, { private: 'data' }]) {
+      const invalid = structuredClone(p)
+      Object.assign(invalid.observations[0]!.identity!.contributors[0]!, {
+        sourceContributorId: value,
+      })
+      expect(() => parseIntakeEvidence(invalid)).toThrow()
+    }
+  })
+  it.each([
+    ['Jane Smith', 'Smith, Jane'],
+    ['José García', 'Jose Garcia'],
+    ['Anne O’Neill', "Anne O'Neill"],
+    ['Jane-Smith', 'Jane Smith'],
+  ])('holds distinct provider IDs when identity matching equates %s and %s', (first, second) => {
+    const a = adapt(
+      title(),
+      roster([person('A', 'Author', first, 1), person('T', 'Translator', second, 2)]),
+    )
+    expect(a.issues).toContain('person_identifier_conflict')
+    expect(a.observations[0]).toMatchObject({ status: 'failed', claims: [] })
+    expect(a.observations[0]!.identity).toBeUndefined()
+    expect(parseIntakeEvidence(request(a))).toEqual(request(a))
+    expect(a.observations[0]!.withheldCredits?.map((c) => c.name)).toEqual([first, second])
+  })
+  it.each([
+    ['Different Person', '1'],
+    ['Jane Smith', '2'],
+    ['Smith, Jane', '2'],
+    ['Jane-Smith', '2'],
+  ])('rejects direct and manual successful packets with conflicting person %s / %s', (name, id) => {
+    const p = request()
+    const credits: IntakeCredit[] = [
+      ...p.observations[0]!.identity!.contributors,
+      {
+        name,
+        role: 'translator',
+        scope: 'whole',
+        sourceRole: 'Translator',
+        sourceRoleCode: 'T',
+        sourceContributorId: id,
+        basis: 'edition',
+      },
+    ]
+    // Test the strict boundary directly: neither path goes through the provider adapter.
+    const direct = structuredClone(p)
+    direct.observations[0]!.identity!.contributors = credits
+    expect(() => parseIntakeEvidence(direct)).toThrow()
+    const claimOnly = structuredClone(p)
+    const claim = claimOnly.observations[0]!.claims.find((c) => c.field === 'contributors')!
+    claim.value = credits
+    expect(() => parseIntakeEvidence(claimOnly)).toThrow()
+    expect(() =>
+      parseEditionCreditEvidence({
+        version: 1,
+        source: {
+          url: p.observations[0]!.source.url,
+          kind: 'publisher',
+          checkedAt: context.retrievedAt,
+          locator: 'Manually inspected exact edition credits',
+          retentionConfirmed: true,
+        },
+        identity: {
+          title: 'A Quiet Library',
+          authors: ['Jane Smith'],
+          isbn,
+          format: 'paperback',
+          language: null,
+        },
+        credits,
+        confirmations: { sourceChecked: true, identityChecked: true, creditsChecked: true },
+      }),
+    ).toThrow()
+    // The same statements are still reviewable losslessly after identity support is withheld.
+    const withheld = structuredClone(p)
+    withheld.observations[0]!.status = 'failed'
+    delete withheld.observations[0]!.identity
+    withheld.observations[0]!.claims = []
+    withheld.observations[0]!.withheldCredits = credits
+    expect(parseIntakeEvidence(withheld)).toEqual(withheld)
+  })
+  it('preserves legitimate same-ID multi-role formatting and non-Latin identity marks', () => {
+    const multi = request(
+      adapt(title(), roster([person(), person('I', 'Illustrator', 'Smith, Jane', 1)])),
+    )
+    expect(multi.observations[0]!.status).toBe('ok')
+    expect(parseIntakeEvidence(multi)).toEqual(multi)
+    expect(buildIntakeReview(multi).sources[0]!.creditCollisions).toEqual([])
+    // Devanagari vowel signs remain identity-bearing, unlike supported Latin accent formatting.
+    const different = request(
+      adapt(title(), roster([person('A', 'Author', 'कला', 1), person('T', 'Translator', 'कल', 2)])),
+    )
+    expect(different.observations[0]!.status).toBe('ok')
+    expect(parseIntakeEvidence(different)).toEqual(different)
+  })
+  it('never compares person IDs across separate source observations', () => {
+    const p = request()
+    const other = structuredClone(p.observations[0]!)
+    other.id = 'another-source:edition'
+    other.source.provider = 'another-source'
+    other.identity!.contributors[0]!.name = 'Different Person'
+    other.claims = []
+    p.observations.push(other)
+    expect(parseIntakeEvidence(p)).toEqual(p)
+    expect(
+      buildIntakeReview(p).sources.every((source) => source.creditCollisions.length === 0),
+    ).toBe(true)
   })
   it('cannot promote work credits or returned work endpoint links to edition evidence', () => {
     const a = adaptPenguinRandomHouseIntake(title(), roster(), {

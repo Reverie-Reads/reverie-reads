@@ -1,6 +1,8 @@
+import { getIntakeSourceQualification } from './intakeSourceQualification'
 import { normalizeIsbn } from './match'
 import { parsePubDate } from './enrich'
 import { sourceTitleMatches } from './enrichAdmission'
+import { reviewIntakeCreditCollisions } from './intakeCreditReview'
 import type { IntakeClaim, IntakeCredit, IntakeFacts, IntakeObservation } from './intakeEvidence'
 
 export type IntakeSource = 'openlibrary' | 'hardcover' | 'penguin_random_house'
@@ -72,7 +74,7 @@ export function intakeSourceObservation(
       retrievedAt: context.retrievedAt,
       lineage: null,
       kind: provider === 'penguin_random_house' ? 'publisher' : 'bibliographic',
-      usage: 'review_only',
+      usage: getIntakeSourceQualification(provider, context.retrievedAt).usage,
       method: 'structured',
       url:
         provider === 'openlibrary'
@@ -100,6 +102,7 @@ function duplicateCredits(
   context: IntakeSourceContext,
   recordId: string,
   credits: IntakeCredit[],
+  issues: string[] = [],
 ): IntakeAdaptation {
   return {
     observations: [
@@ -108,7 +111,13 @@ function duplicateCredits(
         withheldCredits: credits,
       },
     ],
-    issues: ['duplicate_credits'],
+    issues: [
+      ...new Set([
+        ...issues,
+        'duplicate_credits',
+        ...reviewIntakeCreditCollisions(credits).map((c) => c.kind),
+      ]),
+    ],
   }
 }
 function editionClaims(
@@ -357,15 +366,20 @@ export interface PenguinRandomHouseIntakeContext extends IntakeSourceContext {
   contributorsBasis?: 'edition' | 'work'
 }
 
-const prhRoles: Record<string, [IntakeCredit['role'], string]> = {
+const prhRoles: Record<string, [IntakeCredit['role'], string, string?]> = {
   A: ['author', 'Author'],
   E: ['editor', 'Editor'],
   T: ['translator', 'Translator'],
   I: ['illustrator', 'Illustrator'],
   '4': ['narrator', 'Read by'],
   Y: ['narrator', 'Narrated by'],
-  U: ['foreword', 'Foreword by'],
-  V: ['introduction', 'Introduction by'],
+  U: ['foreword', 'Foreword by', 'Foreword'],
+  V: ['introduction', 'Introduction by', 'Introduction'],
+  '1': ['contributor', 'Preface by', 'Preface'],
+  D: ['contributor', 'Afterword by', 'Afterword'],
+  Q: ['contributor', 'Epilogue by', 'Epilogue'],
+  '2': ['contributor', 'Prologue by', 'Prologue'],
+  A1: ['contributor', 'Appendix by', 'Appendix'],
   J: ['contributor', 'Contribution by'],
 }
 
@@ -489,26 +503,26 @@ export function adaptPenguinRandomHouseIntake(
       mapped &&
       (label == null ||
         label === '' ||
-        (typeof label === 'string' && label.trim().toLowerCase() === mapped[1].toLowerCase()))
+        (typeof label === 'string' &&
+          (label.trim().toLowerCase() === mapped[1].toLowerCase() ||
+            (code === 'A' && label.trim().toLowerCase() === 'written by'))))
     if (mapped && !compatible) issues.push('conflicting_contributor_role')
     if (!mapped) issues.push('unqualified_contributor_role')
     credits.push({
       name,
       role: compatible ? mapped[0] : 'unknown',
-      scope: code === 'U' || code === 'V' ? 'part' : 'whole',
-      ...(code === 'U' ? { part: 'Foreword' } : code === 'V' ? { part: 'Introduction' } : {}),
+      scope: mapped?.[2] ? 'part' : 'whole',
+      ...(mapped?.[2] ? { part: mapped[2] } : {}),
       sourceRole: typeof label === 'string' ? label : null,
       sourceRoleCode: typeof code === 'string' ? code : null,
+      sourceContributorId: String(c.authorId),
       basis: context.contributorsBasis ?? 'edition',
     })
   }
   if (ids.size > 5) return failed(provider, context, 'contributor_cap', true)
   const recordId = `${context.domain}:${isbn}`
-  if (
-    new Set(credits.map((c) => JSON.stringify([c.name, c.role, c.scope, c.part]))).size !==
-    credits.length
-  )
-    return duplicateCredits(provider, context, recordId, credits)
+  if (reviewIntakeCreditCollisions(credits).length)
+    return duplicateCredits(provider, context, recordId, credits, issues)
   const o = intakeSourceObservation(provider, context, 'ok', recordId)
   o.source.url = `https://api.penguinrandomhouse.com/resources/v2/title/domains/${context.domain}/titles/${isbn}`
   if (context.contributorsBasis === 'work') {

@@ -47,6 +47,48 @@ const packet = (): IntakeEvidenceRequest => ({
 })
 
 describe('intake evidence review', () => {
+  it.each([
+    ['2026-10-18T12:00:00.000Z', 'current'],
+    ['2026-11-17T12:00:00.000Z', 'stale'],
+  ] as const)('shows code-owned source-use holds as of the review timestamp %s', (asOf, state) => {
+    const p = packet()
+    p.asOf = asOf
+    p.observations[0]!.source.provider = 'openlibrary'
+    p.observations[0]!.source.retrievedAt = asOf
+    const r = buildIntakeReview(p)
+    expect(r.mode).toBe('review_only')
+    expect(r.sources[0]?.qualification).toMatchObject({
+      provider: 'openlibrary',
+      usage: 'review_only',
+      reviewState: state,
+      upstreamLineage: 'unverified',
+      operations: {
+        cache: { status: 'documented' },
+        durableFacts: { status: 'unverified' },
+        modelInput: { status: 'unverified' },
+      },
+    })
+    expect(r.sources[0]?.qualification.promotionBlockers).toContain('source_review_only')
+    if (state === 'stale')
+      expect(r.sources[0]?.qualification.promotionBlockers).toContain('source_review_stale')
+    // The transient view retains identity, but its qualification and durable diagnostics do not.
+    expect(r.sources[0]?.identity?.title).toBe('Quiet Gardens')
+    for (const literal of ['Quiet Gardens', 'Jane Smith', isbn, 'publisher.example']) {
+      expect(JSON.stringify(r.sources[0]?.qualification)).not.toContain(literal)
+      expect(JSON.stringify(intakeReviewDiagnostics(p))).not.toContain(literal)
+    }
+  })
+  it('shows unknown-source qualification without letting packet eligibility grant source-use rights', () => {
+    const p = packet()
+    expect(p.observations[0]?.source.usage).toBe('eligible')
+    const r = buildIntakeReview(p)
+    expect(r.sources[0]?.qualification).toMatchObject({
+      provider: null,
+      usage: 'review_only',
+      reviewState: 'unknown_source',
+    })
+    expect(r.sources[0]?.qualification.promotionBlockers).toContain('source_review_unknown_source')
+  })
   it('keeps existing values, contradictory evidence, source locator and reasons side by side without changing input', () => {
     const p = packet(),
       before = structuredClone(p),

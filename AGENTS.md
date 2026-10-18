@@ -814,6 +814,10 @@ read-only view. Close its tab after inspection; do not export provider values fr
 credit labels and work/edition basis, leave free-text credit statements unparsed, and never cast
 unsupported roles or part credits into the personal contributor enum. Reference credit checks score
 only the explicitly listed subset after acquisition; they cannot certify a complete roster.
+Source-use findings are code-owned, dated and operation-specific; lookup access never clears
+storage, export or model input. Stale/unknown findings remain held. Provider person IDs are transient
+review evidence, never reader/catalog IDs or a merge key. Repeated credits, normalized-role collisions
+and inconsistent person IDs/names retain separate diagnostic codes; never deduplicate them silently.
 Duplicate normalized credits retain their literal labels in bounded `withheldCredits` on a failed
 observation, never identity or field support. Validate provider packets separately so a malformed
 record stays an explicit failure without discarding a valid peer. Inspect every returned edition

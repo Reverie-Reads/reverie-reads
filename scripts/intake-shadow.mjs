@@ -8,6 +8,7 @@ import {
   resolveIntakeEvidence,
   intakeIdentityReviewReasons,
 } from '../packages/core/src/intakeResolver.ts'
+import { getIntakeSourceQualification } from '../packages/core/src/intakeSourceQualification.ts'
 import { normalizeIsbn } from '../packages/core/src/match.ts'
 import { intakeSourceObservation } from '../packages/core/src/intakeSourceAdapters.ts'
 import { createIntakeSourceClient } from './intake-source-client.mjs'
@@ -322,6 +323,7 @@ export async function evaluateShadow(frame, client, onReview) {
   const providers = checkedProviders(frame.providers)
   if (JSON.stringify(providers) !== JSON.stringify(checkedProviders(client.providers)))
     throw new Error('Shadow client providers differ from frozen frame')
+  const qualificationAsOf = new Date().toISOString()
   const cases = []
   for (const c of frame.cases) {
     const observed = await resolveShadowTarget(c.target, client)
@@ -366,6 +368,10 @@ export async function evaluateShadow(frame, client, onReview) {
     version: 1,
     mode: 'review_only',
     basis: 'independent_shadow_pilot',
+    sourceQualification: providers.map((provider) =>
+      getIntakeSourceQualification(provider, qualificationAsOf),
+    ),
+    qualificationAsOf,
     summary: {
       cases: cases.length,
       distinctIsbns: new Set(frame.cases.map((c) => normalizeIsbn(c.target.isbn))).size,

@@ -20,8 +20,11 @@ a second unseen frozen comparison observed PRH matching five of six positive ide
 contributor tuples keep the remaining publisher identity under review. See the
 [dated comparison and limitations](intake-publisher-comparison-2026-10-18.md).
 
-Next: review duplicate/unknown contributor evidence without silently merging roles, establish
-source-use and lineage qualifications, then test the explicit reviewed handoff. Preserve exact ISBN
+The next slice adds distinct duplicate/person-conflict diagnostics and a dated, operation-specific
+[source qualification review](intake-source-qualification-2026-10-18.md). Qualification remains
+incomplete: applicable API reuse terms and claim-level lineage still need evidence. Duplicate
+credits are withheld without silent merging. Next, resolve those source-use holds and test the
+explicit reviewed handoff against source-qualified evidence. Preserve exact ISBN
 and full-creator checks. No source is qualified for automatic promotion, and Add/scanning/import
 writers remain unchanged. The sections below retain the original research and acceptance rationale;
 the adapter and durable-ledger implementation steps are now complete.
