@@ -27,7 +27,7 @@ negative. Hardcover observed seven selected credits only at work scope, with one
 these do not count as edition credits. PRH retained six selected credits as unknown roles and four
 behind identity holds. Open Library had three missing selected credits and 13 behind identity holds.
 
-This purposeful contributor stress sample is harder and different from the previous comparison;
+This purposeful contributor stress sample differs from the previous comparison;
 its coverage cannot establish a before/after accuracy change. Publisher website references and
 publisher API observations share lineage. Agreement is not independent corroboration, a license,
 or evidence of general corpus accuracy.
@@ -77,7 +77,7 @@ reuse terms remain unverified. Unknown, stale and invalid-date findings retain e
 The private frame, reference decisions, exclusion provenance, lock and aggregate receipt live in
 `/Users/gregchism/.codex/private/intake-source-qualification-2026-10-18/`. The permanent Git-common-directory
 attempt marker is consumed. Provider observations were inspected through the five-minute read-only
-loopback viewer; no provider payload was exported into the durable report. The report retains
+loopback viewer, which expired successfully; no provider payload was exported into the durable report. The report retains
 policy findings, counts and diagnostic codes, not contributor names, provider person identifiers or role-label literals.
 
 ## Validation and budget
@@ -88,9 +88,27 @@ non-Latin marks, legitimate multiple roles, withheld-credit roundtrips and provi
 The focused five-suite run passed 203 tests. Full unit tests, typechecking, lint, production build
 and repository formatting passed. Unit coverage includes 3,478 core tests, 1,354 web tests,
 498 source-trial tests and two workflow tests, plus the root budget/stack/completion/recovery checks.
-One full browser run is in progress with the default worker count, fresh local database and zero
-retries; its final result and local restore verification will be recorded here. Remote CI could not
-be read: the required code-review connector returned “Connect your GitHub account to continue.”
+The full browser suite was launched with the default single worker, a fresh local database and
+zero retries. It was gracefully stopped after repeated local API/authentication failures and the
+basic page-load test timed out: **58 passed, 13 failed, 378 did not run**, exit 130 after 33.2 minutes.
+This is an **incomplete, red full-suite attempt**, not a completed passing browser gate. No full or
+focused rerun was used to replace that evidence.
+
+Observed failures include authentication gateway timeouts before app entry, repeated local REST
+502s, an explicit `PGRST002` schema-cache availability error, and delayed reads before review dialogs.
+The sci-fi accessibility sweep exhausted its total budget during local resource loading. The exact
+re-add prompt waited on reads without issuing a write before its assertion deadline. These traces
+establish availability/latency problems in the local run; they do not prove that all failed product
+behaviors are correct or that host contention is the sole cause. Host load was elevated. Preserve
+all failed and unrun checks as outstanding browser validation.
+
+Private before/after database dumps, the complete log, traces and failure-review notes are retained.
+The first restore applied migrations but exited on a storage health-check timeout before seeding.
+After services became healthy, a separately locked continuation verified the expected migration
+and empty development tables, then completed the seed. Final local counts are **290 books, zero
+reading-history rows and one user**, matching the pre-run development counts. The original dump
+is retained. Production data was not accessed by this test lifecycle. Remote CI could not be read: the required code-review connector returned
+“Connect your GitHub account to continue.”
 
 The durable budget status remains $20.73931475 committed/reserved historical burden, leaving
 $29.26068525 under the $50 ceiling, with zero open reservations and zero unsettled requests. Pricing
