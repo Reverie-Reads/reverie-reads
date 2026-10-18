@@ -1,9 +1,30 @@
 # Next intake source and spending safeguards
 
-October 17, 2026. Owner direction: improve accurate, complete book intake and shared metadata,
+October 17, 2026 planning record, updated October 18. Owner direction: improve accurate, complete book intake and shared metadata,
 using non-LLM evidence first and `gpt-6-luna` for residual research, within a $50 total Luna ceiling.
 This report records a read-only source and local spending review. It does not qualify sources,
 enable acquisition, change writers, or establish readiness to switch Add, scanning or imports.
+
+## October 18 implementation status
+
+The planned durable budget boundary and opt-in publisher edition adapter are now implemented.
+The private ledger was initialized from the reconciled receipt at $20.73931475, leaving
+$29.26068525 of the $50 total ceiling. This pass made no Luna calls. Current verified model pricing
+and token bounds are still required before paid execution; historical assumptions were not reused.
+See [the executable budget contract](intake-budget.md).
+
+A first frozen publisher comparison exposed a live response-envelope mismatch. It remains a failed,
+consumed receipt. After a separate bounded development probe, regressions and independent review,
+a second unseen frozen comparison observed PRH matching five of six positive identities, with
+10 of 12 selected edition facts agreeing, two unobserved, and no false identity matches. Duplicate
+contributor tuples keep the remaining publisher identity under review. See the
+[dated comparison and limitations](intake-publisher-comparison-2026-10-18.md).
+
+Next: review duplicate/unknown contributor evidence without silently merging roles, establish
+source-use and lineage qualifications, then test the explicit reviewed handoff. Preserve exact ISBN
+and full-creator checks. No source is qualified for automatic promotion, and Add/scanning/import
+writers remain unchanged. The sections below retain the original research and acceptance rationale;
+the adapter and durable-ledger implementation steps are now complete.
 
 ## Evidence already available
 

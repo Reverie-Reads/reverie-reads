@@ -22,6 +22,14 @@ Title, full creator and ISBN admission remain the existing resolver's responsibi
 adapter also validates the returned ISBN before fetching credits. Work-scoped credits cannot
 become edition credits. Display strings and endpoint names cannot supply authorship.
 
+The live title envelope contains exactly one `data.titles` record. The shared client/adapter guard
+requires one record, rejects explicit API errors, and checks both `isbn` and optional `isbnStr`.
+Numeric ISBNs must be positive safe integers; arrays, objects and booleans cannot become identifiers
+through string conversion. Nested self-links, when present, must identify the same fixed-host
+US-domain title or its authors endpoint. The title-scoped author `recordCount` can differ from the
+returned array length; its semantics remain unqualified and the discrepancy stays visible. Neither
+count nor a successfully parsed response certifies a complete contributor roster.
+
 The contextual contributor code and literal label are preserved separately in source order.
 Known conflicting labels become unknown roles. Introduction and foreword are named parts;
 editors, translators, narrators and unknown credits cannot establish whole-work authorship.
@@ -53,5 +61,6 @@ Official contract references inspected for this implementation:
 - [Contributor roles](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/concepts/Contributor_role)
 - [Works and ISBNs](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/concepts/Works_and_ISBNs)
 
-See the dated comparison report for observed coverage, failures and remaining holds, and
+See the [October 18 comparison](intake-publisher-comparison-2026-10-18.md) for observed coverage,
+failures and remaining holds, and
 [intake-budget.md](intake-budget.md) for the separate residual Luna spending boundary.
