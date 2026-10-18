@@ -1,8 +1,9 @@
+import { normalizeIsbn } from './match'
 import { parsePubDate } from './enrich'
 import { sourceTitleMatches } from './enrichAdmission'
 import type { IntakeClaim, IntakeCredit, IntakeFacts, IntakeObservation } from './intakeEvidence'
 
-export type IntakeSource = 'openlibrary' | 'hardcover'
+export type IntakeSource = 'openlibrary' | 'hardcover' | 'penguin_random_house'
 export interface IntakeSourceContext {
   targetFingerprint: string
   retrievedAt: string
@@ -70,13 +71,15 @@ export function intakeSourceObservation(
       recordId,
       retrievedAt: context.retrievedAt,
       lineage: null,
-      kind: 'bibliographic',
+      kind: provider === 'penguin_random_house' ? 'publisher' : 'bibliographic',
       usage: 'review_only',
       method: 'structured',
       url:
         provider === 'openlibrary'
           ? `https://openlibrary.org${/^\/books\/OL\d+M$/.test(recordId) ? recordId : '/developers/api'}`
-          : 'https://api.hardcover.app/v1/graphql',
+          : provider === 'hardcover'
+            ? 'https://api.hardcover.app/v1/graphql'
+            : 'https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/resources/Title',
     },
     claims: [],
   }
@@ -345,4 +348,175 @@ export function adaptHardcoverIntake(raw: unknown, context: IntakeSourceContext)
     issues,
   )
   return { observations: [o], issues }
+}
+
+export interface PenguinRandomHouseIntakeContext extends IntakeSourceContext {
+  isbn: string
+  /** This pilot is deliberately limited to the US domain; other markets need their own review. */
+  domain: 'PRH.US'
+  contributorsBasis?: 'edition' | 'work'
+}
+
+const prhRoles: Record<string, [IntakeCredit['role'], string]> = {
+  A: ['author', 'Author'],
+  E: ['editor', 'Editor'],
+  T: ['translator', 'Translator'],
+  I: ['illustrator', 'Illustrator'],
+  '4': ['narrator', 'Read by'],
+  Y: ['narrator', 'Narrated by'],
+  U: ['foreword', 'Foreword by'],
+  V: ['introduction', 'Introduction by'],
+  J: ['contributor', 'Contribution by'],
+}
+
+/** Title and title-scoped authors responses fetched from fixed exact-ISBN endpoints.
+ * No display-string author fallback, work-credit promotion or completeness assertion.
+ * Role mapping: official Enhanced PRH API /concepts/Contributor_role documentation. */
+export function adaptPenguinRandomHouseIntake(
+  titlePayload: unknown,
+  contributorsPayload: unknown,
+  context: PenguinRandomHouseIntakeContext,
+): IntakeAdaptation {
+  const provider = 'penguin_random_house',
+    isbn = normalizeIsbn(context.isbn),
+    titleBody = obj(titlePayload),
+    creditBody = obj(contributorsPayload)
+  if (!isbn || context.domain !== 'PRH.US') return failed(provider, context, 'invalid_prh_scope')
+  if (titleBody.status !== 'ok' || creditBody.status !== 'ok')
+    return failed(provider, context, 'invalid_prh_response')
+  // Active v2 uses data directly; legacy named envelopes are also documented locally.
+  const titleData = obj(titleBody.data),
+    b =
+      'title' in titleData && typeof titleData.title === 'object'
+        ? obj(titleData.title)
+        : titleData,
+    rows = Array.isArray(creditBody.data) ? creditBody.data : obj(creditBody.data).authors
+  if (!text(b.title) || !isbn || normalizeIsbn(String(b.isbn ?? '')) !== isbn)
+    return failed(provider, context, 'prh_edition_identity_mismatch')
+  if (b.domain !== undefined && b.domain !== context.domain)
+    return failed(provider, context, 'territory_conflict')
+  // Returned self links, when present, must corroborate the endpoint chosen by trusted code.
+  // Never follow them, retain their query strings, or accept a work endpoint as edition evidence.
+  for (const [record, suffix] of [
+    [b, ''],
+    [creditBody, '/authors'],
+  ] as const) {
+    if (record._links === undefined || record._links === null) continue
+    if (!Array.isArray(record._links) || record._links.length > 100)
+      return failed(provider, context, 'invalid_prh_links')
+    for (const link of record._links.map(obj).filter((l) => l.rel === 'self')) {
+      try {
+        const url = new URL(String(link.href))
+        if (
+          url.origin !== 'https://api.penguinrandomhouse.com' ||
+          !url.pathname.endsWith(`/domains/${context.domain}/titles/${isbn}${suffix}`)
+        )
+          return failed(provider, context, 'prh_endpoint_scope_conflict')
+      } catch {
+        return failed(provider, context, 'invalid_prh_links')
+      }
+    }
+  }
+
+  if (!Array.isArray(rows) || !rows.length || creditBody.recordCount !== rows.length)
+    return failed(provider, context, 'incomplete_contributors')
+  if (rows.length > 32) return failed(provider, context, 'contributor_cap', true)
+  const credits: IntakeCredit[] = [],
+    issues = ['partial_contributor_roster', 'territory_specific_edition'],
+    ids = new Set<number>()
+  for (const raw of rows) {
+    const c = obj(raw),
+      name = text(c.display),
+      code = c.contribRoleCode,
+      label = c.contribRoleDesc
+    if (!name || !Number.isSafeInteger(c.authorId) || (c.authorId as number) <= 0)
+      return failed(provider, context, 'incomplete_contributors')
+    if (
+      (code != null && (typeof code !== 'string' || code.length > 40)) ||
+      (label != null && (typeof label !== 'string' || label.length > 200))
+    )
+      return failed(provider, context, 'invalid_contributor_role')
+    ids.add(c.authorId as number)
+    const mapped =
+      typeof code === 'string' && Object.hasOwn(prhRoles, code) ? prhRoles[code] : undefined
+    const compatible =
+      mapped &&
+      (label == null ||
+        label === '' ||
+        (typeof label === 'string' && label.trim().toLowerCase() === mapped[1].toLowerCase()))
+    if (mapped && !compatible) issues.push('conflicting_contributor_role')
+    if (!mapped) issues.push('unqualified_contributor_role')
+    credits.push({
+      name,
+      role: compatible ? mapped[0] : 'unknown',
+      scope: code === 'U' || code === 'V' ? 'part' : 'whole',
+      ...(code === 'U' ? { part: 'Foreword' } : code === 'V' ? { part: 'Introduction' } : {}),
+      sourceRole: typeof label === 'string' ? label : null,
+      sourceRoleCode: typeof code === 'string' ? code : null,
+      basis: context.contributorsBasis ?? 'edition',
+    })
+  }
+  if (ids.size > 5) return failed(provider, context, 'contributor_cap', true)
+  const recordId = `${context.domain}:${isbn}`
+  if (
+    new Set(credits.map((c) => JSON.stringify([c.name, c.role, c.scope, c.part]))).size !==
+    credits.length
+  )
+    return duplicateCredits(provider, context, recordId, credits)
+  const o = intakeSourceObservation(provider, context, 'ok', recordId)
+  o.source.url = `https://api.penguinrandomhouse.com/resources/v2/title/domains/${context.domain}/titles/${isbn}`
+  if (context.contributorsBasis === 'work') {
+    o.status = 'failed'
+    o.withheldCredits = credits
+    return { observations: [o], issues: [...issues, 'work_contributors_not_edition_evidence'] }
+  }
+  o.identity = {
+    title: text(b.title)!,
+    contributors: credits,
+    scope: 'edition',
+    isbns: [isbn],
+    ...(text(b.subtitle) ? { subtitle: text(b.subtitle) } : {}),
+  }
+  o.claims.push({
+    id: 'contributors',
+    field: 'contributors',
+    value: credits,
+    scope: 'edition',
+    locator: `${context.domain} titles/${isbn}/authors (partial roster; order as returned)`,
+  })
+  const formatValues = [obj(b.format).description, b.formatFamily, b.consumerFormat]
+    .map((v) => text(v)?.toLowerCase())
+    .filter((v): v is string => !!v)
+  const mappedFormats = new Set(
+    formatValues.filter((v) => Object.hasOwn(formats, v)).map((v) => formats[v]),
+  )
+  // TR is verified in the official title representation; other codes remain uninterpreted.
+  if (obj(b.format).code === 'TR') mappedFormats.add('paperback')
+  else if (obj(b.format).code != null) issues.push('unmapped_format_code')
+
+  if (mappedFormats.size > 1) return failed(provider, context, 'conflicting_edition_formats')
+  if (formatValues.some((v) => !Object.hasOwn(formats, v))) issues.push('unknown_format')
+  // Only the title's territory-specific on-sale date is an edition observation. Never earliest work date.
+  const date = text(b.onsale)
+  const validDate =
+    date &&
+    /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+    Number.isFinite(Date.parse(`${date}T00:00:00Z`)) &&
+    new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date
+  if (b.onsale != null && !validDate) issues.push('unparsed_publication_date')
+  editionClaims(
+    o,
+    {
+      pages: b.pages,
+      date: validDate ? date : undefined,
+      publisher: obj(b.imprint).description,
+      language: b.language,
+      format: [...mappedFormats][0],
+    },
+    issues,
+  )
+  for (const claim of o.claims)
+    if (claim.field !== 'contributors')
+      claim.locator = `${context.domain} titles/${isbn}: ${claim.locator}`
+  return { observations: [o], issues: [...new Set(issues)] }
 }

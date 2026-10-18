@@ -12,7 +12,7 @@
     "prepare": "git config core.hooksPath .githooks",
     "dev": "pnpm --filter @reverie/web dev",
     "build": "pnpm --filter @reverie/core build && pnpm --filter @reverie/web build",
-    "test": "node --test scripts/stack-engine.test.mjs && pnpm test:series-recovery && pnpm test:corpus-completion && pnpm -r test",
+    "test": "node --test scripts/stack-engine.test.mjs && pnpm test:intake-budget && pnpm test:series-recovery && pnpm test:corpus-completion && pnpm -r test",
     "test:corpus-completion": "node --test scripts/corpus-completion-plan.test.mjs",
     "corpus:completion:plan": "node scripts/corpus-completion-plan.mjs",
     "test:series-recovery": "vite-node scripts/series-recovery.test.mjs",
@@ -52,7 +52,9 @@
     "series:sample:audit": "pnpm --filter @reverie/series-source-trial sample:audit",
     "db:test:household-concurrency": "bash scripts/stack-lock.sh node scripts/test-household-unlink-concurrency.mjs",
     "intake:replay": "vite-node --script scripts/intake-resolver-replay.mjs --",
-    "intake:shadow": "vite-node --script scripts/intake-shadow.mjs --"
+    "intake:shadow": "vite-node --script scripts/intake-shadow.mjs --",
+    "intake:budget": "node scripts/intake-budget.mjs",
+    "test:intake-budget": "node --test scripts/intake-budget.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

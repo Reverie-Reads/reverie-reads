@@ -39,11 +39,28 @@ const safeUrl = (s) => {
       u.protocol === 'https:' &&
       !u.username &&
       !u.password &&
-      !['openlibrary.org', 'hardcover.app', 'api.hardcover.app'].includes(u.hostname)
+      ![
+        'openlibrary.org',
+        'hardcover.app',
+        'api.hardcover.app',
+        'api.penguinrandomhouse.com',
+      ].includes(u.hostname)
     )
   } catch {
     return false
   }
+}
+const defaultProviders = ['openlibrary', 'hardcover']
+const supportedProviders = [...defaultProviders, 'penguin_random_house']
+function checkedProviders(providers = defaultProviders) {
+  if (
+    !Array.isArray(providers) ||
+    !providers.length ||
+    new Set(providers).size !== providers.length ||
+    providers.some((p) => !supportedProviders.includes(p))
+  )
+    throw new Error('Invalid shadow providers')
+  return [...providers]
 }
 const at = '2026-10-16T00:00:00Z'
 const key = (t) =>
@@ -56,7 +73,13 @@ const key = (t) =>
 
 export function validateShadowFrame(frame, developmentTargets = []) {
   if (
-    !exact(frame, ['version', 'purpose', 'selection', 'cases']) ||
+    !exact(frame, [
+      'version',
+      'purpose',
+      'selection',
+      'cases',
+      ...(frame?.providers === undefined ? [] : ['providers']),
+    ]) ||
     frame.version !== 1 ||
     frame.purpose !== 'independent_shadow_pilot' ||
     typeof frame.selection !== 'string' ||
@@ -67,6 +90,7 @@ export function validateShadowFrame(frame, developmentTargets = []) {
     frame.cases.length > 20
   )
     throw new Error('Invalid shadow frame')
+  checkedProviders(frame.providers)
   const ids = new Set(),
     development = new Set(developmentTargets.map(key).filter(Boolean))
   for (const c of frame.cases) {
@@ -148,7 +172,7 @@ export async function resolveShadowTarget(target, client, now = () => new Date()
   // A malformed provider record cannot erase a valid peer or abort an already consumed frame.
   // Keep the failure visible; do not salvage malformed identity/facts or persist exception text.
   const checked = Object.fromEntries(
-    ['openlibrary', 'hardcover'].map((provider) => {
+    checkedProviders(client.providers).map((provider) => {
       const candidate = acquired?.[provider]
       try {
         if (
@@ -193,6 +217,7 @@ export async function resolveShadowTarget(target, client, now = () => new Date()
   return {
     request,
     result,
+    providers: checkedProviders(client.providers),
     issues: Object.fromEntries(Object.entries(checked).map(([p, a]) => [p, a.issues])),
   }
 }
@@ -218,7 +243,7 @@ export function scoreShadowCase(c, observed) {
           request.asOf,
         )
   const manualCredits = manual?.decisions.filter((d) => d.eligible).map((d) => d.credit) ?? []
-  const sources = ['openlibrary', 'hardcover'].map((provider) => {
+  const sources = checkedProviders(observed.providers).map((provider) => {
     const os = request.observations.filter((o) => o.source.provider === provider)
     const good = os.filter((o) => o.status === 'ok')
     const matches = good.filter((o) => !intakeIdentityReviewReasons(request, o).length)
@@ -294,6 +319,9 @@ export function scoreShadowCase(c, observed) {
 }
 
 export async function evaluateShadow(frame, client, onReview) {
+  const providers = checkedProviders(frame.providers)
+  if (JSON.stringify(providers) !== JSON.stringify(checkedProviders(client.providers)))
+    throw new Error('Shadow client providers differ from frozen frame')
   const cases = []
   for (const c of frame.cases) {
     const observed = await resolveShadowTarget(c.target, client)
@@ -301,7 +329,7 @@ export async function evaluateShadow(frame, client, onReview) {
     // Reference answers never enter the resolver or the review view.
     onReview?.({ id: c.id, review: buildIntakeReview(observed.request) })
   }
-  const sources = ['openlibrary', 'hardcover'].map((provider) => {
+  const sources = providers.map((provider) => {
     const pairs = cases.map((c) => ({ c, s: c.sources.find((s) => s.provider === provider) }))
     return {
       provider,
@@ -383,6 +411,8 @@ async function systemFingerprint() {
     'scripts/intake-shadow.mjs',
     'scripts/intake-source-client.mjs',
     'scripts/intake-review-server.mjs',
+    'scripts/intake-budget.mjs',
+    'scripts/corpus-completion-plan.mjs',
     'pnpm-lock.yaml',
     'package.json',
   )
@@ -464,7 +494,11 @@ export async function shadowCommand(args) {
   const reviews = []
   const report = await evaluateShadow(
     frame,
-    createIntakeSourceClient({ hardcoverToken: process.env.HARDCOVER_TOKEN }),
+    createIntakeSourceClient({
+      providers: checkedProviders(frame.providers),
+      hardcoverToken: process.env.HARDCOVER_TOKEN,
+      prhApiKey: process.env.PRH_API_KEY,
+    }),
     command === 'run-review' ? (r) => reviews.push(r) : undefined,
   )
   report.lock = lock

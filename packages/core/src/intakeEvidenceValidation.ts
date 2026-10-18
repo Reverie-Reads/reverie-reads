@@ -60,7 +60,7 @@ function credits(v: unknown, allowDuplicates = false): boolean {
   const seen = new Set<string>()
   return v.every((c) => {
     if (
-      !keys(c, ['name', 'role', 'scope'], ['part', 'sourceRole', 'basis']) ||
+      !keys(c, ['name', 'role', 'scope'], ['part', 'sourceRole', 'sourceRoleCode', 'basis']) ||
       !text(c.name) ||
       !oneOf(c.role, roles) ||
       !oneOf(c.scope, ['whole', 'part']) ||
@@ -68,6 +68,9 @@ function credits(v: unknown, allowDuplicates = false): boolean {
       (c.sourceRole !== undefined &&
         c.sourceRole !== null &&
         (typeof c.sourceRole !== 'string' || c.sourceRole.length > 200)) ||
+      (c.sourceRoleCode !== undefined &&
+        c.sourceRoleCode !== null &&
+        (typeof c.sourceRoleCode !== 'string' || c.sourceRoleCode.length > 40)) ||
       (c.basis !== undefined && !oneOf(c.basis, ['work', 'edition']))
     )
       return false

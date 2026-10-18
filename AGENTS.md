@@ -758,6 +758,14 @@ provider is not successful absence. Only an explicit, fingerprint-matched comple
 disposition can schedule `gpt-6-luna` evidence research, and its output still requires independent
 source review. The planner has no acquisition or catalog writer. See `docs/tasks/importer-accuracy.md`.
 
+`intake:budget` is the separate operator-only Luna evidence boundary. Its private Git-common-directory
+ledger enforces the $50 total ceiling, including the reconciled opening burden and uncertain requests.
+Reserve durably before network; consumed identities never automatically replay, and interrupted
+writes/unknown usage keep their reservations. Non-LLM planner completion, reviewed permitted source
+excerpts and current verified pricing are required before a request. Never delete its ledger or use
+a new clone to bypass consumed requests. The command has no catalog or personal-data writer.
+See `docs/tasks/intake-budget.md`.
+
 Every edition enrichment source must independently match the requested title/full contributor and
 canonical valid ISBN. Bounded exact Open Library and Hardcover editions with complete author
 identity may supply selected-edition pages, binding, language and date. After successful ISBN
@@ -792,7 +800,11 @@ revive them merely because old identity values return. This does not expand pers
 roles or copy shared credits into reader records. See `docs/tasks/intake-evidence-resolver.md`.
 
 `intake:shadow` connects bounded, exact-ISBN Open Library and Hardcover adapters to that resolver.
-Adapter provenance is code-owned, but both sources remain review-only with unknown upstream lineage;
+A frozen frame may explicitly opt into the US-domain Penguin Random House title/edition-contributor
+adapter. Preserve literal role codes/labels and partial-roster warnings; introduction/foreword credits
+are named parts, never whole-work authorship. Do not flatten author display strings or promote
+work-level credits. Provider selection is part of the frozen frame; unavailable sources remain in
+the denominator. Adapter provenance is code-owned, but all sources remain review-only with unverified upstream lineage;
 two APIs do not prove independent support. Freeze provider-independent references and code hashes
 before acquisition. Keep its Git-common-directory attempt markers permanent, including failures.
 Reports retain scores and diagnostic codes, not provider payloads. This is an operator-only pilot,

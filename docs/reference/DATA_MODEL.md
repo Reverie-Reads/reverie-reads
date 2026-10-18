@@ -18,7 +18,8 @@ scan, import and shared-catalog writers have not switched over. See
 [`intake-evidence-resolver.md`](../tasks/intake-evidence-resolver.md) for the trust boundary and rollout.
 Evidence credits may retain their original `sourceRole` (including an absent or empty label) and
 `basis` (`work` or `edition`). Unparsed `creditStatements` stay observations. These optional evidence
-fields are not personal contributor roles. Parent-work credits cannot certify an edition credit
+fields are not personal contributor roles. The publisher adapter also retains an optional literal
+`sourceRoleCode` in transient evidence; it does not extend the persisted edition-credit SQL contract. Parent-work credits cannot certify an edition credit
 claim. An editor credit cannot establish creator identity for the roleless intake target; editor-only
 collections remain under review, with their credits preserved. The separate administrator-reviewed
 edition handoff described below persists supported credits without producing a personal book patch.

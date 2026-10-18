@@ -3,10 +3,15 @@ import { normalizeIsbn } from '../packages/core/src/match.ts'
 import {
   adaptOpenLibraryIntake,
   adaptHardcoverIntake,
+  adaptPenguinRandomHouseIntake,
   intakeSourceObservation,
 } from '../packages/core/src/intakeSourceAdapters.ts'
 import { approvedEditionRedirect } from '../packages/series-source-trial/src/metadata/baseline-client.mjs'
 import { equivalentIsbn10 } from '../supabase/functions/enrich/hardcoverEditions.ts'
+import {
+  prhUrl,
+  prhRequestUrl,
+} from '../packages/series-source-trial/src/authority/prh-qualification.mjs'
 import { olHeaders } from '../supabase/functions/_shared/olIdentity.ts'
 
 // Same bounded exact-ISBN relationship as the shipped adapter, requesting only pilot fields.
@@ -22,22 +27,35 @@ export const intakeEditionQuery = `query IntakeShadow($isbn: String!, $isbn10: S
  * Cache lives only for this client/run; failed attempts are not silently repeated. */
 export function createIntakeSourceClient({
   hardcoverToken,
+  prhApiKey,
+  prhDomain = 'PRH.US',
+  providers = ['openlibrary', 'hardcover'],
   fetcher = fetch,
   sleeper = delay,
   now = Date.now,
-  limits = { openlibrary: 80, hardcover: 20 },
+  limits,
 } = {}) {
+  const maxima = { openlibrary: 80, hardcover: 20, penguin_random_house: 40 }
   if (
-    Object.keys(limits).sort().join(',') !== 'hardcover,openlibrary' ||
-    !Object.entries(limits).every(
-      ([p, n]) => Number.isInteger(n) && n > 0 && n <= (p === 'openlibrary' ? 80 : 20),
-    )
+    !Array.isArray(providers) ||
+    !providers.length ||
+    new Set(providers).size !== providers.length ||
+    providers.some((p) => !Object.hasOwn(maxima, p)) ||
+    prhDomain !== 'PRH.US'
+  )
+    throw new Error('Invalid source configuration')
+  const selected = Object.freeze([...providers])
+  limits ??= Object.fromEntries(selected.map((p) => [p, maxima[p]]))
+  if (
+    Object.keys(limits).sort().join(',') !== [...selected].sort().join(',') ||
+    !Object.entries(limits).every(([p, n]) => Number.isInteger(n) && n > 0 && n <= maxima[p])
   )
     throw new Error('Invalid source limits')
+  limits = { ...limits }
   const stats = Object.fromEntries(
-    ['openlibrary', 'hardcover'].map((p) => [p, { requests: 0, stopped: null, statuses: {} }]),
+    selected.map((p) => [p, { requests: 0, stopped: null, statuses: {} }]),
   )
-  const timing = { openlibrary: { next: 0, failures: 0 }, hardcover: { next: 0, failures: 0 } }
+  const timing = Object.fromEntries(selected.map((p) => [p, { next: 0, failures: 0 }]))
   const cache = new Map(),
     authors = new Map()
   let queue = Promise.resolve()
@@ -169,8 +187,44 @@ export function createIntakeSourceClient({
       ? adaptHardcoverIntake(r.body, c)
       : observationFailure('hardcover', c, r.status)
   }
+  async function prh(isbn, c) {
+    const provider = 'penguin_random_house'
+    if (typeof prhApiKey !== 'string' || !prhApiKey.trim()) {
+      stats[provider].stopped = 'missing_credential'
+      return observationFailure(provider, c, 'missing_credential')
+    }
+    const base = `/domains/${prhDomain}/titles/${isbn}`
+    const get = (path) =>
+      request(
+        provider,
+        prhRequestUrl(
+          prhUrl(path, {
+            suppressLinks: true,
+            returnEmptyLists: true,
+          }),
+          prhApiKey,
+        ),
+        { headers: { Accept: 'application/json' } },
+      )
+    const title = await get(base)
+    if (title.status !== 'ok') return observationFailure(provider, c, title.status, true)
+    // Refuse a mismatched title before spending a second request or binding credits to it.
+    const data = title.body?.data
+    const record = data?.title && typeof data.title === 'object' ? data.title : data
+    if (title.body?.status !== 'ok' || normalizeIsbn(String(record?.isbn ?? '')) !== isbn)
+      return observationFailure(provider, c, 'prh_edition_identity_mismatch')
+    const contributors = await get(`${base}/authors`)
+    if (contributors.status !== 'ok') return observationFailure(provider, c, contributors.status)
+    return adaptPenguinRandomHouseIntake(title.body, contributors.body, {
+      ...c,
+      isbn,
+      domain: prhDomain,
+      contributorsBasis: 'edition',
+    })
+  }
   return {
     stats,
+    providers: selected,
     acquire(isbnInput, targetFingerprint) {
       const isbn = normalizeIsbn(isbnInput)
       if (!isbn || !/^[a-f0-9]{64}$/.test(targetFingerprint))
@@ -178,7 +232,10 @@ export function createIntakeSourceClient({
       const pending = queue.then(async () => {
         if (!cache.has(isbn)) {
           const c = { targetFingerprint, retrievedAt: new Date(now()).toISOString() }
-          cache.set(isbn, { openlibrary: await ol(isbn, c), hardcover: await hc(isbn, c) })
+          const adapters = { openlibrary: ol, hardcover: hc, penguin_random_house: prh }
+          const captured = {}
+          for (const provider of selected) captured[provider] = await adapters[provider](isbn, c)
+          cache.set(isbn, captured)
         }
         // Shared captured response is rebound only for the same ISBN, with its original time.
         const result = structuredClone(cache.get(isbn))

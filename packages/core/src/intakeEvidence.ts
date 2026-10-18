@@ -24,6 +24,8 @@ export interface IntakeCredit {
   part?: string
   /** Original provider label, including an explicitly absent label. Never an authority grant. */
   sourceRole?: string | null
+  /** Literal provider code, retained separately from its display label. */
+  sourceRoleCode?: string | null
   /** Where this credit was observed; parent-work credits do not certify a selected edition. */
   basis?: 'work' | 'edition'
 }

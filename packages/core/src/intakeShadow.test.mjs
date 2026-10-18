@@ -156,6 +156,43 @@ describe('bounded intake acquisition', () => {
 })
 
 describe('truth-blind independent shadow scoring', () => {
+  it('binds the provider selection to the frozen frame before acquisition', async () => {
+    const acquire = vi.fn()
+    const f = { ...frame(), providers: ['openlibrary', 'hardcover', 'penguin_random_house'] }
+    expect(() => validateShadowFrame(f)).not.toThrow()
+    for (const providers of [[], ['unknown'], ['openlibrary', 'openlibrary']])
+      expect(() => validateShadowFrame({ ...f, providers })).toThrow('Invalid shadow providers')
+    await expect(evaluateShadow(f, { acquire })).rejects.toThrow('providers differ')
+    expect(acquire).not.toHaveBeenCalled()
+  })
+  it('counts a selected but unavailable publisher as unobserved rather than silently dropping it', async () => {
+    const providers = ['openlibrary', 'hardcover', 'penguin_random_house']
+    const f = { ...frame(), providers }
+    const client = {
+      providers,
+      acquire: async (_isbn, fingerprint) => ({
+        openlibrary: adaptOpenLibraryIntake(
+          edition,
+          { '/authors/OL1A': author },
+          {
+            targetFingerprint: fingerprint,
+            retrievedAt: new Date().toISOString(),
+          },
+        ),
+      }),
+    }
+    const r = await evaluateShadow(f, client)
+    expect(r.summary.sources).toHaveLength(3)
+    expect(r.summary.sources[2]).toMatchObject({
+      provider: 'penguin_random_house',
+      unobserved: 1,
+      matchedPositive: 0,
+      falseIdentityMatches: 0,
+    })
+    expect(r.cases[0].sources[2].issues).toEqual(['invalid_adapter_observation'])
+    expect(r.summary.cutoverReady).toBe(false)
+  })
+
   it.each(['duplicate credit', 'private field', 'colliding id', 'wrong provider'])(
     'isolates malformed provider output (%s), preserving the valid peer and honest failure',
     async (fault) => {
