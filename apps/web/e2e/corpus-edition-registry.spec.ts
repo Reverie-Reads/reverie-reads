@@ -275,6 +275,7 @@ test('edition credit review preserves literal roles and personal history through
       'Ann Brown',
     )
     await page.getByRole('button', { name: `Review contributors for ${c.reference}` }).click()
+    await page.getByRole('button', { name: 'Check saved reviews', exact: true }).click()
     await page.getByText('Inspect this saved review', { exact: true }).click()
     await expect(
       page.getByRole('link', { name: 'Applicable public terms', exact: true }),
