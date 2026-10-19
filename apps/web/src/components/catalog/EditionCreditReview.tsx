@@ -3,6 +3,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   EDITION_CREDIT_HOLDS,
   parseEditionCreditEvidence,
+  parseEditionCreditSourceUseReview,
+  reviewEditionCreditSourceUse,
   type EditionCreditEvidence,
 } from '@reverie/core'
 import {
@@ -38,6 +40,40 @@ const roles: Credit['role'][] = [
   'unknown',
 ]
 
+/** The permission reference stays visible on both active and reopened historical reviews. */
+function SourceUseSummary({ review }: { review: Review }) {
+  const receipt = review.sourceUseReview
+  const current = reviewEditionCreditSourceUse(receipt, new Date().toISOString()).ready
+  if (!receipt)
+    return (
+      <p className="text-sm text-muted">
+        This older review has no source-use record. Its saved history is preserved; prepare a new
+        review with an inspected source-use basis before adding credits.
+      </p>
+    )
+  return (
+    <div className="space-y-2 border border-line p-3 text-sm">
+      <p>
+        Frozen source-use basis:{' '}
+        <a href={receipt.url} target="_blank" rel="noopener noreferrer" className="underline">
+          {receipt.basis === 'public_terms'
+            ? 'Applicable public terms'
+            : 'Specific written permission'}
+        </a>
+      </p>
+      <p>{receipt.note}</p>
+      <p>Inspected {receipt.checkedAt}. Edition identity and credit facts only.</p>
+      {!current && (
+        <p className="text-muted">
+          This source-use inspection is stale or future-dated. Inspect it again before adding
+          credits; existing saved history is preserved. An uncertain earlier save may still use its
+          identical retry.
+        </p>
+      )}
+    </div>
+  )
+}
+
 /** Mounted only for a deliberately chosen saved edition in the administrator workspace.
  * Inputs freeze after prepare; saving sends only its server-bound ID and explicit selection. */
 export function EditionCreditReview({
@@ -63,6 +99,9 @@ export function EditionCreditReview({
   const [credits, setCredits] = useState<Credit[]>([emptyCredit()])
   const [checked, setChecked] = useState(false),
     [retention, setRetention] = useState(false)
+  const [useBasis, setUseBasis] = useState<'public_terms' | 'written_permission' | ''>('')
+  const [useUrl, setUseUrl] = useState(''),
+    [useNote, setUseNote] = useState('')
   const [review, setReview] = useState<Review | null>(null),
     [history, setHistory] = useState<Review[]>([])
   const [selected, setSelected] = useState<number[]>([]),
@@ -74,6 +113,14 @@ export function EditionCreditReview({
     alive = useRef(true)
   const attempt = useRef<Parameters<typeof prepareEditionCredits>[0] | null>(null)
   const saveSelection = useRef<number[] | null>(null)
+  const sourceUseReady = reviewEditionCreditSourceUse(
+    review?.sourceUseReview,
+    new Date().toISOString(),
+  ).ready
+  const changedEvidence = () => {
+    setChecked(false)
+    setRetention(false)
+  }
   useEffect(() => {
     alive.current = true
     return () => {
@@ -94,24 +141,43 @@ export function EditionCreditReview({
       if (alive.current) setBusy(false)
     }
   }
-  const text = (label: string, value: string, update: (v: string) => void) => (
+  const text = (label: string, value: string, update: (v: string) => void, inspection = true) => (
     <label className="block min-w-0 text-sm">
       {label}
-      <input className={field} value={value} onChange={(e) => update(e.target.value)} />
+      <input
+        className={field}
+        value={value}
+        onChange={(e) => {
+          update(e.target.value)
+          setRetention(false)
+          if (inspection) setChecked(false)
+        }}
+      />
     </label>
   )
   function changeCredit(index: number, change: Partial<Credit>) {
+    changedEvidence()
     setCredits((old) => old.map((c, n) => (n === index ? { ...c, ...change } : c)))
   }
   async function prepare() {
     await run(async () => {
       if (!attempt.current) {
+        const checkedAt = new Date().toISOString()
+        const sourceUseReview = parseEditionCreditSourceUseReview({
+          version: 1,
+          basis: useBasis,
+          url: useUrl,
+          note: useNote,
+          checkedAt,
+          scope: 'edition_identity_and_credit_facts',
+          confirmed: retention,
+        })
         const evidence = parseEditionCreditEvidence({
           version: 1,
           source: {
             url,
             kind,
-            checkedAt: new Date().toISOString(),
+            checkedAt,
             locator,
             retentionConfirmed: retention,
           },
@@ -138,6 +204,7 @@ export function EditionCreditReview({
           editionId: edition.id,
           fingerprint: record.fingerprint,
           evidence,
+          sourceUseReview,
         }
       }
       const next = await prepareEditionCredits(attempt.current)
@@ -148,7 +215,8 @@ export function EditionCreditReview({
     })
   }
   async function save() {
-    if (!review || !confirmed || !selected.length) return
+    if (!review || (!sourceUseReady && !saveSelection.current) || !confirmed || !selected.length)
+      return
     await run(async () => {
       saveSelection.current ??= [...selected]
       await applyEditionCredits(review.id, saveSelection.current)
@@ -197,7 +265,10 @@ export function EditionCreditReview({
             <select
               className={field}
               value={kind}
-              onChange={(e) => setKind(e.target.value as typeof kind)}
+              onChange={(e) => {
+                setKind(e.target.value as typeof kind)
+                changedEvidence()
+              }}
             >
               <option value="unverified">Still unverified</option>
               <option value="publisher">Publisher’s own edition listing</option>
@@ -210,13 +281,23 @@ export function EditionCreditReview({
             <textarea
               className={field}
               value={authors}
-              onChange={(e) => setAuthors(e.target.value)}
+              onChange={(e) => {
+                setAuthors(e.target.value)
+                changedEvidence()
+              }}
             />
           </label>
           {text('Source ISBN', isbn, setIsbn)}
           <label className="block text-sm">
             Source format
-            <select className={field} value={format} onChange={(e) => setFormat(e.target.value)}>
+            <select
+              className={field}
+              value={format}
+              onChange={(e) => {
+                setFormat(e.target.value)
+                changedEvidence()
+              }}
+            >
               <option value="">Not stated</option>
               {['paperback', 'hardcover', 'ebook', 'audiobook', 'other'].map((f) => (
                 <option key={f}>{f}</option>
@@ -251,7 +332,8 @@ export function EditionCreditReview({
                 <select
                   className={field}
                   value={c.scope}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    changedEvidence()
                     setCredits((old) =>
                       old.map((v, i) =>
                         i !== n
@@ -261,7 +343,7 @@ export function EditionCreditReview({
                             : (({ part: _part, ...rest }) => ({ ...rest, scope: 'whole' }))(v),
                       ),
                     )
-                  }
+                  }}
                 >
                   <option value="whole">Whole book</option>
                   <option value="part">Named part only</option>
@@ -283,7 +365,10 @@ export function EditionCreditReview({
               {credits.length > 1 && (
                 <Button
                   variant="secondary"
-                  onClick={() => setCredits((old) => old.filter((_, i) => i !== n))}
+                  onClick={() => {
+                    setCredits((old) => old.filter((_, i) => i !== n))
+                    changedEvidence()
+                  }}
                 >
                   Remove credit {n + 1} from draft
                 </Button>
@@ -293,7 +378,10 @@ export function EditionCreditReview({
           <Button
             variant="secondary"
             disabled={credits.length >= 32}
-            onClick={() => setCredits((old) => [...old, emptyCredit()])}
+            onClick={() => {
+              setCredits((old) => [...old, emptyCredit()])
+              changedEvidence()
+            }}
           >
             Add another credit
           </Button>
@@ -305,15 +393,65 @@ export function EditionCreditReview({
             />
             I inspected the first-party attribution, exact edition identity and each stated credit.
           </label>
-          <label className="flex min-h-11 items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={retention}
-              onChange={(e) => setRetention(e.target.checked)}
-            />
-            These bibliographic facts may be retained with attribution. This contains no provider
-            payloads or private reader data.
-          </label>
+          <fieldset className="min-w-0 space-y-3 border border-line p-3">
+            <legend>Source use for this review</legend>
+            <p className="text-sm text-muted">
+              Record the applicable terms or permission you inspected for retaining these edition
+              identity and credit facts with attribution. A public page or API key alone does not
+              establish that use. If it is still unresolved, keep this draft here without preparing
+              it. Prose, images, exports and model input need their own review.
+            </p>
+            <label className="block text-sm">
+              Source-use basis
+              <select
+                className={field}
+                value={useBasis}
+                onChange={(e) => {
+                  setUseBasis(e.target.value as typeof useBasis)
+                  setRetention(false)
+                }}
+              >
+                <option value="">Still under review</option>
+                <option value="public_terms">Applicable public terms</option>
+                <option value="written_permission">Specific written permission</option>
+              </select>
+            </label>
+            {text(
+              'Source-use reference URL',
+              useUrl,
+              (value) => {
+                setUseUrl(value)
+                setRetention(false)
+              },
+              false,
+            )}
+            <label className="block text-sm">
+              Why these terms or permission cover these facts
+              <textarea
+                className={field}
+                value={useNote}
+                maxLength={1000}
+                onChange={(e) => {
+                  setUseNote(e.target.value)
+                  setRetention(false)
+                }}
+              />
+            </label>
+            <p className="text-sm text-muted">
+              Use a reference without credentials or query parameters. Keep agreement text and
+              reader data out of the explanation. This source-use record is visible only to catalog
+              administrators.
+            </p>
+            <label className="flex min-h-11 items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={retention}
+                onChange={(e) => setRetention(e.target.checked)}
+              />
+              I checked this source-use basis: these bibliographic facts may be retained with
+              attribution. This contains no provider payloads or private reader data.
+            </label>
+          </fieldset>
         </div>
       )}
       {!review && (
@@ -343,6 +481,7 @@ export function EditionCreditReview({
           <p className="text-sm text-muted">
             {review.evidence.source.locator} · Inspected {review.evidence.source.checkedAt}
           </p>
+          <SourceUseSummary review={review} />
           {review.stale && !saved && (
             <p role="alert">The catalog changed. Close this review and reload before deciding.</p>
           )}
@@ -354,7 +493,12 @@ export function EditionCreditReview({
                   <input
                     type="checkbox"
                     disabled={
-                      !d.eligible || busy || saved || !!review.stale || !!saveSelection.current
+                      !d.eligible ||
+                      !sourceUseReady ||
+                      busy ||
+                      saved ||
+                      !!review.stale ||
+                      !!saveSelection.current
                     }
                     checked={selected.includes(d.position)}
                     onChange={(e) =>
@@ -384,7 +528,7 @@ export function EditionCreditReview({
               <label className="flex min-h-11 items-start gap-2 text-sm">
                 <input
                   type="checkbox"
-                  disabled={busy || !!saveSelection.current}
+                  disabled={!sourceUseReady || busy || !!saveSelection.current}
                   checked={confirmed}
                   onChange={(e) => setConfirmed(e.target.checked)}
                 />
@@ -392,7 +536,13 @@ export function EditionCreditReview({
                 review.
               </label>
               <Button
-                disabled={busy || !confirmed || !selected.length || !!review.stale}
+                disabled={
+                  (!sourceUseReady && !saveSelection.current) ||
+                  busy ||
+                  !confirmed ||
+                  !selected.length ||
+                  (!!review.stale && !saveSelection.current)
+                }
                 onClick={() => void save()}
               >
                 {saveSelection.current
@@ -441,6 +591,7 @@ export function EditionCreditReview({
                 >
                   Source page
                 </a>
+                <SourceUseSummary review={r} />
                 <ol className="mt-2 space-y-2">
                   {r.evidence.credits.map((c, n) => (
                     <li key={n}>
@@ -448,6 +599,13 @@ export function EditionCreditReview({
                       {c.part ? ` · ${c.part}` : ''}
                       {' · '}
                       {r.selected?.includes(n) ? 'Saved' : 'Not applied; remains under review'}
+                      {r.decisions
+                        .find((decision) => decision.position === n)
+                        ?.reasons.map((reason) => (
+                          <p key={reason} className="text-muted">
+                            {EDITION_CREDIT_HOLDS[reason]}
+                          </p>
+                        ))}
                     </li>
                   ))}
                 </ol>

@@ -793,7 +793,13 @@ stay under review, including ISBN-only scans. Never relabel editors as authors t
 Source qualification and lineage come from trusted adapters or reviewers, never model output or client assertions. The transient handoff preview uses code-owned operation reviews for catalog storage, export and Luna input separately; packet eligibility never grants those permissions. It preserves existing values and requires a current target check in the saved-edition editor before prepare. It is not a save payload. See `docs/tasks/intake-source-handoff-2026-10-18.md`. Do not cast a
 resolution to `Incoming` or `Book`; the staged intake cutover is still required. The separate
 administrator edition-credit handoff accepts manually inspected first-party evidence, freezes the
-exact draft and selection, and appends only explicitly confirmed supported credits. Preserve raw
+exact draft and selection, and appends only explicitly confirmed supported credits. New reviews also
+freeze an administrator-inspected source-use reference scoped only to edition identity and literal
+credit facts. Applicable public terms or specific permission may supply that basis; unresolved use
+stays browser-only. The receipt is administrator-only, immutable and checked again before append;
+it never upgrades an API adapter or authorizes prose, images, export or model input. Legacy pending
+reviews need a new review; retain accepted history and read-only identical applied retries. See
+`docs/tasks/intake-reviewed-save-2026-10-18.md`. Preserve raw
 role labels, named parts, source order and all unselected evidence. Unknown roles, work-only scope,
 ambiguous names and identity/edition conflicts stay held. Later work/edition identity corrections retain historical credits but require renewed review; never
 revive them merely because old identity values return. This does not expand personal contributor

@@ -51,6 +51,9 @@ export const EDITION_CREDIT_HOLDS = {
   role_unverified: 'The role or original credit label is not established.',
   credit_scope_unverified: 'This credit has not been observed on the selected edition.',
   existing_credit: 'This credit is already recorded; preserve its existing evidence.',
+  source_use_review_required:
+    'Inspect and record the applicable source-use basis before retaining this edition review.',
+  source_use_stale: 'Inspect the source-use basis again; its review is stale or future-dated.',
 } as const
 export type EditionCreditHold = keyof typeof EDITION_CREDIT_HOLDS
 const key = (s: string) => s.normalize('NFKC').trim().toLowerCase().replace(/\s+/gu, ' ')
@@ -78,6 +81,13 @@ export function parseEditionCreditEvidence(input: unknown): EditionCreditEvidenc
     !Array.isArray(input.credits) ||
     !input.credits.length ||
     input.credits.length > 32 ||
+    !input.credits.every(
+      (credit) =>
+        object(credit) &&
+        Object.keys(credit).every((field) =>
+          ['name', 'role', 'scope', 'part', 'sourceRole', 'basis'].includes(field),
+        ),
+    ) ||
     !Array.isArray(input.identity.authors) ||
     !input.identity.authors.length ||
     input.identity.authors.length > 20 ||

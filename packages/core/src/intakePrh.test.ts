@@ -86,7 +86,7 @@ describe('PRH exact title and edition credits', () => {
     expect(resolveIntakeEvidence(p).fields.some((f) => f.state === 'proposed')).toBe(false)
     expect(p).toEqual(before)
   })
-  it('keeps named foreword/introduction parts and codes through explicit manual review serialization', () => {
+  it('keeps provider codes transient and preserves manually inspected named-part credits', () => {
     const a = adapt(
       title(),
       roster([
@@ -119,8 +119,38 @@ describe('PRH exact title and edition credits', () => {
       credits,
       confirmations: { sourceChecked: true, identityChecked: true, creditsChecked: true },
     }
-    expect(parseEditionCreditEvidence(JSON.parse(JSON.stringify(manual))).credits).toEqual(credits)
-    // This only proves lossless review parsing. Provider acquisition never supplies these confirmations.
+    expect(() => parseEditionCreditEvidence(JSON.parse(JSON.stringify(manual)))).toThrow()
+    expect(credits.slice(1).map((c) => c.sourceRoleCode)).toEqual(['U', 'V'])
+    const inspectedCredits = [
+      {
+        name: 'Jane Smith',
+        role: 'author',
+        scope: 'whole',
+        sourceRole: 'Author',
+        basis: 'edition',
+      },
+      {
+        name: 'Ann Brown',
+        role: 'foreword',
+        scope: 'part',
+        part: 'Foreword',
+        sourceRole: 'Foreword by',
+        basis: 'edition',
+      },
+      {
+        name: 'Ann Brown',
+        role: 'introduction',
+        scope: 'part',
+        part: 'Introduction',
+        sourceRole: 'Introduction by',
+        basis: 'edition',
+      },
+    ]
+    expect(parseEditionCreditEvidence({ ...manual, credits: inspectedCredits }).credits).toEqual(
+      inspectedCredits,
+    )
+    // Only an independently inspected manual document fits storage. The adapter retains its codes;
+    // there is no provider-packet conversion or permission supplied by acquisition.
   })
   it('accepts the observed one-title wrapper and qualified partial-roster count without authority', () => {
     const raw = {
