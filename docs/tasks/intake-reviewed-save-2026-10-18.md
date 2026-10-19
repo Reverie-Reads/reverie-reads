@@ -63,13 +63,69 @@ Reopened administrator history displays current, missing and stale source-use re
 
 ## Verification
 
-Verification is in progress. Focused checks currently cover 58 core and 23 web tests. The SQL tests
-include authority/direct-access checks, malformed references and private/provider payloads, immutable
-receipt retries, transaction-local zero-write auditing, legacy and stale holds, literal accepted
-credits and protected personal-row snapshots. The browser fixture checks that missing source-use
-evidence prepares no persisted review, then exercises explicit selection and lost-response recovery.
-The final report will record full gates, the fresh database browser run, retained failures and exact
-snapshot recovery before delivery. No production migration or live acceptance is claimed.
+The full Node 22 suite passes: 3,556 core tests, 1,394 web tests, two workflow tests, 498 source-trial
+tests and the root checks. Typechecking, lint, build and formatting pass. The focused source-use and
+manual-credit checks cover 58 core and 23 web tests. Independent read-only review found no blockers
+in the application, SQL or shared-evidence registry changes.
 
-This stage uses no Luna calls and spends $0. The existing $50 total ceiling and prior burden remain
-unchanged. No source or model is promoted by this manual-save implementation.
+All 71 SQL files and 2,389 checks pass on a fresh local public-schema database. Coverage includes
+authority/direct-access checks, malformed references and private/provider payloads, immutable
+receipt retries, transaction-local zero-mutation auditing, legacy and stale holds, literal accepted
+credits and protected personal-row snapshots. The source-use receipt is registered as collective
+review evidence, excluded from personal export/restore. The household reconciliation rollback
+snapshot follows its parent review's attribution rather than treating a review UUID as a user UUID.
+
+Earlier gate failures remain retained: the old PRH parsing test assumed transient provider codes
+could enter the manual contract, the new table needed registry/rollback-order declarations, and a
+coercion test needed an explicit return type. The first SQL attempt stopped on a fixture timestamp
+expression and an outdated conflict-code inventory. Those checks were corrected before the fresh
+full browser run; the original development snapshot was restored after that attempt.
+
+The one full browser run used the default one worker and zero retries at application revision
+`ee2bae9`: **436 passed, 11 existing skips, two failures**, in 42.3 minutes. Both failures were in
+the new history assertion: after a successful lost-response save and personal/history comparisons,
+the test waited for history without pressing the existing “Check saved reviews” button. Desktop and
+phone traces identify the same missing action. Those failures and their original traces remain
+retained; this is not a green full-suite result.
+
+Revision `38b69b1` adds only that missing browser-test action. No application or database code changed.
+A separate fresh-database, one-worker, zero-retry run of the two affected scenarios on desktop and
+Chromium phone simulation completed with **four passed** in 29.3 seconds. It confirms that unresolved
+source use prepares no stored review, unknown roles stay unselectable, a lost response retries the
+original selection without duplicate credits, the frozen reference survives reopening, future
+evidence stays held, and personal values/history remain unchanged. Screenshots were inspected on
+desktop and phone; these are synthetic local checks, not physical-device or production acceptance.
+The complete suite was not rerun to replace the retained failed result.
+
+Full-run recovery initially hit an existing Realtime publication. Its transaction rolled back,
+and the queued follow-up refused the unexpected baseline before resetting anything. A separate,
+locked recovery explicitly handled both project publications and restored the original archive.
+The final focused lifecycle used that corrected recovery step. All **102 public/authentication
+table contents and column lists** match the pre-test archive, with **290 books, zero reads and one
+user**; all **eight publication definition/ownership/membership statements** match as well. Migration
+history returned to `20261108010000`. Authentication and REST returned 200, and the missing-table
+negative control returned the expected 404. Both recovery verification and the final lifecycle
+exited successfully. The shared lock was preserved throughout; runner hashes remained unchanged
+while running.
+
+Local Supabase advisors reported seven warnings on existing public objects and none on the new
+receipt/functions. All seven match findings in the restored baseline after normalizing role-list
+ordering. The baseline has one additional private-overlay policy warning; that table is absent
+from the fresh public test schema. There are no added advisor findings, but this does not clear
+those existing warnings or qualify private integration. No production migration or live acceptance
+is claimed. Migration `20261110010000_reviewed_edition_credit_source_use.sql` remains owner-run after
+review. Remote CI remains unverified because the required checks connector requests GitHub account
+connection.
+
+Private logs, original archives, failure traces and recovery receipts remain under
+`/Users/gregchism/.codex/private/intake-save-2026-10-18/`. Incidental documentation examples are recorded
+there as future comparison exclusions. No live metadata comparison or catalog enrichment was run.
+The new work is in [draft PR #647](https://github.com/Reverie-Reads/reverie-reads/pull/647), stacked on
+the still-open #646, not on a confirmed merged parent.
+
+This stage made zero Luna calls and spent $0. The durable ledger still records a $50 total ceiling,
+$20.739314750 conservative burden, $29.260685250 remaining, zero reservations and zero unsettled
+requests. Pricing remains unconfigured; this is a workflow ledger, not an account-wide invoice audit.
+No source or model is promoted by this manual-save implementation. Qualify the particular source
+operations and use a genuinely new frozen comparison before any later intake cutover; Add, scanning
+and imports remain unchanged here.
