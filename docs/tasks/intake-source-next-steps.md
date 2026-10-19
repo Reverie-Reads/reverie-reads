@@ -30,6 +30,16 @@ and full-creator checks. No source is qualified for automatic promotion, and Add
 writers remain unchanged. The sections below retain the original research and acceptance rationale;
 the adapter and durable-ledger implementation steps are now complete.
 
+The [subsequent readiness pass](intake-readiness-comparison-2026-10-18.md) removes the no-write
+duplicate-review refresh delay and qualifies two finite publisher editing/translation label aliases.
+Its new four-edition frozen sample observed all thirteen selected PRH credits while retaining
+additional unknown roles and source-use holds. This does not qualify a complete roster or activate
+the resolver. The full browser run now passes 438 checks with eleven existing conditional skips and
+zero failures, and the original local database was restored with all 102 public/authentication tables
+matching the pre-test snapshot. Source-use qualification and unsupported contributor roles remain
+cutover blockers. Next, resolve the operation-specific source-use holds and validate the smallest
+explicit review handoff against qualified evidence; do not enable automatic promotion.
+
 ## Evidence already available
 
 The saved October 16 completion report records 52 description fills without additional paid calls;
