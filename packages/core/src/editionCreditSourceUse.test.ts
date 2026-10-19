@@ -34,7 +34,7 @@ describe('manual edition-credit source-use review', () => {
     { version: 2 },
     { basis: 'api_key' },
     { basis: 'model_verified' },
-    { basis: { toString: () => 'public_terms' } },
+    { basis: { toString: (): string => 'public_terms' } },
     { note: ' ' },
     { note: 'x'.repeat(1001) },
     { scope: 'all_provider_content' },
