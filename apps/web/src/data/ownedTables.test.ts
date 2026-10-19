@@ -149,6 +149,30 @@ describe('account deletion reaches every user-owned table', () => {
 })
 
 describe('no user-owned table may go unregistered', () => {
+  it('retains source-use receipts through their shared review without personal export or restore', () => {
+    expect(
+      USER_OWNED_TABLES.find(
+        (entry) => entry.table === 'corpus_edition_credit_source_use_receipts',
+      ),
+    ).toMatchObject({
+      owner: 'review_id',
+      ownerRelation: { table: 'corpus_edition_credit_reviews', key: 'id', owner: 'reviewer_id' },
+      collective: true,
+      plan: { backup: false },
+    })
+    expect(schema.get('corpus_edition_credit_source_use_receipts')).toContainEqual({
+      target: 'corpus_edition_credit_reviews',
+      action: 'on delete restrict',
+    })
+    expect(schema.get('corpus_edition_credit_reviews')).toContainEqual({
+      target: 'profiles',
+      action: 'on delete set null',
+    })
+    expect(RECONCILIATION_SCRIPT).toContain('filterSql: entry.ownerRelation')
+    expect(RECONCILIATION_SCRIPT).toContain(
+      'where ${identifier(entry.ownerRelation.owner)} = any(${accounts})',
+    )
+  })
   it('every table the schema owns is declared in ownedTables.ts', () => {
     const registered = new Set(USER_OWNED_TABLES.map((t) => t.table))
     const owned = [...schema.keys()].filter((t) => t !== 'profiles' && ownerScoped(t))

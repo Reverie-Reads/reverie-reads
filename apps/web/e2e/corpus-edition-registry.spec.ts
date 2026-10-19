@@ -103,7 +103,7 @@ async function fixture(page: Page) {
         ],
         {
           input:
-            "delete from public.corpus_edition_credit_reviews where work_id=:'work'::uuid;\n delete from public.corpus_record_edits where work_id=:'work'::uuid;\n",
+            "delete from public.corpus_edition_credit_source_use_receipts where review_id in (select id from public.corpus_edition_credit_reviews where work_id=:'work'::uuid);\n delete from public.corpus_edition_credit_reviews where work_id=:'work'::uuid;\n delete from public.corpus_record_edits where work_id=:'work'::uuid;\n",
           stdio: ['pipe', 'pipe', 'pipe'],
         },
       )
@@ -164,6 +164,30 @@ async function prepareContributorEvidence(page: Page, c: Awaited<ReturnType<type
   await page.getByRole('button', { name: 'Add another credit' }).click()
   await page.getByRole('textbox', { name: 'Credit 2 name', exact: true }).fill('Unclear Person')
   await page.getByRole('textbox', { name: 'Credit 2 original role label' }).fill('Contributor?')
+  await page.getByRole('button', { name: 'Prepare review', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('permission basis')
+  const pending = await ok(
+    c.client.rpc('admin_get_edition_credit_reviews', {
+      p_work: c.work,
+      p_edition: (
+        await ok(
+          c.client.rpc('get_corpus_record', { p_work: c.work }),
+          'edition before source-use review',
+        )
+      ).editions[0].id,
+    }),
+    'source-use draft remains local',
+  )
+  expect(pending.reviews).toEqual([])
+  await page.getByRole('combobox', { name: 'Source-use basis' }).selectOption('public_terms')
+  await page
+    .getByRole('textbox', { name: 'Source-use reference URL' })
+    .fill('https://publisher.example/terms')
+  await page
+    .getByRole('textbox', { name: 'Why these terms or permission cover these facts' })
+    .fill(
+      'Synthetic terms fixture: retained edition identity and contributor-credit facts with attribution.',
+    )
   await page.getByRole('checkbox', { name: /I inspected/ }).check()
   await page.getByRole('checkbox', { name: /may be retained/ }).check()
   await page.getByRole('button', { name: 'Prepare review', exact: true }).click()
@@ -250,6 +274,16 @@ test('edition credit review preserves literal roles and personal history through
     await expect(page.getByRole('region', { name: 'Reviewed edition credits' })).toContainText(
       'Ann Brown',
     )
+    await page.getByRole('button', { name: `Review contributors for ${c.reference}` }).click()
+    await page.getByRole('button', { name: 'Check saved reviews', exact: true }).click()
+    await page.getByText('Inspect this saved review', { exact: true }).click()
+    await expect(
+      page.getByRole('link', { name: 'Applicable public terms', exact: true }),
+    ).toHaveAttribute('href', 'https://publisher.example/terms')
+    await expect(page.getByRole('region', { name: 'Edition contributor evidence' })).toContainText(
+      'Synthetic terms fixture: retained edition identity and contributor-credit facts with attribution.',
+    )
+    await page.getByRole('button', { name: 'Close contributor review', exact: true }).click()
     const current = await ok(
       c.client.rpc('get_corpus_record', { p_work: c.work }),
       'current edition',
@@ -305,7 +339,7 @@ test('future-dated edition credits remain unselectable and preserve personal dat
     })
     // Change only the evidence timestamp, so authentication continues on its real clock.
     // The real database must reject this payload; no eligibility response is mocked.
-    await page.route('**/rest/v1/rpc/admin_prepare_edition_credits', async (route) => {
+    await page.route('**/rest/v1/rpc/admin_prepare_reviewed_edition_credits', async (route) => {
       const payload = route.request().postDataJSON()
       payload.p_evidence.source.checkedAt = new Date(Date.now() + 86400000).toISOString()
       await route.continue({ postData: JSON.stringify(payload) })

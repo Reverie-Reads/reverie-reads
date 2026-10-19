@@ -969,8 +969,22 @@ draft conflicts. Accepted credits append with a new edition revision; existing v
 edition identity changes mark retained entries `reviewRequired: true`; returning the old identity
 does not revive them. A fresh confirmed review may append a current credit while retaining held
 history. Page-count-only edits do not withdraw contributor qualification.
-This manual review requires first-party source inspection and retention confirmation; neither a URL
-nor a provider/model claim supplies that verification. Source adapters remain review-only. Their optional provider-scoped `sourceContributorId` and
+New manual reviews require first-party source inspection and a separate `EditionCreditSourceUseReview`.
+The administrator records inspected applicable public terms or specific written permission, an HTTPS
+reference without credentials or query parameters, a short explanation, inspection time and explicit
+confirmation. Its only scope is retaining edition identity and literal credit facts; prose, images,
+export and model input receive no permission from it. This is a human attestation, not an automated
+legal determination or provider qualification. Missing, future or more-than-720-hour-old records block
+new preparation/application. The unresolved form remains browser-only.
+`corpus_edition_credit_source_use_receipts` freezes that record one-to-one with the review, with RLS
+and no direct API privileges. Administrator history returns it; published credits do not expose its
+reference or explanation. `admin_prepare_reviewed_edition_credits` freezes bibliography and receipt
+atomically; the old prepare function is internal. Identical retries are read-only; changing either
+document conflicts. Legacy pending reviews require a new review rather than a retrofitted receipt.
+Already accepted credits and identical applied retries remain intact, including legacy records.
+Neither a URL nor a provider/model claim supplies inspection or applicable permission. See
+[`intake-reviewed-save-2026-10-18.md`](../tasks/intake-reviewed-save-2026-10-18.md).
+Source adapters remain review-only. Their optional provider-scoped `sourceContributorId` and
 role codes are transient review evidence; this change does not extend the stored-credit SQL shape.
 Conflicting names/IDs and normalized-credit collisions produce withheld ordered credits, never
 identity or field support. Source qualification records describe separate lookup/review/cache/storage/

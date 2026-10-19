@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { CorpusEdition, CorpusRecord } from '../../data/corpusEditions'
 import type { EditionCreditReview as Review } from '../../data/editionCredits'
@@ -37,6 +37,7 @@ beforeEach(() => {
       id: input.id,
       status: 'prepared',
       evidence: input.evidence,
+      sourceUseReview: input.sourceUseReview,
       decisions: [{ position: 0, eligible: true, reasons: [] }],
     }
     return prepared
@@ -61,6 +62,11 @@ function fill() {
     ['Where the credits appear on the page', 'Edition credits'],
     ['Credit 1 name', 'Ann Brown'],
     ['Credit 1 original role label', 'Introduction by'],
+    ['Source-use reference URL', 'https://publisher.example/terms'],
+    [
+      'Why these terms or permission cover these facts',
+      'These inspected terms cover attributed edition identity and contributor-credit facts.',
+    ],
   ])
     fireEvent.change(screen.getByRole('textbox', { name: label }), { target: { value } })
   fireEvent.change(screen.getByRole('combobox', { name: 'Source attribution' }), {
@@ -68,6 +74,9 @@ function fill() {
   })
   fireEvent.change(screen.getByRole('combobox', { name: 'Credit 1 role' }), {
     target: { value: 'introduction' },
+  })
+  fireEvent.change(screen.getByRole('combobox', { name: 'Source-use basis' }), {
+    target: { value: 'public_terms' },
   })
   fireEvent.click(screen.getByRole('checkbox', { name: /I inspected/ }))
   fireEvent.click(screen.getByRole('checkbox', { name: /may be retained/ }))
@@ -96,12 +105,19 @@ it('freezes the actual evidence and requires deliberate selection and confirmati
     sourceRole: 'Introduction by',
     basis: 'edition',
   })
+  expect(prepared.sourceUseReview).toMatchObject({
+    basis: 'public_terms',
+    url: 'https://publisher.example/terms',
+    scope: 'edition_identity_and_credit_facts',
+    confirmed: true,
+  })
 })
 it('held credits cannot be selected even after source confirmation', async () => {
   api.prepare.mockImplementation(async (input) => ({
     id: input.id,
     status: 'prepared',
     evidence: input.evidence,
+    sourceUseReview: input.sourceUseReview,
     decisions: [{ position: 0, eligible: false, reasons: ['credit_scope_unverified'] }],
   }))
   open()
@@ -167,3 +183,141 @@ it('history read failures stay visible without invoking a save', async () => {
   expect(api.prepare).not.toHaveBeenCalled()
   expect(api.apply).not.toHaveBeenCalled()
 })
+
+it('keeps an unresolved source-use draft in the browser without preparing any server record', async () => {
+  open()
+  fill()
+  fireEvent.change(screen.getByRole('combobox', { name: 'Source-use basis' }), {
+    target: { value: '' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Prepare review' }))
+  await screen.findByRole('alert')
+  expect(api.prepare).not.toHaveBeenCalled()
+  expect(screen.getByRole('textbox', { name: 'Source title' })).toHaveValue('Still Waters')
+  expect(screen.getByRole('textbox', { name: 'Credit 1 name' })).toHaveValue('Ann Brown')
+})
+
+it('editing bibliography or permission evidence clears the corresponding confirmations', async () => {
+  open()
+  fill()
+  const inspected = screen.getByRole('checkbox', { name: /I inspected/ })
+  const retained = screen.getByRole('checkbox', { name: /may be retained/ })
+  expect(inspected).toBeChecked()
+  expect(retained).toBeChecked()
+  fireEvent.change(screen.getByRole('textbox', { name: 'Source-use reference URL' }), {
+    target: { value: 'https://publisher.example/new-terms' },
+  })
+  expect(retained).not.toBeChecked()
+  expect(inspected).toBeChecked()
+  fireEvent.click(retained)
+  fireEvent.change(screen.getByRole('textbox', { name: 'Credit 1 name' }), {
+    target: { value: 'Other Person' },
+  })
+  expect(retained).not.toBeChecked()
+  expect(inspected).not.toBeChecked()
+  fireEvent.click(screen.getByRole('button', { name: 'Prepare review' }))
+  await screen.findByRole('alert')
+  expect(api.prepare).not.toHaveBeenCalled()
+})
+
+it.each(['missing', 'stale'] as const)(
+  'does not offer a save for %s source-use evidence even with a permissive response',
+  async (state) => {
+    api.prepare.mockImplementation(async (input) => ({
+      id: input.id,
+      status: 'prepared',
+      evidence: input.evidence,
+      sourceUseReview:
+        state === 'missing'
+          ? null
+          : { ...input.sourceUseReview, checkedAt: '2020-01-01T00:00:00Z' },
+      decisions: [{ position: 0, eligible: true, reasons: [] }],
+    }))
+    open()
+    await prepare()
+    expect(screen.getByRole('checkbox', { name: 'Ann Brown · introduction' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save selected edition credits' })).toBeDisabled()
+    expect(api.apply).not.toHaveBeenCalled()
+  },
+)
+
+it.each(['current', 'missing', 'stale'] as const)(
+  'reopened history exposes the %s source-use receipt and its holds',
+  async (state) => {
+    const original = open()
+    await prepare()
+    const frozen = structuredClone(prepared)
+    original.view.unmount()
+    api.get.mockResolvedValue([
+      {
+        ...frozen,
+        status: 'applied',
+        selected: [0],
+        sourceUseReview:
+          state === 'missing'
+            ? null
+            : {
+                ...frozen.sourceUseReview!,
+                checkedAt:
+                  state === 'stale' ? '2020-01-01T00:00:00Z' : frozen.sourceUseReview!.checkedAt,
+              },
+        decisions: [
+          {
+            position: 0,
+            eligible: state === 'current',
+            reasons:
+              state === 'current'
+                ? []
+                : [state === 'missing' ? 'source_use_review_required' : 'source_use_stale'],
+          },
+        ],
+      },
+    ])
+    open()
+    fireEvent.click(screen.getByRole('button', { name: 'Check saved reviews' }))
+    const summary = await screen.findByText('Inspect this saved review')
+    fireEvent.click(summary)
+    const details = summary.closest('details')!
+    if (state === 'missing')
+      expect(within(details).getByText(/older review has no source-use record/)).toBeVisible()
+    else {
+      expect(
+        within(details).getByRole('link', { name: 'Applicable public terms' }),
+      ).toHaveAttribute('href', frozen.sourceUseReview!.url)
+      expect(within(details).getByText(frozen.sourceUseReview!.note)).toBeVisible()
+      if (state === 'stale')
+        expect(within(details).getByText(/source-use inspection is stale/)).toBeVisible()
+    }
+    expect(api.apply).not.toHaveBeenCalled()
+  },
+)
+
+it.each(['stale', 'missing'] as const)(
+  'an uncertain save can retry only the original selection after %s receipt readback',
+  async (state) => {
+    const c = open()
+    await prepare()
+    select()
+    api.apply.mockRejectedValueOnce(new Error('Response lost'))
+    fireEvent.click(screen.getByRole('button', { name: 'Save selected edition credits' }))
+    await screen.findByRole('alert')
+    api.get.mockResolvedValue([
+      {
+        ...prepared,
+        stale: true,
+        sourceUseReview:
+          state === 'missing'
+            ? null
+            : { ...prepared.sourceUseReview!, checkedAt: '2020-01-01T00:00:00Z' },
+      },
+    ])
+    fireEvent.click(screen.getByRole('button', { name: 'Check saved reviews' }))
+    await screen.findByText(/catalog changed/)
+    expect(screen.getByRole('checkbox', { name: 'Ann Brown · introduction' })).toBeDisabled()
+    const retry = screen.getByRole('button', { name: 'Retry the same confirmation' })
+    expect(retry).toBeEnabled()
+    fireEvent.click(retry)
+    await waitFor(() => expect(c.saved).toHaveBeenCalledOnce())
+    expect(api.apply.mock.calls[1]).toEqual(api.apply.mock.calls[0])
+  },
+)

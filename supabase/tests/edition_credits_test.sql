@@ -5,6 +5,7 @@ from unnest(array['anon','authenticated','service_role']) r cross join unnest(ar
 select ok(not has_function_privilege(r,f,'EXECUTE'),r||' cannot execute '||f)
 from unnest(array['anon','service_role']) r cross join unnest(array[
  'public.admin_get_edition_credit_reviews(uuid,uuid)', 'public.admin_prepare_edition_credits(uuid,uuid,uuid,text,jsonb)',
+ 'public.admin_prepare_reviewed_edition_credits(uuid,uuid,uuid,text,jsonb,jsonb)',
  'public.admin_apply_edition_credits(uuid,integer[],boolean)']) f;
 insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at) values
 ('c8111111-1111-4111-8111-111111111111','authenticated','authenticated','credits-admin@example.com','{}','{}',now(),now()),
@@ -32,8 +33,11 @@ create function pg_temp.evidence() returns jsonb language sql as $$
  'confirmations','{"sourceChecked":true,"identityChecked":true,"creditsChecked":true}'::jsonb);
 $$;
 create function pg_temp.prepare(p_review_id uuid,v jsonb default pg_temp.evidence()) returns jsonb language sql security definer as $$
- select public.admin_prepare_edition_credits(p_review_id,'c8000000-0000-4000-8000-000000000001',e.id,
- public.corpus_record_fingerprint(e.work_id),v) from public.corpus_editions e where e.isbn='9780306406157';
+ select public.admin_prepare_reviewed_edition_credits(p_review_id,'c8000000-0000-4000-8000-000000000001',e.id,
+ public.corpus_record_fingerprint(e.work_id),v,jsonb_build_object('version',1,'basis','public_terms',
+ 'url','https://publisher.example/terms','note','Synthetic terms fixture permits retaining these identity and credit facts.',
+ 'checkedAt',to_char(now() at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+ 'scope','edition_identity_and_credit_facts','confirmed',true)) from public.corpus_editions e where e.isbn='9780306406157';
 $$;
 select ok(public.edition_credit_evidence_valid(pg_temp.evidence()),'valid manual evidence including held credit');
 select ok(not public.edition_credit_evidence_valid(pg_temp.evidence()||'{"privateNotes":"no"}'),'private fields refused');
