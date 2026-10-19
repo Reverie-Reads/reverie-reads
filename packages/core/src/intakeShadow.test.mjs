@@ -156,6 +156,50 @@ describe('bounded intake acquisition', () => {
 })
 
 describe('truth-blind independent shadow scoring', () => {
+  it.each([
+    ['2026-10-18T12:00:00.000Z', 'current'],
+    ['2026-11-17T12:00:00.000Z', 'stale'],
+  ])(
+    'reports source-use qualification at %s without retaining edition literals',
+    async (asOf, state) => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(asOf))
+      try {
+        const providers = ['openlibrary', 'hardcover', 'penguin_random_house']
+        const views = []
+        const r = await evaluateShadow(
+          { ...frame(), providers },
+          createIntakeSourceClient({ providers, fetcher: fetcher(), sleeper }),
+          (view) => views.push(view),
+        )
+        expect(r.qualificationAsOf).toBe(asOf)
+        expect(r.sourceQualification.map((source) => source.provider)).toEqual(providers)
+        for (const qualification of r.sourceQualification) {
+          expect(qualification.usage).toBe('review_only')
+          expect(qualification.reviewState).toBe(state)
+          expect(qualification.upstreamLineage).toBe('unverified')
+          expect(qualification.promotionBlockers).toContain('source_review_only')
+          if (state === 'stale')
+            expect(qualification.promotionBlockers).toContain('source_review_stale')
+        }
+        expect(r.sourceQualification[0].operations.cache.status).toBe('documented')
+        expect(r.sourceQualification[2].operations.cache.status).toBe('unverified')
+        expect(r.mode).toBe('review_only')
+        expect(r.summary).toMatchObject({ writes: 0, modelCalls: 0, cutoverReady: false })
+        expect(views[0].review.sources[0].identity.title).toBe(target.title)
+        for (const literal of [
+          target.title,
+          'Jane Smith',
+          isbn,
+          '/books/OL1M',
+          'publisher.example',
+        ])
+          expect(JSON.stringify(r)).not.toContain(literal)
+      } finally {
+        vi.useRealTimers()
+      }
+    },
+  )
   it('binds the provider selection to the frozen frame before acquisition', async () => {
     const acquire = vi.fn()
     const f = { ...frame(), providers: ['openlibrary', 'hardcover', 'penguin_random_house'] }
@@ -260,7 +304,7 @@ describe('truth-blind independent shadow scoring', () => {
     const observed = await resolveShadowTarget(target, client)
     const review = buildIntakeReview(observed.request)
     expect(review.sources[1].credits.map((c) => c.sourceRole)).toEqual(['author', 'co-author'])
-    expect(observed.issues.hardcover).toEqual(['duplicate_credits'])
+    expect(observed.issues.hardcover).toEqual(['duplicate_credits', 'role_normalization_collision'])
     const score = scoreShadowCase(frame().cases[0], observed)
     expect(score.sources[1]).toMatchObject({ identity: 'unobserved', falseIdentityMatch: false })
     expect(JSON.stringify(score)).not.toContain('co-author')

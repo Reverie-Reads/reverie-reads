@@ -1,5 +1,7 @@
+import { getIntakeSourceQualification } from './intakeSourceQualification'
 import type { IntakeCredit, IntakeEvidenceRequest } from './intakeEvidence'
 import { intakeIdentityDiagnostics, resolveIntakeEvidence } from './intakeResolver'
+import { reviewIntakeCreditCollisions } from './intakeCreditReview'
 
 /** In-memory operator view. Do not serialize this view into a provider-retaining report. */
 export function buildIntakeReview(input: unknown) {
@@ -16,9 +18,13 @@ export function buildIntakeReview(input: unknown) {
     sources: request.observations.map((o) => ({
       id: o.id,
       source: o.source,
+      qualification: getIntakeSourceQualification(o.source.provider, request.asOf),
       status: o.status,
       identity: o.identity,
       creditStatements: o.creditStatements ?? [],
+      creditCollisions: reviewIntakeCreditCollisions(
+        o.identity?.contributors ?? o.withheldCredits ?? [],
+      ),
       identityCheck: intakeIdentityDiagnostics(request, o),
       reasons: result.observations.find((d) => d.id === o.id)!.reasons,
       credits: (o.identity?.contributors ?? o.withheldCredits ?? []).map((credit, position) => ({
@@ -82,6 +88,15 @@ export function intakeReviewDiagnostics(input: IntakeEvidenceRequest) {
       needsLosslessStorage: s.credits.filter((c) => c.storage === 'requires_lossless_storage')
         .length,
       completeness: 'unverified',
+      collisionPairs: {
+        repeatedCredit: s.creditCollisions.filter((c) => c.kind === 'repeated_credit').length,
+        roleNormalization: s.creditCollisions.filter(
+          (c) => c.kind === 'role_normalization_collision',
+        ).length,
+        personIdentifier: s.creditCollisions.filter((c) => c.kind === 'person_identifier_conflict')
+          .length,
+        personName: s.creditCollisions.filter((c) => c.kind === 'person_name_conflict').length,
+      },
     },
   }))
 }

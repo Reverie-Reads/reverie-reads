@@ -31,17 +31,23 @@ returned array length; its semantics remain unqualified and the discrepancy stay
 count nor a successfully parsed response certifies a complete contributor roster.
 
 The contextual contributor code and literal label are preserved separately in source order.
-Known conflicting labels become unknown roles. Introduction and foreword are named parts;
+Known conflicting labels become unknown roles. The documented `A` / `Written by` pair is
+accepted explicitly; that phrase cannot override a different or unknown code. Preface, afterword,
+epilogue, prologue and appendix codes retain named-part scope as generic contributors. Introduction and foreword are named parts;
 editors, translators, narrators and unknown credits cannot establish whole-work authorship.
 The documented five-person mapping is not proof of a complete roster. Duplicate normalized
 credit tuples retain their literal labels only as withheld evidence, with no identity support.
+Review now distinguishes repeated retained credit fields, lossy role normalization, conflicting
+provider person IDs, and inconsistent names for one provider ID. All remain held, with original
+row order and prior warnings preserved. IDs are scoped to one source record; copied publisher
+IDs can differ, so an ID conflict is uncertainty rather than proof of different people.
 
 Only selected-edition pages, format, language, publisher and territory-specific publication
 observations enter this slice. Audio does not acquire print pages. Conflicting known formats,
 territories, incomplete rosters and invalid dates remain visible. No descriptions, cover data,
 series classification or reader data are acquired by the publisher adapter.
 
-`sourceRoleCode` is an optional field in transient intake evidence. The existing persisted
+`sourceRoleCode` and `sourceContributorId` are optional fields in transient intake evidence. The existing persisted
 edition-credit SQL shape is unchanged; this adapter cannot silently send new evidence fields
 through that administrator handoff. Separate manual review remains required, and any future
 code-bearing storage handoff needs an explicit lossless schema contract.
@@ -55,10 +61,16 @@ transport and unchanged personal-data boundaries. Reference answers never enter 
 A new frozen comparison is required before considering any intake switch; passing these tests
 alone does not qualify the publisher or establish independent source agreement.
 
+Source-use qualifications are separately versioned in
+[the operation-specific review](intake-source-qualification-2026-10-18.md). No reviewed source
+is eligible for automatic catalog promotion.
+
 Official contract references inspected for this implementation:
 
 - [Title resource](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/resources/Title)
 - [Contributor roles](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/concepts/Contributor_role)
+- [Author representation and contextual labels](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/representations/Author_representation)
+- [Multiple authors](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/concepts/Multiple_authors)
 - [Works and ISBNs](https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api/concepts/Works_and_ISBNs)
 
 See the [October 18 comparison](intake-publisher-comparison-2026-10-18.md) for observed coverage,

@@ -20,11 +20,25 @@ a second unseen frozen comparison observed PRH matching five of six positive ide
 contributor tuples keep the remaining publisher identity under review. See the
 [dated comparison and limitations](intake-publisher-comparison-2026-10-18.md).
 
-Next: review duplicate/unknown contributor evidence without silently merging roles, establish
-source-use and lineage qualifications, then test the explicit reviewed handoff. Preserve exact ISBN
+The next slice adds distinct duplicate/person-conflict diagnostics and a dated, operation-specific
+[source qualification review](intake-source-qualification-2026-10-18.md). Qualification remains
+incomplete: applicable API reuse terms and claim-level lineage still need evidence. Duplicate
+credits are withheld without silent merging. The [new frozen contributor comparison](intake-credit-qualification-comparison-2026-10-18.md)
+retains the resulting source-specific coverage and unresolved failures. Next, resolve those source-use holds and test the
+explicit reviewed handoff against source-qualified evidence. Preserve exact ISBN
 and full-creator checks. No source is qualified for automatic promotion, and Add/scanning/import
 writers remain unchanged. The sections below retain the original research and acceptance rationale;
 the adapter and durable-ledger implementation steps are now complete.
+
+The [subsequent readiness pass](intake-readiness-comparison-2026-10-18.md) removes the no-write
+duplicate-review refresh delay and qualifies two finite publisher editing/translation label aliases.
+Its new four-edition frozen sample observed all thirteen selected PRH credits while retaining
+additional unknown roles and source-use holds. This does not qualify a complete roster or activate
+the resolver. The full browser run now passes 438 checks with eleven existing conditional skips and
+zero failures, and the original local database was restored with all 102 public/authentication tables
+matching the pre-test snapshot. Source-use qualification and unsupported contributor roles remain
+cutover blockers. Next, resolve the operation-specific source-use holds and validate the smallest
+explicit review handoff against qualified evidence; do not enable automatic promotion.
 
 ## Evidence already available
 

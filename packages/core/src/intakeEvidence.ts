@@ -26,6 +26,8 @@ export interface IntakeCredit {
   sourceRole?: string | null
   /** Literal provider code, retained separately from its display label. */
   sourceRoleCode?: string | null
+  /** Provider-scoped person identifier for transient review; never a reader or catalog ID. */
+  sourceContributorId?: string | null
   /** Where this credit was observed; parent-work credits do not certify a selected edition. */
   basis?: 'work' | 'edition'
 }

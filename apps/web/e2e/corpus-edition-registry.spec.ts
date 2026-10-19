@@ -6,6 +6,7 @@ import { expect, test, type Page } from './support/fixtures'
 import { configureReturningReader } from './support/readerGuidance'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
 import { ok, okUser } from './support/ok'
+import { localDatabaseTime } from './support/localSupabase'
 const URL = 'http://127.0.0.1:55321'
 const ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
@@ -133,24 +134,7 @@ async function evidence(page: Page) {
 // The browser and Docker VM have independent clocks. Anchor this synthetic observation to
 // the database before opening the form; timers still run normally. Future evidence remains held.
 async function setReviewClock(page: Page) {
-  const timestamp = Number(
-    execFileSync(
-      'docker',
-      [
-        'exec',
-        'supabase_db_book-corpus',
-        'psql',
-        '-U',
-        'postgres',
-        '-d',
-        'postgres',
-        '-Atc',
-        'select floor(extract(epoch from clock_timestamp()) * 1000)::bigint',
-      ],
-      { encoding: 'utf8' },
-    ).trim(),
-  )
-  expect(Number.isFinite(timestamp)).toBe(true)
+  const timestamp = await localDatabaseTime()
   await page.clock.setFixedTime(new Date(timestamp))
 }
 

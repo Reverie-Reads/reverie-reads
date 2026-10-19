@@ -33,9 +33,11 @@ export function renderIntakeReview(reviews) {
       (s) => `<section><h3>${escape(s.source.provider)} — ${escape(s.status)}</h3>
     <p><a href="${escape(s.source.url)}" target="_blank" rel="noopener noreferrer">Source record</a> · ${escape(s.source.recordId)} · retrieved ${escape(s.source.retrievedAt)}</p>
     <p>Use: ${escape(s.source.usage)}. Upstream origin: ${escape(s.source.lineage ?? 'Unknown; independence unverified')}.</p>
+    <h4>Source-use review — no permission grant</h4>${show(s.qualification)}
     <h4>Identity comparison</h4>${show(s.identityCheck)}<h4>Observed identity</h4>${show(s.identity)}
     <h4>Why review is required</h4>${show(s.reasons)}
     <h4>Contributor credits in source order</h4>${show(s.credits)}
+    <h4>Credit conflicts — no rows merged</h4>${show(s.creditCollisions ?? [])}
     <h4>Unparsed credit statements — roles not inferred</h4>${show(s.creditStatements)}
     <h4>Field evidence and existing values</h4>${show(s.claims)}
   </section>`,

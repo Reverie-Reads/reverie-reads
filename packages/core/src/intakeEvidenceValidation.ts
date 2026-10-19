@@ -1,4 +1,5 @@
-import type { IntakeEvidenceRequest, IntakeField } from './intakeEvidence'
+import type { IntakeCredit, IntakeEvidenceRequest, IntakeField } from './intakeEvidence'
+import { reviewIntakeCreditCollisions } from './intakeCreditReview'
 
 export const intakeFields: IntakeField[] = [
   'title',
@@ -57,10 +58,13 @@ const https = (v: unknown): boolean => {
 
 function credits(v: unknown, allowDuplicates = false): boolean {
   if (!Array.isArray(v) || !v.length || v.length > 100) return false
-  const seen = new Set<string>()
-  return v.every((c) => {
+  const validShape = v.every((c) => {
     if (
-      !keys(c, ['name', 'role', 'scope'], ['part', 'sourceRole', 'sourceRoleCode', 'basis']) ||
+      !keys(
+        c,
+        ['name', 'role', 'scope'],
+        ['part', 'sourceRole', 'sourceRoleCode', 'sourceContributorId', 'basis'],
+      ) ||
       !text(c.name) ||
       !oneOf(c.role, roles) ||
       !oneOf(c.scope, ['whole', 'part']) ||
@@ -71,14 +75,20 @@ function credits(v: unknown, allowDuplicates = false): boolean {
       (c.sourceRoleCode !== undefined &&
         c.sourceRoleCode !== null &&
         (typeof c.sourceRoleCode !== 'string' || c.sourceRoleCode.length > 40)) ||
+      (c.sourceContributorId !== undefined &&
+        c.sourceContributorId !== null &&
+        !text(c.sourceContributorId, 100)) ||
       (c.basis !== undefined && !oneOf(c.basis, ['work', 'edition']))
     )
       return false
-    const key = JSON.stringify([c.name, c.role, c.scope, c.part])
-    if (!allowDuplicates && seen.has(key)) return false
-    seen.add(key)
     return true
   })
+  // Direct and manual packets must honor the same ambiguity boundary as provider adapters.
+  // Shape validation runs first; failed observations alone may retain conflicting rows for review.
+  return (
+    validShape &&
+    (allowDuplicates || reviewIntakeCreditCollisions(v as IntakeCredit[]).length === 0)
+  )
 }
 
 function publication(v: unknown): boolean {

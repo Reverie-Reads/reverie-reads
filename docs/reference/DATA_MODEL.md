@@ -970,7 +970,11 @@ edition identity changes mark retained entries `reviewRequired: true`; returning
 does not revive them. A fresh confirmed review may append a current credit while retaining held
 history. Page-count-only edits do not withdraw contributor qualification.
 This manual review requires first-party source inspection and retention confirmation; neither a URL
-nor a provider/model claim supplies that verification. Source adapters remain review-only.
+nor a provider/model claim supplies that verification. Source adapters remain review-only. Their optional provider-scoped `sourceContributorId` and
+role codes are transient review evidence; this change does not extend the stored-credit SQL shape.
+Conflicting names/IDs and normalized-credit collisions produce withheld ordered credits, never
+identity or field support. Source qualification records describe separate lookup/review/cache/storage/
+export/model-input findings; they confer no catalog authority.
 
 `get_corpus_record` returns a work's editions, guidance and series tuple/confirmed-graph flag,
 the caller's unresolved reports (all for
