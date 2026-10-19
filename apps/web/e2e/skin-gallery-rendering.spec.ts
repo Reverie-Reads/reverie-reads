@@ -64,15 +64,49 @@ test('gallery defers offscreen material work and renders each room when revealed
       const canvas = previews.nth(i)
       await expect(canvas).toHaveAttribute('data-renderer', /Canvas/)
       observations.push(
-        await canvas.evaluate((element) => ({
-          scene: element.dataset.atmosphere,
-          renderer: element.dataset.renderer,
-          pixels: Number(element.dataset.materialPixels),
-          paintMs: Number(element.dataset.paintMs),
-        })),
+        await canvas.evaluate((element) => {
+          if (!(element instanceof HTMLCanvasElement)) throw new Error('Expected room canvas')
+          const pixels = (source: HTMLCanvasElement) => {
+            const context = source.getContext('2d')
+            if (!context) throw new Error('No canvas pixels available for inspection')
+            const data = context.getImageData(0, 0, source.width, source.height).data
+            const alphas = [0.1, 0.5, 0.9].flatMap((x) =>
+              [0.1, 0.5, 0.9].map(
+                (y) =>
+                  data[
+                    (Math.floor(source.height * y) * source.width + Math.floor(source.width * x)) *
+                      4 +
+                      3
+                  ],
+              ),
+            )
+            const colors = new Set<string>()
+            // Read the whole raster so sparse stars or grain cannot be missed by a few samples.
+            for (let i = 0; i < data.length && colors.size < 2; i += 4)
+              if (data[i + 3] === 255) colors.add(`${data[i]},${data[i + 1]},${data[i + 2]}`)
+            return {
+              opaqueSamples: alphas.filter((alpha) => alpha === 255).length,
+              distinctColors: colors.size,
+            }
+          }
+          return {
+            scene: element.dataset.atmosphere,
+            renderer: element.dataset.renderer,
+            pixels: Number(element.dataset.materialPixels),
+            paintMs: Number(element.dataset.paintMs),
+            painted: pixels(element),
+            // The same instrument must reject a known empty canvas, regardless of receipts.
+            emptyControl: pixels(document.createElement('canvas')),
+          }
+        }),
       )
     }
     expect(observations.every((entry) => entry.pixels > 0 && entry.pixels <= 900_000)).toBe(true)
+    for (const entry of observations) {
+      expect(entry.emptyControl).toEqual({ opaqueSamples: 0, distinctColors: 0 })
+      expect(entry.painted.opaqueSamples, entry.scene).toBe(9)
+      expect(entry.painted.distinctColors, entry.scene).toBeGreaterThan(1)
+    }
     await testInfo.attach('gallery-material-observations.json', {
       contentType: 'application/json',
       body: Buffer.from(JSON.stringify({ initiallyPainted, observations }, null, 2)),

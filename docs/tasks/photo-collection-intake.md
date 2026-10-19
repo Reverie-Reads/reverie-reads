@@ -190,7 +190,8 @@ offscreen painting and duplicate painting on unchanged initial ResizeObserver de
 The shared canvas lifecycle now waits for intersection before generating a material, reuses an
 unchanged still, and defers hidden-tab work until return. Visible/revealed rooms retain the same
 renderer, palette, pixel bound and reduced-motion behavior. A real-browser regression checks that
-the final offscreen card is initially unpainted, then reveals all nine and checks actual renderer
-and pixel-bound observations on desktop and phone-sized Chromium. The accessibility navigation
+the final offscreen card is initially unpainted, then reveals all nine and checks actual renderer,
+opaque/varied canvas pixels and pixel bounds on desktop and phone-sized Chromium. The same pixel
+instrument rejects a known blank canvas. The accessibility navigation
 limit and default worker/retry settings are unchanged. The follow-up full-run and recovery results
 belong in PR #649 alongside the original red result.
