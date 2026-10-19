@@ -108,9 +108,9 @@ select ok(not public.edition_credit_source_use_valid(v),label) from (values
 ) x(v,label);
 select is(public.edition_credit_source_use_hold(pg_temp.source_use()),null::text,'current valid use has no hold');
 select is(public.edition_credit_source_use_hold(null),'source_use_review_required','missing use has specific hold');
-select is(public.edition_credit_source_use_hold(jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char(now()+interval '1 hour' at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')))),
+select is(public.edition_credit_source_use_hold(jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char((now()+interval '1 hour') at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')))),
  'source_use_stale','future use has specific hold');
-select is(public.edition_credit_source_use_hold(jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char(now()-interval '31 days' at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')))),
+select is(public.edition_credit_source_use_hold(jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char((now()-interval '31 days') at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')))),
  'source_use_stale','old use has specific hold');
 
 select set_config('request.jwt.claim.sub','c9222222-2222-4222-8222-222222222222',true);
@@ -123,8 +123,8 @@ select throws_ok($$select * from public.corpus_edition_credit_source_use_receipt
 select throws_ok($$select public.admin_prepare_edition_credits(null,null,null,null,null)$$,'42501',null,'old client prepare route is closed at privilege boundary');
 select throws_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000010',null)$$,'22023',null,'missing use prevents evidence storage');
 select throws_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000010',pg_temp.source_use()||'{"modelOutput":"no"}')$$,'22023',null,'unknown payload prevents evidence storage');
-select throws_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000010',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char(now()-interval '31 days' at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'))))$$,'22023',null,'stale source use prevents evidence storage');
-select throws_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000010',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char(now()+interval '1 hour' at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'))))$$,'22023',null,'future source use prevents evidence storage');
+select throws_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000010',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char((now()-interval '31 days') at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'))))$$,'22023',null,'stale source use prevents evidence storage');
+select throws_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000010',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char((now()+interval '1 hour') at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'))))$$,'22023',null,'future source use prevents evidence storage');
 select throws_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000010',pg_temp.source_use(),pg_temp.evidence()||'{"privateNotes":"no"}')$$,'22023',null,'invalid bibliography prevents atomic receipt retention');
 select is(pg_temp.write_count(),0,'all failed prepares leave no review, receipt or edition write');
 select lives_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000010')$$,'admin freezes bibliography and receipt atomically');
@@ -148,8 +148,8 @@ from public.corpus_editions e where e.isbn='9780306406157';
 select public.admin_prepare_edition_credits('c9000000-0000-4000-8000-000000000013',e.work_id,e.id,public.corpus_record_fingerprint(e.work_id),pg_temp.evidence())
 from public.corpus_editions e where e.isbn='9780306406157';
 insert into public.corpus_edition_credit_source_use_receipts(review_id,source_use) values
- ('c9000000-0000-4000-8000-000000000012',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char(now()-interval '31 days' at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')))),
- ('c9000000-0000-4000-8000-000000000013',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char(now()+interval '1 hour' at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'))));
+ ('c9000000-0000-4000-8000-000000000012',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char((now()-interval '31 days') at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"')))),
+ ('c9000000-0000-4000-8000-000000000013',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char((now()+interval '1 hour') at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'))));
 select ok((r->'decisions'->0->'reasons') ? 'source_use_review_required','legacy pending review visibly requires source use')
 from jsonb_array_elements(pg_temp.reviews()->'reviews') r where r->>'id'='c9000000-0000-4000-8000-000000000011';
 select is(r->'sourceUseReview','null'::jsonb,'legacy receipt is explicitly null')
@@ -163,7 +163,7 @@ select throws_ok($$select public.admin_apply_edition_credits('c9000000-0000-4000
 select throws_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000011')$$,'PT409',null,'legacy review cannot be retrofitted with a receipt');
 select throws_ok($$select public.admin_apply_edition_credits('c9000000-0000-4000-8000-000000000012',array[0],true)$$,'22023',null,'apply rechecks stale use before append');
 select throws_ok($$select public.admin_apply_edition_credits('c9000000-0000-4000-8000-000000000013',array[0],true)$$,'22023',null,'apply rechecks future use before append');
-select lives_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000012',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char(now()-interval '31 days' at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'))))$$,'exact stale receipt retry remains read-only');
+select lives_ok($$select pg_temp.prepare('c9000000-0000-4000-8000-000000000012',jsonb_set(pg_temp.source_use(),'{checkedAt}',to_jsonb(to_char((now()-interval '31 days') at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"'))))$$,'exact stale receipt retry remains read-only');
 select is(pg_temp.write_count(),(select n from before_source_use_holds),'holds and stale exact retry perform no writes');
 select lives_ok($$select public.admin_apply_edition_credits('c9000000-0000-4000-8000-000000000010',array[0,1,2,3],true)$$,'supported credits apply only after both reviews');
 reset role;

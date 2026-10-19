@@ -33,6 +33,8 @@ export interface OwnedTable {
   table: string
   /** The column that ties a row to a user. */
   owner: string
+  /** Indirect attribution through a shared parent; never an authority or personal-backup grant. */
+  ownerRelation?: { table: string; key: string; owner: string }
   plan: BackupPlan
   /** Attribution reaches a user, but the row belongs to a live collective/shared record. */
   collective?: true
@@ -43,6 +45,7 @@ export const USER_OWNED_TABLES: OwnedTable[] = [
   { table: 'corpus_isbn_reports', owner: 'reporter_id', plan: { backup: false, why: 'An ISBN concern is a live catalog moderation request. Restoring it would resubmit a resolved report against potentially changed shared editions. Account deletion removes it.' } },
   { table: 'corpus_record_edits', owner: 'editor_id', collective: true, plan: { backup: false, why: 'Shared bibliographic audit history belongs to the catalog. Administrator account deletion anonymizes attribution; a personal restore must never replay catalog corrections.' } },
   { table: 'corpus_edition_credit_reviews', owner: 'reviewer_id', collective: true, plan: { backup: false, why: 'Frozen edition-credit evidence and save receipts belong to the shared catalog. Account deletion anonymizes reviewer attribution; personal restore must never replay approvals or catalog writes.' } },
+  { table: 'corpus_edition_credit_source_use_receipts', owner: 'review_id', ownerRelation: { table: 'corpus_edition_credit_reviews', key: 'id', owner: 'reviewer_id' }, collective: true, plan: { backup: false, why: 'Source-use attestations belong to the frozen shared-catalog review. Reviewer deletion anonymizes the parent attribution and preserves this evidence; personal backup and restore must never export permissions or replay catalog approvals.' } },
   // ── the library itself ──
   { table: 'discovery_sessions', owner: 'owner_id', plan: { backup: true } },
   { table: 'books', owner: 'owner_id', plan: { backup: true } },

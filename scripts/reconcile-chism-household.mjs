@@ -271,7 +271,9 @@ function backupOwnerState(householdId) {
       snapshotAggregateSql({
         table: entry.table,
         filterColumn: entry.owner,
-        filterSql: `= any(${accounts})`,
+        filterSql: entry.ownerRelation
+          ? `in (select ${identifier(entry.ownerRelation.key)} from public.${identifier(entry.ownerRelation.table)} where ${identifier(entry.ownerRelation.owner)} = any(${accounts}))`
+          : `= any(${accounts})`,
         orderColumns: [entry.owner, ...primaryKey],
       }),
     )
