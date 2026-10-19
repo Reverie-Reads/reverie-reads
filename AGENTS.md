@@ -829,7 +829,12 @@ not a source license upgrade, production qualification, or Add/scan/import write
 `intake:shadow run-review` can expose the current run's evidence through a five-minute, loopback-only,
 read-only view. Close its tab after inspection; do not export provider values from it. Keep original
 credit labels and work/edition basis, leave free-text credit statements unparsed, and never cast
-unsupported roles or part credits into the personal contributor enum. Reference credit checks score
+unsupported roles or part credits into the personal contributor enum. Preserve Open Library's
+literal `by_statement` separately as
+`responsibilityStatement`; either unresolved responsibility or contribution prose holds identity and
+dependent claims, including ISBN-only scans. Keep useful unresolved bylines distinct from wrong-book
+diagnoses; never infer roles from prose or let a responsibility-only hold manufacture a conflict
+against a valid peer. See `docs/tasks/intake-responsibility-evidence-2026-10-19.md`. Reference credit checks score
 only the explicitly listed subset after acquisition; they cannot certify a complete roster.
 Source-use findings are code-owned, dated and operation-specific; lookup access never clears
 storage, export or model input. Stale/unknown findings remain held. Provider person IDs are transient

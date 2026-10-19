@@ -93,7 +93,7 @@ function sourceReasons(request: IntakeEvidenceRequest, o: IntakeObservation): In
 }
 
 /** Identity comparison alone is diagnostic, never evidence qualification or permission to fill. */
-export function intakeIdentityReviewReasons(
+function identityComparisonReasons(
   request: IntakeEvidenceRequest,
   o: IntakeObservation,
 ): IntakeReviewReason[] {
@@ -138,6 +138,20 @@ export function intakeIdentityReviewReasons(
   )
     return ['identity_mismatch']
   return []
+}
+
+/** Unparsed responsibility evidence is a hold, not a wrong-book diagnosis or an inferred role.
+ * Keep title/name/ISBN comparison axes visible, including when another identity check fails. */
+export function intakeIdentityReviewReasons(
+  request: IntakeEvidenceRequest,
+  o: IntakeObservation,
+): IntakeReviewReason[] {
+  return unique([
+    ...identityComparisonReasons(request, o),
+    ...(o.responsibilityStatement || o.creditStatements?.length
+      ? (['responsibility_unreviewed'] as const)
+      : []),
+  ])
 }
 
 function claimReasons(
@@ -198,6 +212,8 @@ export function intakeIdentityDiagnostics(request: IntakeEvidenceRequest, o: Int
   const names = r ? creators(r.contributors) : []
   const isbn = normalizeIsbn(t.isbn ?? '')
   return {
+    responsibility:
+      o.responsibilityStatement || o.creditStatements?.length ? 'unreviewed' : 'not_observed',
     title: !t.title
       ? 'not_requested'
       : !r
@@ -294,7 +310,7 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
         o.status === 'ok' &&
         !sourceReasons(request, o).length &&
         o.identity!.isbns.some((x) => normalizeIsbn(x) === isbn) &&
-        intakeIdentityReviewReasons(request, o).length,
+        intakeIdentityReviewReasons(request, o).some((r) => r !== 'responsibility_unreviewed'),
     )
   const workReasons: IntakeReviewReason[] = []
   if (request.existing.title !== undefined || request.existing.contributors !== undefined) {

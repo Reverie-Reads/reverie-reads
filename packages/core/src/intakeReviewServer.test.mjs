@@ -67,6 +67,7 @@ it('renders the real handoff preview with preserved values and separate use hold
         id: 'one',
         targetFingerprint: 'a'.repeat(64),
         status: 'ok',
+        responsibilityStatement: 'Edited by <script>Anne Brown</script>.',
         source: {
           provider: 'hardcover',
           recordId: 'one',
@@ -96,6 +97,10 @@ it('renders the real handoff preview with preserved values and separate use hold
     ],
   })
   const html = renderIntakeReview([{ id: 'one', review }])
+  expect(html).toContain('Edition responsibility statement — requires review')
+  expect(html).toContain('Edited by &lt;script&gt;Anne Brown&lt;/script&gt;.')
+  expect(html).toContain('responsibility_unreviewed')
+  expect(html).not.toContain('<script>Anne Brown</script>')
   expect(html).toContain('Keep the current value')
   expect(html).toContain('Catalog storage, export and Luna input each require permission review')
   expect(html).toContain('No field evidence was returned')

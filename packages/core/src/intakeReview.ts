@@ -23,6 +23,7 @@ export function buildIntakeReview(input: unknown) {
       qualification: getIntakeSourceQualification(o.source.provider, request.asOf),
       status: o.status,
       identity: o.identity,
+      responsibilityStatement: o.responsibilityStatement,
       creditStatements: o.creditStatements ?? [],
       creditCollisions: reviewIntakeCreditCollisions(
         o.identity?.contributors ?? o.withheldCredits ?? [],
@@ -84,6 +85,7 @@ export function intakeReviewDiagnostics(input: IntakeEvidenceRequest) {
     reasons: s.reasons,
     credits: {
       total: s.credits.length,
+      responsibilityStatements: s.responsibilityStatement === undefined ? 0 : 1,
       unparsedStatements: s.creditStatements.length,
       unknownRole: s.credits.filter((c) => c.role === 'unknown').length,
       editionScopeUnverified: s.credits.filter((c) => c.editionSupport === 'unverified').length,
