@@ -325,6 +325,8 @@ test('room selection reaches earlier examples, changes real cover structures, an
   for (const example of await examples.all())
     await expect(example).toHaveAttribute('data-skin', 'aphelion')
   for (const canvas of await page.getByTestId('skin-atmosphere').all()) {
+    // Hidden rooms defer material work until revealed; inspect each actual visible renderer.
+    await canvas.scrollIntoViewIfNeeded()
     await expect(canvas).toHaveAttribute('data-atmosphere', 'instrument-grid-starfield')
     await expect(canvas).toHaveAttribute('data-renderer', /Canvas restored sky/)
   }
@@ -332,19 +334,23 @@ test('room selection reaches earlier examples, changes real cover structures, an
     'APH·',
   )
   await expect(demo).toContainText('3 books')
+  const firstExampleCanvas = examples.first().locator('canvas')
+  const dayPixels = await firstExampleCanvas.evaluate((canvas) =>
+    (canvas as HTMLCanvasElement).toDataURL(),
+  )
   await page.getByTestId('active-reading-room').getByRole('button', { name: 'Night' }).click()
   for (const example of await examples.all())
     await expect(example).toHaveAttribute('data-mode', 'dark')
-  const still = await examples
-    .first()
-    .locator('canvas')
-    .evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL())
+  await firstExampleCanvas.scrollIntoViewIfNeeded()
+  await expect
+    .poll(() => firstExampleCanvas.evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL()))
+    .not.toBe(dayPixels)
+  const still = await firstExampleCanvas.evaluate((canvas) =>
+    (canvas as HTMLCanvasElement).toDataURL(),
+  )
   await page.waitForTimeout(350)
   expect(
-    await examples
-      .first()
-      .locator('canvas')
-      .evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL()),
+    await firstExampleCanvas.evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL()),
   ).toBe(still)
 })
 

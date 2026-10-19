@@ -195,3 +195,8 @@ opaque/varied canvas pixels and pixel bounds on desktop and phone-sized Chromium
 instrument rejects a known blank canvas. The accessibility navigation
 limit and default worker/retry settings are unchanged. The follow-up full-run and recovery results
 belong in PR #649 alongside the original red result.
+
+The first follow-up CI run retained one landing-test failure: an offscreen canvas still held its
+previous material after a room change. The landing regression now reveals every canvas before
+checking its actual renderer. Its Day/Night check also waits for changed pixels on the revealed
+example before proving reduced-motion stability; sample-book and cover-structure checks remain.
