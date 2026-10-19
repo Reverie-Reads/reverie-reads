@@ -54,6 +54,7 @@
     "intake:replay": "vite-node --script scripts/intake-resolver-replay.mjs --",
     "intake:shadow": "vite-node --script scripts/intake-shadow.mjs --",
     "intake:budget": "node scripts/intake-budget.mjs",
+    "intake:document": "vite-node --script scripts/document-evidence.mjs --",
     "test:intake-budget": "node --test scripts/intake-budget.test.mjs"
   },
   "devDependencies": {

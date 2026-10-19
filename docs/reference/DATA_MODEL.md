@@ -27,6 +27,15 @@ Failed observations may carry bounded `withheldCredits` for duplicate normalized
 preserve original labels and ordering for transient review only; they cannot supply identity or
 claims, and no personal or shared storage shape changes.
 
+`DocumentEvidencePacket` v1 in `packages/core/src/documentEvidence.ts` is another private offline
+review document, not database state. Static page-image hashes, pixel rectangles, raw OCR/manual
+lines and append-only transcription corrections remain separate from source permission attestations
+and book identity. The local `intake:document` tool stores private immutable revision files outside
+Git. Its exact cited title/contributor/ISBN handoff uses the existing resolver with unverified,
+review-only source use; it cannot save a catalog or personal book. No image, provider scope, personal
+field, reading history or persisted contributor enum is added to the database. See
+[`intake-document-evidence.md`](../tasks/intake-document-evidence.md).
+
 ---
 
 ## 1. Client state

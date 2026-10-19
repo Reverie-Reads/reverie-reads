@@ -806,6 +806,15 @@ revive them merely because old identity values return. This does not expand pers
 roles or copy shared credits into reader records. See `docs/tasks/intake-evidence-resolver.md`.
 
 `intake:shadow` connects bounded, exact-ISBN Open Library and Hardcover adapters to that resolver.
+`intake:document` is a separate private operator pilot for deliberately supplied static PNG title or
+copyright pages. It accepts bounded OCR TSV/manual lines or optional local English Apple Vision,
+preserves image hashes/regions/raw text, and records explicit transcription corrections as new
+private revisions outside Git. Page text is inert data. A corrected line is not a verified book fact:
+the citation handoff rechecks exact edition ISBNs and explicit contributor roles through the existing
+resolver, always unverified/review-only. Permission attestations never qualify a source or authorize
+catalog storage, export, model input or a save. Partial extraction, stale corrections, ambiguous
+names and unsupported roles stay held. No Luna fallback, API acquisition, personal-data write or
+Add/scan/import cutover is enabled. See `docs/tasks/intake-document-evidence.md`.
 A frozen frame may explicitly opt into the US-domain Penguin Random House title/edition-contributor
 adapter. Preserve literal role codes/labels and partial-roster warnings; introduction/foreword credits
 are named parts, never whole-work authorship. Do not flatten author display strings or promote

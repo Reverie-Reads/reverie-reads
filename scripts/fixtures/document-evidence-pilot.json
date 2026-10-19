@@ -1,0 +1,22 @@
+{
+  "pages": [
+    { "id": "authored-title", "lines": ["The Lantern Atlas", "By Jane Mira Vale"] },
+    {
+      "id": "authored-copyright",
+      "lines": ["ISBN 9780306406157", "Synthetic publisher: Lantern House"]
+    },
+    {
+      "id": "translated-title",
+      "lines": ["A Garden Beyond Dawn", "By Amelia Rowan Reed", "Translated by Mateo Sol Vega"]
+    },
+    {
+      "id": "translated-copyright",
+      "lines": ["ISBN 9780140328721", "Synthetic publisher: Dawn House"]
+    },
+    { "id": "edited-title", "lines": ["Collected Quiet Voices", "Edited by Riley Arden Stone"] },
+    {
+      "id": "edited-copyright",
+      "lines": ["ISBN 9780679783268", "Synthetic publisher: Quiet House"]
+    }
+  ]
+}
