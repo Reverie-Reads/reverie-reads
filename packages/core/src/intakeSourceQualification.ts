@@ -16,7 +16,7 @@ export interface IntakeSourceUseFinding {
 
 export interface IntakeSourceQualification {
   readonly schemaVersion: 1
-  readonly policyVersion: 'intake-source-use-2026-10-18-v1'
+  readonly policyVersion: 'intake-source-use-2026-10-18-v2'
   readonly provider: 'openlibrary' | 'hardcover' | 'penguin_random_house' | null
   readonly usage: 'review_only'
   readonly reviewedAt: string | null
@@ -31,7 +31,7 @@ export interface IntakeSourceQualification {
 
 const REVIEWED_AT = '2026-10-18T00:00:00.000Z'
 const REVIEW_VALID_UNTIL = '2026-11-17T00:00:00.000Z'
-const REVIEW_REFERENCE = 'docs/tasks/intake-source-qualification-2026-10-18.md'
+const REVIEW_REFERENCE = 'docs/tasks/intake-source-handoff-2026-10-18.md'
 const operationNames: readonly IntakeSourceUseOperation[] = [
   'lookup',
   'transientReview',
@@ -44,6 +44,8 @@ const olApi = 'https://openlibrary.org/developers/api'
 const olLicense = 'https://openlibrary.org/developers/licensing'
 const prhApi = 'https://developer.penguinrandomhouse.com/docs/read/enhanced_prh_api'
 const hcApi = 'https://api.hardcover.app/'
+const hcGuide =
+  'https://github.com/hardcoverapp/hardcover-docs/blob/c965e65dfdc60bd26a9377ade3f8132f48467dee/src/content/docs/api/Getting-Started.mdx'
 
 function finding(
   status: IntakeSourceUseStatus,
@@ -131,33 +133,34 @@ const manifest: Readonly<
   hardcover: {
     lookup: finding(
       'conditional',
-      'The official entry documents authenticated GraphQL access. Existing bounded account/trial access is not production approval; applicable application terms remain unverified.',
+      'Official guidance discusses commercial API use with user-owned data restrictions and scoped authentication. Existing bounded account/trial access is not production approval; application and field scope still need qualification.',
       hcApi,
+      hcGuide,
     ),
     transientReview: finding(
-      'unverified',
-      'Public terms/documentation were unavailable to this review tool; authenticated access is not a display license.',
-      hcApi,
+      'conditional',
+      'Commercial/public tools are discussed, with restrictions on user-owned data and warnings about images. This does not qualify every public field or third-party content for display.',
+      hcGuide,
     ),
     cache: finding(
       'unverified',
       'No applicable response-caching permission was established.',
-      hcApi,
+      hcGuide,
     ),
     durableFacts: finding(
       'unverified',
-      'No applicable durable metadata or contributor-credit retention grant was established.',
-      hcApi,
+      'The guide disclaims proprietary rights but does not settle field-level upstream rights or durable metadata/contributor-credit retention for this application.',
+      hcGuide,
     ),
     export: finding(
       'unverified',
       'No applicable metadata redistribution grant was established.',
-      hcApi,
+      hcGuide,
     ),
     modelInput: finding(
       'unverified',
-      'No applicable third-party model-input grant was established.',
-      hcApi,
+      'The guide prohibits training publicly available or commercial LLMs. That restriction does not establish permission for third-party inference input; Luna input remains unqualified.',
+      hcGuide,
     ),
   },
 }
@@ -230,7 +233,7 @@ export function getIntakeSourceQualification(
   }
   return freeze({
     schemaVersion: 1,
-    policyVersion: 'intake-source-use-2026-10-18-v1',
+    policyVersion: 'intake-source-use-2026-10-18-v2',
     provider: knownProvider,
     usage: 'review_only',
     reviewedAt: knownProvider ? REVIEWED_AT : null,
@@ -240,5 +243,41 @@ export function getIntakeSourceQualification(
     upstreamLineage: 'unverified',
     operations,
     promotionBlockers,
+  })
+}
+
+export type IntakeHandoffUse = 'catalog' | 'export' | 'modelInput'
+const handoffOperations: Readonly<Record<IntakeHandoffUse, readonly IntakeSourceUseOperation[]>> = {
+  catalog: ['lookup', 'transientReview', 'durableFacts'],
+  export: ['lookup', 'transientReview', 'export'],
+  modelInput: ['lookup', 'transientReview', 'modelInput'],
+}
+
+/** A code-owned checklist for one intended use, never permission or a writer payload.
+ * Unrelated operations do not become requirements: model/export rights cannot gate a catalog
+ * correction. Current manifests remain review-only even where operating guidance is documented. */
+export function reviewIntakeSourceUse(provider: string, asOf: string, use: IntakeHandoffUse) {
+  if (!Object.hasOwn(handoffOperations, use)) throw new Error('Unknown intake handoff use')
+  const qualification = getIntakeSourceQualification(provider, asOf)
+  const requirements = handoffOperations[use].map((operation) => ({
+    operation,
+    ...qualification.operations[operation],
+  }))
+  return freeze({
+    use,
+    state: 'review_required' as const,
+    policyVersion: qualification.policyVersion,
+    reviewReference: qualification.reviewReference,
+    requirements,
+    blockers: [
+      'source_review_only',
+      'field_rights_unqualified',
+      ...(qualification.reviewState === 'current'
+        ? []
+        : [`source_review_${qualification.reviewState}`]),
+      ...requirements
+        .filter((r) => r.status !== 'documented')
+        .map((r) => `source_use_${r.operation}_${r.status}`),
+    ],
   })
 }

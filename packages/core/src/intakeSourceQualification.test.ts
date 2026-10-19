@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getIntakeSourceQualification } from './intakeSourceQualification'
+import { getIntakeSourceQualification, reviewIntakeSourceUse } from './intakeSourceQualification'
 
 const current = '2026-10-18T12:00:00.000Z'
 
@@ -30,13 +30,53 @@ describe('code-owned source-use qualification', () => {
     )
   })
 
-  it('records unavailable Hardcover terms as unverified, not prohibited or permitted', () => {
+  it('retains the newly inspected Hardcover guide without treating it as blanket approval', () => {
     const result = getIntakeSourceQualification('hardcover', current)
     expect(result.operations.lookup.status).toBe('conditional')
-    expect(result.operations.transientReview.status).toBe('unverified')
-    expect(result.operations.transientReview.scope).toContain('unavailable')
+    expect(result.operations.transientReview.status).toBe('conditional')
+    expect(result.operations.transientReview.scope).toContain('user-owned data')
+    expect(result.operations.durableFacts.status).toBe('unverified')
     expect(result.operations.export.status).toBe('unverified')
     expect(result.operations.modelInput.status).toBe('unverified')
+    expect(result.operations.modelInput.scope).toContain('training')
+    expect(result.operations.modelInput.scope).toContain('inference input')
+    expect(result.operations.modelInput.primaryUrls[0]).toContain('c965e65')
+  })
+
+  it.each(['openlibrary', 'hardcover', 'penguin_random_house', 'unknown'])(
+    'reviews only the operations needed for the intended use of %s',
+    (provider) => {
+      const catalog = reviewIntakeSourceUse(provider, current, 'catalog')
+      expect(catalog.requirements.map((r) => r.operation)).toEqual([
+        'lookup',
+        'transientReview',
+        'durableFacts',
+      ])
+      expect(catalog.blockers).not.toContain('source_use_modelInput_unverified')
+      expect(catalog.blockers).not.toContain('source_use_export_unverified')
+      expect(catalog.blockers).toContain('field_rights_unqualified')
+      expect(catalog.state).toBe('review_required')
+      expect(
+        reviewIntakeSourceUse(provider, current, 'export').requirements.at(-1)?.operation,
+      ).toBe('export')
+      expect(
+        reviewIntakeSourceUse(provider, current, 'modelInput').requirements.at(-1)?.operation,
+      ).toBe('modelInput')
+      expect(catalog).not.toHaveProperty('allowed')
+      expect(Object.isFrozen(catalog.requirements)).toBe(true)
+    },
+  )
+
+  it('requires renewed review at stale/invalid dates and rejects unsupported uses', () => {
+    expect(reviewIntakeSourceUse('hardcover', '2026-11-17', 'catalog').blockers).toContain(
+      'source_review_stale',
+    )
+    expect(reviewIntakeSourceUse('hardcover', 'tomorrow', 'catalog').blockers).toContain(
+      'source_review_invalid_as_of',
+    )
+    expect(() => reviewIntakeSourceUse('hardcover', current, '__proto__' as never)).toThrow(
+      'Unknown intake handoff use',
+    )
   })
 
   it.each(['openlibrary', 'hardcover', 'penguin_random_house', 'custom', '__proto__', 'toString'])(

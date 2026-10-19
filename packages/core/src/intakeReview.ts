@@ -2,6 +2,7 @@ import { getIntakeSourceQualification } from './intakeSourceQualification'
 import type { IntakeCredit, IntakeEvidenceRequest } from './intakeEvidence'
 import { intakeIdentityDiagnostics, resolveIntakeEvidence } from './intakeResolver'
 import { reviewIntakeCreditCollisions } from './intakeCreditReview'
+import { buildIntakeHandoffReview } from './intakeHandoffReview'
 
 /** In-memory operator view. Do not serialize this view into a provider-retaining report. */
 export function buildIntakeReview(input: unknown) {
@@ -15,6 +16,7 @@ export function buildIntakeReview(input: unknown) {
     work: result.work,
     edition: result.edition,
     acquisition: result.acquisition,
+    handoff: buildIntakeHandoffReview(result),
     sources: request.observations.map((o) => ({
       id: o.id,
       source: o.source,

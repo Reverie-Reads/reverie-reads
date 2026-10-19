@@ -14,6 +14,33 @@ const escape = (s) =>
       })[c],
   )
 const show = (value) => `<pre>${escape(JSON.stringify(value, null, 2) ?? 'Not supplied')}</pre>`
+const fieldLabels = {
+  title: 'Title',
+  contributors: 'Contributors',
+  description: 'Description',
+  pages: 'Pages',
+  publication: 'Publication date',
+  publisher: 'Publisher',
+  language: 'Language',
+  format: 'Format',
+  cover: 'Cover',
+  series: 'Series',
+}
+function handoffPreview(handoff) {
+  if (!handoff) return '<p>A handoff preview was not supplied.</p>'
+  return `<dl>${handoff.fields
+    .map(
+      (f) =>
+        `<div><dt><strong>${escape(fieldLabels[f.field] ?? f.field)}</strong></dt><dd>${
+          f.disposition === 'preserve_current'
+            ? 'Keep the current value. Conflicting observations remain available for review below.'
+            : f.disposition === 'no_observation'
+              ? 'No field evidence was returned. Check source failures and identity holds below before treating this as absence.'
+              : 'Review the evidence and source-use permissions before preparing a change.'
+        }${f.evidence.length ? `<p>Catalog storage, export and Luna input each require permission review. Identity and edition holds still apply.</p><details><summary>Evidence holds and use requirements</summary>${show({ reasons: f.reasons, evidence: f.evidence })}</details>` : ''}</dd></div>`,
+    )
+    .join('')}</dl>`
+}
 
 /** Escaped, script-free local review. No selection, Save, storage, analytics or external assets. */
 export function renderIntakeReview(reviews) {
@@ -28,6 +55,9 @@ export function renderIntakeReview(reviews) {
       }) => `<article><h2>${escape(id)}</h2><h3>Requested identity</h3>${show(review.requested)}
   <h3>Current values — preserved</h3>${show(review.current)}
   <p>Work: ${escape(review.work.state)}. Edition: ${escape(review.edition.state)}.</p>
+  <h3>Before a reviewed handoff</h3>
+  <p>Preserve current values. Inspect the original source and confirm this exact saved edition in the catalog editor. Recheck the current catalog fingerprint before preparing a review. This preview cannot approve a source or send facts to the catalog, an export or Luna.</p>
+  ${handoffPreview(review.handoff)}
   ${review.sources
     .map(
       (s) => `<section><h3>${escape(s.source.provider)} — ${escape(s.status)}</h3>

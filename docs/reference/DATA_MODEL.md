@@ -14,7 +14,7 @@ The versioned, bibliography-only `IntakeEvidenceRequest` and `IntakeResolution` 
 patches. They retain per-claim source/locator, scope, lineage, retrieval state and target revision,
 and distinguish whole-work, part and edition credits. Their expanded credit roles do not change the
 personal `ContributorRole` enum below. The replay tool writes private review artifacts only; Add,
-scan, import and shared-catalog writers have not switched over. See
+scan, import and shared-catalog writers have not switched over. The transient review also carries a bibliography-free handoff preview: field dispositions, claim references, hold reasons and separate catalog/export/model-input requirements. It neither approves a source nor creates a book patch; the current fingerprint must be rechecked in the saved-edition editor before prepare. See
 [`intake-evidence-resolver.md`](../tasks/intake-evidence-resolver.md) for the trust boundary and rollout.
 Evidence credits may retain their original `sourceRole` (including an absent or empty label) and
 `basis` (`work` or `edition`). Unparsed `creditStatements` stay observations. These optional evidence

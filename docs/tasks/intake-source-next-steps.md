@@ -40,6 +40,12 @@ matching the pre-test snapshot. Source-use qualification and unsupported contrib
 cutover blockers. Next, resolve the operation-specific source-use holds and validate the smallest
 explicit review handoff against qualified evidence; do not enable automatic promotion.
 
+The [operation-specific handoff stage](intake-source-handoff-2026-10-18.md) adds a transient,
+field-by-field preview with separate catalog/export/Luna requirements. Newly inspected official
+Hardcover documentation narrows the prior evidence gap but does not qualify durable facts or
+model input. No separate PRH/Hardcover agreement is available. Source approval, unsupported roles
+and live fingerprint validation remain required before any provider-to-catalog handoff.
+
 ## Evidence already available
 
 The saved October 16 completion report records 52 description fills without additional paid calls;
