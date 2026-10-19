@@ -87,10 +87,35 @@ explicit review of the actual save path.
 
 ## Verification and remaining work
 
-Validation is in progress. The focused qualification, handoff, review, server and shadow suites
-currently pass 91 tests. Final code/browser results and local snapshot verification will be
-recorded before completion. Browser evidence for the operator view uses synthetic bibliography,
-separate from provider accuracy and production acceptance.
+The 91 focused qualification, handoff, review, server and shadow tests pass. Independent read-only
+implementation review at `537455f9f0ce20ce1b36620f58a908c02064e83d` found no blocking issues.
+Typechecking, lint, build and formatting pass. The full suite passes under CI's Node 22 runtime:
+3,523 core tests, 1,376 web tests, two workflow tests and the source-trial/root checks. The first
+full run used Node 26 during high host load and retained four unrelated five-second web-test
+timeouts; all 25 tests in those four files passed in a diagnostic Node 22 run before the full
+Node 22 verification. This does not establish a single cause for those earlier timeouts.
+
+A synthetic operator-view browser inspection confirmed expandable evidence/use details at 320 px,
+no horizontal overflow, no write controls and no local storage. Its screenshot and snapshots remain
+local; this is operator-view behavior, not provider accuracy or production acceptance.
+
+The first full-browser setup failed before Playwright launched: the operator edited its temporary
+shell runner after its process had started, causing a command-read error. Recovery restored the
+original archive, and all 102 public/authentication tables matched. The failure receipt remains
+retained. A separate runner was prepared before launch and remained unchanged (verified script hashes).
+Its one full fresh-database browser run completed with **438 passed, 11 existing conditional skips,
+zero failures** in 46.3 minutes, at the default one worker and zero retries. The eleven skips retain
+the existing desktop/mobile conditions and documented mobile back-navigation skip; none was added.
+
+The original development snapshot was restored transactionally with project writers stopped and
+restarted afterward. Sorted contents and column lists matched across all 102 public/authentication
+tables, with 290 books, zero reads and one user; migration version returned to `20261108010000`.
+Authentication and REST checks returned 200 and the missing-table negative control returned the
+expected 404. The lifecycle exited successfully and released the stack lock. Both the failed setup
+and successful run retain private backups and receipts under
+`/Users/gregchism/.codex/private/intake-handoff-2026-10-18/`. No application, adapter, matching or
+database code changed after the verified `537455f9` implementation revision.
+Remote CI remains unverified because the required connector requests GitHub account connection.
 
 Next, qualify only the bibliographic field classes and intended uses needed for the smallest
 reviewed catalog correction. Attach applicable public terms or a specific permission record with
@@ -100,5 +125,7 @@ resolve source rights or certify its own facts. PRH API-specific use scope and u
 remain held. A broader provider acquisition or automatic intake cutover is not authorized by
 this preview.
 
-This stage makes zero Luna requests and consumes $0 of the existing $50 total budget. The private
-ledger remains authoritative for its workflow; no spend limit or uncertain reservation was reset.
+This stage made zero Luna requests and consumed $0 of the existing $50 total budget. The ledger
+still records $20.73931475 conservative burden, $29.26068525 remaining, zero reservations and zero
+unsettled requests; pricing remains unconfigured and paid execution remains blocked. It is a
+workflow ledger, not an account-wide invoice audit. No spend limit or uncertain reservation was reset.
