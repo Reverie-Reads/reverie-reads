@@ -165,3 +165,11 @@ permissions, failed controls, denominators and current limitations. Future accep
   the private Collector journey, with no loss of metadata, copy inventory or reading history.
 
 Owner review is still required before production activation, merging or deployment.
+
+The root `pnpm test` command runs the native photo tool checks **after** the parallel workspace
+suites. `pnpm test:photo-tools` runs them explicitly. This stage keeps Swift/ImageIO/Vision process
+work separate from request-pacing measurements; it does not relax their assertions, increase
+timeouts or add retries. On non-macOS hosts, native cases are explicitly skipped and the manifest
+validation case still runs. The browser regression suite separately enables the development flag
+and exercises the real packaged decoder and mirror/rotation pixels in desktop and phone-sized
+Chromium. Those tests are not physical-device or WebKit acceptance.
