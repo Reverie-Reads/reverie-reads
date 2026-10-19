@@ -249,7 +249,11 @@ jobs:
             artifact: playwright-traces-a11y
           - name: e2e-mobile
             project: mobile
-            timeout: 12
+            # PR #648 completed all 52 mobile tests (5 skipped) in 8.7 minutes,
+            # but image-pull throttling plus setup/reporting exhausted the 12-minute job.
+            # Give the whole job bounded cleanup room; assertion timeouts, one worker
+            # and zero retries remain unchanged. Retain the original cancelled receipt.
+            timeout: 15
             artifact: playwright-traces-mobile
     runs-on: ubuntu-latest
     timeout-minutes: ${{ matrix.timeout }}

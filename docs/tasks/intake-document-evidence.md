@@ -223,7 +223,7 @@ a database; the branch still requires the repository's full fresh-database brows
 
 ## October 19 synthetic comparison
 
-An independent reviewer inspected six normalized synthetic page images before OCR, freezing all
+A separate Codex reviewer inspected six normalized synthetic page images before OCR, freezing all
 13 literal lines, rough containing rectangles, four visible role statements and six controls.
 The runner copied/hash-checked images and references and froze code, target/existing-value contexts,
 scoring and runtime before acquisition. Run it only against separately prepared references and a new
@@ -273,3 +273,29 @@ verification record. A successful synthetic comparison does not qualify producti
 photographed-book accuracy, a complete corpus, personal imports or an intake cutover. The next
 qualification step is a permission-cleared external-page reference set including wrapped names,
 multiple edition ISBNs, multilingual credits and uncertain pages. Unsupported facts remain held.
+
+## Final visual and CI hardening
+
+A final dark-mode inspection found white region borders disappearing against white page pixels.
+The viewer now uses both system `CanvasText` and `Canvas` strokes; actual dark Chromium inspection
+confirmed visible containing rectangles without changing source pixels. A second frozen regression
+after this CSS change reused the same known synthetic reference and images. It again returned
+13/13 exact/located lines, 2/2 consistent identities, 4/4 held controls and no promotions or paid
+calls. This is repeat regression evidence, not another unseen reference set or human approval.
+
+Regression frame: `c9ad5c0eb0b7672a9565af8e32c18cc440e33d465fa9d125eb28078549b1342f`.
+Code snapshot: `e32b7fb9225ea7a20e496d6f1c57767e81e8a472613574ff5812a00d04da7259`.
+The original run/failed preflight remain retained alongside `comparison-03`.
+
+The full local app browser run at `c2c9411` passed 438 tests with 11 skips, one worker and zero
+retries in 39.9 minutes. Snapshot recovery exited successfully: all 102 protected public/auth table
+row/column digests and eight publication statements match the pre-test archive, with Auth/REST
+healthy and the missing-table negative control still returning 404. Subsequent changes affect only
+the operator's region stroke, this documentation and CI's overall mobile-job ceiling.
+
+On the initial PR revision, GitHub mobile completed 52 tests (five skipped) in 8.7 minutes but its
+12-minute whole-job ceiling cancelled setup/reporting/cleanup after image-pull throttling. The
+original cancelled log and annotation are retained; that run is not green. The mobile whole-job
+ceiling is now bounded at 15 minutes, following the existing measured desktop-job policy. Test
+assertion timeouts, worker count and retry settings are unchanged. The final PR revision's full CI
+matrix supplies current-revision verification; its outcome must be reported separately.
