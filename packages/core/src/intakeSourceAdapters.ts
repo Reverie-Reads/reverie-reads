@@ -383,6 +383,14 @@ const prhRoles: Record<string, [IntakeCredit['role'], string, string?]> = {
   J: ['contributor', 'Contribution by'],
 }
 
+// Finite publisher display aliases, qualified against the documented role code meanings.
+// This is not a general "by" parser; see intake-prh-contributor-labels-2026-10-18.md.
+const prhRoleLabelAliases: Readonly<Record<string, string>> = {
+  A: 'Written by',
+  E: 'Edited by',
+  T: 'Translated by',
+}
+
 /** PRH envelope success is transport-qualified by the caller. Missing status alone is not an
  * error; explicit provider failure/error is. Empty/malformed JSON cannot establish a title. */
 function prhResponseOk(body: Obj): boolean {
@@ -505,7 +513,9 @@ export function adaptPenguinRandomHouseIntake(
         label === '' ||
         (typeof label === 'string' &&
           (label.trim().toLowerCase() === mapped[1].toLowerCase() ||
-            (code === 'A' && label.trim().toLowerCase() === 'written by'))))
+            (typeof code === 'string' &&
+              Object.hasOwn(prhRoleLabelAliases, code) &&
+              label.trim().toLowerCase() === prhRoleLabelAliases[code]!.toLowerCase()))))
     if (mapped && !compatible) issues.push('conflicting_contributor_role')
     if (!mapped) issues.push('unqualified_contributor_role')
     credits.push({

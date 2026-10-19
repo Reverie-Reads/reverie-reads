@@ -803,7 +803,9 @@ roles or copy shared credits into reader records. See `docs/tasks/intake-evidenc
 A frozen frame may explicitly opt into the US-domain Penguin Random House title/edition-contributor
 adapter. Preserve literal role codes/labels and partial-roster warnings; introduction/foreword credits
 are named parts, never whole-work authorship. Do not flatten author display strings or promote
-work-level credits. Provider selection is part of the frozen frame; unavailable sources remain in
+work-level credits. Only finite, documented publisher-label aliases may accompany their matching
+role codes; E/Edited by and T/Translated by preserve secondary roles and cannot establish authorship.
+Provider selection is part of the frozen frame; unavailable sources remain in
 the denominator. Adapter provenance is code-owned, but all sources remain review-only with unverified upstream lineage;
 two APIs do not prove independent support. Freeze provider-independent references and code hashes
 before acquisition. Keep its Git-common-directory attempt markers permanent, including failures.
@@ -1193,6 +1195,9 @@ test` outright and only fail `tsc`. This has bitten twice, by two different tool
   A missing stack is a preflight failure, never permission to discover, start or reset another
   engine. Select a known context explicitly when needed. Preserve failure receipts and local
   backups; do not raise timeouts or add retries to hide a saturated host.
+  Database-clock fixture reads must be asynchronous and bounded; a stalled Docker call must not
+  block Playwright's worker timeout. Invalid or unavailable database time fails visibly, never
+  falls back to the host clock.
 - **A bulk insert's column set is the UNION of every row's keys, not each row's own.** PostgREST
   sends one `INSERT` for the whole array, and the column list it builds is every key any row in
   the batch supplies — so a row that omits a key the batch is inserting gets an explicit `NULL`

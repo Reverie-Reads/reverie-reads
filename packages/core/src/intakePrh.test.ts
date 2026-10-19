@@ -253,7 +253,9 @@ describe('PRH exact title and edition credits', () => {
   })
   it.each([
     ['E', 'Editor'],
+    ['E', 'Edited by'],
     ['T', 'Translator'],
+    ['T', 'Translated by'],
     [null, 'Author'],
     ['Q', 'Author'],
     ['A', 'Editor'],
@@ -296,6 +298,126 @@ describe('PRH exact title and edition credits', () => {
       expect(intakeIdentityDiagnostics(held, held.observations[0]!).reasons).not.toEqual([])
     }
   })
+  it.each([
+    ['E', 'Editor', 'editor'],
+    ['E', 'Edited by', 'editor'],
+    ['E', '  EDITED BY  ', 'editor'],
+    ['T', 'Translator', 'translator'],
+    ['T', 'Translated by', 'translator'],
+    ['T', '  translated by  ', 'translator'],
+  ] as const)(
+    'qualifies only the matching %s/%s credit without promoting it',
+    (code, label, role) => {
+      const a = adapt(title(), roster([person(), person(code, label, 'Ann Brown', 2)]))
+      const p = request(a)
+      expect(a.issues).not.toContain('conflicting_contributor_role')
+      expect(a.issues).toContain('partial_contributor_roster')
+      expect(parseIntakeEvidence(p)).toEqual(p)
+      expect(intakeIdentityDiagnostics(p, p.observations[0]!).reasons).toEqual([])
+      const review = buildIntakeReview(p)
+      expect(review.sources[0]!.credits[1]).toMatchObject({
+        position: 1,
+        name: 'Ann Brown',
+        role,
+        sourceRole: label,
+        sourceRoleCode: code,
+        sourceContributorId: '2',
+        scope: 'whole',
+        basis: 'edition',
+        completeness: 'unverified',
+      })
+      expect(p.observations[0]!.source.usage).toBe('review_only')
+      expect(resolveIntakeEvidence(p).fields.some((f) => f.state === 'proposed')).toBe(false)
+      // Being a supported credit still cannot establish this person's creator identity.
+      p.target.contributors = ['Ann Brown']
+      expect(intakeIdentityDiagnostics(p, p.observations[0]!).contributors).toEqual([
+        'secondary_role_only',
+      ])
+    },
+  )
+  it.each([
+    ['E', 'Translated by'],
+    ['T', 'Edited by'],
+    ['A', 'Edited by'],
+    ['A', 'Translated by'],
+    ['E', 'Edited and translated by'],
+    ['T', 'Translated & edited by'],
+    ['E', 'Series Editor'],
+    ['T', 'Translation by'],
+    ['E', 'Ed.'],
+    ['T', 'Translated by Ann Brown'],
+    ['8', 'Edited by'],
+    ['unknown', 'Translated by'],
+    [null, 'Edited by'],
+    [null, 'Translated by'],
+  ])('retains unsupported code/label %s/%s under review', (code, label) => {
+    const a = adapt(title(), roster([person(), person(code, label, 'Ann Brown', 2)]))
+    const p = request(a)
+    expect(a.issues).toContain(
+      code === 'E' || code === 'T' || code === 'A'
+        ? 'conflicting_contributor_role'
+        : 'unqualified_contributor_role',
+    )
+    expect(p.observations[0]!.identity!.contributors[1]).toMatchObject({
+      role: 'unknown',
+      sourceRole: label,
+      sourceRoleCode: code,
+    })
+    expect(parseIntakeEvidence(p)).toEqual(p)
+    expect(resolveIntakeEvidence(p).fields.some((f) => f.state === 'proposed')).toBe(false)
+  })
+  it.each([
+    ['E', 'Edited by'],
+    ['T', 'Translated by'],
+  ])('keeps an ISBN-only %s/%s roster under review without a creator', (code, label) => {
+    const p = request(adapt(title(), roster([person(code, label)])))
+    p.target = { isbn }
+    expect(resolveIntakeEvidence(p).work.state).toBe('review')
+    expect(resolveIntakeEvidence(p).edition.state).toBe('review')
+  })
+  it('preserves separately credited editing and translation by the same person in source order', () => {
+    const a = adapt(
+      title(),
+      roster([
+        person(),
+        person('T', 'Translated by', 'Ann Brown', 2),
+        person('E', 'Edited by', 'Ann Brown', 2),
+      ]),
+    )
+    expect(a.observations[0]!.status).toBe('ok')
+    const review = buildIntakeReview(request(a))
+    expect(review.sources[0]!.creditCollisions).toEqual([])
+    expect(
+      review.sources[0]!.credits.slice(1).map((c) => [c.role, c.sourceRoleCode, c.sourceRole]),
+    ).toEqual([
+      ['translator', 'T', 'Translated by'],
+      ['editor', 'E', 'Edited by'],
+    ])
+  })
+  it.each([
+    ['E', 'Editor', 'Edited by'],
+    ['T', 'Translator', 'Translated by'],
+  ])(
+    'does not silently merge repeated %s credits after alias normalization',
+    (code, first, second) => {
+      const a = adapt(
+        title(),
+        roster([
+          person(),
+          person(code, first, 'Ann Brown', 2),
+          person(code, second, 'Ann Brown', 2),
+        ]),
+      )
+      expect(a.observations[0]!.status).toBe('failed')
+      expect(a.observations[0]!.identity).toBeUndefined()
+      expect(a.observations[0]!.claims).toEqual([])
+      expect(
+        buildIntakeReview(request(a))
+          .sources[0]!.credits.slice(1)
+          .map((c) => c.sourceRole),
+      ).toEqual([first, second])
+    },
+  )
   it.each([
     ['1', 'Preface by', 'Preface'],
     ['D', 'Afterword by', 'Afterword'],
