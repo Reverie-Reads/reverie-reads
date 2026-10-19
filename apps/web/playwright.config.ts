@@ -214,7 +214,7 @@ export default defineConfig({
       // already proven, and say nothing about touch.
       name: 'mobile',
       testMatch:
-        /(copy-inventory|spine-shelf-reachability|route-viewport|no-horizontal-overflow|placeholder-title-clip|cover-card-touch-affordance|star-touch-targets|scroll-restoration|shelf-header-links|household-library|corpus-edition-registry)\.spec\.ts$/,
+        /(photo-intake|copy-inventory|spine-shelf-reachability|route-viewport|no-horizontal-overflow|placeholder-title-clip|cover-card-touch-affordance|star-touch-targets|scroll-restoration|shelf-header-links|household-library|corpus-edition-registry)\.spec\.ts$/,
       use: {
         ...devices['iPhone 13'],
         viewport: { width: 390, height: 844 },
@@ -271,7 +271,7 @@ export default defineConfig({
     // Local .env.local may enable live error reporting. Automated guest-library checks must
     // exercise the no-write path and never publish their deliberate failure fixtures to Sentry.
     // The monitoring unit tests still verify capture/scrubbing behavior independently.
-    env: { VITE_SENTRY_DSN: '' },
+    env: { VITE_SENTRY_DSN: '', VITE_PHOTO_INTAKE_PILOT: 'true' },
     // Runs from this config's dir (apps/web), so `pnpm dev` boots @reverie/web with its own env
     // files (the committed .env; .env.local overrides if present). The port/strictPort flags override vite.config's default 5173 for e2e only —
     // the normal `pnpm dev` workflow keeps 5173.

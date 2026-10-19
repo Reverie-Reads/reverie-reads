@@ -85,3 +85,4 @@ export * from './editionCredits'
 export * from './editionCreditSourceUse'
 
 export * from './documentEvidence'
+export * from './photoEvidence'

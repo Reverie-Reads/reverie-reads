@@ -55,6 +55,8 @@
     "intake:shadow": "vite-node --script scripts/intake-shadow.mjs --",
     "intake:budget": "node scripts/intake-budget.mjs",
     "intake:document": "vite-node --script scripts/document-evidence.mjs --",
+    "intake:photo": "vite-node --script scripts/photo-intake.mjs --",
+    "intake:photo:compare": "vite-node --script scripts/photo-intake-comparison.mjs --",
     "test:intake-budget": "node --test scripts/intake-budget.test.mjs"
   },
   "devDependencies": {
