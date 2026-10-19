@@ -24,12 +24,15 @@ export function SkinAtmosphereCanvas({
     const scene = still.getContext('2d')
     if (!scene) return
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    let visible = true
+    // An observer's first delivery establishes visibility. Do not render every gallery card
+    // before it arrives: synchronous material generation can block navigation and font loading.
+    let visible = typeof IntersectionObserver === 'undefined'
     let timer = 0
     let frame = 0
     let width = 1
     let height = 1
     let palette: RoomPalette
+    let materialKey = ''
     let disposed = false
     const cancel = () => {
       window.clearTimeout(timer)
@@ -51,6 +54,7 @@ export function SkinAtmosphereCanvas({
     const start = () => {
       if (disposed || !canvas.isConnected) return
       cancel()
+      if (!visible || document.hidden || !materialKey) return
       paint()
       tick()
     }
@@ -58,24 +62,22 @@ export function SkinAtmosphereCanvas({
       // A queued observer can arrive after React removes a preview but before effect cleanup.
       // Detached canvases have no inherited palette; painting one would pass empty colors to
       // CanvasGradient and turn an ordinary account/screen transition into an uncaught error.
-      if (disposed || !canvas.isConnected) return
+      if (disposed || !canvas.isConnected || !visible || document.hidden) return
       const started = performance.now()
       const rect = canvas.getBoundingClientRect()
-      width = Math.max(1, rect.width)
-      height = Math.max(1, rect.height)
+      if (rect.width <= 0 || rect.height <= 0) return
+      const nextWidth = rect.width
+      const nextHeight = rect.height
       // Match the reviewed material bound: previews and long app surfaces never retain more than
       // 900,000 material pixels, even on a high-density display.
       const ratio = Math.min(
         1.5,
         window.devicePixelRatio || 1,
-        Math.sqrt(900_000 / (width * height)),
+        Math.sqrt(900_000 / (nextWidth * nextHeight)),
       )
-      canvas.width = still.width = Math.max(1, Math.floor(width * ratio))
-      canvas.height = still.height = Math.max(1, Math.floor(height * ratio))
-      context.setTransform(ratio, 0, 0, ratio, 0, 0)
       const styles = getComputedStyle(canvas)
       const value = (key: string) => styles.getPropertyValue(key).trim()
-      palette = {
+      const nextPalette: RoomPalette = {
         base: value('--bg0'),
         depth: value('--bg1'),
         ink: value('--ink'),
@@ -90,7 +92,18 @@ export function SkinAtmosphereCanvas({
         glowC: value('--glow-c'),
         glowD: value('--glow-d'),
       }
+      // ResizeObserver delivers initially even if resize() already painted this geometry.
+      // Font/layout changes may also deliver the same box. Reuse the still, including on re-entry.
+      const nextKey = JSON.stringify([nextWidth, nextHeight, ratio, nextPalette])
+      if (nextKey === materialKey) return
+      width = nextWidth
+      height = nextHeight
+      palette = nextPalette
+      canvas.width = still.width = Math.max(1, Math.floor(width * ratio))
+      canvas.height = still.height = Math.max(1, Math.floor(height * ratio))
+      context.setTransform(ratio, 0, 0, ratio, 0, 0)
       canvas.dataset.renderer = paintRoomMaterial(still, skin, mode, palette, width)
+      materialKey = nextKey
       canvas.dataset.materialPixels = String(still.width * still.height)
       canvas.dataset.paintMs = (performance.now() - started).toFixed(1)
       start()
@@ -101,13 +114,18 @@ export function SkinAtmosphereCanvas({
         ? null
         : new IntersectionObserver(([entry]) => {
             visible = entry?.isIntersecting ?? false
+            if (visible) resize()
             start()
           })
+    const visibility = () => {
+      if (!document.hidden && visible) resize()
+      start()
+    }
     resizeObserver?.observe(canvas)
     intersection?.observe(canvas)
     if (!resizeObserver) window.addEventListener('resize', resize)
     motion.addEventListener('change', start)
-    document.addEventListener('visibilitychange', start)
+    document.addEventListener('visibilitychange', visibility)
     resize()
     return () => {
       disposed = true
@@ -116,7 +134,7 @@ export function SkinAtmosphereCanvas({
       intersection?.disconnect()
       window.removeEventListener('resize', resize)
       motion.removeEventListener('change', start)
-      document.removeEventListener('visibilitychange', start)
+      document.removeEventListener('visibilitychange', visibility)
     }
   }, [skin, mode, adaptiveBundle])
   return (

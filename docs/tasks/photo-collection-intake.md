@@ -173,3 +173,24 @@ timeouts or add retries. On non-macOS hosts, native cases are explicitly skipped
 validation case still runs. The browser regression suite separately enables the development flag
 and exercises the real packaged decoder and mirror/rotation pixels in desktop and phone-sized
 Chromium. Those tests are not physical-device or WebKit acceptance.
+
+## Retained `/skins` navigation failure
+
+The first complete local browser run at `1fade031` finished with 441 passed, 11 skipped and one
+Grimoire/light accessibility failure: `/skins` did not reach `load` within the existing 45-second
+navigation limit. Its original trace, error context and hashes are retained privately, separately
+from later Playwright output. The passing CI run does not erase that local failure.
+
+The trace's final DOM snapshot records all nine gallery materials painted, including offscreen
+cards. Their last recorded paints total about 7.1 seconds, plus 2.9 seconds for the shell material;
+development-module delivery was also slow. These are contributing main-thread costs, not proof that
+one isolated operation accounts for the entire timeout. Deterministic controls reproduced eager
+offscreen painting and duplicate painting on unchanged initial ResizeObserver deliveries.
+
+The shared canvas lifecycle now waits for intersection before generating a material, reuses an
+unchanged still, and defers hidden-tab work until return. Visible/revealed rooms retain the same
+renderer, palette, pixel bound and reduced-motion behavior. A real-browser regression checks that
+the final offscreen card is initially unpainted, then reveals all nine and checks actual renderer
+and pixel-bound observations on desktop and phone-sized Chromium. The accessibility navigation
+limit and default worker/retry settings are unchanged. The follow-up full-run and recovery results
+belong in PR #649 alongside the original red result.

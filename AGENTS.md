@@ -115,6 +115,9 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   its own light/dark pair; `mode` is light/dark/system, independent of the skin. "Nocturne /
   Magnolia Dawn" is prototype-era naming and no longer names anything in the code.
 - Mobile-first; responsive to desktop.
+- **Room materials render when visible.** Wait for the first intersection observation before
+  generating a preview's still; unchanged resize deliveries reuse it. Hidden tabs and offscreen
+  rooms defer work until visible, using current geometry. Preserve reduced-motion and cleanup guards.
 - Accessibility is part of done: visible keyboard focus, adequate contrast in **every skin** in
   both modes, and **respect `prefers-reduced-motion`** (disable the night-sky drift/twinkle).
   Two layers guard contrast, and they cover different amounts: the **core contrast tests** are
