@@ -815,6 +815,16 @@ resolver, always unverified/review-only. Permission attestations never qualify a
 catalog storage, export, model input or a save. Partial extraction, stale corrections, ambiguous
 names and unsupported roles stay held. No Luna fallback, API acquisition, personal-data write or
 Add/scan/import cutover is enabled. See `docs/tasks/intake-document-evidence.md`.
+`intake:photo` extends that private preparation path to bounded local JPEG/PNG/HEIC, preserving
+original bytes, normalized pixels, explicit crops and transform hashes separately. Local Vision
+barcodes/rectangles are observations; group proposals remain unresolved and missed books require
+whole-photo review. The development-only Add photo pilot keeps page-session pixels beside deliberate
+identity entry, then reuses normal duplicate review and confirmed Add. It has no browser text OCR,
+implicit cover selection, copy-count inference, model fallback or production activation. Cover Studio
+and accepting identity remain independent; signatures/numbering never establish authenticity or
+value. Keep new Collector observations at selected edition/copy scope and Collector signup gated.
+See `docs/tasks/photo-collection-intake.md` and its frozen comparison; selected-source failures and
+unobserved identity/correction/device metrics remain visible.
 A frozen frame may explicitly opt into the US-domain Penguin Random House title/edition-contributor
 adapter. Preserve literal role codes/labels and partial-roster warnings; introduction/foreword credits
 are named parts, never whole-work authorship. Do not flatten author display strings or promote
