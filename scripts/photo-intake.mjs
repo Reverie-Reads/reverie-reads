@@ -14,6 +14,7 @@ import {
 } from './document-evidence.mjs'
 import { documentPng, documentPngCrc } from './document-evidence-image.mjs'
 import { renderPhotoIntakeReview } from './photo-intake-review.mjs'
+import { documentEvidenceFingerprint } from './document-evidence-handoff.mjs'
 import { bookBarcode } from '../packages/core/src/barcodeBatch.ts'
 import {
   validPhotoBox,
@@ -191,7 +192,7 @@ export async function preparePhotoIntake(input, manifestPath, output) {
         'Photo preparation failed; original and failure receipt retained. No automatic retry or model fallback.',
       )
     }
-    photos.push({
+    const observation = {
       id: p.id,
       kind: p.kind,
       originalSha256: documentHash(bytes),
@@ -203,7 +204,10 @@ export async function preparePhotoIntake(input, manifestPath, output) {
         state: 'unresolved',
       })),
       coverage: 'unmeasured; missed and overlapping books require full-photo review',
-    })
+    }
+    // A later failed photo must not erase an earlier detector observation from this acquisition.
+    await writeDocumentJson(resolve(output, `${p.id}.observation.json`), observation)
+    photos.push(observation)
     pages.push({
       id: p.id,
       label: p.kind,
@@ -237,7 +241,7 @@ export async function preparePhotoIntake(input, manifestPath, output) {
     targetFingerprint: manifest.targetFingerprint,
     sourceSha256: documentHash(JSON.stringify(manifest.source)),
     photosSha256: documentHash(JSON.stringify(photos)),
-    packetSha256: documentHash(JSON.stringify(evidence.packet)),
+    packetSha256: documentEvidenceFingerprint(evidence.packet),
   })
   await writeFile(
     resolve(output, 'review.html'),

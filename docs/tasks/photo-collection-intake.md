@@ -99,8 +99,9 @@ inputs; source URLs are reference text and are never fetched by these commands.
 Limits: eight photos, 20 MB per original, 12,000 pixels per axis and 16 million pixels per image.
 Normalized PNG and selected crops must independently fit the existing 8 MB document limit. No
 automatic downscale relaxes that limit. ImageIO/Vision has a sixty-second process timeout and a
-1 MB detector-output cap; document OCR retains its existing sixty-second/4 MB limit. Unsupported,
-animated, multi-image, corrupt and oversized local inputs fail visibly. Originals and partial
+1 MB detector-output cap; document OCR retains its existing sixty-second/4 MB limit. Unsupported
+types, containers exposing multiple images, corrupt and oversized local inputs fail visibly.
+The browser also explicitly refuses animated and orientation-bearing PNG inputs. Originals and partial
 failure receipts remain; rerunning into an existing output directory is refused. Private outputs
 must be new `0700` directories outside Git; files use `0600`. ImageIO replaces output files while
 encoding, so permissions are explicitly restored before reading or retaining them.

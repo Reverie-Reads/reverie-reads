@@ -17,6 +17,7 @@ import {
 import { documentPng } from '../../../scripts/document-evidence-image.mjs'
 import { renderPhotoIntakeReview } from '../../../scripts/photo-intake-review.mjs'
 import { comparePhotos } from '../../../scripts/photo-intake-comparison.mjs'
+import { documentEvidenceFingerprint } from '../../../scripts/document-evidence-handoff.mjs'
 const require = createRequire(new URL('../../../apps/web/package.json', import.meta.url))
 const { PNG } = require('pngjs')
 let root
@@ -91,7 +92,13 @@ it.skipIf(process.platform !== 'darwin')(
               : 'unexpected'
     for (let o = 1; o <= 8; o++) {
       const out = join(root, `normalized-${o}.png`)
-      const receipt = await normalizeLocalPhoto(join(root, `o${o}.jpg`), out, null)
+      const cropPath = join(root, `corner-${o}.png`)
+      const receipt = await normalizeLocalPhoto(join(root, `o${o}.jpg`), out, cropPath, {
+        x: 0,
+        y: 0,
+        width: 60,
+        height: 60,
+      })
       expect(receipt.orientation).toBe(o)
       expect([receipt.width, receipt.height]).toEqual(o >= 5 ? [800, 1200] : [1200, 800])
       const data = await readFile(out),
@@ -105,6 +112,15 @@ it.skipIf(process.platform !== 'darwin')(
         color([...png.data.subarray((y * png.width + x) * 4, (y * png.width + x) * 4 + 3)]),
       )
       expect(observed).toEqual(corners[o - 1])
+      const cropped = PNG.sync.read(await readFile(cropPath))
+      expect(
+        color([
+          ...cropped.data.subarray(
+            (20 * cropped.width + 20) * 4,
+            (20 * cropped.width + 20) * 4 + 3,
+          ),
+        ]),
+      ).toBe(corners[o - 1][0])
       expect(data.includes(Buffer.from('eXIf'))).toBe(false)
       expect((await stat(out)).mode & 0o077).toBe(0)
     }
@@ -127,6 +143,9 @@ it.skipIf(process.platform !== 'darwin')(
     )
     expect(receipt.photos[0].cropExtentInNormalized).toEqual(m.photos[0].crop)
     const packet = await readDocumentPacket(join(out, 'evidence/packet.json'))
+    expect(
+      JSON.parse(await readFile(join(out, 'evidence-binding.json'), 'utf8')).packetSha256,
+    ).toBe(documentEvidenceFingerprint(packet))
     expect(packet.pages[0]).toMatchObject({ width: 1000, height: 450, status: 'failed', lines: [] })
     expect(packet.pages[0].imageSha256).toBe(receipt.photos[0].cropSha256)
     expect(receipt.paidModelCalls).toBe(0)
@@ -219,6 +238,18 @@ it.skipIf(process.platform !== 'darwin')(
     ).rejects.toThrow('retained')
     expect(
       JSON.parse(await readFile(join(root, 'bad-run/title.failure.json'), 'utf8')).status,
+    ).toBe('failed')
+    const multi = manifest()
+    multi.photos.push({ ...multi.photos[0], id: 'bad', image: 'bad.jpg' })
+    await expect(
+      preparePhotoIntake(multi, join(root, 'input.json'), join(root, 'partial-run')),
+    ).rejects.toThrow('retained')
+    const retained = JSON.parse(
+      await readFile(join(root, 'partial-run/title.observation.json'), 'utf8'),
+    )
+    expect(retained.originalSha256).toBe(documentHash(await readFile(join(root, 'o1.jpg'))))
+    expect(
+      JSON.parse(await readFile(join(root, 'partial-run/bad.failure.json'), 'utf8')).status,
     ).toBe('failed')
     await symlink(join(root, 'o1.jpg'), join(root, 'link.jpg'))
     m.photos[0].image = 'link.jpg'
