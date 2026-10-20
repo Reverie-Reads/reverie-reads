@@ -849,7 +849,11 @@ literal `by_statement` separately as
 `responsibilityStatement`; either unresolved responsibility or contribution prose holds identity and
 dependent claims, including ISBN-only scans. Keep useful unresolved bylines distinct from wrong-book
 diagnoses; never infer roles from prose or let a responsibility-only hold manufacture a conflict
-against a valid peer. See `docs/tasks/intake-responsibility-evidence-2026-10-19.md`. Reference credit checks score
+against a valid peer. See `docs/tasks/intake-responsibility-evidence-2026-10-19.md`.
+Title diagnostics compare that axis separately from joint admission and retain only fixed detail
+codes in aggregate reports. A formatting diagnostic never clears ISBN, contributor, responsibility
+or source-use holds; extra words are a structural observation, not a safe-subtitle or wrong-book
+judgment. See `docs/tasks/intake-title-diagnostics-2026-10-20.md`. Reference credit checks score
 only the explicitly listed subset after acquisition; they cannot certify a complete roster.
 Source-use findings are code-owned, dated and operation-specific; lookup access never clears
 storage, export or model input. Stale/unknown findings remain held. Provider person IDs are transient

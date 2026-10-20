@@ -1,4 +1,4 @@
-import { admitSourceRecord } from './enrichAdmission'
+import { admitSourceRecord, sourceTitleMatches } from './enrichAdmission'
 import { normalizeIsbn } from './match'
 import {
   INTAKE_EVIDENCE_VERSION,
@@ -205,6 +205,56 @@ function claimReasons(
   return unique(reasons)
 }
 
+/** Compare only the title axis. Joint admission would blame a title for an unrelated ISBN/name
+ * failure and, without an author argument, misreport accepted edition-formatting alternatives.
+ * Details are fixed codes: no provider text, tokens, hashes or fragments enter durable reports. */
+function titleDiagnostics(request: IntakeEvidenceRequest, o: IntakeObservation) {
+  const t = request.target
+  const r = o.identity
+  if (!t.title) return { title: 'not_requested', titleDetail: 'not_requested' } as const
+  if (!r) return { title: 'missing', titleDetail: 'not_observed' } as const
+  if (t.title === r.title) return { title: 'exact', titleDetail: 'literal' } as const
+  const safe = titleFormattingSafe(t.title, r)
+  // The shared helper compares titles only; it does not select or certify an edition.
+  const record = { title: r.title, subtitle: r.subtitle, authors: [] }
+  if (sourceTitleMatches(t.title, record)) {
+    if (!safe) return { title: 'mismatch', titleDetail: 'significant_marks' } as const
+    return {
+      title: 'formatting',
+      titleDetail: sourceTitleMatches(t.title, { ...record, subtitle: undefined })
+        ? 'normalized'
+        : 'declared_subtitle',
+    } as const
+  }
+  if (sourceTitleMatches(t.title, record, true)) {
+    if (!safe) return { title: 'mismatch', titleDetail: 'significant_marks' } as const
+    const isbn = normalizeIsbn(t.isbn ?? '')
+    const editionContext =
+      !!isbn &&
+      r.scope === 'edition' &&
+      r.isbns.length > 0 &&
+      r.isbns.every((value) => normalizeIsbn(value) === isbn) &&
+      !!t.contributors?.length &&
+      !t.contributors.some(ambiguousName)
+    return editionContext
+      ? ({ title: 'formatting', titleDetail: 'edition_formatting' } as const)
+      : ({ title: 'mismatch', titleDetail: 'unconfirmed_edition_formatting' } as const)
+  }
+  const a = words(t.title)
+  const additionalWords = [r.title, ...(r.subtitle ? [`${r.title} ${r.subtitle}`] : [])].some(
+    (candidate) => {
+      const b = words(candidate)
+      const [short, long] = a.length < b.length ? [a, b] : [b, a]
+      return short.length >= 2 && short.length < long.length && short.every((w, i) => w === long[i])
+    },
+  )
+  // Structural difference only: extra words do not diagnose a wrong book or a safe subtitle.
+  return {
+    title: 'mismatch',
+    titleDetail: additionalWords ? 'additional_words' : 'different_words',
+  } as const
+}
+
 /** Diagnostic axes only. They never relax admission or authorize a saved fact. */
 export function intakeIdentityDiagnostics(request: IntakeEvidenceRequest, o: IntakeObservation) {
   const r = o.identity,
@@ -214,25 +264,7 @@ export function intakeIdentityDiagnostics(request: IntakeEvidenceRequest, o: Int
   return {
     responsibility:
       o.responsibilityStatement || o.creditStatements?.length ? 'unreviewed' : 'not_observed',
-    title: !t.title
-      ? 'not_requested'
-      : !r
-        ? 'missing'
-        : t.title === r.title
-          ? 'exact'
-          : titleFormattingSafe(t.title, r) &&
-              admitSourceRecord(
-                { title: t.title, isbn },
-                {
-                  title: r.title,
-                  subtitle: r.subtitle,
-                  scope: r.scope,
-                  isbns: r.isbns,
-                  authors: names,
-                },
-              )
-            ? 'formatting'
-            : 'mismatch',
+    ...titleDiagnostics(request, o),
     isbn: !t.isbn
       ? 'not_requested'
       : !isbn
