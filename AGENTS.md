@@ -768,6 +768,14 @@ writes/unknown usage keep their reservations. Non-LLM planner completion, review
 excerpts and current verified pricing are required before a request. Never delete its ledger or use
 a new clone to bypass consumed requests. The command has no catalog or personal-data writer.
 See `docs/tasks/intake-budget.md`.
+The Luna request uses a code-owned claim/citation schema, not free-form completion. Literal quote
+checks produce `citation_checked` research only; they do not establish semantic support, exact book
+identity, rights or permission to save. Conflicts, abstentions, refusals and malformed responses stay
+held. Accounting settlement is separate from research quality. Offline `intake:budget prepare` and
+hash-bound `review` never reserve or replay a request. `intake:research:eval` freezes code, requests
+and expected contract outcomes before scoring; keep failed/unobserved cases in the denominator and
+label injected synthetic replies separately from real model results. The paid path remains residual
+description research, with identity/review holds excluded. See `docs/tasks/intake-luna-methodology.md`.
 
 Every edition enrichment source must independently match the requested title/full contributor and
 canonical valid ISBN. Bounded exact Open Library and Hardcover editions with complete author

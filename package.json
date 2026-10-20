@@ -58,7 +58,8 @@
     "intake:document": "vite-node --script scripts/document-evidence.mjs --",
     "intake:photo": "vite-node --script scripts/photo-intake.mjs --",
     "intake:photo:compare": "vite-node --script scripts/photo-intake-comparison.mjs --",
-    "test:intake-budget": "node --test scripts/intake-budget.test.mjs"
+    "test:intake-budget": "node --test scripts/intake-budget.test.mjs scripts/intake-research-contract.test.mjs",
+    "intake:research:eval": "node scripts/intake-research-eval.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

@@ -19,8 +19,10 @@ receipts to reset the budget. This gate cannot account for unrelated clients tha
 node scripts/intake-budget.mjs init /private/budget.json /private/reconciliation.json
 node scripts/intake-budget.mjs status
 node scripts/intake-budget.mjs configure /private/verified-pricing.json
+node scripts/intake-budget.mjs prepare /private/current-inventory.json /private/dispositions.json WORK_UUID:description /private/evidence.json 2000 /private/prepared.json
 node scripts/intake-budget.mjs run /private/current-inventory.json /private/dispositions.json WORK_UUID:description /private/evidence.json 2000
 node scripts/intake-budget.mjs settle REQUEST_HASH
+node scripts/intake-budget.mjs review /private/prepared.json
 ```
 
 `init` and `status` work without pricing or credentials. `init` verifies the supplied receipt's
@@ -105,6 +107,29 @@ The fixed request uses the Responses endpoint, `gpt-6-luna`, `service_tier: defa
 disabled truncation and a bounded output limit. Redirects, retries, arbitrary commands, tools,
 alternate endpoints and caller-provided model configuration are unavailable. `OPENAI_API_KEY` is
 required before reservation and is never written to the ledger.
+
+The v2 methodology replaces free-form text with a strict, code-owned claim/citation schema. Every
+claim has work/description scope, a candidate/withheld disposition and exact quoted support linked
+to a code-assigned source ID. Identity explanations, categorized findings and abstentions remain
+separate. Local checks verify the shape, supplied source IDs and literal substring anchors. They
+cannot establish that the source is correct or that a quote supports the model's interpretation.
+`citation_checked` always retains `requiresSourceReview: true` and `saveAllowed: false`; conflicts,
+unknown citations, abstentions, refusals and incomplete/malformed output remain `held`. A withheld
+research result still incurs usage; valid accounting is never presented as valid bibliography.
+
+`prepare` is a no-network dry run. It performs the same planner, source-use and freshness checks,
+then writes a private create-only request packet without pricing, credentials or a reservation.
+Keep this packet outside Git: it contains permitted excerpts, not merely aggregate diagnostics.
+Run with the identical inventory/disposition/evidence/token inputs to retain its request hash.
+Changed inputs require new review; changing the prompt or schema cannot replay a consumed task.
+
+`review` reads the original settled response and compares the packet's configuration hash to the
+reservation. It prints fixed diagnostic codes/counts only, without another model call, settlement
+or reservation. It may be repeated read-only, including after the original evidence freshness
+window; this is inspection of a historical attempt, never current evidence requalification.
+Unsettled responses must first use the existing `settle` recovery. Older free-form attempts remain
+accountable and consumed; they do not gain the new research contract or become replayable.
+See [Luna methodology](intake-luna-methodology.md) for evaluation and remaining boundaries.
 
 ## Durable accounting and recovery
 
