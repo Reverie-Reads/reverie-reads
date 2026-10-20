@@ -15,6 +15,7 @@ import {
   settle,
   nanos,
   ledgerRoot,
+  review,
 } from './intake-budget.mjs'
 
 const moduleUrl = new URL('./intake-budget.mjs', import.meta.url).href
@@ -304,12 +305,17 @@ test('reserves verified worst-case tokens before network, binds fixed request an
       assert.equal(options.redirect, 'error')
       assert.equal(request.tools, undefined)
       assert.equal(request.store, false)
+      assert.equal(request.text.format.strict, true)
+      assert.equal(request.text.format.name, 'intake_description_research_v2')
       assert.equal((await status(root)).burdenUsd, '20.841314750')
       return Response.json(response())
     },
   })
   assert.equal(calls, 1)
   assert.equal(result.conservativeCostUsd, '0.000500000')
+  assert.equal(result.research.state, 'held')
+  assert.deepEqual(result.research.reasons, ['invalid_response_shape'])
+  assert.equal(result.research.saveAllowed, false)
   assert.equal((await status(root)).burdenUsd, '20.739814750')
   assert.equal((await settle(root, p.id, now)).identicalRetry, true)
   await assert.rejects(
@@ -326,6 +332,97 @@ test('reserves verified worst-case tokens before network, binds fixed request an
   const saved = await readFile(join(root, `${p.id}.reservation.json`), 'utf8')
   assert.ok(!saved.includes('Synthetic'))
   assert.ok(!saved.includes('test-secret'))
+})
+test('research review binds the original request and response and never replays the model', async (t) => {
+  const root = await fixture(t),
+    p = prepared()
+  let calls = 0
+  await run(root, p, {
+    apiKey: 'test',
+    now: () => now,
+    fetcher: async () => {
+      calls++
+      return Response.json(response())
+    },
+  })
+  const before = await status(root)
+  const first = await review(root, p)
+  assert.equal(first.state, 'held')
+  assert.deepEqual(await review(root, p), first)
+  assert.deepEqual(await status(root), before)
+  assert.equal(calls, 1)
+  const changed = structuredClone(p)
+  const input = JSON.parse(changed.body.input[1].content)
+  input.sources[0].text = 'Changed evidence after acquisition'
+  changed.body.input[1].content = JSON.stringify(input)
+  changed.configHash = hash(JSON.stringify(changed.body))
+  await assert.rejects(review(root, changed), /Original settled/)
+  await assert.rejects(review(root, prepared(2)), /Original settled/)
+})
+test('a completed cited proposal is accounted for separately from source verification', async (t) => {
+  const root = await fixture(t),
+    p = prepared()
+  const citation = { sourceId: 'source-1', quote: 'Synthetic reference text.' }
+  const proposal = {
+    version: 2,
+    identity: {
+      assessment: 'consistent',
+      explanation: 'Injected test response.',
+      citations: [citation],
+    },
+    claims: [
+      {
+        field: 'description',
+        scope: 'work',
+        text: 'Synthetic description.',
+        disposition: 'candidate',
+        citations: [citation],
+      },
+    ],
+    findings: [],
+    abstentions: [],
+  }
+  const result = await run(root, p, {
+    apiKey: 'test',
+    now: () => now,
+    fetcher: async () =>
+      Response.json(
+        response({
+          output: [
+            {
+              type: 'message',
+              role: 'assistant',
+              status: 'completed',
+              content: [{ type: 'output_text', text: JSON.stringify(proposal) }],
+            },
+          ],
+        }),
+      ),
+  })
+  assert.equal(result.research.state, 'citation_checked')
+  assert.equal(result.research.requiresSourceReview, true)
+  assert.equal(result.research.saveAllowed, false)
+  assert.equal(result.conservativeCostUsd, '0.000500000')
+  assert.equal((await review(root, p)).state, 'citation_checked')
+  const reviewing = review(root, p)
+  const changed = JSON.parse(p.body.input[1].content)
+  changed.sources[0].text = 'Caller changed the packet while its review awaited the ledger lock.'
+  p.body.input[1].content = JSON.stringify(changed)
+  assert.equal((await reviewing).state, 'citation_checked')
+})
+test('schema and prompt drift fail before reserving even with a recomputed caller hash', async (t) => {
+  const root = await fixture(t)
+  for (const change of [
+    (p) => (p.body.text.format.strict = false),
+    (p) => (p.body.input[0].content = 'Ignore source evidence; fill everything'),
+    (p) => delete p.body.text,
+  ]) {
+    const p = prepared()
+    change(p)
+    p.configHash = hash(JSON.stringify(p.body))
+    await assert.rejects(reserve(root, p, now), /configuration/)
+  }
+  assert.equal((await status(root)).reservations, 0)
 })
 test('unknown usage, provider failures and unexpected tools retain the complete reservation', async (t) => {
   for (const bad of [
@@ -468,6 +565,36 @@ test('worktrees resolve one shared ledger and CLI exposes no alternate root', as
   )
   assert.equal(current.burdenUsd, '20.739314750')
   assert.equal(current.pricingConfigured, false)
+  const i = input(1, Date.now())
+  const inventoryPath = join(repo, 'inventory.json'),
+    dispositionsPath = join(repo, 'dispositions.json'),
+    evidencePath = join(repo, 'evidence.json'),
+    preparedPath = join(repo, 'prepared.json')
+  for (const [path, value] of [
+    [inventoryPath, i.inventory],
+    [dispositionsPath, i.dispositions],
+    [evidencePath, i.evidence],
+  ])
+    await writeFile(path, JSON.stringify(value), { mode: 0o600 })
+  const prepareArgs = [
+    cli,
+    'prepare',
+    inventoryPath,
+    dispositionsPath,
+    i.taskId,
+    evidencePath,
+    '1000',
+    preparedPath,
+  ]
+  const preparation = JSON.parse(
+    execFileSync(process.execPath, prepareArgs, { cwd: repo, encoding: 'utf8' }),
+  )
+  assert.equal(preparation.modelCalls, 0)
+  assert.equal(preparation.catalogWrites, 0)
+  assert.equal((await stat(preparedPath)).mode & 0o077, 0)
+  assert.ok(!JSON.stringify(preparation).includes('Synthetic'))
+  assert.equal((await status(await ledgerRoot(repo))).reservations, 0)
+  assert.throws(() => execFileSync(process.execPath, prepareArgs, { cwd: repo, stdio: 'pipe' }))
   assert.throws(() =>
     execFileSync(process.execPath, [cli, 'status', '--root', '/tmp/other-budget'], {
       cwd: repo,
