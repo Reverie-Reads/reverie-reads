@@ -185,7 +185,14 @@ describe_holder() {
 # What actually runs under the lock: stamp the sidecar (best-effort, both directions — failing to
 # write it must never fail the run) and exec the command with the re-entrancy flag set.
 export SIDECAR
-RUN_HOLDING='printf "pid %s · %s · since %s\n" "$$" "$*" "$(date "+%H:%M:%S")" >"$SIDECAR" 2>/dev/null || true
+# A private per-invocation marker distinguishes acquisition from a command returning lockf's
+# own timeout status (75), or flock's status (1). It is diagnostic only: acquisition still goes
+# exclusively through the kernel lock, and neither the sidecar nor this marker grants it.
+RV_STACK_LOCK_ACQUIRE_MARKER=$(mktemp)
+export RV_STACK_LOCK_ACQUIRE_MARKER
+RUN_HOLDING='printf "1\n" >"$RV_STACK_LOCK_ACQUIRE_MARKER" || exit 74
+unset RV_STACK_LOCK_ACQUIRE_MARKER
+printf "pid %s · %s · since %s\n" "$$" "$*" "$(date "+%H:%M:%S")" >"$SIDECAR" 2>/dev/null || true
 RV_STACK_LOCK_HELD=1 exec "$@"'
 
 # ── Announce the wait ──────────────────────────────────────────────────────────────────────────
@@ -200,6 +207,11 @@ RV_STACK_LOCK_HELD=1 exec "$@"'
 # rule the sidecar follows.
 STARTED_AT=$(date +%s)
 HEARTBEAT=""
+cleanup() {
+  if [ -n "$HEARTBEAT" ]; then kill "$HEARTBEAT" 2>/dev/null || true; fi
+  rm -f -- "$RV_STACK_LOCK_ACQUIRE_MARKER" 2>/dev/null || true
+}
+trap cleanup EXIT
 if ! lock_try true 2>/dev/null; then
   if [ "$TIMEOUT" -ge 60 ]; then WAIT_DESC="$((TIMEOUT / 60)) min"; else WAIT_DESC="${TIMEOUT}s"; fi
   echo "stack-lock: the stack is held — waiting up to ${WAIT_DESC}." >&2
@@ -212,27 +224,31 @@ if ! lock_try true 2>/dev/null; then
   (
     while :; do
       sleep "$NOTIFY_EVERY"
+      [ -s "$RV_STACK_LOCK_ACQUIRE_MARKER" ] && break
       echo "stack-lock: still waiting ($(($(date +%s) - STARTED_AT))s) — holder: $(describe_holder)" >&2
     done
   ) &
   HEARTBEAT=$!
   disown "$HEARTBEAT" 2>/dev/null || true # suppress the shell's own job-termination notice
-  trap '[ -n "$HEARTBEAT" ] && kill "$HEARTBEAT" 2>/dev/null; true' EXIT
 fi
 
 set +e
 lock_wait "$TIMEOUT" bash -c "$RUN_HOLDING" _ "$@"
 STATUS=$?
 set -e
-[ -n "$HEARTBEAT" ] && kill "$HEARTBEAT" 2>/dev/null
+ACQUIRED=0
+[ -s "$RV_STACK_LOCK_ACQUIRE_MARKER" ] && ACQUIRED=1
+cleanup
 trap - EXIT
 
 # lockf exits 75 (EX_TEMPFAIL) and flock 1 when the wait expires without acquiring. Distinguish that
 # from the command's own failure: on expiry the command NEVER RAN, and saying so matters — running
 # after a failed wait is the original bug.
 WAITED=$(($(date +%s) - STARTED_AT))
-if { [ "$LOCK_BIN" = "lockf" ] && [ "$STATUS" -eq 75 ]; } ||
-  { [ "$LOCK_BIN" = "flock" ] && [ "$STATUS" -eq 1 ] && [ "$WAITED" -ge "$TIMEOUT" ]; }; then
+if [ "$ACQUIRED" -eq 0 ] && {
+  { [ "$LOCK_BIN" = "lockf" ] && [ "$STATUS" -eq 75 ]; } ||
+  { [ "$LOCK_BIN" = "flock" ] && [ "$STATUS" -eq 1 ] && [ "$WAITED" -ge "$TIMEOUT" ]; }
+}; then
   echo "stack-lock: TIMED OUT after ${WAITED}s waiting for the stack." >&2
   echo "            holder: $(describe_holder)" >&2
   echo "            The command did NOT run. Re-run when the holder finishes, or raise" >&2

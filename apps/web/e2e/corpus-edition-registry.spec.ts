@@ -136,6 +136,7 @@ async function evidence(page: Page) {
 async function setReviewClock(page: Page) {
   const timestamp = await localDatabaseTime()
   await page.clock.setFixedTime(new Date(timestamp))
+  return timestamp
 }
 
 async function prepareContributorEvidence(page: Page, c: Awaited<ReturnType<typeof fixture>>) {
@@ -325,6 +326,7 @@ test('future-dated edition credits remain unselectable and preserve personal dat
 }) => {
   const c = await fixture(page)
   try {
+    const reviewTime = await setReviewClock(page)
     const before = await ok(
       c.admin.from('books').select('*').eq('id', c.book).single(),
       'personal snapshot',
@@ -337,11 +339,11 @@ test('future-dated edition credits remain unselectable and preserve personal dat
     page.on('request', (request) => {
       if (request.url().endsWith('/rpc/admin_apply_edition_credits')) writes++
     })
-    // Change only the evidence timestamp, so authentication continues on its real clock.
-    // The real database must reject this payload; no eligibility response is mocked.
+    // Source-use inspection stays on the database-anchored browser clock. Only the edition
+    // observation moves into the future; real database eligibility is never mocked.
     await page.route('**/rest/v1/rpc/admin_prepare_reviewed_edition_credits', async (route) => {
       const payload = route.request().postDataJSON()
-      payload.p_evidence.source.checkedAt = new Date(Date.now() + 86400000).toISOString()
+      payload.p_evidence.source.checkedAt = new Date(reviewTime + 86400000).toISOString()
       await route.continue({ postData: JSON.stringify(payload) })
     })
     await prepareContributorEvidence(page, c)

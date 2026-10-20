@@ -26,6 +26,9 @@ edition handoff described below persists supported credits without producing a p
 Failed observations may carry bounded `withheldCredits` for duplicate normalized credits. These
 preserve original labels and ordering for transient review only; they cannot supply identity or
 claims, and no personal or shared storage shape changes.
+Successful observations may retain a literal `responsibilityStatement` separately from unparsed
+`creditStatements`. Either unresolved text adds an identity/claim review hold; matching an ISBN does
+not interpret its roles. These optional private evidence fields never enter a personal book patch.
 
 `DocumentEvidencePacket` v1 in `packages/core/src/documentEvidence.ts` is another private offline
 review document, not database state. Static page-image hashes, pixel rectangles, raw OCR/manual

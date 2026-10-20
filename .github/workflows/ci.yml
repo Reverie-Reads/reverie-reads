@@ -301,6 +301,12 @@ jobs:
       - name: Start Supabase
         id: supabase
         if: needs.changes.outputs.docs_only != 'true'
+        # CLI 2.109.0's ECR primary was throttled in run 39325719841; its GHCR fallback
+        # successfully supplied the same pinned images after costly retries. Select that official
+        # mirror for startup only. This internal setting disables fallback; review on CLI upgrades.
+        # No change to job/assertion limits, worker count, retries, or local Docker configuration.
+        env:
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
         # Only studio/vector/edge-runtime reliably exclude via -x on this CLI version — verified by
         # isolated testing, not assumed from the Phase 1 prose. `analytics` (the audit's "logflare")
         # does NOT actually exclude; passing it is a harmless no-op, kept out here rather than left

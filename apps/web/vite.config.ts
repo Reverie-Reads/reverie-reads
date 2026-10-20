@@ -75,7 +75,7 @@ export default defineConfig(({ command, mode }) => {
       react(),
       tailwindcss(),
       emitVersion,
-      ...(command === 'build' && uploadSourcemaps
+      ...(command === 'build' && mode !== 'browser-test' && uploadSourcemaps
         ? [
             sentryVitePlugin({
               org: process.env.SENTRY_ORG,
@@ -114,9 +114,28 @@ export default defineConfig(({ command, mode }) => {
     },
     server: { port: 5173 },
     build: {
-      sourcemap: uploadSourcemaps ? 'hidden' : false,
+      sourcemap: mode !== 'browser-test' && uploadSourcemaps ? 'hidden' : false,
       rollupOptions: {
+        // Vite's app default removes entry exports. The separately imported test module needs
+        // its public setter preserved; otherwise its entire side-effect-free body is removed.
+        preserveEntrySignatures: mode === 'browser-test' ? 'strict' : undefined,
+        // The test-only entry shares the real appearance store with the bundled app. It never
+        // enters ordinary builds; tests no longer import the development server's source graph.
+        input:
+          mode === 'browser-test'
+            ? {
+                index: `${__dirname}/index.html`,
+                'test-appearance': `${__dirname}/e2e/support/appearance-entry.ts`,
+              }
+            : undefined,
         output: {
+          entryFileNames:
+            mode === 'browser-test'
+              ? (chunk) =>
+                  chunk.name === 'test-appearance'
+                    ? 'assets/test-appearance.js'
+                    : 'assets/[name]-[hash].js'
+              : undefined,
           // Split big, stable vendors into their own cacheable chunks.
           manualChunks: {
             react: ['react', 'react-dom'],

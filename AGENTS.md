@@ -826,6 +826,8 @@ identity entry, then reuses normal duplicate review and confirmed Add. It has no
 implicit cover selection, copy-count inference, model fallback or production activation. Cover Studio
 and accepting identity remain independent; signatures/numbering never establish authenticity or
 value. Keep new Collector observations at selected edition/copy scope and Collector signup gated.
+The isolated local-backend-only `browser-test` bundle may exercise the same explicit pilot flag;
+ordinary production builds must remove the entry even when that flag is set.
 See `docs/tasks/photo-collection-intake.md` and its frozen comparison; selected-source failures and
 unobserved identity/correction/device metrics remain visible.
 A frozen frame may explicitly opt into the US-domain Penguin Random House title/edition-contributor
@@ -842,7 +844,12 @@ not a source license upgrade, production qualification, or Add/scan/import write
 `intake:shadow run-review` can expose the current run's evidence through a five-minute, loopback-only,
 read-only view. Close its tab after inspection; do not export provider values from it. Keep original
 credit labels and work/edition basis, leave free-text credit statements unparsed, and never cast
-unsupported roles or part credits into the personal contributor enum. Reference credit checks score
+unsupported roles or part credits into the personal contributor enum. Preserve Open Library's
+literal `by_statement` separately as
+`responsibilityStatement`; either unresolved responsibility or contribution prose holds identity and
+dependent claims, including ISBN-only scans. Keep useful unresolved bylines distinct from wrong-book
+diagnoses; never infer roles from prose or let a responsibility-only hold manufacture a conflict
+against a valid peer. See `docs/tasks/intake-responsibility-evidence-2026-10-19.md`. Reference credit checks score
 only the explicitly listed subset after acquisition; they cannot certify a complete roster.
 Source-use findings are code-owned, dated and operation-specific; lookup access never clears
 storage, export or model input. Stale/unknown findings remain held. Provider person IDs are transient
@@ -1215,6 +1222,16 @@ test` outright and only fail `tsc`. This has bitten twice, by two different tool
   infrastructure includes one full e2e run** at the default worker count, fresh DB, retries 0. If
   it's red, report it red — do not re-run until it's green. Docs-only branches are exempt, and
   the report should say so explicitly rather than silently omitting the run.
+- **Local browser verification needs capacity and a fresh bundle.** Run
+  `node scripts/browser-preflight.mjs` inside the pinned stack lock before a reset; `pnpm e2e`
+  repeats admission before browser startup. A local one- or five-minute load above twice the
+  available CPUs refuses launch; this operational ceiling is not proof of spare capacity.
+  Check memory pressure too. Preserve a capacity refusal and clear the workload rather than
+  bypassing it. Dedicated CI retains its existing worker/retry policy. Browser tests build a
+  fresh SPA in ignored `.browser-test-dist` and serve it with strict-port preview. The separate
+  appearance entry exists only in that test build; do not import `/src/` from browser tests or
+  expose it in an ordinary build. Workflow remains separately tested; monitoring upload is off
+  for the browser-test build. Startup and assertion deadlines are unchanged.
 - **Pin the Docker engine for the entire local browser lifecycle.** Inside the existing stack
   lock, run reset/test/restore through `scripts/stack-engine.mjs`. It resolves the selected local
   Docker socket once, checks healthy database/API containers and their configured ports, and

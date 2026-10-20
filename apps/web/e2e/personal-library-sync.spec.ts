@@ -1,3 +1,4 @@
+import { observeLibrarySubscription } from './support/librarySubscription'
 import { configureReturningReader } from './support/readerGuidance'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { expect, test, type Page } from './support/fixtures'
@@ -72,35 +73,6 @@ async function stub(page: Page): Promise<void> {
   await page.route('**/books/v1/volumes**', (route) => route.fulfill({ json: { items: [] } }))
 }
 
-/**
- * Wait for the server's successful reply to the private topic join. Watching the actual WebSocket
- * avoids sleeping past a race: an out-of-band write before this frame would correctly be absent
- * from the live stream and could make the spec pass or fail based on machine speed.
- */
-function waitForLibrarySubscription(page: Page, uid: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    let settled = false
-    const timer = setTimeout(() => {
-      if (!settled) reject(new Error('The app did not join its private library channel'))
-    }, 20_000)
-    page.on('websocket', (socket) => {
-      socket.on('framereceived', ({ payload }) => {
-        const frame = payload.toString()
-        if (
-          !settled &&
-          frame.includes(`realtime:library:${uid}`) &&
-          frame.includes('phx_reply') &&
-          frame.includes('"status":"ok"')
-        ) {
-          settled = true
-          clearTimeout(timer)
-          resolve()
-        }
-      })
-    })
-  })
-}
-
 async function signIn(page: Page, c: Client): Promise<void> {
   await keepOfflineCacheEmpty(page)
   await configureReturningReader(c.session.access_token)
@@ -118,13 +90,13 @@ test('books and shelves refresh after another client changes them', async ({ pag
   const c = await client()
   await reset(c)
   await stub(page)
-  const subscribed = waitForLibrarySubscription(page, c.uid)
+  const subscribed = observeLibrarySubscription(page, c.uid)
   await signIn(page, c)
-  await subscribed
+  await subscribed()
 
-  const librarySubscribed = waitForLibrarySubscription(page, c.uid)
+  const librarySubscribed = observeLibrarySubscription(page, c.uid)
   await page.goto('/library')
-  await librarySubscribed
+  await librarySubscribed()
   await expect(page.getByRole('heading', { name: 'My library' })).toBeVisible()
 
   const inserted = await okData(
@@ -159,9 +131,9 @@ test('books and shelves refresh after another client changes them', async ({ pag
     timeout: 20_000,
   })
 
-  const shelvesSubscribed = waitForLibrarySubscription(page, c.uid)
+  const shelvesSubscribed = observeLibrarySubscription(page, c.uid)
   await page.goto('/shelves')
-  await shelvesSubscribed
+  await shelvesSubscribed()
   await expect(page.getByRole('heading', { name: 'Shelves', exact: true })).toBeVisible()
   const list = await okData(
     c.sb
@@ -181,9 +153,9 @@ test('books and shelves refresh after another client changes them', async ({ pag
     timeout: 20_000,
   })
 
-  const finalLibrarySubscribed = waitForLibrarySubscription(page, c.uid)
+  const finalLibrarySubscribed = observeLibrarySubscription(page, c.uid)
   await page.goto('/library')
-  await finalLibrarySubscribed
+  await finalLibrarySubscribed()
   await ok(c.sb.from('books').delete().eq('id', bookId), 'personal-library-sync book delete')
   await expect(page.getByRole('button', { name: 'Open Across Every Device' })).toHaveCount(0, {
     timeout: 20_000,

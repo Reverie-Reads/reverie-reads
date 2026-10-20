@@ -27,7 +27,9 @@ GitHub checks were verified successful on October 19; it is still draft and open
    directory; earlier originals, failures and correction revisions remain intact. Old corrections
    cannot be silently transplanted to changed pixels or OCR.
 4. **Review in Add:** with `VITE_PHOTO_INTAKE_PILOT=true`, the development server exposes **Review
-   photos · local pilot**. Production builds remove the entry even when that variable is set.
+   photos · local pilot**. The isolated, local-backend-only `browser-test` bundle also permits
+   this explicit opt-in so the full suite exercises the pilot. Ordinary production builds remove
+   the entry even when that variable is set; neither build mode nor this flag activates live intake.
    Cover/title/copyright uploads remain browser memory only and account-separated. Browser PNG/JPEG
    preflight runs before allocation, orientation is applied before displaying pixels, and the
    existing packaged native/ZXing barcode decoder reads the normalized image or an explicit crop.

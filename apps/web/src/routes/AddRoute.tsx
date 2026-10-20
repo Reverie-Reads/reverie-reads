@@ -1936,17 +1936,18 @@ function AddScreen() {
           >
             {scanItems.length ? `Scan books · ${scanItems.length}` : '📷 Scan books'}
           </button>
-          {import.meta.env.DEV && import.meta.env.VITE_PHOTO_INTAKE_PILOT === 'true' && (
-            <button
-              type="button"
-              onClick={() => setPhotoOpen(true)}
-              disabled={!!picked}
-              className="h-11 skin-control border border-line px-5 text-[14px] font-semibold text-ink"
-              style={{ background: 'var(--card)' }}
-            >
-              Review photos · local pilot
-            </button>
-          )}
+          {(import.meta.env.DEV || import.meta.env.MODE === 'browser-test') &&
+            import.meta.env.VITE_PHOTO_INTAKE_PILOT === 'true' && (
+              <button
+                type="button"
+                onClick={() => setPhotoOpen(true)}
+                disabled={!!picked}
+                className="h-11 skin-control border border-line px-5 text-[14px] font-semibold text-ink"
+                style={{ background: 'var(--card)' }}
+              >
+                Review photos · local pilot
+              </button>
+            )}
           {/* A peer of Search and Scan, as the intro copy has always promised. It used to appear ONLY
             in the results-empty branch — so a search that returned the WRONG books (rather than
             none) left no way in, and the reader had to adopt a wrong hit or search gibberish to
@@ -1966,27 +1967,29 @@ function AddScreen() {
       </details>
       <div className="mt-3 empty:hidden" data-book-tour-inline="book-search" />
 
-      {import.meta.env.DEV && import.meta.env.VITE_PHOTO_INTAKE_PILOT === 'true' && photoOpen && (
-        <details open={!picked} className="my-3">
-          <summary hidden={!picked} className="min-h-11 cursor-pointer py-2 text-sm text-ink">
-            Photo evidence · inspect source pixels
-          </summary>
-          <PhotoIntake
-            key={scanOwner}
-            disabled={!!picked}
-            onSearch={(query) => {
-              setQ(query)
-              void runSearch(query)
-            }}
-            onReview={(identity) => {
-              setActiveBulkId(null)
-              setActiveCapture(null)
-              cancel()
-              setPicked(identity)
-            }}
-          />
-        </details>
-      )}
+      {(import.meta.env.DEV || import.meta.env.MODE === 'browser-test') &&
+        import.meta.env.VITE_PHOTO_INTAKE_PILOT === 'true' &&
+        photoOpen && (
+          <details open={!picked} className="my-3">
+            <summary hidden={!picked} className="min-h-11 cursor-pointer py-2 text-sm text-ink">
+              Photo evidence · inspect source pixels
+            </summary>
+            <PhotoIntake
+              key={scanOwner}
+              disabled={!!picked}
+              onSearch={(query) => {
+                setQ(query)
+                void runSearch(query)
+              }}
+              onReview={(identity) => {
+                setActiveBulkId(null)
+                setActiveCapture(null)
+                cancel()
+                setPicked(identity)
+              }}
+            />
+          </details>
+        )}
 
       {scannerOpen && (
         <Modal title="Scan books" onClose={() => setScannerOpen(false)} wide>

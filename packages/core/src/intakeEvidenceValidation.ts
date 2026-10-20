@@ -187,12 +187,13 @@ export function parseIntakeEvidence(input: unknown): IntakeEvidenceRequest {
       !keys(
         o,
         ['id', 'targetFingerprint', 'source', 'status', 'claims'],
-        ['identity', 'creditStatements', 'withheldCredits'],
+        ['identity', 'responsibilityStatement', 'creditStatements', 'withheldCredits'],
       ) ||
       !text(o.id, 200) ||
       ids.has(o.id) ||
       !fingerprint(o.targetFingerprint) ||
       !oneOf(o.status, ['ok', 'empty', 'failed', 'capped']) ||
+      (o.responsibilityStatement !== undefined && !text(o.responsibilityStatement, 1000)) ||
       (o.creditStatements !== undefined && !stringList(o.creditStatements, 32)) ||
       (o.withheldCredits !== undefined &&
         (o.status !== 'failed' || !credits(o.withheldCredits, true)))
@@ -223,7 +224,12 @@ export function parseIntakeEvidence(input: unknown): IntakeEvidenceRequest {
       return fail()
     if (!Array.isArray(o.claims) || o.claims.length > 30) return fail()
     if (o.status !== 'ok') {
-      if (o.identity !== undefined || o.claims.length || o.creditStatements !== undefined)
+      if (
+        o.identity !== undefined ||
+        o.claims.length ||
+        o.creditStatements !== undefined ||
+        o.responsibilityStatement !== undefined
+      )
         return fail()
       continue
     }

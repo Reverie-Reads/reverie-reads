@@ -89,6 +89,8 @@ export interface IntakeObservation {
   source: IntakeEvidenceSource
   status: 'ok' | 'empty' | 'failed' | 'capped'
   identity?: IntakeObservedIdentity
+  /** Literal edition responsibility prose. Uninterpreted text cannot certify linked-name roles. */
+  responsibilityStatement?: string
   /** Unparsed source statements: retain for review; never convert prose into guessed credits. */
   creditStatements?: string[]
   /** Failed record's bounded literal credits, including duplicates. Never identity or claim support. */
@@ -137,6 +139,7 @@ export type IntakeReviewReason =
   | 'not_applicable'
   | 'relationship_unverified'
   | 'credit_scope_unverified'
+  | 'responsibility_unreviewed'
 
 export interface IntakeClaimDecision {
   observationId: string

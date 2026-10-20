@@ -68,6 +68,7 @@ export function renderIntakeReview(reviews) {
     <h4>Why review is required</h4>${show(s.reasons)}
     <h4>Contributor credits in source order</h4>${show(s.credits)}
     <h4>Credit conflicts — no rows merged</h4>${show(s.creditCollisions ?? [])}
+    <h4>Edition responsibility statement — requires review</h4>${show(s.responsibilityStatement ?? 'Not supplied')}
     <h4>Unparsed credit statements — roles not inferred</h4>${show(s.creditStatements)}
     <h4>Field evidence and existing values</h4>${show(s.claims)}
   </section>`,

@@ -224,6 +224,13 @@ export function adaptOpenLibraryIntake(
   if (new Set(credits.map((c) => c.name)).size !== credits.length)
     return duplicateCredits('openlibrary', context, String(b.key), credits)
   const o = intakeSourceObservation('openlibrary', context, 'ok', String(b.key))
+  // Preserve the edition's statement separately from linked authors and contributions. The
+  // schema allows mixed responsibility prose; neither splitting it nor ignoring it is safe.
+  if (b.by_statement !== undefined) {
+    if (typeof b.by_statement !== 'string' || b.by_statement.length > 1000)
+      return failed('openlibrary', context, 'unusable_responsibility_statement')
+    if (b.by_statement.trim()) o.responsibilityStatement = b.by_statement
+  }
   if (b.contributions !== undefined) {
     if (
       !Array.isArray(b.contributions) ||
@@ -250,6 +257,7 @@ export function adaptOpenLibraryIntake(
     locator: 'authors[] -> key-bound author.name',
   })
   const issues: string[] = []
+  if (o.responsibilityStatement) issues.push('unparsed_responsibility_statement')
   if (o.creditStatements?.length) issues.push('unparsed_credit_statements')
   const publishers = strings(b.publishers)
   const languages = Array.isArray(b.languages) ? b.languages : []
