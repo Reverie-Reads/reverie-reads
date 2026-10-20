@@ -177,6 +177,9 @@ it('binds pages to an explicitly selected published edition', async () => {
   fireEvent.change(screen.getByLabelText('Published edition'), {
     target: { value: context.record.editions[0]!.id },
   })
+  fireEvent.change(screen.getByLabelText('ISBN at this source'), {
+    target: { value: '9780306406157' },
+  })
   fill() // Replace the description-like value before inspecting again.
   fireEvent.change(screen.getByLabelText('Supported value'), { target: { value: '456' } })
   fireEvent.click(screen.getByRole('checkbox', { name: /I independently checked/ }))
@@ -189,6 +192,23 @@ it('binds pages to an explicitly selected published edition', async () => {
     identity: { isbn: '9780306406157' },
     support: { scope: 'edition' },
   })
+})
+
+it('withholds a valid source ISBN for a different edition before any save', () => {
+  open()
+  fireEvent.change(screen.getByLabelText('Fact to review'), { target: { value: 'pages' } })
+  fireEvent.change(screen.getByLabelText('Published edition'), {
+    target: { value: context.record.editions[0]!.id },
+  })
+  fireEvent.change(screen.getByLabelText('ISBN at this source'), {
+    target: { value: '9780140449136' },
+  })
+  fill()
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'The source ISBN must match the explicitly selected published edition.',
+  )
+  expect(screen.queryByRole('button', { name: 'Apply supported correction' })).toBeNull()
+  expect(api.apply).not.toHaveBeenCalled()
 })
 it('recovers a lost response using its exact receipt even outside recent history', async () => {
   api.apply.mockRejectedValue(new Error('Lost response'))

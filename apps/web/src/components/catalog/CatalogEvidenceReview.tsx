@@ -3,6 +3,7 @@ import {
   resolveIntakeEvidence,
   reviewCatalogEvidenceDraft,
   catalogEvidenceDraftKey,
+  normalizeIsbn,
   type CatalogEvidenceDraft,
   type IntakeResolution,
 } from '@reverie/core'
@@ -157,6 +158,7 @@ function EvidencePanel({
   const [opened, setOpened] = useState<CatalogEvidenceContext | null>(null)
   const [field, setField] = useState<CatalogEvidenceDraft['field']>('description')
   const [editionId, setEditionId] = useState('')
+  const [sourceIsbn, setSourceIsbn] = useState('')
   const [value, setValue] = useState('')
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')
@@ -202,6 +204,11 @@ function EvidencePanel({
   function prepare() {
     if (!snapshot || disabled || !inspected) return
     try {
+      if (
+        field !== 'description' &&
+        (!edition?.isbn || normalizeIsbn(sourceIsbn) !== normalizeIsbn(edition.isbn))
+      )
+        throw new Error('The source ISBN must match the explicitly selected published edition.')
       const date = parseReleasePub(value.trim())
       const at = new Date().toISOString()
       const draft = reviewCatalogEvidenceDraft(
@@ -218,7 +225,7 @@ function EvidencePanel({
           identity: {
             title,
             author,
-            isbn: field === 'description' ? null : (edition?.isbn ?? null),
+            isbn: field === 'description' ? null : sourceIsbn,
           },
           source: { url: sourceUrl, recordId, locator, checkedAt: at, kind },
           support: {
@@ -396,6 +403,22 @@ function EvidencePanel({
                     </select>
                   </Field>
                 )}
+                {field !== 'description' && (
+                  <div>
+                    <Field label="ISBN at this source">
+                      <input
+                        className={fieldClass}
+                        maxLength={32}
+                        value={sourceIsbn}
+                        onChange={(e) => setSourceIsbn(e.target.value)}
+                      />
+                    </Field>
+                    <p className="mt-1 block text-xs text-muted">
+                      Transcribe the source ISBN independently. It must match the selected edition,
+                      including equivalent ISBN-10/13 forms.
+                    </p>
+                  </div>
+                )}
                 <p className="whitespace-pre-wrap break-words text-sm">
                   Current {label(field).toLowerCase()}: {display(current)}
                 </p>
@@ -543,6 +566,17 @@ function EvidencePanel({
                   variant="ghost"
                   onClick={() => {
                     setValue('')
+                    setSourceIsbn('')
+                    setEditionId('')
+                    setTitle('')
+                    setAuthor('')
+                    setSourceUrl('')
+                    setRecordId('')
+                    setLocator('')
+                    setExplanation('')
+                    setNote('')
+                    setTermsUrl('')
+                    setTermsNote('')
                     setOpened(null)
                     setPreview(null)
                     setApproved(false)

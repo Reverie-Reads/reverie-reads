@@ -301,6 +301,7 @@ test('supported pages change only the selected published edition', async ({ page
     await region.getByLabel('Published edition').selectOption({ label: `${c.isbn} · paperback` })
     for (const [name, value] of [
       ['Supported value', '456'],
+      ['ISBN at this source', c.isbn],
       ['Title at this source', c.title],
       ['Source full author names', 'Test Writer'],
       ['Original evidence link', 'https://publisher.example/book'],

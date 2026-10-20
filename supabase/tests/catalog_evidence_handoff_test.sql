@@ -61,6 +61,7 @@ select is((select details->>'pages' from public.corpus_editions where id='e80000
 select is((select reviewed from public.corpus_editions where isbn='9780306406157'),false,'one fact does not certify entire edition');
 select lives_ok($$select pg_temp.apply('e8000000-0000-4000-8000-000000000014',pg_temp.draft('publication'),public.catalog_evidence_fingerprint('e8000000-0000-4000-8000-000000000001'))$$,'save selected edition date');
 select is((select details->'publication' from public.corpus_editions where isbn='9780306406157'),'{"y":2025,"m":null,"d":null}'::jsonb,'reduced date precision clears unsupported month/day');
+select throws_ok($$select pg_temp.apply('e8000000-0000-4000-8000-000000000018',jsonb_set(pg_temp.draft('pages'),'{identity,isbn}','"9780140449136"'),public.catalog_evidence_fingerprint('e8000000-0000-4000-8000-000000000001'))$$,'22023','Select the exact existing edition ISBN.','independently transcribed source ISBN cannot describe a different edition');
 select ok((select count(*) from public.corpus_series_entries where work_id='e8000000-0000-4000-8000-000000000001')>0,'protected graph comparison is non-vacuous');
 select is((select coalesce(jsonb_agg(to_jsonb(s) order by id),'[]') from public.corpus_series_entries s),(select value->2 from protected),'successful corrections preserve the shared graph byte-for-byte');
 update public.corpus_editions set details=details||'{"format":"audiobook"}' where isbn='9780306406157';
