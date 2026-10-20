@@ -116,6 +116,9 @@ export default defineConfig(({ command, mode }) => {
     build: {
       sourcemap: mode !== 'browser-test' && uploadSourcemaps ? 'hidden' : false,
       rollupOptions: {
+        // Vite's app default removes entry exports. The separately imported test module needs
+        // its public setter preserved; otherwise its entire side-effect-free body is removed.
+        preserveEntrySignatures: mode === 'browser-test' ? 'strict' : undefined,
         // The test-only entry shares the real appearance store with the bundled app. It never
         // enters ordinary builds; tests no longer import the development server's source graph.
         input:

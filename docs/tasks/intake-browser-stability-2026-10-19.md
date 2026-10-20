@@ -62,3 +62,22 @@ that child exit a lock timeout and incorrectly said the command never ran. A pri
 per-invocation acquisition receipt now distinguishes command results from acquisition failure,
 and the waiting heartbeat ends on acquisition. Kernel mutual exclusion is unchanged. Isolated
 regressions use private lock paths and clean up only their own process groups.
+
+The first bundled CI run (`91d196d`) passed mobile (52 passed, five skipped), accessibility
+(17 passed) and the gate. Desktop retained 364 passes, three failures, six skips and two unrun
+cases. All three failures came from the new appearance helper: Vite removed its unconsumed
+entry export. Browser-test mode now preserves entry signatures explicitly; a real fresh build
+retains `setAppearance` and its shared-store import. Ordinary build settings remain unchanged.
+The next CI run must verify the corrected module in the actual room sweeps.
+
+The four isolated lock regressions pass; running them against the original wrapper reproduces
+the false timeout and continued-heartbeat failures. CPU load improved after Storage settings
+closed, but memory pressure remained elevated. Both optional-service trials restored their
+recorded running services without launching a reset or browser test; the second was stopped
+when the CI appearance failure became known.
+
+A fresh manual publisher check again confirms The Hexologists, Josiah Bancroft and
+9780316443302 on the linked Hachette edition page. The public Open Library edition page
+remained unavailable through the web tool, and exact edition/ISBN searches did not produce
+verifiable record text. This confirms the target, but cannot explain the historical provider
+title. The discrepancy remains under review, with no replay or matching-rule change.
