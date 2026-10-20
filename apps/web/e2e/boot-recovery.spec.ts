@@ -1,7 +1,7 @@
 import { test, expect } from './support/fixtures'
 
-// Vite may append an HMR timestamp after a dependency rebuild. Intercept either entry URL.
-const entryModule = /\/src\/main\.tsx(?:\?.*)?$/
+// Match the fresh bundle's application entry, not its shared vendor chunks.
+const entryModule = /\/assets\/index-[\w-]+\.js(?:\?.*)?$/
 
 for (const width of [320, 390, 1280]) {
   test(`a failed entry module offers safe app-file recovery at ${width}px`, async ({ page }) => {

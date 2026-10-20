@@ -1207,6 +1207,16 @@ test` outright and only fail `tsc`. This has bitten twice, by two different tool
   infrastructure includes one full e2e run** at the default worker count, fresh DB, retries 0. If
   it's red, report it red — do not re-run until it's green. Docs-only branches are exempt, and
   the report should say so explicitly rather than silently omitting the run.
+- **Local browser verification needs capacity and a fresh bundle.** Run
+  `node scripts/browser-preflight.mjs` inside the pinned stack lock before a reset; `pnpm e2e`
+  repeats admission before browser startup. A local one- or five-minute load above twice the
+  available CPUs refuses launch; this operational ceiling is not proof of spare capacity.
+  Check memory pressure too. Preserve a capacity refusal and clear the workload rather than
+  bypassing it. Dedicated CI retains its existing worker/retry policy. Browser tests build a
+  fresh SPA in ignored `.browser-test-dist` and serve it with strict-port preview. The separate
+  appearance entry exists only in that test build; do not import `/src/` from browser tests or
+  expose it in an ordinary build. Workflow remains separately tested; monitoring upload is off
+  for the browser-test build. Startup and assertion deadlines are unchanged.
 - **Pin the Docker engine for the entire local browser lifecycle.** Inside the existing stack
   lock, run reset/test/restore through `scripts/stack-engine.mjs`. It resolves the selected local
   Docker socket once, checks healthy database/API containers and their configured ports, and

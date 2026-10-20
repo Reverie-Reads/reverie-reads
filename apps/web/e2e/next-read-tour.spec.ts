@@ -1,3 +1,4 @@
+import { setTestAppearance } from './support/appearance'
 import { randomUUID } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { SKIN_ORDER } from '@reverie/core'
@@ -288,15 +289,7 @@ test.describe('phone Next read coaching', () => {
       await start(page)
       for (const skin of SKIN_ORDER)
         for (const mode of ['light', 'dark']) {
-          await page.evaluate(
-            async ({ skin, mode }) => {
-              const path = '/src/skin/useSkin.ts'
-              const { useSkin } = await import(path)
-              useSkin.getState().setSkin(skin)
-              useSkin.getState().setMode(mode)
-            },
-            { skin, mode },
-          )
+          await setTestAppearance(page, skin, mode as 'light' | 'dark')
           await page.evaluate(() => document.fonts.ready)
           expect(
             await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
