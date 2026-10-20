@@ -17,10 +17,10 @@ begin
     or p->'independentlyChecked' is distinct from 'true'::jsonb
     or jsonb_typeof(s->'kind') is distinct from 'string' or s->>'kind' not in ('publisher','author','published_book') then return false; end if;
   foreach k in array array['title','author'] loop
-    if jsonb_typeof(i->k) is distinct from 'string' or length(i->>k) not between 1 and case when k='title' then 1000 else 2000 end or i->>k !~ '[^[:space:]]' then return false; end if;
+    if jsonb_typeof(i->k) is distinct from 'string' or length(i->>k) not between 1 and (case when k='title' then 1000 else 2000 end) or i->>k !~ '[^[:space:]]' then return false; end if;
   end loop;
   foreach k in array array['recordId','locator'] loop
-    if jsonb_typeof(s->k) is distinct from 'string' or length(s->>k) not between 1 and case when k='recordId' then 200 else 1000 end or s->>k !~ '[^[:space:]]' then return false; end if;
+    if jsonb_typeof(s->k) is distinct from 'string' or length(s->>k) not between 1 and (case when k='recordId' then 200 else 1000 end) or s->>k !~ '[^[:space:]]' then return false; end if;
   end loop;
   if jsonb_typeof(v->'note') is distinct from 'string' or length(v->>'note') not between 1 and 1200 or v->>'note' !~ '[^[:space:]]'
     or jsonb_typeof(p->'explanation') is distinct from 'string' or length(p->>'explanation') not between 1 and 1200 or p->>'explanation' !~ '[^[:space:]]'
