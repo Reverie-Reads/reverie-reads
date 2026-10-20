@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "gen:template": "UPDATE_TEMPLATE=1 vitest run src/data/importTemplate.test.ts",
     "gen:brand-assets": "node scripts/generate-brand-assets.mjs",
-    "e2e": "bash ../../scripts/stack-lock.sh playwright test",
+    "e2e": "bash ../../scripts/stack-lock.sh node ../../scripts/stack-engine.mjs node ../../scripts/browser-preflight.mjs playwright test",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

@@ -270,6 +270,11 @@ myProgress`). Move them into `packages/core` with tests.
   silently changes the selected destination. Review keeps one mounted book draft across personal,
   household and delegated choices; shared writers receive only the reviewed bibliographic subset.
 
+- **Edition identity tolerates formatting, not missing evidence.** Exact returned ISBN agreement
+  plus a complete author permits surname-first comma forms, standalone ampersands and bounded
+  descriptive title phrases. Missing/changed initials, volume labels and edition/format qualifiers
+  remain under review. Work-only matching stays strict; these comparison forms never rewrite
+  stored identity keys or supply series membership. See `docs/tasks/book-source-admission.md`.
 - **Add search distinguishes failure from absence.** Only a successful empty response means no
   matches. Keep the entered query available for explicit retry or manual entry; a newer search,
   manual choice or route exit cancels the older request so late results cannot replace the current
@@ -746,9 +751,28 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
 
 ## Book-data admission
 
-Every enrichment source must independently match the requested title/full contributor and, when
-provided, canonical valid ISBN. Only a bounded exact Open Library edition and its complete author
-lookups may supply selected-edition pages, binding, language and date. Work search summaries supply
+Shared-catalog completion planning is read-only. `corpus:completion:plan` consumes the private
+inventory projection in `scripts/corpus-completion-inventory.sql`; work-level blanks never select
+an edition or become fill proposals. Preserve stale deferred holds and identity conflicts. A failed
+provider is not successful absence. Only an explicit, fingerprint-matched completed non-LLM
+disposition can schedule `gpt-6-luna` evidence research, and its output still requires independent
+source review. The planner has no acquisition or catalog writer. See `docs/tasks/importer-accuracy.md`.
+
+`intake:budget` is the separate operator-only Luna evidence boundary. Its private Git-common-directory
+ledger enforces the $50 total ceiling, including the reconciled opening burden and uncertain requests.
+Reserve durably before network; consumed identities never automatically replay, and interrupted
+writes/unknown usage keep their reservations. Non-LLM planner completion, reviewed permitted source
+excerpts and current verified pricing are required before a request. Never delete its ledger or use
+a new clone to bypass consumed requests. The command has no catalog or personal-data writer.
+See `docs/tasks/intake-budget.md`.
+
+Every edition enrichment source must independently match the requested title/full contributor and
+canonical valid ISBN. Bounded exact Open Library and Hardcover editions with complete author
+identity may supply selected-edition pages, binding, language and date. After successful ISBN
+absence, an independently exact title/full-author work fallback may supply work facts only; it
+cannot choose an ISBN or edition facts. Conflicting editions and provider failures do not trigger
+that absence fallback. Explicit edition comparison remains bounded and reader-selected; see
+`docs/tasks/scanner-metadata-completeness.md`. Work search summaries supply
 work fields only; never promote their median pages, first language, arbitrary ISBN or edition key.
 Source-declared subtitles may match the combined title; surname, alias, prefix and search-series
 agreement do not establish identity. Competing/capped matches remain unresolved. Fast/full and cache
@@ -760,6 +784,66 @@ persisted reader verdict keys remain unchanged. Historical repair remains separa
 See `docs/tasks/book-data-correction-sequence.md` and `docs/tasks/book-source-admission.md`.
 
 ## Saved metadata continuity
+
+The new intake evidence resolver is an offline review boundary, consumed by `pnpm intake:replay`.
+It does not replace Add, scan or import writers. Preserve work/edition separation, scoped contributor
+roles, exact ISBN checks, per-claim evidence and existing values. Whole-work editors are retained
+as credits but cannot establish creator identity from a roleless target; editor-only collections
+stay under review, including ISBN-only scans. Never relabel editors as authors to increase coverage.
+Source qualification and lineage come from trusted adapters or reviewers, never model output or client assertions. The transient handoff preview uses code-owned operation reviews for catalog storage, export and Luna input separately; packet eligibility never grants those permissions. It preserves existing values and requires a current target check in the saved-edition editor before prepare. It is not a save payload. See `docs/tasks/intake-source-handoff-2026-10-18.md`. Do not cast a
+resolution to `Incoming` or `Book`; the staged intake cutover is still required. The separate
+administrator edition-credit handoff accepts manually inspected first-party evidence, freezes the
+exact draft and selection, and appends only explicitly confirmed supported credits. New reviews also
+freeze an administrator-inspected source-use reference scoped only to edition identity and literal
+credit facts. Applicable public terms or specific permission may supply that basis; unresolved use
+stays browser-only. The receipt is administrator-only, immutable and checked again before append;
+it never upgrades an API adapter or authorizes prose, images, export or model input. Legacy pending
+reviews need a new review; retain accepted history and read-only identical applied retries. See
+`docs/tasks/intake-reviewed-save-2026-10-18.md`. Preserve raw
+role labels, named parts, source order and all unselected evidence. Unknown roles, work-only scope,
+ambiguous names and identity/edition conflicts stay held. Later work/edition identity corrections retain historical credits but require renewed review; never
+revive them merely because old identity values return. This does not expand personal contributor
+roles or copy shared credits into reader records. See `docs/tasks/intake-evidence-resolver.md`.
+
+`intake:shadow` connects bounded, exact-ISBN Open Library and Hardcover adapters to that resolver.
+`intake:document` is a separate private operator pilot for deliberately supplied static PNG title or
+copyright pages. It accepts bounded OCR TSV/manual lines or optional local English Apple Vision,
+preserves image hashes/regions/raw text, and records explicit transcription corrections as new
+private revisions outside Git. Page text is inert data. A corrected line is not a verified book fact:
+the citation handoff rechecks exact edition ISBNs and explicit contributor roles through the existing
+resolver, always unverified/review-only. Permission attestations never qualify a source or authorize
+catalog storage, export, model input or a save. Partial extraction, stale corrections, ambiguous
+names and unsupported roles stay held. No Luna fallback, API acquisition, personal-data write or
+Add/scan/import cutover is enabled. See `docs/tasks/intake-document-evidence.md`.
+A frozen frame may explicitly opt into the US-domain Penguin Random House title/edition-contributor
+adapter. Preserve literal role codes/labels and partial-roster warnings; introduction/foreword credits
+are named parts, never whole-work authorship. Do not flatten author display strings or promote
+work-level credits. Only finite, documented publisher-label aliases may accompany their matching
+role codes; E/Edited by and T/Translated by preserve secondary roles and cannot establish authorship.
+Provider selection is part of the frozen frame; unavailable sources remain in
+the denominator. Adapter provenance is code-owned, but all sources remain review-only with unverified upstream lineage;
+two APIs do not prove independent support. Freeze provider-independent references and code hashes
+before acquisition. Keep its Git-common-directory attempt markers permanent, including failures.
+Reports retain scores and diagnostic codes, not provider payloads. This is an operator-only pilot,
+not a source license upgrade, production qualification, or Add/scan/import writer.
+`intake:shadow run-review` can expose the current run's evidence through a five-minute, loopback-only,
+read-only view. Close its tab after inspection; do not export provider values from it. Keep original
+credit labels and work/edition basis, leave free-text credit statements unparsed, and never cast
+unsupported roles or part credits into the personal contributor enum. Preserve Open Library's
+literal `by_statement` separately as
+`responsibilityStatement`; either unresolved responsibility or contribution prose holds identity and
+dependent claims, including ISBN-only scans. Keep useful unresolved bylines distinct from wrong-book
+diagnoses; never infer roles from prose or let a responsibility-only hold manufacture a conflict
+against a valid peer. See `docs/tasks/intake-responsibility-evidence-2026-10-19.md`. Reference credit checks score
+only the explicitly listed subset after acquisition; they cannot certify a complete roster.
+Source-use findings are code-owned, dated and operation-specific; lookup access never clears
+storage, export or model input. Stale/unknown findings remain held. Provider person IDs are transient
+review evidence, never reader/catalog IDs or a merge key. Repeated credits, normalized-role collisions
+and inconsistent person IDs/names retain separate diagnostic codes; never deduplicate them silently.
+Duplicate normalized credits retain their literal labels in bounded `withheldCredits` on a failed
+observation, never identity or field support. Validate provider packets separately so a malformed
+record stays an explicit failure without discarding a valid peer. Inspect every returned edition
+format; an unknown first label cannot hide a later recognized audiobook or license print pages.
 
 Selected-edition pages and publication dates retain their ISBN through search, Add and import.
 Hardcover work-search ISBN arrays never select a reader's copy; search labels never establish series.
@@ -773,7 +857,7 @@ must not coalesce publication axes independently; historical repair remains sepa
 
 **ISBNdb retirement (owner, September 9).** Production enrichment no longer has an ISBNdb HTTP
 adapter; old keys/flags/CSV cannot reactivate it. Enrichment and the owner-run corpus backfill share
-the current `identity-admitted-v2:` cache namespace (superseding `durable-sources-v1:`), with no fallback to historical mixed-source rows. Historical
+the current `identity-admitted-v3:` cache namespace (superseding `identity-admitted-v2:` and `durable-sources-v1:`), with no fallback to historical mixed-source rows. Historical
 source types remain readable, not proof of a live provider. Do not delete old cache or catalog rows
 as part of this cutover: incomplete union/personal provenance prevents safe blanket cleanup.
 No further paid trial acquisition without new owner approval; consumed study locks stay intact.
@@ -1123,6 +1207,27 @@ test` outright and only fail `tsc`. This has bitten twice, by two different tool
   infrastructure includes one full e2e run** at the default worker count, fresh DB, retries 0. If
   it's red, report it red — do not re-run until it's green. Docs-only branches are exempt, and
   the report should say so explicitly rather than silently omitting the run.
+- **Local browser verification needs capacity and a fresh bundle.** Run
+  `node scripts/browser-preflight.mjs` inside the pinned stack lock before a reset; `pnpm e2e`
+  repeats admission before browser startup. A local one- or five-minute load above twice the
+  available CPUs refuses launch; this operational ceiling is not proof of spare capacity.
+  Check memory pressure too. Preserve a capacity refusal and clear the workload rather than
+  bypassing it. Dedicated CI retains its existing worker/retry policy. Browser tests build a
+  fresh SPA in ignored `.browser-test-dist` and serve it with strict-port preview. The separate
+  appearance entry exists only in that test build; do not import `/src/` from browser tests or
+  expose it in an ordinary build. Workflow remains separately tested; monitoring upload is off
+  for the browser-test build. Startup and assertion deadlines are unchanged.
+- **Pin the Docker engine for the entire local browser lifecycle.** Inside the existing stack
+  lock, run reset/test/restore through `scripts/stack-engine.mjs`. It resolves the selected local
+  Docker socket once, checks healthy database/API containers and their configured ports, and
+  passes that endpoint to Docker and Supabase without changing the machine's active context.
+  `pnpm e2e` includes this guard; an outer lifecycle must include it before resetting the database.
+  A missing stack is a preflight failure, never permission to discover, start or reset another
+  engine. Select a known context explicitly when needed. Preserve failure receipts and local
+  backups; do not raise timeouts or add retries to hide a saturated host.
+  Database-clock fixture reads must be asynchronous and bounded; a stalled Docker call must not
+  block Playwright's worker timeout. Invalid or unavailable database time fails visibly, never
+  falls back to the host clock.
 - **A bulk insert's column set is the UNION of every row's keys, not each row's own.** PostgREST
   sends one `INSERT` for the whole array, and the column list it builds is every key any row in
   the batch supplies — so a row that omits a key the batch is inserting gets an explicit `NULL`

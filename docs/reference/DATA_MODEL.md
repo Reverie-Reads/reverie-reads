@@ -9,6 +9,36 @@ Read this before writing code that touches a book. Several fields changed meanin
 prototype (`spice` → `intensity`, `status` → the series' publication status, ownership from
 two states to four), and the old names are still the intuitive guess.
 
+The versioned, bibliography-only `IntakeEvidenceRequest` and `IntakeResolution` types in
+`packages/core/src/intakeEvidence.ts` are offline review documents, not persisted books or database
+patches. They retain per-claim source/locator, scope, lineage, retrieval state and target revision,
+and distinguish whole-work, part and edition credits. Their expanded credit roles do not change the
+personal `ContributorRole` enum below. The replay tool writes private review artifacts only; Add,
+scan, import and shared-catalog writers have not switched over. The transient review also carries a bibliography-free handoff preview: field dispositions, claim references, hold reasons and separate catalog/export/model-input requirements. It neither approves a source nor creates a book patch; the current fingerprint must be rechecked in the saved-edition editor before prepare. See
+[`intake-evidence-resolver.md`](../tasks/intake-evidence-resolver.md) for the trust boundary and rollout.
+Evidence credits may retain their original `sourceRole` (including an absent or empty label) and
+`basis` (`work` or `edition`). Unparsed `creditStatements` stay observations. These optional evidence
+fields are not personal contributor roles. The publisher adapter also retains an optional literal
+`sourceRoleCode` in transient evidence; it does not extend the persisted edition-credit SQL contract. Parent-work credits cannot certify an edition credit
+claim. An editor credit cannot establish creator identity for the roleless intake target; editor-only
+collections remain under review, with their credits preserved. The separate administrator-reviewed
+edition handoff described below persists supported credits without producing a personal book patch.
+Failed observations may carry bounded `withheldCredits` for duplicate normalized credits. These
+preserve original labels and ordering for transient review only; they cannot supply identity or
+claims, and no personal or shared storage shape changes.
+Successful observations may retain a literal `responsibilityStatement` separately from unparsed
+`creditStatements`. Either unresolved text adds an identity/claim review hold; matching an ISBN does
+not interpret its roles. These optional private evidence fields never enter a personal book patch.
+
+`DocumentEvidencePacket` v1 in `packages/core/src/documentEvidence.ts` is another private offline
+review document, not database state. Static page-image hashes, pixel rectangles, raw OCR/manual
+lines and append-only transcription corrections remain separate from source permission attestations
+and book identity. The local `intake:document` tool stores private immutable revision files outside
+Git. Its exact cited title/contributor/ISBN handoff uses the existing resolver with unverified,
+review-only source use; it cannot save a catalog or personal book. No image, provider scope, personal
+field, reading history or persisted contributor enum is added to the database. See
+[`intake-document-evidence.md`](../tasks/intake-document-evidence.md).
+
 ---
 
 ## 1. Client state
@@ -936,6 +966,42 @@ edition title/statement, format, publisher, language, pages and the exact partia
 `corpus_record_edits` retains administrator before/after snapshots and evidence, with no reader-copy
 writer. All four new tables (including reports) revoke direct privileges from every API role.
 
+`corpus_editions.credits` is an ordered, bounded JSON array of `StoredEditionCredit`: review ID,
+source position, literal name/role label, normalized role, whole/named-part scope, edition basis,
+source URL/locator/inspection time and the reviewed identity. It is additive shared bibliography;
+the personal contributor enum, `book_authors`, reading history and backup payloads are unchanged.
+The default empty array means no accepted credits, not a complete roster.
+`corpus_edition_credit_reviews` retains the entire frozen bibliography-only evidence document,
+including unsupported and unselected credits, reviewer attribution, target fingerprint and selected
+indices. It revokes direct API access and exposes administrator-only prepare/read/apply functions.
+Prepare writes only the review. Apply rechecks authority, current fingerprint, exact ISBN assignment,
+creator identity, edition conflicts, inspection age and credit eligibility under locks. A same-ID,
+same-selection retry returns the existing receipt without another write. A changed selection or
+draft conflicts. Accepted credits append with a new edition revision; existing values are preserved. Later work or
+edition identity changes mark retained entries `reviewRequired: true`; returning the old identity
+does not revive them. A fresh confirmed review may append a current credit while retaining held
+history. Page-count-only edits do not withdraw contributor qualification.
+New manual reviews require first-party source inspection and a separate `EditionCreditSourceUseReview`.
+The administrator records inspected applicable public terms or specific written permission, an HTTPS
+reference without credentials or query parameters, a short explanation, inspection time and explicit
+confirmation. Its only scope is retaining edition identity and literal credit facts; prose, images,
+export and model input receive no permission from it. This is a human attestation, not an automated
+legal determination or provider qualification. Missing, future or more-than-720-hour-old records block
+new preparation/application. The unresolved form remains browser-only.
+`corpus_edition_credit_source_use_receipts` freezes that record one-to-one with the review, with RLS
+and no direct API privileges. Administrator history returns it; published credits do not expose its
+reference or explanation. `admin_prepare_reviewed_edition_credits` freezes bibliography and receipt
+atomically; the old prepare function is internal. Identical retries are read-only; changing either
+document conflicts. Legacy pending reviews require a new review rather than a retrofitted receipt.
+Already accepted credits and identical applied retries remain intact, including legacy records.
+Neither a URL nor a provider/model claim supplies inspection or applicable permission. See
+[`intake-reviewed-save-2026-10-18.md`](../tasks/intake-reviewed-save-2026-10-18.md).
+Source adapters remain review-only. Their optional provider-scoped `sourceContributorId` and
+role codes are transient review evidence; this change does not extend the stored-credit SQL shape.
+Conflicting names/IDs and normalized-credit collisions produce withheld ordered credits, never
+identity or field support. Source qualification records describe separate lookup/review/cache/storage/
+export/model-input findings; they confer no catalog authority.
+
 `get_corpus_record` returns a work's editions, guidance and series tuple/confirmed-graph flag,
 the caller's unresolved reports (all for
 an administrator), and administrator-only recent audit events. `admin_save_corpus_record` performs
@@ -969,3 +1035,12 @@ shared values only when the matching personal value is null. Zero overrides rema
 Displays, library filtering and recommendations use this view; persistence, backups and merges use
 only the personal values. Reviewed shared genres resist automatic provider completion.
 See `../tasks/corpus-editions-and-guidance.md`.
+
+## Intake edition lookup
+
+The scanner and importer share identity-checked enrichment. Exact Hardcover editions now join
+Open Library as a source of selected-ISBN edition facts. Successful ISBN absence may recover only
+work facts through a separate exact title/full-author lookup. Add and saved-book Edit may compare
+bounded edition candidates; no candidate is automatically selected, registered as shared bibliography
+or added to private inventory. Existing personal corrections and explicit save/review remain required.
+See `../tasks/scanner-metadata-completeness.md`.

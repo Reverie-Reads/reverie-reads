@@ -223,6 +223,9 @@ export function useIntake() {
     const autoMergeStrong = qc.getQueryData<Profile>(profileKey)?.autoMergeDuplicates ?? true
     const library = (qc.getQueryData<Book[]>(booksKey) ?? []).map((b) => ({ ...b, reads: [...b.reads] }))
     const result = await applyIncoming(inc, library, ownerId, { fuzzy: fuzzyMode, autoMergeStrong: reviewDuplicates ? false : autoMergeStrong, newBookId })
+    // A duplicate review writes nothing. Return the reader's choice immediately rather than
+    // hiding it behind another library/history fetch; Add already refreshed before matching.
+    if (result.outcome === 'review') return result
     await qc.invalidateQueries({ queryKey: booksKey })
     await qc.invalidateQueries({ queryKey: ['reads', 'all'] })
     return result

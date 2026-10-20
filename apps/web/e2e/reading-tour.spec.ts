@@ -190,10 +190,85 @@ for (const touch of [false, true]) {
         await expect(guide.getByRole('status')).toHaveText('Keep what this read leaves with you')
         expect(await account.reads()).toHaveLength(1)
         expect((await account.book()).read_status).toBe('Reading')
+        let releaseMoods = () => {}
+        let moodsReady = Promise.resolve()
+        if (!touch) {
+          // Reproduce the late vocabulary response that moved Done during the pointer animation.
+          // Keep the real response, but release it only while this demonstration is in flight.
+          let responseReady = () => {}
+          moodsReady = new Promise<void>((resolve) => {
+            responseReady = resolve
+          })
+          const release = new Promise<void>((resolve) => {
+            releaseMoods = resolve
+          })
+          await page.route('**/rest/v1/moods?**', async (route) => {
+            const response = await route.fetch()
+            responseReady()
+            await release
+            await route.fulfill({ response })
+          })
+        }
         fail = false
         await finish.getByRole('button', { name: 'Retry status update', exact: true }).click()
         await expect(guide.getByRole('status')).toHaveText('A moment before your next book')
-        await expect(page.getByRole('dialog', { name: 'Just finished', exact: true })).toBeVisible()
+        const reflection = page.getByRole('dialog', { name: 'Just finished', exact: true })
+        await expect(reflection).toBeVisible()
+        if (!touch) {
+          await moodsReady
+          const done = reflection.getByRole('button', { name: 'Done', exact: true })
+          // Pause the actual pointer animation after the real click reaches React. This makes
+          // the response/animation ordering explicit without a sleep or a slower-motion setting.
+          await page.evaluate(() => {
+            document.addEventListener(
+              'click',
+              () => {
+                document
+                  .querySelector('.book-tour-cue')
+                  ?.getAnimations()
+                  .forEach((a) => a.pause())
+              },
+              { once: true },
+            )
+          })
+          await show(page)
+          await expect(guide.getByRole('button', { name: 'Show me this step' })).toHaveAttribute(
+            'aria-busy',
+            'true',
+          )
+          expect(
+            await page
+              .locator('.book-tour-cue')
+              .evaluate((cue) =>
+                cue.getAnimations().some((animation) => animation.playState === 'paused'),
+              ),
+          ).toBe(true)
+          const originalBounds = await done.boundingBox()
+          releaseMoods()
+          await expect(
+            reflection.getByRole('button', { name: 'Atmospheric', exact: true }),
+          ).toBeVisible()
+          const loadedBounds = await done.boundingBox()
+          expect(originalBounds).not.toBeNull()
+          expect(loadedBounds).not.toBeNull()
+          expect(Math.abs(loadedBounds!.y - originalBounds!.y)).toBeGreaterThan(2)
+          await page.locator('.book-tour-cue').evaluate((cue) => {
+            cue.getAnimations().forEach((animation) => animation.finish())
+          })
+          await expect(guide.getByRole('button', { name: 'Show me this step' })).toHaveAttribute(
+            'aria-busy',
+            'false',
+          )
+          // A moved target must cancel, never close the sheet or replay a saved read. Only the
+          // reader's fresh request below may demonstrate Done after the controls have loaded.
+          await expect(reflection).toBeVisible()
+          await expect(guide.getByRole('status')).toHaveText('A moment before your next book')
+          expect(await account.reads()).toHaveLength(1)
+          expect((await account.book()).read_status).toBe('Read')
+        }
+        await expect(
+          reflection.getByRole('button', { name: 'Atmospheric', exact: true }),
+        ).toBeVisible()
         await show(page)
         await expect(guide.getByRole('status')).toHaveText('A read to return to')
         expect(await account.reads()).toHaveLength(1)

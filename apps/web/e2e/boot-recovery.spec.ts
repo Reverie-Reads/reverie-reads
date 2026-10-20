@@ -1,10 +1,13 @@
 import { test, expect } from './support/fixtures'
 
+// Match the fresh bundle's application entry, not its shared vendor chunks.
+const entryModule = /\/assets\/index-[\w-]+\.js(?:\?.*)?$/
+
 for (const width of [320, 390, 1280]) {
   test(`a failed entry module offers safe app-file recovery at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     // Reproduce the production failure mode: a retired module URL receives the SPA document.
-    await page.route('**/src/main.tsx', (route) =>
+    await page.route(entryModule, (route) =>
       route.fulfill({ status: 200, contentType: 'text/html', body: '<html>Stale shell</html>' }),
     )
     await page.goto('/')
@@ -26,7 +29,7 @@ for (const width of [320, 390, 1280]) {
       width,
     )
     await page.screenshot({ path: test.info().outputPath(`boot-recovery-${width}.png`) })
-    await page.unroute('**/src/main.tsx')
+    await page.unroute(entryModule)
     await Promise.all([page.waitForEvent('load'), recovery.click()])
     await expect(page.getByRole('heading', { name: /The quiet place/ })).toBeVisible()
     const retained = await page.evaluate(async () => ({

@@ -12,6 +12,7 @@ for (const width of [390, 1280]) {
         privateRequests.push(request.url())
     })
     await page.goto('/')
+    const landingDocument = await page.evaluate(() => performance.timeOrigin)
     await page
       .getByRole('navigation', { name: 'Landing sections' })
       .getByRole('link', { name: 'Library guide', exact: true })
@@ -20,6 +21,8 @@ for (const width of [390, 1280]) {
     await expect(
       page.getByRole('heading', { name: 'Your library guide', exact: true }),
     ).toBeVisible()
+    // The registered guide route must reuse the loaded app, not cold-boot every module again.
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(landingDocument)
     await expect(page.getByRole('main').getByRole('heading', { level: 2 })).toHaveCount(10)
     await expect(page.getByRole('navigation', { name: 'Primary', exact: true })).toHaveCount(0)
     await page
@@ -33,5 +36,10 @@ for (const width of [390, 1280]) {
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
     expect(privateRequests).toEqual([])
     await page.screenshot({ path: `test-results/public-guide-${width}.png`, fullPage: true })
+    await page.getByRole('link', { name: 'Midniht home', exact: true }).click()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(page.getByTestId('landing-display-heading')).toBeVisible()
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(landingDocument)
+    expect(privateRequests).toEqual([])
   })
 }

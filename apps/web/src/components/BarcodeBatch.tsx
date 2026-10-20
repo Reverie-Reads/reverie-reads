@@ -148,18 +148,15 @@ export function BarcodeBatch({
           </button>
         )}
       </div>
-      <video
-        ref={video}
-        muted
-        playsInline
-        hidden={camera.state === 'off'}
-        aria-label="Live barcode camera"
-      />
+      <div className="barcode-viewfinder" hidden={camera.state === 'off'}>
+        <video ref={video} muted playsInline aria-label="Live barcode camera" />
+        <div className="barcode-aim" aria-hidden="true" />
+      </div>
       {camera.state !== 'off' && (
         <p>
           {camera.state === 'starting'
             ? 'Opening camera…'
-            : 'Show the whole 978 / 979 barcode in good light. Move each book away after capture.'}
+            : 'Center the whole 978 / 979 barcode inside the guide. Move closer until the bars are sharp, then hold still. Move the book away after capture.'}
         </p>
       )}
       {camera.error && <p role="alert">{camera.error}</p>}

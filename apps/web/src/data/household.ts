@@ -564,7 +564,7 @@ export interface HouseholdCatalogWorkInput {
   author: string
   isbn: string
   coverUrl?: string
-  coverSource?: 'hardcover' | 'google'
+  coverSource?: 'hardcover' | 'google' | 'openlibrary'
 }
 
 export interface HouseholdCatalogCreateResult {
@@ -588,10 +588,10 @@ export function useCreateHouseholdCatalogWork() {
       if (error) throw error
       const workId = data as string
       let coverWarning: string | null = null
-      if (input.coverUrl && input.coverSource === 'hardcover') {
+      if (input.coverUrl && (input.coverSource === 'hardcover' || input.coverSource === 'openlibrary')) {
         const ingest = await ingestCorpusCover({
           workId,
-          source: 'hardcover',
+          source: input.coverSource,
           url: input.coverUrl,
           sourceUrl: input.coverUrl,
         })
@@ -601,7 +601,7 @@ export function useCreateHouseholdCatalogWork() {
           const selected = await supabase.rpc('set_corpus_work_cover', {
             p_work: workId,
             p_cover_url: ingest.data.cover,
-            p_cover_source: 'hardcover',
+            p_cover_source: input.coverSource,
             p_cover_source_url: input.coverUrl,
             p_cover_color: ingest.data.color,
           })

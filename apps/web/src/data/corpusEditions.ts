@@ -20,6 +20,8 @@ export interface CorpusEdition {
   reviewed: boolean
   revision: number
   source_url: string | null
+  /** Missing on an older server: keep the new review controls unavailable. */
+  credits?: import('@reverie/core').StoredEditionCredit[]
 }
 export interface CorpusIsbnReport {
   id: string

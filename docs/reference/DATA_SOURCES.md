@@ -446,3 +446,10 @@ owner-run corpus backfill share a new cache namespace so historical mixed-source
 reused; historical provenance types and stored records are preserved. This is a code change, not a
 claim of deployment, cancelled billing, or completed retention cleanup. See the
 [exit audit and owner handoff](../tasks/isbndb-retirement.md).
+
+### Intake edition lookup
+
+The [scanner and metadata intake path](../tasks/scanner-metadata-completeness.md) now uses exact
+Open Library and Hardcover editions for edition facts. A successful ISBN absence can independently
+resolve exact work facts without choosing an alternative ISBN. Add and Edit offer explicit, bounded
+Hardcover edition choices after unique work confirmation; coverage remains non-exhaustive.

@@ -387,34 +387,136 @@ test('Keep both cannot insert a third copy after the duplicate preference fails'
   page,
 }) => {
   const account = await firstReader(page)
+  const verdictGate = barrier()
+  const writes = { books: 0, contributors: 0, verdicts: 0 }
+  async function snapshot() {
+    const books = await account.reader
+      .from('books')
+      .select('*,book_authors(*)')
+      .eq('owner_id', account.uid)
+      .order('id')
+    if (books.error) throw books.error
+    const reads = await account.reader
+      .from('reads')
+      .select('*')
+      .eq('owner_id', account.uid)
+      .order('id')
+    if (reads.error) throw reads.error
+    return { books: books.data, reads: reads.data }
+  }
   try {
-    const existing = await account.reader.from('books').insert({
-      owner_id: account.uid,
-      title: 'Ember and Ash: A Novel',
-      author_first: 'Nell',
-      author_last: 'Marrow',
-    })
+    const existing = await account.reader
+      .from('books')
+      .insert({
+        owner_id: account.uid,
+        title: 'Ember and Ash: A Novel',
+        author_first: 'Nell',
+        author_last: 'Marrow',
+        ownership: 'owned',
+        read_status: 'Read',
+        rating: 4,
+      })
+      .select('id')
+      .single()
     if (existing.error) throw existing.error
-    await page.reload()
+    const existingId = existing.data.id
+    const read = await account.reader.from('reads').insert({
+      owner_id: account.uid,
+      book_id: existingId,
+      read_on: '2026-09-01',
+      format: 'ebook',
+      rating: 4,
+      notes: 'Keep this personal reading history unchanged.',
+    })
+    if (read.error) throw read.error
+    const original = await snapshot()
     await draft(page, 'Ember and Ash')
     await page.getByRole('button', { name: '＋ Add contributor', exact: true }).click()
     await page.getByPlaceholder('Name', { exact: true }).fill('Nell Marrow')
     await page.locator('[data-book-tour="book-save"]').click()
     await page.getByRole('button', { name: 'Confirm and add', exact: true }).click()
     const keep = page.getByRole('button', { name: 'Keep both', exact: true })
+    const merge = page.getByRole('button', { name: 'Merge into it' })
     await expect(keep).toBeVisible()
     await expect(page.locator('[data-book-tour="book-save"]')).toBeDisabled()
-    await page.route('**/rest/v1/merge_verdicts*', (route) =>
-      route.fulfill({ status: 503, json: { message: 'verdict save rejected', code: 'TEST' } }),
+    await page.route('**/rest/v1/books?*', async (route) => {
+      if (route.request().method() === 'POST') writes.books++
+      await route.fallback()
+    })
+    await page.route('**/rest/v1/rpc/set_book_contributors', async (route) => {
+      writes.contributors++
+      await route.fallback()
+    })
+    await page.route('**/rest/v1/merge_verdicts*', async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      writes.verdicts++
+      await verdictGate.promise
+      await route.fulfill({ status: 503, json: { message: 'verdict save rejected', code: 'TEST' } })
+    })
+    // The save refreshes the library, checks auth, inserts, and saves contributors before
+    // writing the verdict. Observe that actual boundary; the UI's 5s assertion budget is
+    // not a deadline for all those requests. Keep the failure pending to test the busy state.
+    const verdictRequest = page.waitForRequest(
+      (request) =>
+        request.method() === 'POST' &&
+        new URL(request.url()).pathname === '/rest/v1/merge_verdicts',
     )
     await keep.click()
+    await verdictRequest
+    await expect(page.getByText('Saving your book…', { exact: true })).toBeVisible()
+    await expect(keep).toBeDisabled()
+    await expect(merge).toBeDisabled()
+    await expect(page.getByRole('alert')).toHaveCount(0)
+    const saved = await snapshot()
+    expect(saved.books).toHaveLength(2)
+    expect(saved.books.find((book) => book.id === existingId)).toEqual(original.books[0])
+    expect(saved.reads).toEqual(original.reads)
+    const added = saved.books.find((book) => book.id !== existingId)!
+    expect(added.book_authors).toHaveLength(1)
+    expect(added.wishlist).toBe(true)
+    expect(added.read_status).toBe('unset')
+    expect(writes).toEqual({ books: 1, contributors: 1, verdicts: 1 })
+
+    const failedVerdict = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        new URL(response.url()).pathname === '/rest/v1/merge_verdicts' &&
+        response.status() === 503,
+    )
+    verdictGate.release()
+    await failedVerdict
     await expect(page.getByRole('alert')).toContainText('couldn’t confirm the save')
-    await expect(page.getByRole('button', { name: 'Merge into it' })).toBeDisabled()
-    expect(await account.rows()).toHaveLength(2)
+    await expect(merge).toBeDisabled()
+    const recoveryLookup = page.waitForResponse((response) => {
+      const url = new URL(response.url())
+      return (
+        response.request().method() === 'GET' &&
+        url.pathname === '/rest/v1/books' &&
+        url.searchParams.get('id') === `eq.${added.id}` &&
+        url.searchParams.get('owner_id') === `eq.${account.uid}` &&
+        response.ok()
+      )
+    })
     await page.getByRole('button', { name: 'Try keeping both again', exact: true }).click()
-    await expect(page.getByRole('link', { name: 'Review saved book' })).toBeVisible()
-    expect(await account.rows()).toHaveLength(2)
+    await recoveryLookup
+    await expect(page.getByRole('link', { name: 'Review saved book' })).toHaveAttribute(
+      'href',
+      `/book/${added.id}`,
+    )
+    expect(await snapshot()).toEqual(saved)
+    expect(writes).toEqual({ books: 1, contributors: 1, verdicts: 1 })
+    const verdicts = await account.reader
+      .from('merge_verdicts')
+      .select('*')
+      .eq('owner_id', account.uid)
+    if (verdicts.error) throw verdicts.error
+    expect(verdicts.data).toEqual([])
   } finally {
-    await account.cleanup()
+    verdictGate.release()
+    try {
+      if (!page.isClosed()) await page.unrouteAll({ behavior: 'wait' })
+    } finally {
+      await account.cleanup()
+    }
   }
 })

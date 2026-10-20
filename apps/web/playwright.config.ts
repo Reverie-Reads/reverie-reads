@@ -271,11 +271,12 @@ export default defineConfig({
     // Local .env.local may enable live error reporting. Automated guest-library checks must
     // exercise the no-write path and never publish their deliberate failure fixtures to Sentry.
     // The monitoring unit tests still verify capture/scrubbing behavior independently.
-    env: { VITE_SENTRY_DSN: '' },
-    // Runs from this config's dir (apps/web), so `pnpm dev` boots @reverie/web with its own env
-    // files (the committed .env; .env.local overrides if present). The port/strictPort flags override vite.config's default 5173 for e2e only —
-    // the normal `pnpm dev` workflow keeps 5173.
-    command: `pnpm dev --port ${PORT} --strictPort`,
+    env: { VITE_SENTRY_DSN: '', NODE_ENV: 'production' },
+    // Build into an isolated ignored directory on every invocation, then serve the bundle.
+    // Retained failures measured development-module requests taking up to 27 seconds. A bundled
+    // SPA avoids that transform/request fan-out and also exercises production boot and SW code.
+    // Local Supabase and the explicit Workflow/bookstore mocks remain the existing boundary.
+    command: `node scripts/browser-test-server.mjs ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: 120_000,

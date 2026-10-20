@@ -1,3 +1,4 @@
+import { setTestAppearance } from './support/appearance'
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
@@ -239,17 +240,7 @@ test('saved choices remain stable through all nine rooms in both modes', async (
   const before = await page.locator('.discovery-recommendation h3').allTextContents()
   for (const skin of SKIN_ORDER)
     for (const mode of ['light', 'dark'] as const) {
-      await page.evaluate(
-        async ({ skin, mode }) => {
-          // Exercise the same store actions used by Appearance, including fonts and the room renderer.
-          const path = '/src/skin/useSkin.ts'
-          const module = await import(/* @vite-ignore */ path)
-          module.useSkin.getState().setSkin(skin)
-          module.useSkin.getState().setMode(mode)
-          await document.fonts.ready
-        },
-        { skin, mode },
-      )
+      await setTestAppearance(page, skin, mode as 'light' | 'dark')
       await expect(page.locator('html')).toHaveAttribute('data-skin', skin)
       await expect(page.locator('html')).toHaveAttribute('data-mode', mode)
       await expect(page.locator('.discovery-recommendation h3')).toHaveText(before)

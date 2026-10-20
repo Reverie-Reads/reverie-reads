@@ -19,13 +19,15 @@ import { supabase } from './supabase'
 
 /** A search hit — cover/title/author/year/series (task §1). No consensus fields (anti-consensus). */
 export interface SearchResult {
-  source: 'hardcover' | 'google'
+  source: 'hardcover' | 'google' | 'openlibrary'
   title: string
   authors: string[]
   cover: string
   isbn: string
   isbn13?: string
   isbn10?: string
+  /** Exact ISBN returned by the identity-admitted edition lookup, never a work search array. */
+  editionIsbn?: string
   year: string
   series?: string
   seriesPosition?: number | null
@@ -35,10 +37,10 @@ export interface SearchResult {
 
 /** Hardcover search ISBN arrays span editions; they do not select a reader's copy. */
 export function selectedSearchIsbn(
-  r: Pick<SearchResult, 'source' | 'isbn' | 'isbn13' | 'isbn10'>,
+  r: Pick<SearchResult, 'source' | 'isbn' | 'isbn13' | 'isbn10' | 'editionIsbn'>,
 ): string {
-  if (r.source === 'hardcover') return ''
-  const values = [r.isbn13, r.isbn10, r.isbn].filter((s): s is string => !!s)
+  if (r.source === 'hardcover' && !normalizeIsbn(r.editionIsbn || '')) return ''
+  const values = [r.editionIsbn, r.isbn13, r.isbn10, r.isbn].filter((s): s is string => !!s)
   const ids = values.map(normalizeIsbn)
   return ids.length && ids.every((id) => !!id && id === ids[0]) ? ids[0]! : ''
 }

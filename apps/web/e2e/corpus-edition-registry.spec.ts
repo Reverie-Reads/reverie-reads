@@ -6,6 +6,7 @@ import { expect, test, type Page } from './support/fixtures'
 import { configureReturningReader } from './support/readerGuidance'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
 import { ok, okUser } from './support/ok'
+import { localDatabaseTime } from './support/localSupabase'
 const URL = 'http://127.0.0.1:55321'
 const ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
@@ -101,7 +102,8 @@ async function fixture(page: Page) {
           `work=${work}`,
         ],
         {
-          input: "delete from public.corpus_record_edits where work_id=:'work'::uuid;\n",
+          input:
+            "delete from public.corpus_edition_credit_source_use_receipts where review_id in (select id from public.corpus_edition_credit_reviews where work_id=:'work'::uuid);\n delete from public.corpus_edition_credit_reviews where work_id=:'work'::uuid;\n delete from public.corpus_record_edits where work_id=:'work'::uuid;\n",
           stdio: ['pipe', 'pipe', 'pipe'],
         },
       )
@@ -128,6 +130,243 @@ async function evidence(page: Page) {
     .check()
   await page.getByRole('button', { name: 'Save shared change', exact: true }).click()
 }
+
+// The browser and Docker VM have independent clocks. Anchor this synthetic observation to
+// the database before opening the form; timers still run normally. Future evidence remains held.
+async function setReviewClock(page: Page) {
+  const timestamp = await localDatabaseTime()
+  await page.clock.setFixedTime(new Date(timestamp))
+  return timestamp
+}
+
+async function prepareContributorEvidence(page: Page, c: Awaited<ReturnType<typeof fixture>>) {
+  await page.goto(`/catalog/metadata?state=all&issue=all&q=&page=0&work=${c.work}`)
+  await page.getByRole('button', { name: 'Edit shared genres, guidance & editions' }).click()
+  await page.getByRole('button', { name: `Review contributors for ${c.reference}` }).click()
+  await page
+    .getByRole('textbox', { name: 'Source page URL', exact: true })
+    .fill('https://publisher.example/edition')
+  await page.getByRole('combobox', { name: 'Source attribution' }).selectOption('publisher')
+  await page.getByRole('textbox', { name: 'Source title', exact: true }).fill(c.title)
+  await page
+    .getByRole('textbox', { name: 'Full creators on the source, one per line' })
+    .fill('Test Writer')
+  await page.getByRole('textbox', { name: 'Source ISBN', exact: true }).fill(c.reference)
+  await page
+    .getByRole('textbox', { name: 'Where the credits appear on the page' })
+    .fill('Contributor credits for this edition')
+  await page.getByRole('textbox', { name: 'Credit 1 name', exact: true }).fill('Ann Brown')
+  await page
+    .getByRole('textbox', { name: 'Credit 1 original role label' })
+    .fill(' Introduction by ')
+  await page
+    .getByRole('combobox', { name: 'Credit 1 role', exact: true })
+    .selectOption('introduction')
+  await page.getByRole('button', { name: 'Add another credit' }).click()
+  await page.getByRole('textbox', { name: 'Credit 2 name', exact: true }).fill('Unclear Person')
+  await page.getByRole('textbox', { name: 'Credit 2 original role label' }).fill('Contributor?')
+  await page.getByRole('button', { name: 'Prepare review', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('permission basis')
+  const pending = await ok(
+    c.client.rpc('admin_get_edition_credit_reviews', {
+      p_work: c.work,
+      p_edition: (
+        await ok(
+          c.client.rpc('get_corpus_record', { p_work: c.work }),
+          'edition before source-use review',
+        )
+      ).editions[0].id,
+    }),
+    'source-use draft remains local',
+  )
+  expect(pending.reviews).toEqual([])
+  await page.getByRole('combobox', { name: 'Source-use basis' }).selectOption('public_terms')
+  await page
+    .getByRole('textbox', { name: 'Source-use reference URL' })
+    .fill('https://publisher.example/terms')
+  await page
+    .getByRole('textbox', { name: 'Why these terms or permission cover these facts' })
+    .fill(
+      'Synthetic terms fixture: retained edition identity and contributor-credit facts with attribution.',
+    )
+  await page.getByRole('checkbox', { name: /I inspected/ }).check()
+  await page.getByRole('checkbox', { name: /may be retained/ }).check()
+  await page.getByRole('button', { name: 'Prepare review', exact: true }).click()
+}
+
+test('edition credit review preserves literal roles and personal history through a lost save response', async ({
+  page,
+}, testInfo) => {
+  await setReviewClock(page)
+  const c = await fixture(page)
+  try {
+    await ok(
+      c.admin.from('reads').insert({
+        book_id: c.book,
+        owner_id: c.user.id,
+        read_on: '2025-01-01',
+        format: 'physical',
+        notes: 'Private fixture history',
+      }),
+      'reading history',
+    )
+    const before = await ok(
+      c.admin.from('books').select('*').eq('id', c.book).single(),
+      'personal snapshot',
+    )
+    const history = await ok(
+      c.admin.from('reads').select('*').eq('book_id', c.book),
+      'history snapshot',
+    )
+    await prepareContributorEvidence(page, c)
+    await expect(page.getByRole('checkbox', { name: 'Unclear Person · unknown' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: 'Save selected edition credits' })).toBeDisabled()
+    const beforeSave = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'prepared catalog',
+    )
+    expect(beforeSave.editions[0].credits).toEqual([])
+    await page.getByRole('checkbox', { name: 'Ann Brown · introduction' }).check()
+    await page.getByRole('checkbox', { name: /Save only the selected/ }).check()
+    const accessibility = await new AxeBuilder({ page })
+      .include('[aria-label="Edition contributor evidence"]')
+      .analyze()
+    expect(accessibility.violations).toEqual([])
+    await page
+      .getByRole('region', { name: 'Edition contributor evidence' })
+      .screenshot({ path: testInfo.outputPath('reviewed-credits.png') })
+    let calls = 0
+    await page.route('**/rest/v1/rpc/admin_apply_edition_credits', async (route) => {
+      calls++
+      if (calls === 1) {
+        await route.fetch()
+        await route.fulfill({ status: 503, json: { message: 'Response lost after commit' } })
+      } else await route.continue()
+    })
+    await page.getByRole('button', { name: 'Save selected edition credits' }).click()
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Response lost after commit' }),
+    ).toBeVisible()
+    await expect(page.getByRole('checkbox', { name: 'Ann Brown · introduction' })).toBeDisabled()
+    await page.getByRole('button', { name: 'Retry the same confirmation' }).click()
+    await expect
+      .poll(
+        async () =>
+          (await ok(c.client.rpc('get_corpus_record', { p_work: c.work }), 'saved credits'))
+            .editions[0].credits.length,
+      )
+      .toBe(1)
+    expect(calls).toBe(2)
+    const after = await ok(c.client.rpc('get_corpus_record', { p_work: c.work }), 'credit readback')
+    expect(after.editions[0].credits[0].credit).toMatchObject({
+      name: 'Ann Brown',
+      role: 'introduction',
+      sourceRole: ' Introduction by ',
+      basis: 'edition',
+    })
+    expect(
+      await ok(c.admin.from('books').select('*').eq('id', c.book).single(), 'personal readback'),
+    ).toEqual(before)
+    expect(
+      await ok(c.admin.from('reads').select('*').eq('book_id', c.book), 'history readback'),
+    ).toEqual(history)
+    await page.reload()
+    await page.getByRole('button', { name: 'Edit shared genres, guidance & editions' }).click()
+    await expect(page.getByRole('region', { name: 'Reviewed edition credits' })).toContainText(
+      'Ann Brown',
+    )
+    await page.getByRole('button', { name: `Review contributors for ${c.reference}` }).click()
+    await page.getByRole('button', { name: 'Check saved reviews', exact: true }).click()
+    await page.getByText('Inspect this saved review', { exact: true }).click()
+    await expect(
+      page.getByRole('link', { name: 'Applicable public terms', exact: true }),
+    ).toHaveAttribute('href', 'https://publisher.example/terms')
+    await expect(page.getByRole('region', { name: 'Edition contributor evidence' })).toContainText(
+      'Synthetic terms fixture: retained edition identity and contributor-credit facts with attribution.',
+    )
+    await page.getByRole('button', { name: 'Close contributor review', exact: true }).click()
+    const current = await ok(
+      c.client.rpc('get_corpus_record', { p_work: c.work }),
+      'current edition',
+    )
+    await ok(
+      c.client.rpc('admin_save_corpus_record', {
+        p_work: c.work,
+        p_expected_fingerprint: current.fingerprint,
+        p_action: 'edition',
+        p_value: {
+          id: current.editions[0].id,
+          isbn: c.reference,
+          details: { format: 'paperback' },
+        },
+        p_source_url: 'https://publisher.example/corrected-edition',
+        p_note: 'Corrected format fixture',
+        p_confirmed: true,
+      }),
+      'later edition correction',
+    )
+    await page.reload()
+    await page.getByRole('button', { name: 'Edit shared genres, guidance & editions' }).click()
+    await expect(page.getByRole('region', { name: 'Reviewed edition credits' })).toContainText(
+      'Needs renewed review',
+    )
+    expect(
+      await ok(
+        c.admin.from('books').select('*').eq('id', c.book).single(),
+        'personal after correction',
+      ),
+    ).toEqual(before)
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('future-dated edition credits remain unselectable and preserve personal data', async ({
+  page,
+}) => {
+  const c = await fixture(page)
+  try {
+    const reviewTime = await setReviewClock(page)
+    const before = await ok(
+      c.admin.from('books').select('*').eq('id', c.book).single(),
+      'personal snapshot',
+    )
+    const history = await ok(
+      c.admin.from('reads').select('*').eq('book_id', c.book),
+      'history snapshot',
+    )
+    let writes = 0
+    page.on('request', (request) => {
+      if (request.url().endsWith('/rpc/admin_apply_edition_credits')) writes++
+    })
+    // Source-use inspection stays on the database-anchored browser clock. Only the edition
+    // observation moves into the future; real database eligibility is never mocked.
+    await page.route('**/rest/v1/rpc/admin_prepare_reviewed_edition_credits', async (route) => {
+      const payload = route.request().postDataJSON()
+      payload.p_evidence.source.checkedAt = new Date(reviewTime + 86400000).toISOString()
+      await route.continue({ postData: JSON.stringify(payload) })
+    })
+    await prepareContributorEvidence(page, c)
+    await expect(page.getByRole('checkbox', { name: 'Ann Brown · introduction' })).toBeDisabled()
+    await expect(page.getByRole('checkbox', { name: 'Unclear Person · unknown' })).toBeDisabled()
+    await expect(
+      page.getByText('Inspect the source again; this observation is stale or future-dated.'),
+    ).toHaveCount(2)
+    await page.getByRole('checkbox', { name: /Save only the selected/ }).check()
+    await expect(page.getByRole('button', { name: 'Save selected edition credits' })).toBeDisabled()
+    expect(writes).toBe(0)
+    const record = await ok(c.client.rpc('get_corpus_record', { p_work: c.work }), 'held credits')
+    expect(record.editions[0].credits).toEqual([])
+    expect(
+      await ok(c.admin.from('books').select('*').eq('id', c.book).single(), 'personal readback'),
+    ).toEqual(before)
+    expect(
+      await ok(c.admin.from('reads').select('*').eq('book_id', c.book), 'history readback'),
+    ).toEqual(history)
+  } finally {
+    await c.cleanup()
+  }
+})
 
 test('published edition and shared guidance persist while personal overrides stay separate', async ({
   page,

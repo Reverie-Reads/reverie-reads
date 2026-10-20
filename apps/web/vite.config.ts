@@ -63,13 +63,19 @@ export default defineConfig(({ command, mode }) => {
     // Vitest imports the workflow module as ordinary TypeScript for the fast orchestration unit
     // suite. Starting Nitro and the production Workflow builder there creates file watchers that
     // are unrelated to the test and can exhaust macOS's per-process descriptor limit. The separate
-    // compiler-backed Workflow suite owns its purpose-built transform and backend.
+    // compiler-backed Workflow suite owns its purpose-built transform and backend. The browser
+    // suite exercises the SPA against local Supabase. Bookstore requests and the two disabled
+    // workflow status reads in admin Settings fixtures are explicitly mocked; this does not
+    // establish browser-to-Workflow integration. Keep the extra builders/watchers out of that
+    // server. Ordinary dev and production builds continue to include both plugins.
     plugins: [
-      ...(mode === 'test' ? [] : [nitro(), workflow({ runtime: 'nodejs22.x' })]),
+      ...(['test', 'browser-test'].includes(mode)
+        ? []
+        : [nitro(), workflow({ runtime: 'nodejs22.x' })]),
       react(),
       tailwindcss(),
       emitVersion,
-      ...(command === 'build' && uploadSourcemaps
+      ...(command === 'build' && mode !== 'browser-test' && uploadSourcemaps
         ? [
             sentryVitePlugin({
               org: process.env.SENTRY_ORG,
@@ -108,9 +114,28 @@ export default defineConfig(({ command, mode }) => {
     },
     server: { port: 5173 },
     build: {
-      sourcemap: uploadSourcemaps ? 'hidden' : false,
+      sourcemap: mode !== 'browser-test' && uploadSourcemaps ? 'hidden' : false,
       rollupOptions: {
+        // Vite's app default removes entry exports. The separately imported test module needs
+        // its public setter preserved; otherwise its entire side-effect-free body is removed.
+        preserveEntrySignatures: mode === 'browser-test' ? 'strict' : undefined,
+        // The test-only entry shares the real appearance store with the bundled app. It never
+        // enters ordinary builds; tests no longer import the development server's source graph.
+        input:
+          mode === 'browser-test'
+            ? {
+                index: `${__dirname}/index.html`,
+                'test-appearance': `${__dirname}/e2e/support/appearance-entry.ts`,
+              }
+            : undefined,
         output: {
+          entryFileNames:
+            mode === 'browser-test'
+              ? (chunk) =>
+                  chunk.name === 'test-appearance'
+                    ? 'assets/test-appearance.js'
+                    : 'assets/[name]-[hash].js'
+              : undefined,
           // Split big, stable vendors into their own cacheable chunks.
           manualChunks: {
             react: ['react', 'react-dom'],
