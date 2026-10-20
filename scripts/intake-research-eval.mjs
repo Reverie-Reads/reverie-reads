@@ -48,7 +48,8 @@ function validate(frame) {
 
 /** Freeze expected outcomes and code before collecting responses. Reference labels stay outside
  * the request body. This evaluator never sends requests or consumes/replays acquisition markers. */
-export async function freezeResearchFrame(frame) {
+export async function freezeResearchFrame(input) {
+  const frame = structuredClone(input)
   validate(frame)
   return {
     version: 1,
@@ -59,7 +60,10 @@ export async function freezeResearchFrame(frame) {
   }
 }
 
-export async function scoreResearchFrame(frame, lock, outputs) {
+export async function scoreResearchFrame(frameInput, lockInput, outputsInput) {
+  const frame = structuredClone(frameInput)
+  const lock = structuredClone(lockInput)
+  const outputs = structuredClone(outputsInput)
   requireThat(JSON.stringify(lock) === JSON.stringify(await freezeResearchFrame(frame)))
   requireThat(
     exact(

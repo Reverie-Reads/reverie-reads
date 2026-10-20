@@ -206,6 +206,13 @@ test('fixed request contract rejects prompt, model, tool, permission and source-
   }
 })
 
+test('mutating a returned nested citation schema cannot change the code-owned contract', () => {
+  const b = body()
+  b.text.format.schema.properties.claims.items.properties.citations.items.properties.quote.maxLength = 1
+  assert.equal(validResearchBody(b), false)
+  assert.equal(validResearchBody(body()), true)
+})
+
 test('excerpt instructions remain untrusted data beside the unchanged code-owned prompt', () => {
   const b = body()
   const i = JSON.parse(b.input[1].content)
@@ -259,6 +266,20 @@ test('frozen evaluation retains unobserved cases and detects optimistic or unnec
   assert.ok(!JSON.stringify(report).includes('Clockmaker'))
   f.cases[0].reference.expectedState = 'held'
   await assert.rejects(scoreResearchFrame(f, lock, {}), /changed/)
+})
+
+test('a caller cannot alter evaluation labels or replies while code hashes are being checked', async () => {
+  const f = frame()
+  const lock = await freezeResearchFrame(f)
+  const outputs = Object.fromEntries(
+    f.cases.map((c) => [c.id, { status: 'observed', response: response() }]),
+  )
+  const scoring = scoreResearchFrame(f, lock, outputs)
+  f.cases[0].reference.expectedState = 'held'
+  outputs['case-01'] = { status: 'unobserved', reason: 'not_run' }
+  const report = await scoring
+  assert.equal(report.cases[0].expectedState, 'citation_checked')
+  assert.equal(report.cases[0].state, 'citation_checked')
 })
 
 test('evaluation CLI creates private artifacts, refuses overwrite and cannot drop failed cases', async (t) => {

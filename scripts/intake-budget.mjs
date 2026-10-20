@@ -611,22 +611,23 @@ export async function run(root, prepared, { apiKey, fetcher = fetch, now = Date.
 /** Inspect a durable response without another model call or a new reservation. Configuration
  * and response hashes bind review to the original paid attempt; accounting remains separate. */
 export async function review(root, prepared) {
+  const submission = structuredClone(prepared)
   requireThat(
-    digest(prepared?.id) &&
-      validResearchBody(prepared.body) &&
-      prepared.configHash === hash(prepared.body),
+    digest(submission?.id) &&
+      validResearchBody(submission.body) &&
+      submission.configHash === hash(submission.body),
     'Invalid research review request',
   )
   return locked(root, async () => {
     const s = await load(root)
-    const reservation = s.reservations.get(prepared.id)
+    const reservation = s.reservations.get(submission.id)
     requireThat(
-      reservation?.configHash === prepared.configHash &&
-        s.files.includes(`${prepared.id}.settlement.json`),
+      reservation?.configHash === submission.configHash &&
+        s.files.includes(`${submission.id}.settlement.json`),
       'Original settled research attempt required',
     )
-    const response = await privateFile(join(root, `${prepared.id}.response.json`))
-    return { id: prepared.id, ...assessResearchResponse(response, prepared.body) }
+    const response = await privateFile(join(root, `${submission.id}.response.json`))
+    return { id: submission.id, ...assessResearchResponse(response, submission.body) }
   })
 }
 export async function ledgerRoot(cwd = process.cwd()) {

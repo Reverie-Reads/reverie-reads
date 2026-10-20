@@ -404,6 +404,11 @@ test('a completed cited proposal is accounted for separately from source verific
   assert.equal(result.research.saveAllowed, false)
   assert.equal(result.conservativeCostUsd, '0.000500000')
   assert.equal((await review(root, p)).state, 'citation_checked')
+  const reviewing = review(root, p)
+  const changed = JSON.parse(p.body.input[1].content)
+  changed.sources[0].text = 'Caller changed the packet while its review awaited the ledger lock.'
+  p.body.input[1].content = JSON.stringify(changed)
+  assert.equal((await reviewing).state, 'citation_checked')
 })
 test('schema and prompt drift fail before reserving even with a recomputed caller hash', async (t) => {
   const root = await fixture(t)
