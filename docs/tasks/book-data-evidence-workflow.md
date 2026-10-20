@@ -40,6 +40,8 @@ UUID. Any edit discards approval and requires renewed inspection. Background ref
 it. Explicit approval calls `admin_apply_catalog_evidence`; there is no automatic mutation retry.
 The server checks administrator membership under locks, the exact work/peer/edition/review revision,
 source inspection and source-use freshness, exact full creator identity, ISBN and field scope.
+Its supplementary SQL comparison preserves non-Latin vowel signs while accepting ordinary Latin
+accent formatting. It does not change persisted matching keys; punctuation-only identities stay held.
 Identity, initial-only/unknown contributor roles and deferred holds remain blocked. Reopening a
 deferred review is a separate deliberate action. ISBN-less edition writes remain unavailable in
 this first writer even though offline v2 research can identify a selected ISBN-less edition.

@@ -1,5 +1,8 @@
 begin;
 select no_plan();
+select is(public.catalog_evidence_identity_key('García'),public.catalog_evidence_identity_key('Garcia'),'ordinary Latin accent formatting remains comparable');
+select isnt(public.catalog_evidence_identity_key('கதி'),public.catalog_evidence_identity_key('கதா'),'Tamil vowel signs remain identity-bearing');
+select is(public.library_work_key('கதி','Jane Smith'),public.library_work_key('கதா','Jane Smith'),'known legacy collision makes the supplementary guard regression non-vacuous');
 select ok(not has_table_privilege(r,'public.corpus_metadata_evidence_reviews',p),r||' cannot directly '||p||' evidence history')
 from unnest(array['anon','authenticated','service_role']) r cross join unnest(array['SELECT','INSERT','UPDATE','DELETE']) p;
 select ok(not has_function_privilege(r,f,'EXECUTE'),r||' cannot execute '||f)
@@ -71,6 +74,10 @@ select throws_ok($$select pg_temp.apply('e8000000-0000-4000-8000-000000000016',p
 update public.corpus_metadata_reviews set state='open' where work_id='e8000000-0000-4000-8000-000000000001';
 update public.works set author_text='J. Smith',contributors='[{"name":"J. Smith","role":"author"}]' where id='e8000000-0000-4000-8000-000000000001';
 select throws_ok($$select pg_temp.apply('e8000000-0000-4000-8000-000000000017',jsonb_set(pg_temp.draft(),'{identity,author}','"J. Smith"'),public.catalog_evidence_fingerprint('e8000000-0000-4000-8000-000000000001'))$$,'22023','Resolve contributor identity before applying evidence.','ambiguous initials remain held');
+update public.works set title='கதி',author_text='Jane Smith',contributors='[{"name":"Jane Smith","role":"author"}]' where id='e8000000-0000-4000-8000-000000000001';
+select throws_ok($$select pg_temp.apply('e8000000-0000-4000-8000-000000000019',jsonb_set(pg_temp.draft(),'{identity,title}','"கதா"'),public.catalog_evidence_fingerprint('e8000000-0000-4000-8000-000000000001'))$$,'22023','Resolve contributor identity before applying evidence.','legacy key collision cannot admit a differently vocalized source title');
+update public.works set title='!!!' where id='e8000000-0000-4000-8000-000000000001';
+select throws_ok($$select pg_temp.apply('e8000000-0000-4000-8000-000000000020',jsonb_set(pg_temp.draft(),'{identity,title}','"???"'),public.catalog_evidence_fingerprint('e8000000-0000-4000-8000-000000000001'))$$,'22023','Resolve contributor identity before applying evidence.','punctuation-only identity remains under review');
 set local role authenticated;
 select is(public.admin_get_catalog_evidence('e8000000-0000-4000-8000-000000000001','e8000000-0000-4000-8000-000000000011')->'attempt'->>'id','e8000000-0000-4000-8000-000000000011','exact receipt lookup survives later changes');
 reset role;

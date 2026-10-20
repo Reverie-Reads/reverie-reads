@@ -3,6 +3,15 @@
 -- No backfill, provider qualification, intake cutover or personal-row changes.
 begin;
 
+-- Supplement legacy compact keys without changing stored identity/verdict keys.
+-- Strip ordinary Latin accent marks only; non-Latin vowel signs remain identity-bearing.
+create function public.catalog_evidence_identity_key(v text)
+returns text language sql immutable set search_path='' as $$
+  select regexp_replace(regexp_replace(lower(normalize(coalesce(v,''),NFKD)),
+    '([a-z])'||U&'[\0300-\036F]+','\1','g'),$separators$[[:space:]'’.,:;!?()"_-]$separators$,'','g');
+$$;
+revoke all on function public.catalog_evidence_identity_key(text) from public,anon,authenticated,service_role;
+
 create function public.catalog_evidence_draft_valid(v jsonb)
 returns boolean language plpgsql immutable set search_path='' as $$
 declare s jsonb; i jsonb; u jsonb; p jsonb; x jsonb; k text;
@@ -108,11 +117,12 @@ begin
   record:=public.catalog_metadata_review_record(w);
   if record->'issues' ?| array['invalid_isbn','isbn_conflict','duplicate_identity','reader_report'] then
     raise exception 'Resolve the recorded identity concerns before applying evidence.' using errcode='22023'; end if;
-  if jsonb_array_length(w.contributors)=0 or public.edition_credit_ambiguous(w.author_text) or public.edition_credit_ambiguous(p_draft->'identity'->>'author')
+  if w.title !~ '[[:alnum:]]' or jsonb_array_length(w.contributors)=0 or public.edition_credit_ambiguous(w.author_text) or public.edition_credit_ambiguous(p_draft->'identity'->>'author')
     or regexp_replace(normalize(w.author_text,NFKD),'[^[:alpha:]]','','g') ~ '^[A-Za-z]$'
-    or public.library_work_key(w.title,w.author_text) is distinct from public.library_work_key(p_draft->'identity'->>'title',p_draft->'identity'->>'author')
+    or public.catalog_evidence_identity_key(w.title) is distinct from public.catalog_evidence_identity_key(p_draft->'identity'->>'title')
+    or public.catalog_evidence_identity_key(w.author_text) is distinct from public.catalog_evidence_identity_key(p_draft->'identity'->>'author')
     or (jsonb_array_length(w.contributors)>0 and (exists(select 1 from jsonb_array_elements(w.contributors) c where c->>'name' is null or c->>'name' !~ '[[:alpha:]]' or c->>'role' is null or c->>'role' not in ('author','co_author') or public.edition_credit_ambiguous(c->>'name') or regexp_replace(normalize(c->>'name',NFKD),'[^[:alpha:]]','','g') ~ '^[A-Za-z]$')
-      or public.library_work_key('',w.author_text) is distinct from (select public.library_work_key('',string_agg(c->>'name',' ' order by ord)) from jsonb_array_elements(w.contributors) with ordinality x(c,ord)))) then
+      or public.catalog_evidence_identity_key(w.author_text) is distinct from (select public.catalog_evidence_identity_key(string_agg(c->>'name',' ' order by ord)) from jsonb_array_elements(w.contributors) with ordinality x(c,ord)))) then
     raise exception 'Resolve contributor identity before applying evidence.' using errcode='22023'; end if;
   if p_draft->>'field'='description' then
     before_value:=to_jsonb(w.description);

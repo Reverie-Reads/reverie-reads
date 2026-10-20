@@ -108,7 +108,8 @@ async function setup(page: Page, isAdmin = true) {
           '-v',
           'ON_ERROR_STOP=1',
           '-c',
-          `delete from public.corpus_metadata_evidence_reviews where work_id in ('${workId}','${peerId}');`,
+          `delete from public.corpus_metadata_evidence_reviews where work_id in ('${workId}','${peerId}');
+           delete from public.corpus_record_edits where work_id in ('${workId}','${peerId}');`,
         ],
         { timeout: 15000, stdio: 'pipe' },
       )
