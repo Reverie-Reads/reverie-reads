@@ -214,7 +214,7 @@ export default defineConfig({
       // already proven, and say nothing about touch.
       name: 'mobile',
       testMatch:
-        /(copy-inventory|spine-shelf-reachability|route-viewport|no-horizontal-overflow|placeholder-title-clip|cover-card-touch-affordance|star-touch-targets|scroll-restoration|shelf-header-links|household-library|corpus-edition-registry)\.spec\.ts$/,
+        /(skin-gallery-rendering|photo-intake|copy-inventory|spine-shelf-reachability|route-viewport|no-horizontal-overflow|placeholder-title-clip|cover-card-touch-affordance|star-touch-targets|scroll-restoration|shelf-header-links|household-library|corpus-edition-registry)\.spec\.ts$/,
       use: {
         ...devices['iPhone 13'],
         viewport: { width: 390, height: 844 },
@@ -271,7 +271,7 @@ export default defineConfig({
     // Local .env.local may enable live error reporting. Automated guest-library checks must
     // exercise the no-write path and never publish their deliberate failure fixtures to Sentry.
     // The monitoring unit tests still verify capture/scrubbing behavior independently.
-    env: { VITE_SENTRY_DSN: '', NODE_ENV: 'production' },
+    env: { VITE_SENTRY_DSN: '', NODE_ENV: 'production', VITE_PHOTO_INTAKE_PILOT: 'true' },
     // Build into an isolated ignored directory on every invocation, then serve the bundle.
     // Retained failures measured development-module requests taking up to 27 seconds. A bundled
     // SPA avoids that transform/request fan-out and also exercises production boot and SW code.

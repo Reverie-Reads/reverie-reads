@@ -1,7 +1,8 @@
-export type FrameDecoder = (video: HTMLVideoElement) => Promise<string[]>
+type BarcodePixels = HTMLVideoElement | HTMLCanvasElement
+export type FrameDecoder = (video: BarcodePixels) => Promise<string[]>
 type NativeDetector = {
   new (options: { formats: string[] }): {
-    detect(video: HTMLVideoElement): Promise<{ rawValue: string }[]>
+    detect(video: BarcodePixels): Promise<{ rawValue: string }[]>
   }
   getSupportedFormats?: () => Promise<string[]>
 }
@@ -26,7 +27,12 @@ export async function createBarcodeDecoder(): Promise<FrameDecoder> {
   const reader = new BrowserMultiFormatReader()
   return async (video) => {
     try {
-      return [reader.decode(video).getText()]
+      return [
+        (video instanceof HTMLCanvasElement
+          ? reader.decodeFromCanvas(video)
+          : reader.decode(video)
+        ).getText(),
+      ]
     } catch (error) {
       // Empty, blurred and incomplete frames are routine observations, not camera failures.
       const exception = error as Error & { getKind?: () => string }

@@ -115,6 +115,9 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   its own light/dark pair; `mode` is light/dark/system, independent of the skin. "Nocturne /
   Magnolia Dawn" is prototype-era naming and no longer names anything in the code.
 - Mobile-first; responsive to desktop.
+- **Room materials render when visible.** Wait for the first intersection observation before
+  generating a preview's still; unchanged resize deliveries reuse it. Hidden tabs and offscreen
+  rooms defer work until visible, using current geometry. Preserve reduced-motion and cleanup guards.
 - Accessibility is part of done: visible keyboard focus, adequate contrast in **every skin** in
   both modes, and **respect `prefers-reduced-motion`** (disable the night-sky drift/twinkle).
   Two layers guard contrast, and they cover different amounts: the **core contrast tests** are
@@ -815,6 +818,18 @@ resolver, always unverified/review-only. Permission attestations never qualify a
 catalog storage, export, model input or a save. Partial extraction, stale corrections, ambiguous
 names and unsupported roles stay held. No Luna fallback, API acquisition, personal-data write or
 Add/scan/import cutover is enabled. See `docs/tasks/intake-document-evidence.md`.
+`intake:photo` extends that private preparation path to bounded local JPEG/PNG/HEIC, preserving
+original bytes, normalized pixels, explicit crops and transform hashes separately. Local Vision
+barcodes/rectangles are observations; group proposals remain unresolved and missed books require
+whole-photo review. The development-only Add photo pilot keeps page-session pixels beside deliberate
+identity entry, then reuses normal duplicate review and confirmed Add. It has no browser text OCR,
+implicit cover selection, copy-count inference, model fallback or production activation. Cover Studio
+and accepting identity remain independent; signatures/numbering never establish authenticity or
+value. Keep new Collector observations at selected edition/copy scope and Collector signup gated.
+The isolated local-backend-only `browser-test` bundle may exercise the same explicit pilot flag;
+ordinary production builds must remove the entry even when that flag is set.
+See `docs/tasks/photo-collection-intake.md` and its frozen comparison; selected-source failures and
+unobserved identity/correction/device metrics remain visible.
 A frozen frame may explicitly opt into the US-domain Penguin Random House title/edition-contributor
 adapter. Preserve literal role codes/labels and partial-roster warnings; introduction/foreword credits
 are named parts, never whole-work authorship. Do not flatten author display strings or promote
