@@ -81,3 +81,14 @@ A fresh manual publisher check again confirms The Hexologists, Josiah Bancroft a
 remained unavailable through the web tool, and exact edition/ISBN searches did not produce
 verifiable record text. This confirms the target, but cannot explain the historical provider
 title. The discrepancy remains under review, with no replay or matching-rule change.
+
+At `b6b1331`, all six GitHub checks passed; desktop reported 369 passes and six skips.
+The first complete local fresh-database, one-worker, zero-retry run retained 437 passes,
+one failure and 11 skips (24.1 minutes). The future-credit desktop control failed before
+credit selection because the real RPC returned `source_use_stale`; its mobile counterpart
+passed. That test had not anchored its separate source-use inspection to database time.
+Both the browser inspection clock and the deliberately future edition timestamp now use
+the existing bounded database-clock helper. No RPC eligibility, freshness rule, timeout,
+retry or personal-data assertion changes. The original failing trace remains retained.
+Recovery matched all 102 public/auth tables and eight publication statements, all four
+HTTP controls passed, and the four optional services returned to their recorded state.
