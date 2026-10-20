@@ -191,6 +191,7 @@ export function CatalogMetadataEditor({
         }
         onDirtyChange={setEvidenceDirty}
         onSaved={onSaved}
+        onRefresh={onRefresh}
       />
       {evidenceDirty && (
         <p className="text-sm text-muted">

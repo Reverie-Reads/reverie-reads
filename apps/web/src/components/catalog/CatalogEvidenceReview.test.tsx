@@ -99,7 +99,7 @@ function open() {
 function fill() {
   for (const [name, value] of [
     ['Supported value', 'A supported short summary.'],
-    ['Source title', 'Still Waters'],
+    ['Title at this source', 'Still Waters'],
     ['Source full author names', 'Jane Smith'],
     ['Original evidence link', 'https://publisher.example/book'],
     ['Source record identifier', 'book'],
@@ -268,4 +268,52 @@ it('keeps sibling drafts safe when returning after a confirmed save', async () =
   )
   expect(screen.getByRole('button', { name: 'Return to current catalog record' })).toBeDisabled()
   expect(onSaved).not.toHaveBeenCalled()
+})
+
+it('offers explicit reload for a definitive initial rejection without rebasing or another submission', async () => {
+  const onRefresh = vi.fn()
+  api.apply.mockRejectedValue({ code: 'PT409', message: 'Catalog changed' })
+  render(
+    <CatalogEvidenceReview
+      work={work}
+      blocked={false}
+      onSaved={onSaved}
+      onDirtyChange={onDirtyChange}
+      onRefresh={onRefresh}
+    />,
+  )
+  fill()
+  await apply()
+  await screen.findByText('Catalog changed')
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Reload current record and discard rejected draft' }),
+  )
+  expect(onRefresh).toHaveBeenCalledOnce()
+  expect(api.apply).toHaveBeenCalledOnce()
+})
+
+it('a rejected retry cannot declare that the earlier uncertain save failed', async () => {
+  const onRefresh = vi.fn()
+  api.apply
+    .mockRejectedValueOnce(new Error('Response lost'))
+    .mockRejectedValueOnce({ code: '42501', message: 'Permission removed' })
+  render(
+    <CatalogEvidenceReview
+      work={work}
+      blocked={false}
+      onSaved={onSaved}
+      onDirtyChange={onDirtyChange}
+      onRefresh={onRefresh}
+    />,
+  )
+  fill()
+  await apply()
+  await screen.findByText('Response lost')
+  fireEvent.click(screen.getByRole('button', { name: 'Check evidence history' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Retry exactly this reviewed save' }))
+  await screen.findByText('Permission removed')
+  expect(
+    screen.queryByRole('button', { name: 'Reload current record and discard rejected draft' }),
+  ).toBeNull()
+  expect(onRefresh).not.toHaveBeenCalled()
 })

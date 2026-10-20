@@ -210,7 +210,7 @@ test('supported evidence recovers a committed save after its response is lost', 
     await expect(region.getByRole('button', { name: 'Preview supported correction' })).toBeVisible()
     for (const [name, value] of [
       ['Supported value', 'A librarian follows a trail of missing letters.'],
-      ['Source title', c.title],
+      ['Title at this source', c.title],
       ['Source full author names', 'Test Writer'],
       ['Original evidence link', 'https://publisher.example/book'],
       ['Source record identifier', 'fixture-book'],
@@ -301,7 +301,7 @@ test('supported pages change only the selected published edition', async ({ page
     await region.getByLabel('Published edition').selectOption({ label: `${c.isbn} · paperback` })
     for (const [name, value] of [
       ['Supported value', '456'],
-      ['Source title', c.title],
+      ['Title at this source', c.title],
       ['Source full author names', 'Test Writer'],
       ['Original evidence link', 'https://publisher.example/book'],
       ['Source record identifier', c.isbn],

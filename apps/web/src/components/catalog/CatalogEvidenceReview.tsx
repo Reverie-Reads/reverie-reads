@@ -135,6 +135,7 @@ export function CatalogEvidenceReview(props: {
   blocked: boolean
   onDirtyChange: (dirty: boolean) => void
   onSaved: (message: string) => void
+  onRefresh?: () => void
 }) {
   const { session } = useAuth()
   return <EvidencePanel key={`${session?.user.id}:${props.work.id}`} {...props} />
@@ -144,11 +145,13 @@ function EvidencePanel({
   blocked,
   onDirtyChange,
   onSaved,
+  onRefresh,
 }: {
   work: CatalogMetadataWork
   blocked: boolean
   onDirtyChange: (dirty: boolean) => void
   onSaved: (message: string) => void
+  onRefresh?: () => void
 }) {
   const context = useCatalogEvidence(work.id)
   const [opened, setOpened] = useState<CatalogEvidenceContext | null>(null)
@@ -172,6 +175,7 @@ function EvidencePanel({
   const [attempted, setAttempted] = useState(false)
   const [applied, setApplied] = useState(false)
   const [error, setError] = useState('')
+  const [rejected, setRejected] = useState(false)
   const [historyChecked, setHistoryChecked] = useState(false)
   const active = useRef(true),
     inflight = useRef(false)
@@ -268,11 +272,19 @@ function EvidencePanel({
       onDirtyChange(false)
       // Keep this receipt mounted even if subsequent history reads fail.
     } catch (e) {
-      if (active.current)
+      if (active.current) {
+        // A rejection of a later retry cannot prove that an earlier uncertain request failed.
+        setRejected(
+          !attempted &&
+            ['22023', 'PT409', '42501', 'P0002', 'P0001', 'PGRST202'].includes(
+              (e as { code?: string })?.code ?? '',
+            ),
+        )
         setError(
           (e as { message?: string })?.message ??
             'The save result is uncertain. Check history before another decision.',
         )
+      }
     } finally {
       inflight.current = false
     }
@@ -408,7 +420,7 @@ function EvidencePanel({
                     />
                   )}
                 </Field>
-                <Field label="Source title">
+                <Field label="Title at this source">
                   <input
                     className={fieldClass}
                     maxLength={1000}
@@ -627,7 +639,18 @@ function EvidencePanel({
           </>
         )
       )}
-      {attempted && !applied && historyChecked && (
+      {rejected && !applied && onRefresh && (
+        <div className="my-3 space-y-2 text-sm">
+          <p>
+            The server rejected this change without applying it. Reloading explicitly discards this
+            draft; it does not rebase or submit it.
+          </p>
+          <Button variant="secondary" disabled={blocked || save.isPending} onClick={onRefresh}>
+            Reload current record and discard rejected draft
+          </Button>
+        </div>
+      )}
+      {attempted && !applied && !rejected && historyChecked && (
         <Button
           variant="secondary"
           disabled={blocked || save.isPending}
