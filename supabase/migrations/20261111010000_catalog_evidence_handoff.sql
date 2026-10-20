@@ -7,7 +7,7 @@ begin;
 -- Strip ordinary Latin accent marks only; non-Latin vowel signs remain identity-bearing.
 create function public.catalog_evidence_identity_key(v text)
 returns text language sql immutable set search_path='' as $$
-  select regexp_replace(regexp_replace(lower(normalize(coalesce(v,''),NFKD)),
+  select regexp_replace(regexp_replace(lower(normalize(coalesce(v,''),NFKD)) collate "C",
     '([a-z])'||U&'[\0300-\036F]+','\1','g'),$separators$[[:space:]'’.,:;!?()"_-]$separators$,'','g');
 $$;
 revoke all on function public.catalog_evidence_identity_key(text) from public,anon,authenticated,service_role;
@@ -117,7 +117,7 @@ begin
   record:=public.catalog_metadata_review_record(w);
   if record->'issues' ?| array['invalid_isbn','isbn_conflict','duplicate_identity','reader_report'] then
     raise exception 'Resolve the recorded identity concerns before applying evidence.' using errcode='22023'; end if;
-  if w.title !~ '[[:alnum:]]' or jsonb_array_length(w.contributors)=0 or public.edition_credit_ambiguous(w.author_text) or public.edition_credit_ambiguous(p_draft->'identity'->>'author')
+  if public.catalog_evidence_identity_key(w.title)='' or jsonb_array_length(w.contributors)=0 or public.edition_credit_ambiguous(w.author_text) or public.edition_credit_ambiguous(p_draft->'identity'->>'author')
     or regexp_replace(normalize(w.author_text,NFKD),'[^[:alpha:]]','','g') ~ '^[A-Za-z]$'
     or public.catalog_evidence_identity_key(w.title) is distinct from public.catalog_evidence_identity_key(p_draft->'identity'->>'title')
     or public.catalog_evidence_identity_key(w.author_text) is distinct from public.catalog_evidence_identity_key(p_draft->'identity'->>'author')
