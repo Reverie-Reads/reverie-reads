@@ -2,6 +2,8 @@ import { expect, it } from 'vitest'
 import { get } from 'node:http'
 import { startIntakeReview, renderIntakeReview } from '../../../scripts/intake-review-server.mjs'
 import { buildIntakeReview } from './intakeReview'
+import { scoreShadowCase } from '../../../scripts/intake-shadow.mjs'
+import { resolveIntakeEvidence } from './intakeResolver'
 
 it('serves escaped review-only evidence with no remote assets, scripts or save form', () => {
   const html = renderIntakeReview([
@@ -109,4 +111,63 @@ it('renders the real handoff preview with preserved values and separate use hold
   expect(html).toContain('source_use_modelInput_unverified')
   expect(html).toContain('&lt;script&gt;source&lt;/script&gt;')
   expect(html).not.toMatch(/<script|<form|<input|<button/)
+})
+
+it('shows the corrected title diagnostic in the actual viewer and aggregate score without retaining text', () => {
+  const request = {
+    version: 1,
+    targetFingerprint: 'a'.repeat(64),
+    asOf: '2026-10-20T12:00:00Z',
+    target: { title: 'Aster Gardens', contributors: ['Elena Reed'], isbn: '9780306406157' },
+    existing: {},
+    observations: [
+      {
+        id: 'openlibrary:one',
+        targetFingerprint: 'a'.repeat(64),
+        status: 'ok',
+        source: {
+          provider: 'openlibrary',
+          recordId: 'one',
+          url: 'https://openlibrary.org/books/OL1M',
+          retrievedAt: '2026-10-20T12:00:00Z',
+          kind: 'bibliographic',
+          usage: 'review_only',
+          lineage: null,
+          method: 'structured',
+        },
+        identity: {
+          title: 'Aster Gardens: A Novel',
+          contributors: [{ name: 'Elena Reed', role: 'author', scope: 'whole' }],
+          scope: 'edition',
+          isbns: ['9780306406157'],
+        },
+        claims: [],
+      },
+    ],
+  }
+  const html = renderIntakeReview([{ id: 'case-01', review: buildIntakeReview(request) }])
+  expect(html).toContain('edition_formatting')
+  expect(html).toContain('Aster Gardens: A Novel') // transient inspection retains the source text
+  expect(html).toContain('review_only_source')
+  const score = scoreShadowCase(
+    {
+      id: 'case-01',
+      target: request.target,
+      expectedIdentity: true,
+      reference: { identity: request.target, facts: { pages: null, format: null } },
+    },
+    {
+      request,
+      result: resolveIntakeEvidence(request),
+      providers: ['openlibrary'],
+      issues: { openlibrary: [] },
+    },
+  )
+  expect(score.sources[0].diagnostics[0].identity).toMatchObject({
+    title: 'formatting',
+    titleDetail: 'edition_formatting',
+  })
+  expect(score.workState).toBe('review') // correcting a diagnostic never qualifies a provider
+  for (const literal of ['Aster Gardens', 'Elena Reed', '9780306406157', 'OL1M'])
+    expect(JSON.stringify(score)).not.toContain(literal)
 })

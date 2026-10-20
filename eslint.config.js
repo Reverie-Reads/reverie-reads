@@ -9,6 +9,8 @@ export default tseslint.config(
   {
     ignores: [
       '**/dist/**',
+      // Fresh Playwright bundles are generated output, like the ordinary production build.
+      'apps/web/.browser-test-dist/**',
       '**/.output/**',
       '**/.vercel/**',
       '**/.swc/**',
