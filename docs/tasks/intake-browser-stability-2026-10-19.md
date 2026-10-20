@@ -55,3 +55,10 @@ A subsequent manual public Open Library edition inspection reached human verific
 than book facts. Its redirect names OL46630289M, but does not prove its title or identity.
 Do not bypass that gate, replay the consumed comparison, infer an article/subtitle difference,
 or relax identity admission without verified text. No raw provider page was retained.
+
+A reversible local service trial restored its original running services but returned 75 for
+insufficient capacity. This exposed a diagnostic bug in the shared lock wrapper: it called
+that child exit a lock timeout and incorrectly said the command never ran. A private
+per-invocation acquisition receipt now distinguishes command results from acquisition failure,
+and the waiting heartbeat ends on acquisition. Kernel mutual exclusion is unchanged. Isolated
+regressions use private lock paths and clean up only their own process groups.
