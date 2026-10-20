@@ -69,6 +69,8 @@ export interface IntakeObservedIdentity {
   scope: 'work' | 'edition'
   /** One selected edition, with equivalent ISBN-10/13 identifiers only. */
   isbns: string[]
+  /** Explicit ISBN-less edition locator; never inferred from a work search hit. */
+  editionLocator?: { provider: string; recordId: string }
 }
 
 export interface IntakeEvidenceSource {
@@ -99,7 +101,7 @@ export interface IntakeObservation {
 }
 
 export interface IntakeEvidenceRequest {
-  version: 1
+  version: 1 | 2
   /** Frozen target revision, including its existing values; caller rechecks before any save. */
   targetFingerprint: string
   asOf: string
@@ -109,6 +111,13 @@ export interface IntakeEvidenceRequest {
     isbn?: string
     format?: IntakeFacts['format']
     language?: string
+    /** v2 only. Explicit responsibility anchors, never inferred from a roleless name. */
+    identityAnchors?: {
+      name: string
+      role: 'author' | 'editor' | 'playwright' | 'original_story'
+    }[]
+    /** v2 only. An explicitly selected published edition without an ISBN. */
+    editionLocator?: { provider: string; recordId: string }
   }
   existing: Partial<IntakeFacts>
   observations: IntakeObservation[]

@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { test } from 'node:test'
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   RESEARCH_PROMPT,
+  INVESTIGATION_PROMPT,
+  INVESTIGATION_KINDS,
+  investigationInput,
+  investigationTextFormat,
   researchInput,
   researchTextFormat,
   validResearchBody,
@@ -303,4 +308,173 @@ test('evaluation CLI creates private artifacts, refuses overwrite and cannot dro
   delete outputs['case-03']
   await writeFile(output, JSON.stringify(outputs))
   await assert.rejects(main(['score', input, lock, output, join(dir, 'dropped.json')]), /changed/)
+})
+
+function investigationBody(kind) {
+  const b = body()
+  b.text = investigationTextFormat(kind)
+  b.input[0].content = INVESTIGATION_PROMPT
+  b.input[1].content = JSON.stringify(
+    investigationInput(
+      kind,
+      'The Clockmaker Map',
+      'Anika Sen',
+      ['disputed-identifier'],
+      [{ url: 'https://publisher.example/title', locator: 'Title', text: excerpt }],
+    ),
+  )
+  return b
+}
+function investigationProposal(kind) {
+  const p = proposal()
+  p.version = 3
+  p.researchKind = kind
+  p.claims[0].field = kind === 'contributors' ? 'contributor_credit' : kind
+  p.claims[0].scope = kind === 'edition' ? 'edition' : 'work'
+  p.claims[0].locator = kind === 'edition' ? 'Source title page' : null
+  return p
+}
+for (const kind of ['identity', 'edition', 'contributors']) {
+  test(`${kind} investigation retains mandatory review even with exact citations and consistent identity`, () => {
+    const b = investigationBody(kind)
+    assert.equal(validResearchBody(b), true)
+    const assessment = assessResearchResponse(response(investigationProposal(kind)), b)
+    assert.equal(assessment.state, 'held')
+    assert.ok(assessment.reasons.includes('investigation_requires_review'))
+    assert.equal(assessment.saveAllowed, false)
+    assert.equal(assessment.requiresSourceReview, true)
+    const drift = investigationBody(kind)
+    drift.input[0].content = RESEARCH_PROMPT
+    assert.equal(validResearchBody(drift), false)
+    drift.input[0].content = INVESTIGATION_PROMPT
+    drift.text.format.schema.properties.claims.items.properties.field.enum = ['description']
+    assert.equal(validResearchBody(drift), false)
+    assert.equal(validResearchBody(investigationBody(kind)), true)
+  })
+}
+test('edition and part-credit explanations require a source locator without certifying the edition', () => {
+  const p = investigationProposal('edition')
+  p.claims[0].locator = null
+  assert.ok(
+    assessResearchResponse(response(p), investigationBody('edition')).reasons.includes(
+      'scope_locator_missing',
+    ),
+  )
+  p.claims[0].scope = 'work'
+  assert.ok(
+    assessResearchResponse(response(p), investigationBody('edition')).reasons.includes(
+      'invalid_proposal_shape',
+    ),
+  )
+  const c = investigationProposal('contributors')
+  c.claims[0].scope = 'part'
+  c.claims[0].locator = 'Named story: The First Map'
+  assert.deepEqual(assessResearchResponse(response(c), investigationBody('contributors')).reasons, [
+    'investigation_requires_review',
+  ])
+})
+
+const hash = (v) => createHash('sha256').update(JSON.stringify(v)).digest('hex')
+function humanReview(b, r, reference, patch = {}) {
+  return {
+    version: 1,
+    requestHash: hash(b),
+    responseHash: hash(r),
+    referenceHash: hash(reference),
+    reviewer: 'Synthetic reviewer',
+    reviewedAt: '2026-10-20T00:00:00Z',
+    originalSourcesInspected: true,
+    referenceIndependent: true,
+    basis: 'Synthetic reference inspected independently of model labels.',
+    dimensions: { identity: 'supported', edition: 'not_applicable', contributorRoles: 'uncertain' },
+    claims: [
+      { index: 0, verdict: 'unsupported', basis: 'The quote exists but the paraphrase is false.' },
+    ],
+    ...patch,
+  }
+}
+
+test('human semantic review is measured separately from successful citation and contract checks', async () => {
+  const f = frame()
+  f.version = 2
+  const lock = await freezeResearchFrame(f)
+  const p = proposal()
+  p.claims[0].text = 'An astronaut explores Mars.'
+  const r = response(p)
+  const report = await scoreResearchFrame(f, lock, {
+    'case-01': {
+      status: 'observed',
+      response: r,
+      humanReview: humanReview(f.cases[0].body, r, f.cases[0].reference),
+    },
+    'case-02': { status: 'observed', response: response() },
+    'case-03': { status: 'unobserved', reason: 'request_failed' },
+  })
+  assert.equal(report.cases[0].state, 'citation_checked')
+  assert.equal(report.cases[0].agrees, true)
+  assert.equal(report.summary.humanReviewed.cases, 1)
+  assert.equal(report.summary.humanReviewed.notReviewed, 2)
+  assert.equal(report.summary.humanReviewed.semanticSupport.unsupported, 1)
+  assert.equal(report.summary.humanReviewed.dimensions.identity.supported, 1)
+  assert.equal(report.summary.humanReviewed.dimensions.edition.not_applicable, 1)
+  assert.equal(report.summary.humanReviewed.dimensions.contributorRoles.uncertain, 1)
+  assert.equal(report.summary.semanticSupportCertified, false)
+  assert.equal(report.summary.accuracyEstablished, false)
+  assert.equal(report.summary.syntheticResponses, true)
+  for (const privateText of ['astronaut', 'Synthetic reviewer', 'paraphrase', 'publisher.example'])
+    assert.ok(!JSON.stringify(report).includes(privateText))
+})
+
+test('human review cannot substitute another response or omit unfavorable claims', async () => {
+  const f = frame()
+  f.version = 2
+  const lock = await freezeResearchFrame(f)
+  const r = response()
+  for (const patch of [
+    { responseHash: 'a'.repeat(64) },
+    { requestHash: 'b'.repeat(64) },
+    { referenceHash: 'c'.repeat(64) },
+    { originalSourcesInspected: false },
+    { referenceIndependent: false },
+    { claims: [] },
+    { claims: [{ index: 1, verdict: 'supported', basis: 'Another claim' }] },
+    { claims: [{ index: 0, verdict: 'not_applicable', basis: 'Silently omitted claim' }] },
+    { dimensions: { identity: 'supported', edition: 'supported' } },
+    { reviewedAt: '2999-01-01T00:00:00Z' },
+  ]) {
+    await assert.rejects(
+      scoreResearchFrame(f, lock, {
+        'case-01': {
+          status: 'observed',
+          response: r,
+          humanReview: humanReview(f.cases[0].body, r, f.cases[0].reference, patch),
+        },
+        'case-02': { status: 'unobserved', reason: 'not_run' },
+        'case-03': { status: 'unobserved', reason: 'response_missing' },
+      }),
+      /changed/,
+    )
+  }
+})
+
+test('research kind allowlist cannot be expanded by a caller', () => {
+  assert.throws(() => INVESTIGATION_KINDS.push('catalog_write'), TypeError)
+  assert.throws(() => investigationTextFormat('catalog_write'), /Invalid investigation kind/)
+})
+
+test('identity investigation can inspect an incomplete target without admitting it as description research', () => {
+  const b = investigationBody('identity')
+  const input = JSON.parse(b.input[1].content)
+  input.author = ''
+  b.input[1].content = JSON.stringify(input)
+  assert.equal(validResearchBody(b), true)
+  input.title = ''
+  input.isbns = []
+  b.input[1].content = JSON.stringify(input)
+  assert.equal(validResearchBody(b), false)
+  const d = body()
+  const description = JSON.parse(d.input[1].content)
+  description.author = ''
+  d.input[1].content = JSON.stringify(description)
+  assert.equal(validResearchBody(d), false)
 })

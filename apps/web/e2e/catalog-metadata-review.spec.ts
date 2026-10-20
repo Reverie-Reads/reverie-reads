@@ -93,6 +93,25 @@ async function setup(page: Page, isAdmin = true) {
     title,
     isbn: fixtureIsbn(),
     cleanup: async () => {
+      // Applied collective evidence is deliberately not service-role API-writable.
+      // These generated UUIDs belong only to this local fixture, under the stack lock.
+      execFileSync(
+        'docker',
+        [
+          'exec',
+          'supabase_db_book-corpus',
+          'psql',
+          '-U',
+          'postgres',
+          '-d',
+          'postgres',
+          '-v',
+          'ON_ERROR_STOP=1',
+          '-c',
+          `delete from public.corpus_metadata_evidence_reviews where work_id in ('${workId}','${peerId}');`,
+        ],
+        { timeout: 15000, stdio: 'pipe' },
+      )
       await ok(
         admin.from('corpus_metadata_review_events').delete().in('work_id', [workId, peerId]),
         'events cleanup',
@@ -168,6 +187,145 @@ test('metadata review saves a sourced description, keeps identity concerns, and 
     await expect(
       page.getByRole('list', { name: 'Catalog metadata review queue' }).getByRole('link'),
     ).toHaveCount(1)
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('supported evidence recovers a committed save after its response is lost', async ({
+  page,
+}) => {
+  const c = await setup(page)
+  try {
+    await ok(
+      c.admin.from('works').delete().eq('id', c.peerId),
+      'remove unrelated duplicate fixture',
+    )
+    const before = await ok(
+      c.admin.from('books').select('*').eq('id', c.bookId).single(),
+      'personal before evidence',
+    )
+    await page.goto(`/catalog/metadata?work=${c.workId}`)
+    const region = page.getByRole('region', { name: 'Evidence-backed correction' })
+    await expect(region.getByRole('button', { name: 'Preview supported correction' })).toBeVisible()
+    for (const [name, value] of [
+      ['Supported value', 'A librarian follows a trail of missing letters.'],
+      ['Source title', c.title],
+      ['Source full author names', 'Test Writer'],
+      ['Original evidence link', 'https://publisher.example/book'],
+      ['Source record identifier', 'fixture-book'],
+      ['Where the fact appears', 'Synopsis'],
+      [
+        'Why the evidence supports this fact',
+        'Every statement was inspected at the original source.',
+      ],
+      ['Source-use reference', 'https://publisher.example/terms'],
+      [
+        'How the basis covers retaining and displaying this value',
+        'Inspected terms cover this attributed summary.',
+      ],
+      ['Correction note', 'Synthetic browser fixture; no external source request.'],
+    ])
+      await region.getByLabel(name!).fill(value!)
+    await region.getByRole('checkbox', { name: /I independently checked/ }).check()
+    await region.getByRole('button', { name: 'Preview supported correction' }).click()
+    await region.getByRole('checkbox', { name: /Approve exactly/ }).check()
+    let submitted = 0
+    await page.route('**/rest/v1/rpc/admin_apply_catalog_evidence', async (route) => {
+      submitted++
+      const response = await route.fetch()
+      expect(response.ok()).toBe(true)
+      await route.abort('failed')
+    })
+    await region.getByRole('button', { name: 'Apply supported correction' }).click()
+    await expect(region.getByRole('alert')).toBeVisible()
+    await expect(region.getByRole('button', { name: 'Discard evidence draft' })).toBeDisabled()
+    await region.getByRole('button', { name: 'Check evidence history' }).click()
+    await expect(region.getByRole('status')).toContainText('Supported correction saved')
+    expect(submitted).toBe(1)
+    expect(
+      (
+        await ok(
+          c.admin.from('works').select('description').eq('id', c.workId).single(),
+          'description persisted',
+        )
+      ).description,
+    ).toBe('A librarian follows a trail of missing letters.')
+    expect(
+      await ok(
+        c.admin.from('books').select('*').eq('id', c.bookId).single(),
+        'personal after evidence',
+      ),
+    ).toEqual(before)
+    await page.unroute('**/rest/v1/rpc/admin_apply_catalog_evidence')
+    await page.reload()
+    await expect(page.getByRole('list', { name: 'Applied evidence history' })).toContainText(
+      'Every statement was inspected',
+    )
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('supported pages change only the selected published edition', async ({ page }) => {
+  const c = await setup(page)
+  try {
+    await ok(c.admin.from('works').delete().eq('id', c.peerId), 'remove duplicate fixture')
+    await ok(
+      c.admin
+        .from('works')
+        .update({ isbns: [c.isbn], pages: 123 })
+        .eq('id', c.workId),
+      'edition reference fixture',
+    )
+    execFileSync(
+      'docker',
+      [
+        'exec',
+        'supabase_db_book-corpus',
+        'psql',
+        '-U',
+        'postgres',
+        '-d',
+        'postgres',
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-c',
+        `update public.corpus_editions set details='{"format":"paperback","pages":321}' where work_id='${c.workId}' and isbn='${c.isbn}';`,
+      ],
+      { timeout: 15000, stdio: 'pipe' },
+    )
+    await page.goto(`/catalog/metadata?work=${c.workId}`)
+    const region = page.getByRole('region', { name: 'Evidence-backed correction' })
+    await region.getByLabel('Fact to review').selectOption('pages')
+    await region.getByLabel('Published edition').selectOption({ label: `${c.isbn} · paperback` })
+    for (const [name, value] of [
+      ['Supported value', '456'],
+      ['Source title', c.title],
+      ['Source full author names', 'Test Writer'],
+      ['Original evidence link', 'https://publisher.example/book'],
+      ['Source record identifier', c.isbn],
+      ['Where the fact appears', 'Product page count'],
+      ['Why the evidence supports this fact', 'Checked this exact ISBN and paperback format.'],
+      ['Source-use reference', 'https://publisher.example/terms'],
+      [
+        'How the basis covers retaining and displaying this value',
+        'Inspected terms cover literal edition facts.',
+      ],
+      ['Correction note', 'Synthetic fixture.'],
+    ])
+      await region.getByLabel(name!).fill(value!)
+    await region.getByRole('checkbox', { name: /I independently checked/ }).check()
+    await region.getByRole('button', { name: 'Preview supported correction' }).click()
+    await region.getByRole('checkbox', { name: /Approve exactly/ }).check()
+    await region.getByRole('button', { name: 'Apply supported correction' }).click()
+    await expect(region.getByRole('status')).toContainText('Supported correction saved')
+    await page.reload()
+    await expect(page.getByRole('list', { name: 'Applied evidence history' })).toContainText('456')
+    expect(
+      (await ok(c.admin.from('works').select('pages').eq('id', c.workId).single(), 'work scalar'))
+        .pages,
+    ).toBe(123)
   } finally {
     await c.cleanup()
   }

@@ -1,6 +1,6 @@
 # Durable Luna research budget
 
-The intake budget CLI is a private spending boundary for residual description research. It does
+The intake budget CLI is a private spending boundary for residual description research and separate held-question investigations. It does
 not write catalog facts or personal data. Its fixed **$50 total ceiling** includes prior expenditure
 and retained uncertainty; it is not a new $50 allowance. The reviewed October 16 completion receipt
 records **$20.73931475**, including the earlier $2.30 uncertain/comparison reserves, leaving
@@ -21,6 +21,8 @@ node scripts/intake-budget.mjs status
 node scripts/intake-budget.mjs configure /private/verified-pricing.json
 node scripts/intake-budget.mjs prepare /private/current-inventory.json /private/dispositions.json WORK_UUID:description /private/evidence.json 2000 /private/prepared.json
 node scripts/intake-budget.mjs run /private/current-inventory.json /private/dispositions.json WORK_UUID:description /private/evidence.json 2000
+node scripts/intake-budget.mjs prepare-investigation /private/current-inventory.json /private/investigations.json WORK_UUID:investigation:identity /private/evidence.json 2000 /private/prepared-investigation.json
+node scripts/intake-budget.mjs run-investigation /private/current-inventory.json /private/investigations.json WORK_UUID:investigation:identity /private/evidence.json 2000
 node scripts/intake-budget.mjs settle REQUEST_HASH
 node scripts/intake-budget.mjs review /private/prepared.json
 ```
@@ -73,12 +75,42 @@ does not reset spending or rewrite prior requests. Existing reservations and set
 bound to the original pricing version. An identical configuration retry is read-only. Changed
 configuration with the same or an older review timestamp is refused.
 
+## Shared pilot sublimit
+
+All new description and investigation reservations also belong to the fixed
+`catalog-evidence-pilot-2026-10-20-v1` bucket, capped at **$5 total**. The smaller of global and pilot
+headroom controls admission before any request is sent. Unsettled or failed requests retain their
+full bound in both budgets; validated settlements replace that bound with conservative actual usage.
+`status` shows both burdens independently. The pilot is cumulative across worktrees, processes,
+pricing renewals and both research modes; it is not $5 per work, run or model task. It has no CLI
+reset, new bucket or ceiling override. Exhaustion stops paid execution pending a separately reviewed
+code change; it does not authorize additional spending.
+
+New immutable reservations use version 2 with the fixed `pilotId`. Historical version-1 receipts
+remain validated, globally charged and permanently consumed. They are not retroactively charged to
+the new pilot and are never rewritten or released. The original opening burden and $50 ceiling
+remain unchanged. No live ledger initialization, pricing configuration, request or migration is
+performed by this implementation's isolated synthetic tests.
+
 ## Current task and source restrictions
 
-`run` rebuilds the completion plan from the supplied current inventory and dispositions. It accepts
-only a description task actually scheduled as `llm_evidence_research`, with model `gpt-6-luna`, after
-a fingerprint-matched `complete_no_supported_value` non-LLM disposition. Identity/review holds,
-stale dispositions, unknown input fields and incomplete deterministic research remain blocked.
+`run` preserves the existing description boundary: it rebuilds the completion plan and accepts only
+a description task scheduled as `llm_evidence_research`, with model `gpt-6-luna`, after a
+fingerprint-matched `complete_no_supported_value` non-LLM disposition. Identity/review holds,
+stale dispositions, unknown input fields and incomplete deterministic research remain blocked from
+that completion path.
+
+`prepare-investigation` and `run-investigation` are a separate research-only scheduler for
+`identity`, `edition` or `contributors`. They validate the unchanged original inventory and require
+a separate private disposition array. Every item contains exactly `version: 1`, `taskId`
+(`WORK_UUID:investigation:KIND`), `fingerprint`, `kind`, `nonLlmStatus`, `checkedAt` and written `basis`.
+Kinds must be allowlisted, task IDs unique and fingerprints current. Statuses are `not_attempted`,
+`failed`, `candidate` or `complete_unresolved`; only `complete_unresolved` schedules a request. The
+non-LLM inspection timestamp must be no more than one day old. This attestation records that
+non-LLM investigation is complete but inconclusive; it never changes an existing catalog hold or
+manufactures a description gap. In particular, an outage cannot be relabeled successful absence.
+The same fresh evidence and model-input-permission checks apply to both research modes. Evidence
+`dispositionHash` binds the investigation array for the separate commands.
 The caller must refresh the read-only inventory before execution; this local tool does not connect
 to the database or certify that a file still matches live catalog state.
 
@@ -101,23 +133,27 @@ for excluding personal information from free text.
 
 This first paid boundary **interprets supplied evidence**. It has no browsing/search tools and does
 not discover or fetch new sources. Its fixed prompt treats snippets as untrusted data and requests
-supported description research, supplied citations and explicit uncertainty. Output is always an
+supported research for its selected task, supplied citations and explicit uncertainty. Output is always an
 unverified proposal for independent original-source inspection, never a metadata patch or approval.
 The fixed request uses the Responses endpoint, `gpt-6-luna`, `service_tier: default`, `store: false`,
 disabled truncation and a bounded output limit. Redirects, retries, arbitrary commands, tools,
 alternate endpoints and caller-provided model configuration are unavailable. `OPENAI_API_KEY` is
 required before reservation and is never written to the ledger.
 
-The v2 methodology replaces free-form text with a strict, code-owned claim/citation schema. Every
-claim has work/description scope, a candidate/withheld disposition and exact quoted support linked
-to a code-assigned source ID. Identity explanations, categorized findings and abstentions remain
+The description v2 methodology replaces free-form text with a strict, code-owned claim/citation
+schema. Description claims have work scope, a candidate/withheld disposition and exact quoted
+support linked to a code-assigned source ID. Separate investigation v3 schemas accept only the
+requested explanatory claim kind, with work/edition/part scope as appropriate and a source locator
+for non-work claims. The locator and target ISBN list are observations, not certified edition
+selection. Every investigation stays `held` with `investigation_requires_review`, even when the
+model reports a consistent identity and every quote exists. Identity explanations, categorized findings and abstentions remain
 separate. Local checks verify the shape, supplied source IDs and literal substring anchors. They
 cannot establish that the source is correct or that a quote supports the model's interpretation.
 `citation_checked` always retains `requiresSourceReview: true` and `saveAllowed: false`; conflicts,
 unknown citations, abstentions, refusals and incomplete/malformed output remain `held`. A withheld
 research result still incurs usage; valid accounting is never presented as valid bibliography.
 
-`prepare` is a no-network dry run. It performs the same planner, source-use and freshness checks,
+`prepare` and `prepare-investigation` are no-network dry runs. It performs the same planner, source-use and freshness checks,
 then writes a private create-only request packet without pricing, credentials or a reservation.
 Keep this packet outside Git: it contains permitted excerpts, not merely aggregate diagnostics.
 Run with the identical inventory/disposition/evidence/token inputs to retain its request hash.
@@ -136,7 +172,8 @@ See [Luna methodology](intake-luna-methodology.md) for evaluation and remaining 
 One exclusive directory lock serializes writes across processes and worktrees. Reservation JSON is
 written to a create-only pending file, fsynced, renamed atomically and followed by directory fsync
 **before network activity**. The lock is released before the bounded network call. The request ID
-is a hash of planner task ID and target fingerprint; changing prompt text, pricing or output filename
+is a hash of task ID and target fingerprint (including the separate investigation kind); changing
+prompt text, pricing or output filename
 cannot replay the same task revision. Reservations permanently bind model, request configuration,
 pricing, inventory and dispositions. Aggregate journals contain hashes and costs rather than book
 identity, source snippets or credentials.

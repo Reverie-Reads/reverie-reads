@@ -35,6 +35,7 @@ export const RECONCILIATION_BACKUP_PRIMARY_KEYS: Record<string, readonly string[
   corpus_record_edits: ['id'],
   corpus_edition_credit_reviews: ['id'],
   corpus_edition_credit_source_use_receipts: ['review_id'],
+  corpus_metadata_evidence_reviews: ['id'],
   corpus_isbn_reports: ['id'],
   corpus_admins: ['user_id'],
   corpus_cover_recovery_marks: ['book_id'],

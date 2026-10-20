@@ -83,6 +83,7 @@ export * from './productPreferences'
 export { bookGuidance } from './contentGuidance'
 export * from './editionCredits'
 export * from './editionCreditSourceUse'
+export * from './catalogEvidence'
 
 export * from './documentEvidence'
 export * from './photoEvidence'

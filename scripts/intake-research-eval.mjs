@@ -23,7 +23,7 @@ async function systemHash() {
 function validate(frame) {
   requireThat(
     exact(frame, ['version', 'basis', 'cases']) &&
-      frame.version === 1 &&
+      [1, 2].includes(frame.version) &&
       ['synthetic_contract', 'reviewed_model_responses'].includes(frame.basis) &&
       Array.isArray(frame.cases) &&
       frame.cases.length > 0 &&
@@ -52,7 +52,7 @@ export async function freezeResearchFrame(input) {
   const frame = structuredClone(input)
   validate(frame)
   return {
-    version: 1,
+    version: frame.version,
     frameHash: hash(frame),
     systemHash: await systemHash(),
     basis: frame.basis,
@@ -77,18 +77,33 @@ export async function scoreResearchFrame(frameInput, lockInput, outputsInput) {
       requireThat(['not_run', 'request_failed', 'response_missing'].includes(output.reason))
       return { id: c.id, state: 'unobserved', reason: output.reason }
     }
-    requireThat(exact(output, ['status', 'response']) && output.status === 'observed')
+    requireThat(
+      (exact(output, ['status', 'response']) ||
+        (frame.version === 2 && exact(output, ['status', 'response', 'humanReview']))) &&
+        output.status === 'observed',
+    )
     const assessment = assessResearchResponse(output.response, c.body)
     return {
       id: c.id,
       expectedState: c.reference.expectedState,
       ...assessment,
       agrees: assessment.state === c.reference.expectedState,
+      ...(frame.version === 2
+        ? {
+            humanReview: assessHumanReview(
+              output.humanReview,
+              output.response,
+              c.body,
+              c.reference,
+              assessment,
+            ),
+          }
+        : {}),
     }
   })
   const observed = cases.filter((c) => c.state !== 'unobserved')
   return {
-    version: 1,
+    version: frame.version,
     basis: frame.basis,
     lock,
     summary: {
@@ -108,8 +123,83 @@ export async function scoreResearchFrame(frameInput, lockInput, outputsInput) {
       saveAllowed: false,
       modelCalls: 0,
       catalogWrites: 0,
+      ...(frame.version === 2 ? { humanReviewed: summarizeHumanReview(cases) } : {}),
     },
     cases,
+  }
+}
+
+const verdicts = ['supported', 'unsupported', 'uncertain', 'not_applicable']
+const dimensions = ['identity', 'edition', 'contributorRoles']
+const boundedText = (v, max) => typeof v === 'string' && !!v.trim() && v.length <= max
+
+// Human judgements are attestations bound to these exact bytes, not model truth or permission.
+// Reference material remains in the private frame, never injected into a request body.
+function assessHumanReview(review, response, body, reference, assessment) {
+  if (review === undefined) return { status: 'not_reviewed' }
+  requireThat(
+    exact(review, [
+      'version',
+      'requestHash',
+      'responseHash',
+      'referenceHash',
+      'reviewer',
+      'reviewedAt',
+      'originalSourcesInspected',
+      'referenceIndependent',
+      'basis',
+      'dimensions',
+      'claims',
+    ]) &&
+      review.version === 1 &&
+      review.requestHash === hash(body) &&
+      review.responseHash === hash(response) &&
+      review.referenceHash === hash(reference) &&
+      boundedText(review.reviewer, 200) &&
+      boundedText(review.basis, 2000) &&
+      typeof review.reviewedAt === 'string' &&
+      Number.isFinite(Date.parse(review.reviewedAt)) &&
+      Date.parse(review.reviewedAt) <= Date.now() &&
+      review.originalSourcesInspected === true &&
+      review.referenceIndependent === true &&
+      exact(review.dimensions, dimensions) &&
+      dimensions.every((d) => verdicts.includes(review.dimensions[d])) &&
+      Array.isArray(review.claims) &&
+      review.claims.length === assessment.counts.claims,
+  )
+  const seen = new Set()
+  for (const claim of review.claims) {
+    requireThat(
+      exact(claim, ['index', 'verdict', 'basis']) &&
+        Number.isSafeInteger(claim.index) &&
+        claim.index >= 0 &&
+        claim.index < assessment.counts.claims &&
+        !seen.has(claim.index) &&
+        ['supported', 'unsupported', 'uncertain'].includes(claim.verdict) &&
+        boundedText(claim.basis, 2000),
+    )
+    seen.add(claim.index)
+  }
+  return {
+    status: 'reviewed',
+    dimensions: review.dimensions,
+    claims: review.claims.map(({ index, verdict }) => ({ index, verdict })),
+  }
+}
+function summarizeHumanReview(cases) {
+  const reviewed = cases.filter((c) => c.humanReview?.status === 'reviewed')
+  const tally = (values) =>
+    Object.fromEntries(verdicts.map((v) => [v, values.filter((x) => x === v).length]))
+  return {
+    cases: reviewed.length,
+    notReviewed: cases.length - reviewed.length,
+    dimensions: Object.fromEntries(
+      dimensions.map((d) => [d, tally(reviewed.map((c) => c.humanReview.dimensions[d]))]),
+    ),
+    semanticSupport: tally(
+      reviewed.flatMap((c) => c.humanReview.claims.map((claim) => claim.verdict)),
+    ),
+    attestedOnly: true,
   }
 }
 

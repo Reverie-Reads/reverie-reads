@@ -4,6 +4,7 @@ import { Button } from '../Button'
 import { CorpusRegistryEditor } from './CorpusRegistryEditor'
 import { CatalogEditionCorrection } from './CatalogEditionCorrection'
 import { CatalogSeriesConfirmation } from './CatalogSeriesConfirmation'
+import { CatalogEvidenceReview } from './CatalogEvidenceReview'
 import {
   METADATA_ACTIONS,
   METADATA_ISSUES,
@@ -42,6 +43,7 @@ export function CatalogMetadataEditor({
   const [editionDirty, setEditionDirty] = useState(false)
   const [seriesDirty, setSeriesDirty] = useState(false)
   const [registryDirty, setRegistryDirty] = useState(false)
+  const [evidenceDirty, setEvidenceDirty] = useState(false)
   const save = useSaveCatalogMetadataReview()
   const history = useCatalogMetadataHistory(work.id)
   const reviewed = confirmed && !!note.trim()
@@ -50,7 +52,7 @@ export function CatalogMetadataEditor({
   async function decide(
     action: Exclude<MetadataAction, 'edition_details' | 'series_confirmation'>,
   ) {
-    if (editionDirty || seriesDirty || registryDirty) return
+    if (editionDirty || seriesDirty || registryDirty || evidenceDirty) return
     setError('')
     try {
       await save.mutateAsync({
@@ -148,13 +150,17 @@ export function CatalogMetadataEditor({
       )}
       <CorpusRegistryEditor
         workId={work.id}
-        blocked={descriptionChanged || editionDirty || seriesDirty || save.isPending}
+        blocked={
+          descriptionChanged || editionDirty || seriesDirty || evidenceDirty || save.isPending
+        }
         onDirtyChange={setRegistryDirty}
         onSaved={onSaved}
       />
       <CatalogEditionCorrection
         work={work}
-        blocked={descriptionChanged || seriesDirty || registryDirty || save.isPending}
+        blocked={
+          descriptionChanged || seriesDirty || registryDirty || evidenceDirty || save.isPending
+        }
         onDirtyChange={setEditionDirty}
         onSaved={onSaved}
         onRefresh={onRefresh}
@@ -166,7 +172,9 @@ export function CatalogMetadataEditor({
       )}
       <CatalogSeriesConfirmation
         work={work}
-        blocked={descriptionChanged || editionDirty || registryDirty || save.isPending}
+        blocked={
+          descriptionChanged || editionDirty || registryDirty || evidenceDirty || save.isPending
+        }
         onDirtyChange={setSeriesDirty}
         onSaved={onSaved}
         onRefresh={onRefresh}
@@ -176,6 +184,19 @@ export function CatalogMetadataEditor({
           Apply or discard the series draft before recording another decision.
         </p>
       )}
+      <CatalogEvidenceReview
+        work={work}
+        blocked={
+          descriptionChanged || editionDirty || seriesDirty || registryDirty || save.isPending
+        }
+        onDirtyChange={setEvidenceDirty}
+        onSaved={onSaved}
+      />
+      {evidenceDirty && (
+        <p className="text-sm text-muted">
+          Apply or discard the evidence draft before recording another decision.
+        </p>
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -183,132 +204,139 @@ export function CatalogMetadataEditor({
         }}
         className="mt-5 space-y-4"
       >
-        <label className="block text-sm font-semibold">
-          Catalog description
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={12000}
-            rows={7}
-            className="skin-field mt-2 min-h-40 w-full resize-y px-3 py-3 text-base font-normal leading-relaxed"
-            placeholder="A concise description of this book"
-          />
-        </label>
-        <p className="text-sm leading-relaxed text-muted">
-          Use a description you have permission to share, or write a brief summary in your own words
-          from a checked source. Saving changes the shared catalog only.
-        </p>
-        <label className="block text-sm font-semibold">
-          Evidence source link
-          <input
-            type="url"
-            value={sourceUrl}
-            onChange={(e) => setSourceUrl(e.target.value)}
-            maxLength={2000}
-            placeholder="https://…"
-            className="skin-field mt-2 min-h-11 w-full px-3 text-base font-normal"
-          />
-        </label>
-        <label className="block text-sm font-semibold">
-          Assessment note
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            maxLength={1200}
-            className="skin-field mt-2 w-full resize-y px-3 py-3 text-base font-normal leading-relaxed"
-            placeholder="What did you check? What still needs attention?"
-          />
-        </label>
-        <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
-          <input
-            type="checkbox"
-            checked={confirmed}
-            onChange={(e) => setConfirmed(e.target.checked)}
-            className="mt-1"
-          />
-          I checked the title, author, and relevant edition evidence for this record.
-        </label>
-        {error && (
-          <div role="alert" className="border border-line p-3 text-sm">
-            <p>{error}</p>
-            <Button variant="secondary" onClick={onRefresh}>
-              Reload current record
-            </Button>
-            <p className="mt-2 text-muted">
-              Reloading replaces this draft with the current catalog details.
-            </p>
-          </div>
-        )}
-        {descriptionChanged && (
-          <p className="text-sm text-muted">
-            You have an unsaved description. Save it before recording another decision, or{' '}
-            <button
-              type="button"
-              className="underline"
-              onClick={() => setDescription(work.description)}
-            >
-              discard the description draft
-            </button>
-            .
+        <fieldset disabled={evidenceDirty} className="space-y-4">
+          <legend className="sr-only">Manual description and catalog assessment</legend>
+          <label className="block text-sm font-semibold">
+            Catalog description
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={12000}
+              rows={7}
+              className="skin-field mt-2 min-h-40 w-full resize-y px-3 py-3 text-base font-normal leading-relaxed"
+              placeholder="A concise description of this book"
+            />
+          </label>
+          <p className="text-sm leading-relaxed text-muted">
+            Use a description you have permission to share, or write a brief summary in your own
+            words from a checked source. Saving changes the shared catalog only.
           </p>
-        )}
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="submit"
-            disabled={
-              editionDirty ||
-              registryDirty ||
-              seriesDirty ||
-              save.isPending ||
-              !reviewed ||
-              !description.trim() ||
-              description.trim() === work.description ||
-              !/^https:\/\//.test(sourceUrl.trim())
-            }
-          >
-            Save description
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={
-              editionDirty ||
-              seriesDirty ||
-              registryDirty ||
-              save.isPending ||
-              !reviewed ||
-              descriptionChanged
-            }
-            onClick={() => void decide('reviewed')}
-          >
-            Record assessment
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={
-              editionDirty || seriesDirty || registryDirty || save.isPending || descriptionChanged
-            }
-            onClick={() => void decide('defer')}
-          >
-            Set aside for later
-          </Button>
-          {work.state !== 'open' && (
+          <label className="block text-sm font-semibold">
+            Evidence source link
+            <input
+              type="url"
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              maxLength={2000}
+              placeholder="https://…"
+              className="skin-field mt-2 min-h-11 w-full px-3 text-base font-normal"
+            />
+          </label>
+          <label className="block text-sm font-semibold">
+            Assessment note
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              maxLength={1200}
+              className="skin-field mt-2 w-full resize-y px-3 py-3 text-base font-normal leading-relaxed"
+              placeholder="What did you check? What still needs attention?"
+            />
+          </label>
+          <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+              className="mt-1"
+            />
+            I checked the title, author, and relevant edition evidence for this record.
+          </label>
+          {error && (
+            <div role="alert" className="border border-line p-3 text-sm">
+              <p>{error}</p>
+              <Button variant="secondary" onClick={onRefresh}>
+                Reload current record
+              </Button>
+              <p className="mt-2 text-muted">
+                Reloading replaces this draft with the current catalog details.
+              </p>
+            </div>
+          )}
+          {descriptionChanged && (
+            <p className="text-sm text-muted">
+              You have an unsaved description. Save it before recording another decision, or{' '}
+              <button
+                type="button"
+                className="underline"
+                onClick={() => setDescription(work.description)}
+              >
+                discard the description draft
+              </button>
+              .
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
             <Button
-              variant="ghost"
+              type="submit"
+              disabled={
+                editionDirty ||
+                registryDirty ||
+                seriesDirty ||
+                save.isPending ||
+                !reviewed ||
+                !description.trim() ||
+                description.trim() === work.description ||
+                !/^https:\/\//.test(sourceUrl.trim())
+              }
+            >
+              Save description
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={
+                editionDirty ||
+                seriesDirty ||
+                registryDirty ||
+                save.isPending ||
+                !reviewed ||
+                descriptionChanged
+              }
+              onClick={() => void decide('reviewed')}
+            >
+              Record assessment
+            </Button>
+            <Button
+              variant="secondary"
               disabled={
                 editionDirty || seriesDirty || registryDirty || save.isPending || descriptionChanged
               }
-              onClick={() => void decide('reopen')}
+              onClick={() => void decide('defer')}
             >
-              Reopen review
+              Set aside for later
             </Button>
-          )}
-        </div>
-        <p className="text-sm leading-relaxed text-muted">
-          An assessment records what you found; it does not certify the book as correct. Saving a
-          description keeps any identity concerns open. Personal copies, notes, and reading history
-          stay with their readers.
-        </p>
+            {work.state !== 'open' && (
+              <Button
+                variant="ghost"
+                disabled={
+                  editionDirty ||
+                  seriesDirty ||
+                  registryDirty ||
+                  save.isPending ||
+                  descriptionChanged
+                }
+                onClick={() => void decide('reopen')}
+              >
+                Reopen review
+              </Button>
+            )}
+          </div>
+          <p className="text-sm leading-relaxed text-muted">
+            An assessment records what you found; it does not certify the book as correct. Saving a
+            description keeps any identity concerns open. Personal copies, notes, and reading
+            history stay with their readers.
+          </p>
+        </fieldset>
       </form>
       <section className="mt-6 border-t border-line pt-4">
         <h3 className="font-semibold">Recent review history</h3>

@@ -774,8 +774,11 @@ identity, rights or permission to save. Conflicts, abstentions, refusals and mal
 held. Accounting settlement is separate from research quality. Offline `intake:budget prepare` and
 hash-bound `review` never reserve or replay a request. `intake:research:eval` freezes code, requests
 and expected contract outcomes before scoring; keep failed/unobserved cases in the denominator and
-label injected synthetic replies separately from real model results. The paid path remains residual
-description research, with identity/review holds excluded. See `docs/tasks/intake-luna-methodology.md`.
+label injected synthetic replies separately from real model results. Description completion still
+excludes identity/review holds. Separate `prepare-investigation`/`run-investigation` tasks may explain
+identity, edition or contributor questions after completed fingerprint-bound non-LLM investigation
+and permitted excerpts; they always remain held and never change completion eligibility. New requests
+share a durable $5 pilot sublimit inside the cumulative $50 ceiling. See `docs/tasks/intake-luna-methodology.md`.
 
 Every edition enrichment source must independently match the requested title/full contributor and
 canonical valid ISBN. Bounded exact Open Library and Hardcover editions with complete author
@@ -801,6 +804,17 @@ It does not replace Add, scan or import writers. Preserve work/edition separatio
 roles, exact ISBN checks, per-claim evidence and existing values. Whole-work editors are retained
 as credits but cannot establish creator identity from a roleless target; editor-only collections
 stay under review, including ISBN-only scans. Never relabel editors as authors to increase coverage.
+The v2 offline request may explicitly name full contributor roles and an ISBN-less selected-edition
+locator. Editors require whole-edition basis and never become authors. Compare creator and editor
+sets separately; preserve existing creators, exact ISBN checks, responsibility holds and unknown
+source use. Legacy roleless targets stay creator-only. A locator is not source qualification.
+The administrator catalog evidence handoff accepts one independently inspected fact with a
+field-specific source-use attestation and a frozen target fingerprint. Descriptions use the existing
+narrow writer; page/date facts update only the selected registered edition, never work scalars or
+personal rows. One fact does not certify the edition. Deferred/identity/ambiguous-name holds remain;
+uncertain saves use exact receipt lookup and deliberate identical UUID retry. Evidence history is
+collective administrator-only data excluded from reader backup and offline caches. Provider packets
+remain transient research and cannot become this save payload. See `docs/tasks/book-data-evidence-workflow.md`.
 Source qualification and lineage come from trusted adapters or reviewers, never model output or client assertions. The transient handoff preview uses code-owned operation reviews for catalog storage, export and Luna input separately; packet eligibility never grants those permissions. It preserves existing values and requires a current target check in the saved-edition editor before prepare. It is not a save payload. See `docs/tasks/intake-source-handoff-2026-10-18.md`. Do not cast a
 resolution to `Incoming` or `Book`; the staged intake cutover is still required. The separate
 administrator edition-credit handoff accepts manually inspected first-party evidence, freezes the
