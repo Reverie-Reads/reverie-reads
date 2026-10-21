@@ -774,7 +774,7 @@ describe('packet validation and personal-data boundary', () => {
   )
   it('rejects malformed, duplicate, oversized and future-version packets', () => {
     expect(() => resolveIntakeEvidence(null)).toThrow()
-    expect(() => resolveIntakeEvidence({ ...request(), version: 2 })).toThrow()
+    expect(() => resolveIntakeEvidence({ ...request(), version: 3 })).toThrow()
     expect(() =>
       resolveIntakeEvidence(request({ observations: [observation(), observation()] })),
     ).toThrow()

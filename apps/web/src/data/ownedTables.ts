@@ -176,6 +176,12 @@ export const USER_OWNED_TABLES: OwnedTable[] = [
     plan: { backup: false, why: 'Administrator metadata assessments stay with the shared catalog and cannot be replayed by a personal restore.' },
   },
   {
+    table: 'corpus_metadata_evidence_reviews',
+    owner: 'reviewer_id',
+    collective: true,
+    plan: { backup: false, why: 'Applied fact evidence and source-use receipts belong to the shared catalog. Account deletion anonymizes reviewer attribution; personal backup and restore must never export permissions or replay catalog writes.' },
+  },
+  {
     table: 'corpus_admins',
     owner: 'user_id',
     collective: true,

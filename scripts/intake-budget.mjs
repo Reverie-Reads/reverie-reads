@@ -6,6 +6,10 @@ import { pathToFileURL } from 'node:url'
 import { planCorpusCompletion } from './corpus-completion-plan.mjs'
 import {
   RESEARCH_PROMPT,
+  INVESTIGATION_PROMPT,
+  INVESTIGATION_KINDS,
+  investigationInput,
+  investigationTextFormat,
   researchInput,
   researchSourceUrl,
   researchTextFormat,
@@ -15,6 +19,8 @@ import {
 
 export const MODEL = 'gpt-6-luna'
 export const CEILING = 50_000_000_000n
+export const PILOT_CEILING = 5_000_000_000n
+export const PILOT_ID = 'catalog-evidence-pilot-2026-10-20-v1'
 export const KNOWN_OPENING = 20_739_314_750n
 const hash = (v) =>
   createHash('sha256')
@@ -256,6 +262,7 @@ async function load(root) {
     'Ambiguous active pricing',
   )
   let burden = BigInt(opening.openingNano)
+  let pilotBurden = 0n
   const reservations = new Map()
   for (const name of files.filter((f) => f.endsWith('.reservation.json'))) {
     const r = await privateFile(join(root, name))
@@ -273,8 +280,9 @@ async function load(root) {
         'reservedNano',
         'maxOutputTokens',
         'createdAt',
+        ...(r.version === 2 ? ['pilotId'] : []),
       ]) &&
-        r.version === 1 &&
+        (r.version === 1 || (r.version === 2 && r.pilotId === PILOT_ID)) &&
         r.model === MODEL &&
         name === `${r.id}.reservation.json` &&
         [r.id, r.configHash, r.pricingHash, r.inventoryHash, r.dispositionHash, r.reviewHash].every(
@@ -317,7 +325,11 @@ async function load(root) {
         'Settlement proof mismatch',
       )
       burden += BigInt(s.chargedNano)
-    } else burden += BigInt(r.reservedNano)
+      if (r.version === 2) pilotBurden += BigInt(s.chargedNano)
+    } else {
+      burden += BigInt(r.reservedNano)
+      if (r.version === 2) pilotBurden += BigInt(r.reservedNano)
+    }
   }
   requireThat(
     files
@@ -326,7 +338,8 @@ async function load(root) {
     'Orphan receipt requires review',
   )
   requireThat(burden <= CEILING, 'Budget ceiling exceeded; stop for review')
-  return { pricing, pricingByHash, burden, reservations, files }
+  requireThat(pilotBurden <= PILOT_CEILING, 'Pilot ceiling exceeded; stop for review')
+  return { pricing, pricingByHash, burden, pilotBurden, reservations, files }
 }
 export async function configure(root, pricing, now = Date.now()) {
   validatePricing(pricing, now)
@@ -355,6 +368,12 @@ export async function status(root) {
         (id) => !s.files.includes(`${id}.settlement.json`),
       ).length,
       pricingConfigured: !!s.pricing,
+      pilot: {
+        id: PILOT_ID,
+        ceilingUsd: usd(PILOT_CEILING),
+        burdenUsd: usd(s.pilotBurden),
+        remainingUsd: usd(PILOT_CEILING - s.pilotBurden),
+      },
     }
   })
 }
@@ -372,6 +391,84 @@ export function prepare(
     task?.stage === 'llm_evidence_research' && task.model === MODEL && task.kind === 'description',
     'Current planner disposition does not permit Luna research',
   )
+  return prepareRequest(task, inventory, dispositions, evidence, maxOutputTokens, now)
+}
+
+/** Separate research scheduling: never changes completion tasks or releases their holds. */
+export function prepareInvestigation(
+  inventory,
+  dispositions,
+  taskId,
+  evidence,
+  maxOutputTokens,
+  now = Date.now(),
+) {
+  planCorpusCompletion(inventory) // Validate the original inventory without manufacturing gaps.
+  requireThat(
+    Array.isArray(dispositions) && dispositions.length <= inventory.length * 3,
+    'Bounded investigation dispositions required',
+  )
+  const seen = new Set()
+  const byId = new Map(inventory.map((row) => [row.id, row]))
+  for (const d of dispositions) {
+    const row = byId.get(typeof d?.taskId === 'string' ? d.taskId.split(':')[0] : '')
+    requireThat(
+      exact(d, [
+        'version',
+        'taskId',
+        'fingerprint',
+        'kind',
+        'nonLlmStatus',
+        'checkedAt',
+        'basis',
+      ]) &&
+        d.version === 1 &&
+        INVESTIGATION_KINDS.includes(d.kind) &&
+        !seen.has(d.taskId) &&
+        row &&
+        d.taskId === `${row.id}:investigation:${d.kind}` &&
+        row.fingerprint === d.fingerprint &&
+        ['not_attempted', 'failed', 'candidate', 'complete_unresolved'].includes(d.nonLlmStatus) &&
+        typeof d.basis === 'string' &&
+        !!d.basis.trim() &&
+        d.basis.length <= 2000 &&
+        timestamp(d.checkedAt, now, 1),
+      'Current fingerprint-bound non-LLM investigation disposition required',
+    )
+    seen.add(d.taskId)
+  }
+  const d = dispositions.find((d) => d.taskId === taskId)
+  requireThat(
+    d?.nonLlmStatus === 'complete_unresolved',
+    'Completed unresolved non-LLM investigation required; failures are not absence',
+  )
+  const row = byId.get(d.taskId.split(':')[0])
+  return prepareRequest(
+    {
+      id: d.taskId,
+      fingerprint: row.fingerprint,
+      title: row.title,
+      author: row.author,
+      isbns: row.isbns,
+    },
+    inventory,
+    dispositions,
+    evidence,
+    maxOutputTokens,
+    now,
+    d.kind,
+  )
+}
+
+function prepareRequest(
+  task,
+  inventory,
+  dispositions,
+  evidence,
+  maxOutputTokens,
+  now,
+  kind = 'description',
+) {
   requireThat(
     exact(evidence, [
       'version',
@@ -415,15 +512,19 @@ export function prepare(
     store: false,
     truncation: 'disabled',
     max_output_tokens: maxOutputTokens,
-    text: researchTextFormat(),
+    text: kind === 'description' ? researchTextFormat() : investigationTextFormat(kind),
     input: [
       {
         role: 'system',
-        content: RESEARCH_PROMPT,
+        content: kind === 'description' ? RESEARCH_PROMPT : INVESTIGATION_PROMPT,
       },
       {
         role: 'user',
-        content: JSON.stringify(researchInput(task.title, task.author, evidence.snippets)),
+        content: JSON.stringify(
+          kind === 'description'
+            ? researchInput(task.title, task.author, evidence.snippets)
+            : investigationInput(kind, task.title, task.author, task.isbns, evidence.snippets),
+        ),
       },
     ],
   }
@@ -502,8 +603,10 @@ export async function reserve(root, prepared, now = Date.now()) {
     )
     const bound = cost(p, p.maxInputTokens, prepared.maxOutputTokens)
     requireThat(s.burden + bound <= CEILING, 'Budget exhausted before network')
+    requireThat(s.pilotBurden + bound <= PILOT_CEILING, 'Pilot budget exhausted before network')
     const r = {
-      version: 1,
+      version: 2,
+      pilotId: PILOT_ID,
       id: prepared.id,
       model: MODEL,
       configHash: prepared.configHash,
@@ -649,9 +752,9 @@ export async function main(args) {
   if (command === 'status' && paths.length === 0) return status(root)
   if (command === 'settle' && paths.length === 1) return settle(root, paths[0])
   if (command === 'review' && paths.length === 1) return review(root, await json(paths[0]))
-  if (command === 'prepare' && paths.length === 6) {
+  if (['prepare', 'prepare-investigation'].includes(command) && paths.length === 6) {
     const [inventory, dispositions, taskId, evidence, outputTokens, output] = paths
-    const prepared = prepare(
+    const prepared = (command === 'prepare' ? prepare : prepareInvestigation)(
       await json(inventory),
       await json(dispositions),
       taskId,
@@ -667,11 +770,11 @@ export async function main(args) {
     }
     return { id: prepared.id, prepared: true, modelCalls: 0, catalogWrites: 0 }
   }
-  if (command === 'run' && paths.length === 5) {
+  if (['run', 'run-investigation'].includes(command) && paths.length === 5) {
     const [inventory, dispositions, taskId, evidence, outputTokens] = paths
     return run(
       root,
-      prepare(
+      (command === 'run' ? prepare : prepareInvestigation)(
         await json(inventory),
         await json(dispositions),
         taskId,
@@ -682,7 +785,7 @@ export async function main(args) {
     )
   }
   throw new Error(
-    'Usage: intake-budget init receipt.json reconciliation.json | configure pricing.json | status | prepare inventory.json dispositions.json taskId evidence.json maxOutputTokens privateOutput.json | run inventory.json dispositions.json taskId evidence.json maxOutputTokens | settle requestId | review privatePrepared.json',
+    'Usage: intake-budget init receipt.json reconciliation.json | configure pricing.json | status | prepare inventory.json dispositions.json taskId evidence.json maxOutputTokens privateOutput.json | run inventory.json dispositions.json taskId evidence.json maxOutputTokens | prepare-investigation inventory.json investigations.json taskId evidence.json maxOutputTokens privateOutput.json | run-investigation inventory.json investigations.json taskId evidence.json maxOutputTokens | settle requestId | review privatePrepared.json',
   )
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

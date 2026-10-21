@@ -10,6 +10,8 @@ import {
   configure,
   status,
   prepare,
+  prepareInvestigation,
+  PILOT_ID,
   reserve,
   run,
   settle,
@@ -161,6 +163,12 @@ test('opening balance is exact, durable, private and usable without pricing', as
     reservations: 0,
     unsettled: 0,
     pricingConfigured: false,
+    pilot: {
+      id: PILOT_ID,
+      ceilingUsd: '5.000000000',
+      burdenUsd: '0.000000000',
+      remainingUsd: '5.000000000',
+    },
   })
   await assert.rejects(reserve(root, prepared(), now), /pricing/)
   await assert.rejects(initialize(root, receipt, reconciliation(), now), /initialized/)
@@ -486,14 +494,14 @@ test('two independent processes cannot reserve the same permanent request identi
   assert.equal(outcomes.filter((x) => x.code === 0).length, 1)
   assert.equal((await status(root)).reservations, 1)
 })
-test('simultaneous different requests cannot overspend the last available headroom', async (t) => {
-  const root = await fixture(t, { ...pricing(), inputUsdPerMillion: '200' })
+test('simultaneous different requests cannot overspend the shared pilot headroom', async (t) => {
+  const root = await fixture(t, { ...pricing(), inputUsdPerMillion: '40' })
   const code = `const {reserve}=await import(${JSON.stringify(moduleUrl)}); try { await reserve(process.argv[1],JSON.parse(process.argv[2]),${now}); } catch {process.exitCode=2}`
   const outcomes = await Promise.all(
     [1, 2].map((n) => child(code, [root, JSON.stringify(prepared(n))]).done),
   )
   assert.equal(outcomes.filter((x) => x.code === 0).length, 1)
-  assert.equal((await status(root)).burdenUsd, '40.741314750')
+  assert.equal((await status(root)).burdenUsd, '24.741314750')
 })
 test('killed process after send cannot replay or release its reservation on restart', async (t) => {
   const root = await fixture(t),
@@ -595,10 +603,215 @@ test('worktrees resolve one shared ledger and CLI exposes no alternate root', as
   assert.ok(!JSON.stringify(preparation).includes('Synthetic'))
   assert.equal((await status(await ledgerRoot(repo))).reservations, 0)
   assert.throws(() => execFileSync(process.execPath, prepareArgs, { cwd: repo, stdio: 'pipe' }))
+  const investigationInput = investigation('contributors')
+  investigationInput.dispositions[0].checkedAt = new Date().toISOString()
+  investigationInput.evidence.checkedAt = new Date().toISOString()
+  investigationInput.evidence.dispositionHash = hash(
+    JSON.stringify(investigationInput.dispositions),
+  )
+  for (const [path, value] of [
+    [inventoryPath, investigationInput.inventory],
+    [dispositionsPath, investigationInput.dispositions],
+    [evidencePath, investigationInput.evidence],
+  ])
+    await writeFile(path, JSON.stringify(value), { mode: 0o600 })
+  const investigationPath = join(repo, 'investigation-prepared.json')
+  const investigationArgs = [
+    cli,
+    'prepare-investigation',
+    inventoryPath,
+    dispositionsPath,
+    investigationInput.taskId,
+    evidencePath,
+    '1000',
+    investigationPath,
+  ]
+  const investigationResult = JSON.parse(
+    execFileSync(process.execPath, investigationArgs, { cwd: worktree, encoding: 'utf8' }),
+  )
+  assert.equal(investigationResult.modelCalls, 0)
+  assert.equal(
+    JSON.parse(await readFile(investigationPath)).body.text.format.name,
+    'intake_contributors_investigation_v3',
+  )
+  assert.equal((await stat(investigationPath)).mode & 0o077, 0)
+  assert.equal((await status(await ledgerRoot(repo))).reservations, 0)
+  assert.throws(() =>
+    execFileSync(process.execPath, investigationArgs, { cwd: repo, stdio: 'pipe' }),
+  )
   assert.throws(() =>
     execFileSync(process.execPath, [cli, 'status', '--root', '/tmp/other-budget'], {
       cwd: repo,
       stdio: 'pipe',
     }),
   )
+})
+
+function investigation(kind = 'identity', n = 1) {
+  const i = input(n)
+  i.inventory[0].issues = ['duplicate_identity']
+  i.taskId = `${i.inventory[0].id}:investigation:${kind}`
+  i.dispositions = [
+    {
+      version: 1,
+      taskId: i.taskId,
+      fingerprint: i.inventory[0].fingerprint,
+      kind,
+      nonLlmStatus: 'complete_unresolved',
+      checkedAt: new Date(now).toISOString(),
+      basis: 'Synthetic deterministic investigation remains unresolved.',
+    },
+  ]
+  i.evidence.inventoryHash = hash(JSON.stringify(i.inventory))
+  i.evidence.dispositionHash = hash(JSON.stringify(i.dispositions))
+  return i
+}
+function investigationPrepared(kind = 'identity', n = 1) {
+  const i = investigation(kind, n)
+  return prepareInvestigation(i.inventory, i.dispositions, i.taskId, i.evidence, 1000, now)
+}
+
+test('held identities can be researched separately without becoming description tasks or save payloads', () => {
+  for (const kind of ['identity', 'edition', 'contributors']) {
+    const i = investigation(kind)
+    const before = JSON.stringify(i)
+    const p = prepareInvestigation(i.inventory, i.dispositions, i.taskId, i.evidence, 1000, now)
+    assert.equal(JSON.parse(p.body.input[1].content).researchKind, kind)
+    assert.equal(p.body.text.format.name, `intake_${kind}_investigation_v3`)
+    assert.equal(JSON.stringify(i), before)
+    assert.ok(!Object.hasOwn(p, 'patch'))
+    assert.throws(
+      () => prepare(i.inventory, [], `${i.inventory[0].id}:description`, i.evidence, 1000, now),
+      /does not permit/,
+    )
+  }
+})
+
+test('investigation scheduling rejects failed, incomplete, stale, mismatched and unpermitted research', () => {
+  for (const mutate of [
+    (i) => {
+      i.dispositions[0].nonLlmStatus = 'failed'
+    },
+    (i) => {
+      i.dispositions[0].nonLlmStatus = 'not_attempted'
+    },
+    (i) => {
+      i.dispositions[0].nonLlmStatus = 'candidate'
+    },
+    (i) => {
+      i.dispositions[0].checkedAt = '2020-01-01T00:00:00Z'
+    },
+    (i) => {
+      i.dispositions[0].fingerprint = 'b'.repeat(32)
+    },
+    (i) => {
+      i.dispositions[0].kind = 'description'
+    },
+    (i) => {
+      i.dispositions.push({ ...i.dispositions[0] })
+    },
+    (i) => {
+      i.evidence.snippets[0].modelInputAllowed = false
+    },
+    (i) => {
+      i.inventory[0].privateNotes = 'Private'
+    },
+  ]) {
+    const i = investigation()
+    mutate(i)
+    assert.throws(() =>
+      prepareInvestigation(i.inventory, i.dispositions, i.taskId, i.evidence, 1000, now),
+    )
+  }
+})
+
+test('new description and investigation requests share one durable pilot with no replay after settlement', async (t) => {
+  const root = await fixture(t)
+  const p = investigationPrepared()
+  const outcome = await run(root, p, {
+    apiKey: 'test',
+    now: () => now,
+    fetcher: async () => new Response(JSON.stringify(response())),
+  })
+  assert.equal(outcome.research.saveAllowed, false)
+  assert.equal(outcome.research.state, 'held')
+  assert.equal((await status(root)).pilot.burdenUsd, '0.000500000')
+  assert.equal((await status(root)).burdenUsd, '20.739814750')
+  const reservation = JSON.parse(await readFile(join(root, `${p.id}.reservation.json`)))
+  assert.equal(reservation.version, 2)
+  assert.equal(reservation.pilotId, PILOT_ID)
+  await assert.rejects(
+    reserve(root, { ...p, configHash: hash(JSON.stringify(p.body)) }, now),
+    /no replay/,
+  )
+  await reserve(root, prepared(2), now)
+  assert.equal((await status(root)).pilot.burdenUsd, '0.102500000')
+})
+
+test('pilot blocks before network while the original global ceiling remains intact', async (t) => {
+  const root = await fixture(t, { ...pricing(), inputUsdPerMillion: '60' })
+  let calls = 0
+  await assert.rejects(
+    run(root, investigationPrepared(), {
+      apiKey: 'test',
+      now: () => now,
+      fetcher: async () => {
+        calls++
+        return new Response('{}')
+      },
+    }),
+    /Pilot budget exhausted/,
+  )
+  assert.equal(calls, 0)
+  assert.equal((await status(root)).reservations, 0)
+  assert.equal((await status(root)).remainingUsd, '29.260685250')
+})
+
+test('historical v1 reservation is still consumed and charged globally without resetting the pilot', async (t) => {
+  const root = await fixture(t)
+  const p = prepared()
+  const r = await reserve(root, p, now)
+  // Simulate the immutable format written by the preceding version; this isolated test ledger
+  // has no settlement to rewrite. The CLI offers no conversion or removal operation.
+  const legacy = { ...r, version: 1 }
+  delete legacy.pilotId
+  await writeFile(join(root, `${p.id}.reservation.json`), JSON.stringify(legacy), { mode: 0o600 })
+  assert.equal((await status(root)).burdenUsd, '20.841314750')
+  assert.equal((await status(root)).pilot.burdenUsd, '0.000000000')
+  await assert.rejects(reserve(root, p, now), /no replay/)
+})
+
+test('global headroom can block below the independent pilot ceiling', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'intake-global-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const opening = JSON.stringify({ model: 'gpt-6-luna', conservativeSpentTotalUsd: 49.95 })
+  await initialize(
+    root,
+    opening,
+    { ...reconciliation(), receiptSha256: hash(opening), openingBurdenUsd: '49.95' },
+    now,
+  )
+  await configure(root, pricing(), now)
+  await assert.rejects(reserve(root, prepared(), now), /Budget exhausted/)
+  assert.equal((await status(root)).pilot.burdenUsd, '0.000000000')
+})
+
+test('simultaneous requests respect the global headroom even with ample pilot allowance', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'intake-global-race-'))
+  t.after(() => rm(root, { recursive: true, force: true }))
+  const opening = JSON.stringify({ model: 'gpt-6-luna', conservativeSpentTotalUsd: 49.8 })
+  await initialize(
+    root,
+    opening,
+    { ...reconciliation(), receiptSha256: hash(opening), openingBurdenUsd: '49.8' },
+    now,
+  )
+  await configure(root, pricing(), now)
+  const code = `const {reserve}=await import(${JSON.stringify(moduleUrl)}); try { await reserve(process.argv[1],JSON.parse(process.argv[2]),${now}); } catch {process.exitCode=2}`
+  const outcomes = await Promise.all(
+    [1, 2].map((n) => child(code, [root, JSON.stringify(prepared(n))]).done),
+  )
+  assert.equal(outcomes.filter((x) => x.code === 0).length, 1)
+  assert.equal((await status(root)).burdenUsd, '49.902000000')
+  assert.equal((await status(root)).pilot.burdenUsd, '0.102000000')
 })

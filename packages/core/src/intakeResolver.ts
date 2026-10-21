@@ -49,10 +49,24 @@ const creators = (credits: IntakeCredit[]) =>
       (c) => c.scope === 'whole' && ['author', 'playwright', 'original_story'].includes(c.role),
     )
     .map((c) => c.name)
+const identityNames = (request: IntakeEvidenceRequest, credits: IntakeCredit[]) =>
+  request.version === 2 && request.target.identityAnchors
+    ? credits
+        .filter(
+          (c) =>
+            c.scope === 'whole' &&
+            request.target.identityAnchors!.some((a) => a.role === c.role) &&
+            (c.role !== 'editor' || c.basis === 'edition'),
+        )
+        .map((c) => c.name)
+    : creators(credits)
+const requestedNames = (request: IntakeEvidenceRequest) =>
+  request.target.identityAnchors?.map((a) => a.name) ?? request.target.contributors
 const ambiguousName = (name: string): boolean => {
   const parts = name.split(',').map((p) => p.trim())
   const ordered = parts.length === 2 ? `${parts[1]} ${parts[0]}` : name
   const words = ordered.match(/\p{L}+/gu) ?? []
+  if (words.length === 1 && /^\p{Script=Latin}$/u.test(words[0]!)) return true
   return words.length > 1 && words.slice(0, -1).every((w) => w.length === 1)
 }
 const strongSource = (o: IntakeObservation) =>
@@ -100,16 +114,44 @@ function identityComparisonReasons(
   const target = request.target
   const record = o.identity
   if (!record) return ['identity_incomplete']
-  const names = creators(record.contributors)
+  const names = identityNames(request, record.contributors)
   if (!names.length || !/[\p{L}\p{N}]/u.test(record.title) || names.some((n) => !/\p{L}/u.test(n)))
     return ['identity_incomplete']
   // An initialed secondary creator does not erase a separately named full creator. Initial-only
   // identity anchors still cannot establish a match; observed credits never expand initials.
-  if (names.every(ambiguousName) || target.contributors?.some(ambiguousName))
+  if (names.every(ambiguousName) || requestedNames(request)?.some(ambiguousName))
     return ['ambiguous_name']
+  if (
+    target.identityAnchors?.some(
+      (a) =>
+        !record.contributors.some(
+          (c) =>
+            c.scope === 'whole' &&
+            c.role === a.role &&
+            nameKey(c.name) === nameKey(a.name) &&
+            (c.role !== 'editor' || (c.basis === 'edition' && record.scope === 'edition')),
+        ),
+    )
+  )
+    return ['responsibility_unreviewed']
+  if (
+    request.version === 2 &&
+    record.contributors.some((c) => c.scope === 'whole' && c.role === 'unknown')
+  )
+    return ['responsibility_unreviewed']
   const isbn = normalizeIsbn(target.isbn ?? '')
   if (target.isbn && !isbn) return ['invalid_isbn']
-  if (!isbn && (!target.title || !target.contributors?.length)) return ['identity_incomplete']
+  if (!isbn && (!target.title || !requestedNames(request)?.length)) return ['identity_incomplete']
+  if (
+    target.editionLocator &&
+    (record.scope !== 'edition' ||
+      record.isbns.length ||
+      record.editionLocator?.provider !== target.editionLocator.provider ||
+      record.editionLocator?.recordId !== target.editionLocator.recordId ||
+      o.source.provider !== target.editionLocator.provider ||
+      o.source.recordId !== target.editionLocator.recordId)
+  )
+    return ['edition_unresolved']
   const source = {
     title: record.title,
     subtitle: record.subtitle,
@@ -119,7 +161,7 @@ function identityComparisonReasons(
   }
   // An unselected sibling edition may corroborate work identity, but cannot supply edition fields.
   const compared = !isbn ? { ...source, scope: 'work' as const } : source
-  const authors = target.contributors?.length ? target.contributors : [undefined]
+  const authors = requestedNames(request)?.length ? requestedNames(request)! : [undefined]
   if (
     !authors.every((author) => admitSourceRecord({ title: target.title, author, isbn }, compared))
   ) {
@@ -134,7 +176,7 @@ function identityComparisonReasons(
   }
   if (
     (target.title && !titleFormattingSafe(target.title, record)) ||
-    target.contributors?.some((author) => !names.some((n) => nameKey(n) === nameKey(author)))
+    requestedNames(request)?.some((author) => !names.some((n) => nameKey(n) === nameKey(author)))
   )
     return ['identity_mismatch']
   return []
@@ -234,8 +276,8 @@ function titleDiagnostics(request: IntakeEvidenceRequest, o: IntakeObservation) 
       r.scope === 'edition' &&
       r.isbns.length > 0 &&
       r.isbns.every((value) => normalizeIsbn(value) === isbn) &&
-      !!t.contributors?.length &&
-      !t.contributors.some(ambiguousName)
+      !!requestedNames(request)?.length &&
+      !requestedNames(request)!.some(ambiguousName)
     return editionContext
       ? ({ title: 'formatting', titleDetail: 'edition_formatting' } as const)
       : ({ title: 'mismatch', titleDetail: 'unconfirmed_edition_formatting' } as const)
@@ -259,7 +301,7 @@ function titleDiagnostics(request: IntakeEvidenceRequest, o: IntakeObservation) 
 export function intakeIdentityDiagnostics(request: IntakeEvidenceRequest, o: IntakeObservation) {
   const r = o.identity,
     t = request.target
-  const names = r ? creators(r.contributors) : []
+  const names = r ? identityNames(request, r.contributors) : []
   const isbn = normalizeIsbn(t.isbn ?? '')
   return {
     responsibility:
@@ -274,10 +316,21 @@ export function intakeIdentityDiagnostics(request: IntakeEvidenceRequest, o: Int
           : r.isbns.every((x) => normalizeIsbn(x) === isbn)
             ? 'exact'
             : 'conflict',
-    contributors: (t.contributors ?? []).map((name) => {
+    contributors: (requestedNames(request) ?? []).map((name, index) => {
+      const anchor = t.identityAnchors?.[index]
+      const relevantNames = anchor
+        ? (r?.contributors
+            .filter(
+              (c) =>
+                c.scope === 'whole' &&
+                c.role === anchor.role &&
+                (c.role !== 'editor' || c.basis === 'edition'),
+            )
+            .map((c) => c.name) ?? [])
+        : names
       if (ambiguousName(name)) return 'ambiguous'
-      if (names.some((n) => n === name)) return 'exact'
-      if (names.some((n) => nameKey(n) === nameKey(name))) return 'formatting'
+      if (relevantNames.some((n) => n === name)) return 'exact'
+      if (relevantNames.some((n) => nameKey(n) === nameKey(name))) return 'formatting'
       const other = r?.contributors.filter((c) => nameKey(c.name) === nameKey(name)) ?? []
       if (other.some((c) => c.role === 'unknown')) return 'unknown_role'
       if (other.some((c) => c.scope === 'part')) return 'part_only'
@@ -288,21 +341,43 @@ export function intakeIdentityDiagnostics(request: IntakeEvidenceRequest, o: Int
   }
 }
 
-function sameObservedWork(a: IntakeObservation, b: IntakeObservation, isbn: string): boolean {
+function sameObservedWork(
+  a: IntakeObservation,
+  b: IntakeObservation,
+  isbn: string,
+  request: IntakeEvidenceRequest,
+): boolean {
   const agrees = (left: IntakeObservation, right: IntakeObservation): boolean => {
     const l = left.identity!
     const r = right.identity!
     const title = l.subtitle ? `${l.title} ${l.subtitle}` : l.title
     if (!titleFormattingSafe(title, r)) return false
-    return creators(l.contributors).every(
+    const names = (credits: IntakeCredit[]) => creators(credits)
+    // A union of creator/editor names would conceal swapped responsibility roles.
+    for (const role of request.version === 2
+      ? (['author', 'playwright', 'original_story', 'editor'] as const)
+      : []) {
+      const roleNames = (credits: IntakeCredit[]) =>
+        credits
+          .filter(
+            (c) =>
+              c.scope === 'whole' &&
+              c.role === role &&
+              (role !== 'editor' || c.basis === 'edition'),
+          )
+          .map((c) => nameKey(c.name))
+          .sort()
+      if (stable(roleNames(l.contributors)) !== stable(roleNames(r.contributors))) return false
+    }
+    return names(l.contributors).every(
       (author) =>
-        creators(r.contributors).some((n) => nameKey(n) === nameKey(author)) &&
+        names(r.contributors).some((n) => nameKey(n) === nameKey(author)) &&
         admitSourceRecord(
           { title, author, isbn },
           {
             title: r.title,
             subtitle: r.subtitle,
-            authors: creators(r.contributors),
+            authors: names(r.contributors),
             scope: isbn ? r.scope : 'work',
             isbns: r.isbns,
           },
@@ -333,7 +408,7 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
   // surname-first/descriptive-title variants). A query naming one shared coauthor cannot hide
   // competing complete creator sets, even if both candidates separately match that query.
   const competing = matches.some((a, i) =>
-    matches.slice(i + 1).some((b) => !sameObservedWork(a, b, isbn)),
+    matches.slice(i + 1).some((b) => !sameObservedWork(a, b, isbn, request)),
   )
   const isbnContradiction =
     !!isbn &&
@@ -347,18 +422,37 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
   const workReasons: IntakeReviewReason[] = []
   if (request.existing.title !== undefined || request.existing.contributors !== undefined) {
     const existingNames = request.existing.contributors
-      ? creators(request.existing.contributors)
-      : request.target.contributors
+      ? identityNames(request, request.existing.contributors)
+      : requestedNames(request)
     const existingRequest: IntakeEvidenceRequest = {
       ...request,
       target: {
         ...request.target,
         title: request.existing.title ?? request.target.title,
-        contributors: existingNames,
+        ...(request.target.identityAnchors
+          ? {
+              identityAnchors: request.existing.contributors
+                ? request.existing.contributors
+                    .filter(
+                      (c) =>
+                        c.scope === 'whole' &&
+                        (['author', 'playwright', 'original_story'].includes(c.role) ||
+                          request.target.identityAnchors!.some((a) => a.role === c.role)),
+                    )
+                    .map((c) => ({
+                      name: c.name,
+                      role: c.role as NonNullable<
+                        IntakeEvidenceRequest['target']['identityAnchors']
+                      >[number]['role'],
+                    }))
+                : request.target.identityAnchors,
+            }
+          : { contributors: existingNames }),
       },
     }
     if (
       (request.existing.contributors !== undefined && !existingNames?.length) ||
+      request.existing.contributors?.some((c) => c.scope === 'whole' && c.role === 'unknown') ||
       matches.some((o) => intakeIdentityReviewReasons(existingRequest, o).length > 0)
     )
       workReasons.push('existing_identity_conflict')
@@ -374,9 +468,12 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
   const editionMatches = matches.filter(
     (o) =>
       o.identity!.scope === 'edition' &&
-      !!isbn &&
-      o.identity!.isbns.length > 0 &&
-      o.identity!.isbns.every((x) => normalizeIsbn(x) === isbn),
+      (isbn
+        ? o.identity!.isbns.length > 0 && o.identity!.isbns.every((x) => normalizeIsbn(x) === isbn)
+        : !!request.target.editionLocator &&
+          !o.identity!.isbns.length &&
+          o.identity!.editionLocator?.provider === request.target.editionLocator.provider &&
+          o.identity!.editionLocator?.recordId === request.target.editionLocator.recordId),
   )
   const editionReasons: IntakeReviewReason[] = []
   if (!workResolved || !editionMatches.length || !supported(editionMatches))
@@ -468,8 +565,12 @@ export function resolveIntakeEvidence(input: unknown): IntakeResolution {
       reasons: unique(workReasons),
     },
     edition: {
-      state: editionResolved ? 'resolved' : request.target.isbn ? 'review' : 'unknown',
-      isbn: editionResolved ? isbn : null,
+      state: editionResolved
+        ? 'resolved'
+        : request.target.isbn || request.target.editionLocator
+          ? 'review'
+          : 'unknown',
+      isbn: editionResolved && isbn ? isbn : null,
       reasons: unique(editionReasons),
     },
     acquisition: {

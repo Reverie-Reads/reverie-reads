@@ -456,6 +456,12 @@ corpus_metadata_review_events
                     (id pk, work_id fk→works restrict, action, previous_value/next_value jsonb,
                      editor_id fk→profiles null, created_at)
                      -- administrator-only assessments; never personal backup/offline state
+corpus_metadata_evidence_reviews
+                    (id pk, work_id fk→works restrict, edition_id fk→corpus_editions restrict null,
+                     reviewer_id fk→profiles set null, expected_fingerprint, draft jsonb,
+                     previous_value jsonb, applied_at)
+                     -- collective immutable applied fact/source-use receipt; admin RPCs only;
+                     -- excluded from reader backup/restore and offline caches
 corpus_admins        (user_id pk fk→profiles, granted_at, granted_by fk→profiles)
                      -- service-managed authorization; never restored from a reader backup
 corpus_cover_recovery_marks

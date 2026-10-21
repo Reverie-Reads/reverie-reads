@@ -159,20 +159,48 @@ export function parseIntakeEvidence(input: unknown): IntakeEvidenceRequest {
   }
   if (
     !keys(input, ['version', 'targetFingerprint', 'asOf', 'target', 'existing', 'observations']) ||
-    input.version !== 1 ||
+    ![1, 2].includes(input.version as number) ||
     !fingerprint(input.targetFingerprint) ||
     !timestamp(input.asOf)
   )
     return fail()
   const t = input.target
   if (
-    !keys(t, [], ['title', 'contributors', 'isbn', 'format', 'language']) ||
+    !keys(
+      t,
+      [],
+      [
+        'title',
+        'contributors',
+        'isbn',
+        'format',
+        'language',
+        ...(input.version === 2 ? ['identityAnchors', 'editionLocator'] : []),
+      ],
+    ) ||
     !Object.keys(t).length ||
     (t.title !== undefined && !text(t.title)) ||
     (t.contributors !== undefined && (!stringList(t.contributors) || !t.contributors.length)) ||
     (t.isbn !== undefined && !text(t.isbn, 100)) ||
     (t.format !== undefined && !oneOf(t.format, formats)) ||
     (t.language !== undefined && !text(t.language, 100))
+  )
+    return fail()
+  const locator = (v: unknown) =>
+    keys(v, ['provider', 'recordId']) && text(v.provider, 100) && text(v.recordId, 200)
+  if (
+    (t.editionLocator !== undefined && (!locator(t.editionLocator) || t.isbn !== undefined)) ||
+    (t.identityAnchors !== undefined &&
+      (!Array.isArray(t.identityAnchors) ||
+        !t.identityAnchors.length ||
+        t.identityAnchors.length > 40 ||
+        t.identityAnchors.some(
+          (a) =>
+            !keys(a, ['name', 'role']) ||
+            !text(a.name) ||
+            !oneOf(a.role, ['author', 'editor', 'playwright', 'original_story']),
+        ) ||
+        t.contributors !== undefined))
   )
     return fail()
   if (
@@ -235,12 +263,21 @@ export function parseIntakeEvidence(input: unknown): IntakeEvidenceRequest {
     }
     const identity = o.identity
     if (
-      !keys(identity, ['title', 'contributors', 'scope', 'isbns'], ['subtitle']) ||
+      !keys(
+        identity,
+        ['title', 'contributors', 'scope', 'isbns'],
+        ['subtitle', ...(input.version === 2 ? ['editionLocator'] : [])],
+      ) ||
       !text(identity.title) ||
       (identity.subtitle !== undefined && !text(identity.subtitle)) ||
       !credits(identity.contributors) ||
       !oneOf(identity.scope, ['work', 'edition']) ||
       !stringList(identity.isbns, 20)
+    )
+      return fail()
+    if (
+      identity.editionLocator !== undefined &&
+      (!locator(identity.editionLocator) || identity.scope !== 'edition')
     )
       return fail()
     const claims = new Set<string>()
