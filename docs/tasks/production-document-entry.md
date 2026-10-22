@@ -14,7 +14,8 @@ explicit browser-test appearance entry.
 `assert-production-documents.mjs` runs on the generated output after every ordinary build. It refuses
 root JavaScript index files, renders the compiled Nitro HTML template, and checks that its local
 module entries exist under `assets/` and contain JavaScript rather than HTML. CI builds with
-`VERCEL=1`, so the same check also invokes the compiled Vercel handler for `/`, `/auth`, `/library`
+`VERCEL=1` and explicit `NITRO_PRESET=vercel` (GitHub Actions otherwise wins platform
+autodetection), so the same check also invokes the compiled Vercel handler for `/`, `/auth`, `/library`
 and a deliberately invalid bookstore query. The query must remain an API error, not SPA fallback.
 Network access is refused throughout those probes; this does not exercise provider acquisition,
 Supabase, authenticated writes or Workflow execution.
@@ -30,3 +31,9 @@ actual staged Vercel deployment still needs an HTML content-type/doctype check a
 client assets, app-route fallback and preserved API routing before production promotion. HTTP 200
 alone is insufficient. Public changes land first; the private overlay follows through its normal
 reviewed sync. This change does not alter intake, shared metadata or personal data.
+
+The first hosted gate selected the Node preset despite `VERCEL=1`, because the runner's GitHub
+provider took precedence. The explicit Nitro preset corrects the test target; the missing Vercel
+artifact refusal is retained. Browser jobs failed before tests when the GHCR-only image override
+was throttled. Restore the pinned CLI's normal registry/fallback selection without changing workers,
+assertion timeouts or retry policy. These failures do not establish browser acceptance.
