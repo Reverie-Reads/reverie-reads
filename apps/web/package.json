@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/assert-dist-clean.mjs",
+    "build": "vite build && node scripts/assert-dist-clean.mjs && node scripts/assert-production-documents.mjs",
     "preview": "vite preview",
     "test": "vitest run && vitest run --config vitest.workflow.config.ts",
     "test:workflow": "vitest run --config vitest.workflow.config.ts",

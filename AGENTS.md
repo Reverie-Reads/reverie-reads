@@ -1258,6 +1258,11 @@ test` outright and only fail `tsc`. This has bitten twice, by two different tool
   appearance entry exists only in that test build; do not import `/src/` from browser tests or
   expose it in an ordinary build. Workflow remains separately tested; monitoring upload is off
   for the browser-test build. Startup and assertion deadlines are unchanged.
+- **Production documents need the production build.** `pnpm build` checks Nitro's rendered HTML,
+  its referenced client assets and root-file collisions. CI builds the Vercel preset and checks
+  the compiled app/API routing without network access. Keep ordinary client entries under `assets/`;
+  an explicit undefined Rollup filename overrides Vite's default and can emit a root `index.js`
+  that shadows HTML. The isolated browser-test build cannot establish production CDN routing.
 - **Pin the Docker engine for the entire local browser lifecycle.** Inside the existing stack
   lock, run reset/test/restore through `scripts/stack-engine.mjs`. It resolves the selected local
   Docker socket once, checks healthy database/API containers and their configured ports, and

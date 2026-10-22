@@ -189,9 +189,12 @@ jobs:
         # typecheck+build runs, and a failure here is legible (a named CI step) rather than buried
         # in a Vercel log a contributor may not open. Overrides the job's local env with a non-local
         # placeholder — assert-dist-clean.mjs enforces under CI and refuses a bundle that bakes a
-        # local Supabase URL; vite.config.ts's own local-URL check is gated on VERCEL specifically
-        # and so doesn't fire here, but the value still has to be non-local for assert-dist-clean.
+        # local Supabase URL. This step also sets VERCEL so Vite's configuration guard and the
+        # production document assertions exercise the Vercel/Nitro output used on deployment.
         env:
+          # Exercise the actual Vercel/Nitro artifact, including production document routing.
+          VERCEL: '1'
+          VERCEL_ENV: preview
           VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
         run: pnpm build

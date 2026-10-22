@@ -129,13 +129,15 @@ export default defineConfig(({ command, mode }) => {
               }
             : undefined,
         output: {
+          // An explicit undefined overrides Vite's asset pattern with Rollup's index.js
+          // default. That file can shadow Nitro's HTML at / on the production CDN.
           entryFileNames:
             mode === 'browser-test'
               ? (chunk) =>
                   chunk.name === 'test-appearance'
                     ? 'assets/test-appearance.js'
                     : 'assets/[name]-[hash].js'
-              : undefined,
+              : 'assets/[name]-[hash].js',
           // Split big, stable vendors into their own cacheable chunks.
           manualChunks: {
             react: ['react', 'react-dom'],
