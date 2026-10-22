@@ -73,3 +73,8 @@ the existing three matrix checks and their retry policy intact. It supplies the 
 the Mac cannot safely launch browsers, without bypassing its capacity refusal or touching its
 personal development data. Temporarily stopped optional local services were restored to their
 original identities and running states; no local database reset was performed.
+
+The dependent browser jobs use `!cancelled()` rather than `always()`: they still publish explicit
+failures when image preparation fails, but a superseded run remains cancellable. The independent
+browser step after SQL assertions uses the same condition. This preserves failure visibility
+without letting an older browser run outlive the concurrency cancellation of its candidate.

@@ -284,7 +284,7 @@ jobs:
     needs: [changes, supabase-images]
     # Keep this condition independent of docs_only so a PR always expands all three matrix entries.
     # Their step-level conditions make a docs-only run a near-empty success with exact check names.
-    if: always() && github.event_name == 'pull_request'
+    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
@@ -377,14 +377,14 @@ jobs:
 
       # The rest runner already paid for the exact migrated database pgTAP needs. This keeps every
       # assertion but removes the duplicate checkout, CLI setup and Supabase startup. The browser
-      # step uses always() so a database assertion failure does not hide its independent result.
+      # step still runs after a database assertion failure, preserving its independent result.
       - name: pgTAP (supabase/tests)
         id: pgtap
         if: needs.changes.outputs.docs_only != 'true' && matrix.project == 'rest'
         run: supabase test db
 
       - name: e2e (${{ matrix.project }})
-        if: always() && needs.changes.outputs.docs_only != 'true' && steps.supabase.outcome == 'success'
+        if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && steps.supabase.outcome == 'success' }}
         run: pnpm --filter @reverie/web e2e --project=${{ matrix.project }}
 
       - name: Upload Playwright traces
@@ -400,7 +400,7 @@ jobs:
   full-browser:
     name: full-browser
     needs: [changes, supabase-images]
-    if: always() && github.event_name == 'pull_request' && needs.changes.outputs.docs_only != 'true' && contains(github.event.pull_request.labels.*.name, 'verify-full-browser')
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.docs_only != 'true' && contains(github.event.pull_request.labels.*.name, 'verify-full-browser') }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:

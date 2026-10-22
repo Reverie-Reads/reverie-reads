@@ -24,7 +24,7 @@ describe('CI workflow topology', () => {
     expect(workflow).toContain('fail-fast: false')
     expect(workflow).toMatch(/- name: e2e\n\s+project: rest\n(?:\s+#.*\n)+\s+timeout: 50/)
     const browser = job('browser')
-    expect(browser).toContain("if: always() && github.event_name == 'pull_request'")
+    expect(browser).toContain("if: ${{ !cancelled() && github.event_name == 'pull_request' }}")
     expect(browser).not.toContain(
       "if: github.event_name == 'pull_request' && needs.changes.outputs.docs_only != 'true'",
     )
@@ -58,7 +58,7 @@ describe('CI workflow topology', () => {
     )
     expect(jobs).toContain('run: supabase test db')
     expect(jobs).toContain(
-      "if: always() && needs.changes.outputs.docs_only != 'true' && steps.supabase.outcome == 'success'",
+      "if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && steps.supabase.outcome == 'success' }}",
     )
   })
 
@@ -100,6 +100,7 @@ describe('CI workflow topology', () => {
       "contains(github.event.pull_request.labels.*.name, 'verify-full-browser')",
     )
     expect(full).toContain("needs.changes.outputs.docs_only != 'true'")
+    expect(full).toContain('!cancelled()')
     expect(full).toContain('E2E_WORKERS: 1')
     expect(full).toContain('pnpm e2e --retries=0')
     expect(full).toContain('supabase start -x studio,vector,edge-runtime,imgproxy')
