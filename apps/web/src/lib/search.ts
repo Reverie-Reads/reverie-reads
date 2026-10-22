@@ -141,7 +141,39 @@ export async function searchEverywhere(q: string, signal?: AbortSignal): Promise
     ...(signal ? { signal } : {}),
   })
   if (error) throw new Error(`search unavailable: ${error.message}`)
-  const results = ((data as { results?: SearchResult[] })?.results ?? []).filter((r) => r?.title)
+  // Only a valid successful empty array establishes an empty lookup. A missing body, malformed
+  // row or withheld Google attribution is an unavailable response, never evidence of absence.
+  const body = data as { results?: unknown; degraded?: unknown; error?: unknown } | null
+  if (
+    !body ||
+    !Array.isArray(body.results) ||
+    body.error !== undefined ||
+    (body.degraded !== undefined && typeof body.degraded !== 'boolean') ||
+    (body.degraded === true && body.results.length === 0) ||
+    !body.results.every(validSearchResult)
+  )
+    throw new Error('search unavailable: invalid or incomplete response')
+  const results = body.results as SearchResult[]
   const sections = partitionSearchResults(results)
   return [...sections.catalog, ...sections.google]
+}
+
+function validSearchResult(value: unknown): value is SearchResult {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const r = value as SearchResult
+  return (
+    ['hardcover', 'google', 'openlibrary'].includes(r.source) &&
+    typeof r.title === 'string' &&
+    !!r.title.trim() &&
+    Array.isArray(r.authors) &&
+    r.authors.every((a) => typeof a === 'string' && !!a.trim()) &&
+    ['cover', 'isbn', 'year'].every((k) => typeof r[k as keyof SearchResult] === 'string') &&
+    [r.isbn10, r.isbn13, r.editionIsbn].every((v) => v === undefined || typeof v === 'string') &&
+    (r.series === undefined || typeof r.series === 'string') &&
+    (r.seriesPosition === undefined ||
+      r.seriesPosition === null ||
+      (typeof r.seriesPosition === 'number' && Number.isFinite(r.seriesPosition))) &&
+    (r.sourceUrl === undefined || typeof r.sourceUrl === 'string') &&
+    (r.source !== 'google' || !!googleBooksResultUrl(r))
+  )
 }

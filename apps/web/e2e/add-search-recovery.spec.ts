@@ -68,29 +68,36 @@ for (const touch of [false, true]) {
     }) => {
       const account = await firstReader(page)
       try {
-        let mode: 'failure' | 'found' | 'empty' = 'failure'
+        let mode: 'failure' | 'found' | 'empty' | 'malformed' = 'failure'
+        let releaseMalformed!: () => void
+        const malformedGate = new Promise<void>((resolve) => {
+          releaseMalformed = resolve
+        })
         const queries: string[] = []
-        await page.route('**/functions/v1/search**', (route) => {
+        await page.route('**/functions/v1/search**', async (route) => {
           queries.push(route.request().postDataJSON().q)
+          if (mode === 'malformed') await malformedGate
           return mode === 'failure'
             ? route.fulfill({ status: 503, json: { error: 'temporary test outage' } })
-            : route.fulfill({
-                json: {
-                  results:
-                    mode === 'empty'
-                      ? []
-                      : [
-                          {
-                            title: 'The Quiet Lantern',
-                            authors: ['Avery Reader'],
-                            source: 'hardcover',
-                            cover: '',
-                            isbn: '',
-                            year: '',
-                          },
-                        ],
-                },
-              })
+            : mode === 'malformed'
+              ? route.fulfill({ json: {} })
+              : route.fulfill({
+                  json: {
+                    results:
+                      mode === 'empty'
+                        ? []
+                        : [
+                            {
+                              title: 'The Quiet Lantern',
+                              authors: ['Avery Reader'],
+                              source: 'hardcover',
+                              cover: '',
+                              isbn: '',
+                              year: '',
+                            },
+                          ],
+                  },
+                })
         })
         const input = page.getByRole('textbox', { name: 'Search for a book' })
         const search = page.getByRole('button', { name: 'Search', exact: true })
@@ -116,6 +123,19 @@ for (const touch of [false, true]) {
         expect(
           (await new AxeBuilder({ page }).include('#add-search-issue').analyze()).violations,
         ).toEqual([])
+        // A 200 response without a result array must use the same honest recovery path.
+        mode = 'malformed'
+        await retry.click()
+        // Observe the pending request before releasing it; the old outage alert cannot satisfy
+        // the next assertion before the malformed response has actually reached the client.
+        await expect(page.getByRole('alert')).toHaveCount(0)
+        releaseMalformed()
+        await expect(page.getByRole('alert')).toContainText('Search is unavailable')
+        await expect(input).toHaveValue('The Quiet Lantern')
+        await expect(
+          page.getByRole('button', { name: 'Add it manually', exact: true }),
+        ).toHaveCount(0)
+        await expect(guide.getByRole('status')).toHaveText('Find a book you know')
         await page.screenshot({
           path: `test-results/add-search-${touch ? 'phone' : 'desktop'}.png`,
           fullPage: true,
@@ -124,7 +144,7 @@ for (const touch of [false, true]) {
         await retry.click()
         await expect(page.getByTestId('add-result')).toContainText('The Quiet Lantern')
         await expect(guide.getByRole('status')).toHaveText('Choose the right book')
-        expect(queries).toEqual(['The Quiet Lantern', 'The Quiet Lantern'])
+        expect(queries).toEqual(['The Quiet Lantern', 'The Quiet Lantern', 'The Quiet Lantern'])
         await expect(page.getByRole('alert')).toHaveCount(0)
 
         mode = 'failure'

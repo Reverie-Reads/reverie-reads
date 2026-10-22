@@ -754,6 +754,8 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
 
 ## Book-data admission
 
+Intake outcome diagnostics stay offline and aggregate-only on explicit export. `intake:replay --aggregate-only` distinguishes successful empty lookups from source failures, identity/role holds, selected-edition gaps and task-specific missing fields. A hold or unselected result is never a deliberate refusal; require explicit reviewer context. Empty lookup counts never prove catalog absence. Real reader coverage and save metrics remain unobserved without a bounded actual observation window. No default reader collection or intake cutover is enabled. See `docs/tasks/intake-outcome-diagnostics.md`.
+
 Shared-catalog completion planning is read-only. `corpus:completion:plan` consumes the private
 inventory projection in `scripts/corpus-completion-inventory.sql`; work-level blanks never select
 an edition or become fill proposals. Preserve stale deferred holds and identity conflicts. A failed
