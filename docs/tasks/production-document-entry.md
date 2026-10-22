@@ -54,7 +54,9 @@ The helper allows only Supabase's ECR/GHCR mirrors, checks content and architect
 and validates both the plan and compressed archive hashes when loading a cache or artifact.
 An integrity failure stops rather than silently fetching a replacement.
 
-The reviewed primary tags satisfy CLI 2.109.0's `PullPolicyMissing` and image-cache checks. See its
+The reviewed primary tags satisfy CLI 2.109.0's `PullPolicyMissing` and image-cache checks. Both
+startup paths explicitly unset setup-cli-inherited registry overrides so those tags remain usable.
+See its
 [service construction](https://github.com/supabase/cli/blob/v2.109.0/apps/cli-go/internal/utils/config.go)
 and [registry resolution](https://github.com/supabase/cli/blob/v2.109.0/apps/cli-go/internal/utils/docker.go).
 Each browser job receives the same image bundle through a same-run artifact, rechecks its content,

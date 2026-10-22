@@ -356,6 +356,9 @@ jobs:
         if: needs.changes.outputs.docs_only != 'true'
         # The reviewed bundle supplies the CLI's primary tags, so its missing-only pull policy
         # and cache inspection do not need registry access in the browser jobs.
+        # Preserve main's explicit removal of any setup-cli-inherited registry override; without
+        # it the CLI can miss the reviewed primary tags and attempt fresh registry downloads.
+        # Keep job/assertion limits, worker count, retries and local Docker settings unchanged.
         # Only studio/vector/edge-runtime reliably exclude via -x on this CLI version — verified by
         # isolated testing, not assumed from the Phase 1 prose. `analytics` (the audit's "logflare")
         # does NOT actually exclude; passing it is a harmless no-op, kept out here rather than left
@@ -369,7 +372,7 @@ jobs:
         # directly from the spec (with DEV_EMAIL overridden) in the a11y matrix entry.
         run: |
           set -euo pipefail
-          supabase start -x studio,vector,edge-runtime,imgproxy
+          env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start -x studio,vector,edge-runtime,imgproxy
           node scripts/ci-supabase-images.mjs verify-running
 
       # The rest runner already paid for the exact migrated database pgTAP needs. This keeps every
@@ -422,7 +425,7 @@ jobs:
       - name: Start a fresh test database
         run: |
           set -euo pipefail
-          supabase start -x studio,vector,edge-runtime,imgproxy
+          env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start -x studio,vector,edge-runtime,imgproxy
           node scripts/ci-supabase-images.mjs verify-running
       - name: Database assertions
         run: supabase test db

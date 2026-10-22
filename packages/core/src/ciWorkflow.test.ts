@@ -83,6 +83,7 @@ describe('CI workflow topology', () => {
       browser.indexOf('- name: Start Supabase'),
     )
     expect(browser).toContain('node scripts/ci-supabase-images.mjs verify-running')
+    expect(browser).toContain('env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start')
     expect(browser).not.toContain('GHCR_TOKEN:')
     const loader = readFileSync(
       join(__dirname, '../../../.github/actions/load-supabase-images/action.yml'),
@@ -102,6 +103,7 @@ describe('CI workflow topology', () => {
     expect(full).toContain('E2E_WORKERS: 1')
     expect(full).toContain('pnpm e2e --retries=0')
     expect(full).toContain('supabase start -x studio,vector,edge-runtime,imgproxy')
+    expect(full).toContain('env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start')
     expect(full).toContain('node scripts/ci-supabase-images.mjs verify-running')
     expect(full).toContain('run: supabase test db')
     expect(full).not.toContain('db:seed')
