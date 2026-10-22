@@ -1263,6 +1263,14 @@ test` outright and only fail `tsc`. This has bitten twice, by two different tool
   the compiled app/API routing without network access. Keep ordinary client entries under `assets/`;
   an explicit undefined Rollup filename overrides Vite's default and can emit a root `index.js`
   that shadows HTML. The isolated browser-test build cannot establish production CDN routing.
+- **Browser jobs share images, never a database.** `.github/supabase-images.json` pins the native
+  Linux amd64 manifests and image IDs for the CI Supabase CLI. One acquisition job validates and
+  shares only public Docker images; each consumer rechecks the archive and image content before
+  starting its own fresh stack. Cache corruption or identity drift fails visibly. Keep GitHub's
+  cache branch isolation and exact keys. When local capacity refuses, apply `verify-full-browser`
+  to the PR before pushing its candidate to request the complete dedicated-runner suite with one
+  worker and zero retries. That is hosted evidence; it never waives local capacity admission or
+  changes the ordinary matrix's retry policy. Update the CLI and reviewed image plan together.
 - **Pin the Docker engine for the entire local browser lifecycle.** Inside the existing stack
   lock, run reset/test/restore through `scripts/stack-engine.mjs`. It resolves the selected local
   Docker socket once, checks healthy database/API containers and their configured ports, and

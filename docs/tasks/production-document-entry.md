@@ -44,3 +44,30 @@ Hub lacked the required Kong image. The browser job now authenticates the GHCR f
 ephemeral read-only package token, which the pinned CLI reads from Docker's registry configuration.
 It logs out on exit and preserves the default fallback order. This is a correction to registry
 access, not a retry of unchanged infrastructure or a relaxation of the browser checks.
+
+Authentication alone did not remove the shared registry limit: run 39839477124 passed the code
+gate, database assertions and desktop/mobile suites, but accessibility never reached the browser.
+Its failed acquisition remains evidence. CI now acquires public images once per workflow, in
+sequence, by immutable Linux amd64 manifests. The committed image IDs were resolved from Supabase's
+published GHCR manifests for CLI 2.109.0 on October 22. The plan includes the pgTAP runner too.
+The helper allows only Supabase's ECR/GHCR mirrors, checks content and architecture before tagging,
+and validates both the plan and compressed archive hashes when loading a cache or artifact.
+An integrity failure stops rather than silently fetching a replacement.
+
+The reviewed primary tags satisfy CLI 2.109.0's `PullPolicyMissing` and image-cache checks. See its
+[service construction](https://github.com/supabase/cli/blob/v2.109.0/apps/cli-go/internal/utils/config.go)
+and [registry resolution](https://github.com/supabase/cli/blob/v2.109.0/apps/cli-go/internal/utils/docker.go).
+Each browser job receives the same image bundle through a same-run artifact, rechecks its content,
+and starts a fresh database. No containers, database volumes, local development state or credentials
+are archived. The exact cache key includes the reviewed plan, helper and project configuration;
+there are no broad restore keys or overrides of GitHub's cache permissions. Main warms the shared
+default-branch cache. A warm bundle needs no registry login or acquisition.
+
+The earlier decision against image caching measured speed; repeated download refusals demonstrate
+an availability need. Cold and warm behavior still require hosted verification. The same change
+adds an explicit `verify-full-browser` PR label: apply it before pushing the candidate to request
+one complete hosted run at one worker with `--retries=0`, including a fresh database. This leaves
+the existing three matrix checks and their retry policy intact. It supplies the complete gate when
+the Mac cannot safely launch browsers, without bypassing its capacity refusal or touching its
+personal development data. Temporarily stopped optional local services were restored to their
+original identities and running states; no local database reset was performed.
