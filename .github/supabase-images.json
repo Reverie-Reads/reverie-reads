@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "cliVersion": "2.109.0",
+  "platform": "linux/amd64",
+  "images": [
+    {
+      "name": "postgres",
+      "tag": "17.6.1.140",
+      "manifestDigest": "sha256:18c3a1c6ed24efccb5ca9c0673722fe96bbbf126b2a72afb78850b58fecce70d",
+      "imageId": "sha256:2e8e2fd7f359e80e88d6bd0ce4d41ff3d1ca62bae1ca71f5fdbbf2e1aa70ae85"
+    },
+    {
+      "name": "kong",
+      "tag": "2.8.1",
+      "manifestDigest": "sha256:e21b0b793879ab96720ed4188f9441260273f4bf775bcbff8d435e019ffb759a",
+      "imageId": "sha256:3cefb958bcd694597b65adc00053a762b1f9a6df3c6031af528d052d75a64e1a"
+    },
+    {
+      "name": "gotrue",
+      "tag": "v2.192.0",
+      "manifestDigest": "sha256:288d880ebc80a1cb5ad52dc7d12328f76e9c90127003306864a270118bba00a8",
+      "imageId": "sha256:96be953b078582b242d6fde6a5e8ab545f5d4ef12fbaf51893ae7e4c760775f0"
+    },
+    {
+      "name": "mailpit",
+      "tag": "v1.30.2",
+      "manifestDigest": "sha256:f0b0ed33c8cf53aac0dd004abbe245c83420a7ae44914e25178f7791dec5723a",
+      "imageId": "sha256:cdb09a322d77e0b233727104beaafb4b7b503fd3badce6a6d9e58fd9993025f6"
+    },
+    {
+      "name": "realtime",
+      "tag": "v2.112.1",
+      "manifestDigest": "sha256:9e12cbb2488d81db9ceadc65b23dba23b4568501af047068547e5c31e6bca438",
+      "imageId": "sha256:8e95e34baebab6339ca17686e07bec63e17748e46b115aeb0d5972b8bc1b29c1"
+    },
+    {
+      "name": "postgrest",
+      "tag": "v14.14",
+      "manifestDigest": "sha256:a677dc2b2c8cd5a86952fef538c2e98aa096c80bbf634b83ac4d8bea71dde7fd",
+      "imageId": "sha256:de2f4d042d5efb5d1362d98c11e5e0773bedc1376bafcdb4ec863fc18d25f52d"
+    },
+    {
+      "name": "storage-api",
+      "tag": "v1.61.7",
+      "manifestDigest": "sha256:cd2b5dacbd07a92cbb3678f709726e90d31ca85805b528d92a90bf9f4e40c66b",
+      "imageId": "sha256:83b5484f9599d2997803241b0b89fb5c4cf53168aecd93ab5f498ccd79a72b8c"
+    },
+    {
+      "name": "postgres-meta",
+      "tag": "v0.96.6",
+      "manifestDigest": "sha256:b9edad6fff2d4fb991ecd57837dbe3f21d2efa0f0ccb186f6ccf0e2d57192fed",
+      "imageId": "sha256:c496f84f24947250e706f03aca4af956a099d8f7e5521279f47e4077964d339a"
+    },
+    {
+      "name": "logflare",
+      "tag": "1.45.6",
+      "manifestDigest": "sha256:5076d89add623c47a15c8e5402d52a51f3fbe16b1699ee03d06e9a58bc561674",
+      "imageId": "sha256:8a8678ce0718f3c4583965cc353e2fa0186d2223d7437795a26fc4c43cb6e824"
+    },
+    {
+      "name": "pg_prove",
+      "tag": "3.36",
+      "manifestDigest": "sha256:715739e7fdd07a8631c36ea2f1c88fc0144f99a8f5eaa6c3a9799be377f94f2c",
+      "imageId": "sha256:951c67c97a83803f250e88e189cc8caff3d648e6f59aa52a546b690b35cdedcc"
+    }
+  ]
+}

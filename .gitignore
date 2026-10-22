@@ -77,3 +77,5 @@ corpus-dump/
 # Local visual review evidence and browser automation sessions.
 /output/
 /.playwright-cli/
+# Public Docker images prepared for isolated CI; never source or database backups.
+.ci-supabase-images/

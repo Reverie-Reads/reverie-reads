@@ -189,9 +189,13 @@ jobs:
         # typecheck+build runs, and a failure here is legible (a named CI step) rather than buried
         # in a Vercel log a contributor may not open. Overrides the job's local env with a non-local
         # placeholder — assert-dist-clean.mjs enforces under CI and refuses a bundle that bakes a
-        # local Supabase URL; vite.config.ts's own local-URL check is gated on VERCEL specifically
-        # and so doesn't fire here, but the value still has to be non-local for assert-dist-clean.
+        # local Supabase URL. This step also sets VERCEL so Vite's configuration guard and the
+        # production document assertions exercise the Vercel/Nitro output used on deployment.
         env:
+          # Exercise the actual Vercel/Nitro artifact, including production document routing.
+          VERCEL: '1'
+          VERCEL_ENV: preview
+          NITRO_PRESET: vercel
           VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
         run: pnpm build
@@ -221,16 +225,66 @@ jobs:
           tar -xzf "${RUNNER_TEMP}/${archive}" -C "${RUNNER_TEMP}" gitleaks
           "${RUNNER_TEMP}/gitleaks" git --config .gitleaks.toml --redact --no-color --verbose .
 
+  # Acquire reviewed public images once. Matrix jobs receive only images, never a database or
+  # Docker volumes, and still create independent fresh stacks. Warm the default-branch cache on
+  # main; PR cache isolation remains GitHub's default, with no broad restore keys or write override.
+  supabase-images:
+    name: supabase-images
+    needs: [changes]
+    if: needs.changes.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.109.0
+      - name: Cache reviewed public images
+        id: image-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/supabase-images
+          key: supabase-images-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/supabase-images.json', 'scripts/ci-supabase-images.mjs', 'supabase/config.toml') }}
+      - name: Acquire or validate the image bundle
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_USER: ${{ github.actor }}
+          IMAGE_BUNDLE: ${{ runner.temp }}/supabase-images
+        run: |
+          set -euo pipefail
+          if [ ! -e "$IMAGE_BUNDLE/images.tar.zst" ] && [ ! -e "$IMAGE_BUNDLE/images.json" ]; then
+            trap 'docker logout ghcr.io >/dev/null 2>&1' EXIT
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GHCR_USER" --password-stdin
+          fi
+          node scripts/ci-supabase-images.mjs prepare "$IMAGE_BUNDLE"
+      - name: Verify the warm-bundle path after cold acquisition
+        if: steps.image-cache.outputs.cache-hit != 'true'
+        run: node scripts/ci-supabase-images.mjs prepare "${RUNNER_TEMP}/supabase-images"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: supabase-images
+          path: ${{ runner.temp }}/supabase-images/
+          compression-level: 0
+          retention-days: 1
+          overwrite: true
+          if-no-files-found: error
+
   # One definition, three parallel runners. A matrix removes the triplicated setup without
   # serialising the projects: rest remains the critical path, while mobile and accessibility keep
   # their own status checks, databases, timeouts and trace artifacts. fail-fast=false preserves all
   # three diagnostic results when one project fails.
   browser:
     name: ${{ matrix.name }}
-    needs: [changes]
+    needs: [changes, supabase-images]
     # Keep this condition independent of docs_only so a PR always expands all three matrix entries.
     # Their step-level conditions make a docs-only run a near-empty success with exact check names.
-    if: github.event_name == 'pull_request'
+    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
     strategy:
       fail-fast: false
       matrix:
@@ -257,6 +311,8 @@ jobs:
             artifact: playwright-traces-mobile
     runs-on: ubuntu-latest
     timeout-minutes: ${{ matrix.timeout }}
+    permissions:
+      contents: read
     env:
       # The LOCAL Supabase stack's well-known demo values — already hardcoded in every e2e spec
       # file (the same values the committed apps/web/.env now carries), not a secret. Deliberately the
@@ -286,24 +342,22 @@ jobs:
       # Cache + CDN-only download via ONE composite (.github/actions/setup-browsers) — the
       # apt-free install path, its history, and the no-fallback ruling all live there. apt is
       # deliberately OUT of the browser path; do not reintroduce --with-deps/install-deps here.
-      # Deliberately NOT caching the Supabase Docker images (docs/archive/task-ci.md item 4's
-      # audit found no evidence it would help, and GitHub's cache would store multiple GB and
-      # restore near the pull cost anyway).
+      # The former no-image-cache decision predates repeated registry outages. Only public,
+      # content-pinned images are now shared; each job still starts with no database volumes.
       - name: Set up Playwright browsers (cached, apt-free)
         if: needs.changes.outputs.docs_only != 'true'
         uses: ./.github/actions/setup-browsers
 
-      - uses: supabase/setup-cli@v1
+      - uses: ./.github/actions/load-supabase-images
         if: needs.changes.outputs.docs_only != 'true'
-        with:
-          version: 2.109.0
 
       - name: Start Supabase
         id: supabase
         if: needs.changes.outputs.docs_only != 'true'
-        # GHCR-only startup was throttled in run 39832239703 before any browser tests ran.
-        # With no override, pinned CLI 2.109.0 can try ECR, GHCR and Docker Hub for the same
-        # versioned images. Explicitly unset any setup-cli-inherited override for this command.
+        # The reviewed bundle supplies the CLI's primary tags, so its missing-only pull policy
+        # and cache inspection do not need registry access in the browser jobs.
+        # Preserve main's explicit removal of any setup-cli-inherited registry override; without
+        # it the CLI can miss the reviewed primary tags and attempt fresh registry downloads.
         # Keep job/assertion limits, worker count, retries and local Docker settings unchanged.
         # Only studio/vector/edge-runtime reliably exclude via -x on this CLI version — verified by
         # isolated testing, not assumed from the Phase 1 prose. `analytics` (the audit's "logflare")
@@ -316,18 +370,21 @@ jobs:
         # runs, so this is already a genuinely fresh database. Nothing reads dev@reverie.local any
         # more (test/trio-migration): a11y seeds its OWN user by invoking scripts/seed-dev.mjs
         # directly from the spec (with DEV_EMAIL overridden) in the a11y matrix entry.
-        run: env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start -x studio,vector,edge-runtime,imgproxy
+        run: |
+          set -euo pipefail
+          env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start -x studio,vector,edge-runtime,imgproxy
+          node scripts/ci-supabase-images.mjs verify-running
 
       # The rest runner already paid for the exact migrated database pgTAP needs. This keeps every
       # assertion but removes the duplicate checkout, CLI setup and Supabase startup. The browser
-      # step uses always() so a database assertion failure does not hide its independent result.
+      # step still runs after a database assertion failure, preserving its independent result.
       - name: pgTAP (supabase/tests)
         id: pgtap
         if: needs.changes.outputs.docs_only != 'true' && matrix.project == 'rest'
         run: supabase test db
 
       - name: e2e (${{ matrix.project }})
-        if: always() && needs.changes.outputs.docs_only != 'true' && steps.supabase.outcome == 'success'
+        if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && steps.supabase.outcome == 'success' }}
         run: pnpm --filter @reverie/web e2e --project=${{ matrix.project }}
 
       - name: Upload Playwright traces
@@ -335,5 +392,48 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
+          path: apps/web/test-results/
+          retention-days: 7
+
+  # Explicit opt-in for the repository's complete fresh-database, one-worker, zero-retry gate.
+  # This does not alter the established matrix retry policy or bypass local capacity refusals.
+  full-browser:
+    name: full-browser
+    needs: [changes, supabase-images]
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.docs_only != 'true' && contains(github.event.pull_request.labels.*.name, 'verify-full-browser') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      VITE_SUPABASE_URL: http://127.0.0.1:55321
+      VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      E2E_WORKERS: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup-browsers
+      - uses: ./.github/actions/load-supabase-images
+      - name: Start a fresh test database
+        run: |
+          set -euo pipefail
+          env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start -x studio,vector,edge-runtime,imgproxy
+          node scripts/ci-supabase-images.mjs verify-running
+      - name: Database assertions
+        run: supabase test db
+      - name: Complete browser suite with no retries
+        run: pnpm e2e --retries=0
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces-full
           path: apps/web/test-results/
           retention-days: 7
