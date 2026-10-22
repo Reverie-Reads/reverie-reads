@@ -301,12 +301,10 @@ jobs:
       - name: Start Supabase
         id: supabase
         if: needs.changes.outputs.docs_only != 'true'
-        # CLI 2.109.0's ECR primary was throttled in run 39325719841; its GHCR fallback
-        # successfully supplied the same pinned images after costly retries. Select that official
-        # mirror for startup only. This internal setting disables fallback; review on CLI upgrades.
-        # No change to job/assertion limits, worker count, retries, or local Docker configuration.
-        env:
-          SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+        # GHCR-only startup was throttled in run 39832239703 before any browser tests ran.
+        # With no override, pinned CLI 2.109.0 can try ECR, GHCR and Docker Hub for the same
+        # versioned images. Explicitly unset any setup-cli-inherited override for this command.
+        # Keep job/assertion limits, worker count, retries and local Docker settings unchanged.
         # Only studio/vector/edge-runtime reliably exclude via -x on this CLI version — verified by
         # isolated testing, not assumed from the Phase 1 prose. `analytics` (the audit's "logflare")
         # does NOT actually exclude; passing it is a harmless no-op, kept out here rather than left
@@ -318,7 +316,7 @@ jobs:
         # runs, so this is already a genuinely fresh database. Nothing reads dev@reverie.local any
         # more (test/trio-migration): a11y seeds its OWN user by invoking scripts/seed-dev.mjs
         # directly from the spec (with DEV_EMAIL overridden) in the a11y matrix entry.
-        run: supabase start -x studio,vector,edge-runtime,imgproxy
+        run: env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start -x studio,vector,edge-runtime,imgproxy
 
       # The rest runner already paid for the exact migrated database pgTAP needs. This keeps every
       # assertion but removes the duplicate checkout, CLI setup and Supabase startup. The browser
