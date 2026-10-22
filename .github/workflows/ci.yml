@@ -261,6 +261,9 @@ jobs:
             artifact: playwright-traces-mobile
     runs-on: ubuntu-latest
     timeout-minutes: ${{ matrix.timeout }}
+    permissions:
+      contents: read
+      packages: read
     env:
       # The LOCAL Supabase stack's well-known demo values — already hardcoded in every e2e spec
       # file (the same values the committed apps/web/.env now carries), not a secret. Deliberately the
@@ -319,7 +322,17 @@ jobs:
         # runs, so this is already a genuinely fresh database. Nothing reads dev@reverie.local any
         # more (test/trio-migration): a11y seeds its OWN user by invoking scripts/seed-dev.mjs
         # directly from the spec (with DEV_EMAIL overridden) in the a11y matrix entry.
-        run: supabase start -x studio,vector,edge-runtime,imgproxy
+        # The fallback also exhausted anonymous ECR/GHCR limits in run 39838023047.
+        # Authenticate the GHCR fallback with this job's read-only token; the CLI reads Docker's
+        # per-registry credentials. Keep the ordinary fallback order and retain the failed run.
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_USER: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          trap 'docker logout ghcr.io >/dev/null 2>&1' EXIT
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GHCR_USER" --password-stdin
+          supabase start -x studio,vector,edge-runtime,imgproxy
 
       # The rest runner already paid for the exact migrated database pgTAP needs. This keeps every
       # assertion but removes the duplicate checkout, CLI setup and Supabase startup. The browser

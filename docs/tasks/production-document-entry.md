@@ -37,3 +37,10 @@ provider took precedence. The explicit Nitro preset corrects the test target; th
 artifact refusal is retained. Browser jobs failed before tests when the GHCR-only image override
 was throttled. Restore the pinned CLI's normal registry/fallback selection without changing workers,
 assertion timeouts or retry policy. These failures do not establish browser acceptance.
+
+The second hosted code gate passed, including the Vercel artifact checks. The browser jobs exhausted
+the default registry fallback too: ECR refused its data limit, anonymous GHCR throttled, and Docker
+Hub lacked the required Kong image. The browser job now authenticates the GHCR fallback with its
+ephemeral read-only package token, which the pinned CLI reads from Docker's registry configuration.
+It logs out on exit and preserves the default fallback order. This is a correction to registry
+access, not a retry of unchanged infrastructure or a relaxation of the browser checks.
