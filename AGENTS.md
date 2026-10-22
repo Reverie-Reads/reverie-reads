@@ -1111,7 +1111,7 @@ function` + fresh `create` resets it to the PUBLIC-execute default — verified 
 
 ## Testing & verification discipline
 
-Nineteen rules, each earned by a real failure — counted from the list below, not carried forward. A rule without its reason gets dropped by whoever
+Twenty-three rules, each earned by a real failure — counted from the list below, not carried forward. A rule without its reason gets dropped by whoever
 inherits it, so the reason stays attached.
 
 - **When a test needs a step a user would not take, that step is a FINDING until proven otherwise.**
