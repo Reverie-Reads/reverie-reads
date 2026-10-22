@@ -42,7 +42,53 @@ I/O, registers no background collection and does not send diagnostics to the exi
 Inputs still require deliberate bibliography-only preparation; this export is not a sanitizer for
 arbitrary library data.
 
-## What a count means
+## Optional local Add lookup session
+
+Settings → Add lookup diagnostics now offers explicit Start, Stop, Download and Discard controls.
+It is off on every page load and keeps at most 20 attempts in page memory, across client-side
+navigation. Single Add search and the pasted-list queue use the same existing lookup function;
+ISBN submissions through that function are measured. Other barcode resolution and draft detail
+fetches are outside this scope. Spreadsheet imports, background completion, Discover search and book saves are outside
+this measurement scope. Parallel personal-library/shared-catalog triage reads are not measured
+by this source-lookup counter. Starting diagnostics does not issue a lookup or change an Add payload.
+
+Only closed query-kind, result and edition-disposition counters are retained. There is no event
+list, identifier, request timestamp, URL, title, query, ISBN, contributor, account ID, source name,
+error text, note or library value in the report. Diagnostic counts have no network, Sentry,
+localStorage, IndexedDB, backup or database path. Download produces a local JSON file; sharing it
+remains the reader's separate choice. Ordinary catalog lookups retain their existing network path.
+
+Every initiated eligible lookup enters the attempt denominator, including retries. Short inputs
+and work already cancelled before entry do not start a lookup. Successful emptiness is separate
+from unavailability. A provider-returned identity hold remains counted even if the existing fallback
+offers candidates; it never becomes an absent book or edition. The enrichment client supplies a
+closed diagnostic kind for its existing identity/service-version failure outcomes; their routing,
+admission and Add behavior are unchanged. Unclassified failure remains unavailable, not a claimed
+specific provider outage. Returned candidates and exact-ISBN results are observations, not verified
+retrieval correctness or complete contributor rosters.
+
+Each completion is counted once. The twentieth attempt closes new admission but lets admitted
+lookups settle. Stop retains completed counts and marks pending work unfinished; reset, replacement
+and account transitions invalidate old completions. Auth refresh for the same account preserves
+counts, while sign-out, another account or provider teardown clears them synchronously. Reloading
+starts disabled with no prior counts. No account ID enters the collector. The exported counts are
+snapshots, and public subscribers cannot mutate the live counters.
+
+Latency retains only four duration buckets (under 1 second, 1–3 seconds, 3–10 seconds, at least
+10 seconds); invalid or unfinished timing stays unobserved. Clock or subscriber failures cannot
+interrupt Add. These buckets do not establish precise percentiles. Correct work/edition retrieval,
+catalog absence, deliberate Add success, review refusal, correction effort, acquisition/review cost
+and import outcomes remain explicitly unobserved. A self-selected 20-attempt session is not an
+app-wide reader failure rate. All current verification sessions are synthetic; no real reader
+coverage claim or new corpus population follows from this implementation.
+
+Use a deliberately started session to describe the distribution of actual lookup outcomes before
+choosing a completion pilot. Inspect any individual bibliography only through a separate explicit
+reader report. Freeze the new disjoint evaluation below before acquisition or matching changes.
+Existing consumed comparisons, source-use holds, fingerprint gates, personal copies and writers
+remain unchanged. No production release, write exception or paid call is enabled by these controls.
+
+## What an offline count means
 
 Counts are overlapping case indicators, not provider-attempt counts or a mutually exclusive funnel.
 The denominator is every manifest case, including failed expected outcomes and unobserved evidence.
@@ -67,7 +113,7 @@ holds remain `evidenceReviewHold` even when title and role comparisons agree. No
 Confirmed book/edition absence, real reader failure rate, deliberate Add success, correction effort,
 latency and acquisition/review cost stay JSON `null` (unobserved), never fabricated zeroes.
 Synthetic regressions and reviewed reconstructions retain their separate basis labels; neither
-establishes a real reader miss rate. This PR contains no real intake outcome sample.
+establishes a real reader miss rate. The offline slice contains no real intake outcome sample; the optional runtime session also has no real reader observations yet.
 
 ## Available evidence and release boundary
 

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import AxeBuilder from '@axe-core/playwright'
 import { createClient } from '@supabase/supabase-js'
 import { expect, test, type Page } from './support/fixtures'
@@ -162,6 +163,94 @@ for (const touch of [false, true]) {
         await expect(page.getByPlaceholder('Title', { exact: true })).toHaveValue('Another book')
         await expect(guide.getByRole('status')).toHaveText('Make it yours')
         expect(await account.rows()).toEqual([])
+      } finally {
+        await account.cleanup()
+      }
+    })
+  })
+}
+
+for (const touch of [false, true]) {
+  test.describe(touch ? 'phone local Add diagnostics' : 'desktop local Add diagnostics', () => {
+    test.use({
+      hasTouch: touch,
+      viewport: touch ? { width: 390, height: 844 } : { width: 1100, height: 900 },
+    })
+    test('counts only explicitly enabled lookups, exports no identities and clears on reload', async ({
+      page,
+    }) => {
+      const account = await firstReader(page)
+      const settings = async () => {
+        if (touch)
+          await page
+            .getByRole('navigation', { name: 'Primary', exact: true })
+            .getByRole('button', { name: 'More', exact: true })
+            .click()
+        await page.getByRole('link', { name: 'Settings', exact: true }).click()
+        await expect(page).toHaveURL(/\/settings$/)
+      }
+      try {
+        let failed = false
+        await page.route('**/functions/v1/search**', (route) =>
+          failed
+            ? route.fulfill({ status: 503, json: { error: 'Synthetic outage' } })
+            : route.fulfill({ json: { results: [] } }),
+        )
+        const search = async (query: string) => {
+          await page.getByRole('textbox', { name: 'Search for a book' }).fill(query)
+          await page.getByRole('button', { name: 'Search', exact: true }).click()
+          if (failed) await expect(page.getByRole('alert')).toContainText('Search is unavailable')
+          else
+            await expect(
+              page.getByRole('button', { name: 'Add it manually', exact: true }),
+            ).toBeVisible()
+        }
+        await search('PRIVATE BEFORE OPT IN')
+        await settings()
+        const region = page.getByRole('region', { name: 'Add lookup diagnostics', exact: true })
+        await expect(region.getByRole('status')).toHaveText(
+          'Diagnostics are off. 0 of 20 attempts; 0 pending.',
+        )
+        await region.getByRole('button', { name: 'Start diagnostic session', exact: true }).click()
+        await page.getByRole('link', { name: 'Add a book', exact: true }).click()
+        await search('PRIVATE EMPTY QUERY')
+        failed = true
+        await search('PRIVATE FAILED QUERY')
+        await settings()
+        await expect(region.getByRole('status')).toHaveText(
+          'Counting Add lookups. 2 of 20 attempts; 0 pending.',
+        )
+        await region.getByRole('button', { name: 'Stop diagnostics', exact: true }).click()
+        const downloadPromise = page.waitForEvent('download')
+        await region
+          .getByRole('button', { name: 'Download diagnostic counts', exact: true })
+          .click()
+        const download = await downloadPromise
+        const file = await download.path()
+        expect(file).not.toBeNull()
+        const exported = await readFile(file!, 'utf8')
+        expect(JSON.parse(exported)).toMatchObject({
+          basis: 'explicit_local_add_lookup_session',
+          counts: { attempted: 2, pending: 0, results: { empty: 1, unavailable: 1 } },
+        })
+        for (const secret of ['PRIVATE', account.uid, 'tour-', 'Synthetic outage'])
+          expect(exported).not.toContain(secret)
+        expect(
+          (
+            await new AxeBuilder({ page })
+              .include('[data-testid="intake-lookup-diagnostics"]')
+              .analyze()
+          ).violations,
+        ).toEqual([])
+        await page.screenshot({
+          path: `test-results/add-diagnostics-${touch ? 'phone' : 'desktop'}.png`,
+          fullPage: true,
+        })
+        expect(await account.rows()).toEqual([])
+        await page.reload()
+        await expect(region.getByRole('status')).toHaveText(
+          'Diagnostics are off. 0 of 20 attempts; 0 pending.',
+        )
       } finally {
         await account.cleanup()
       }

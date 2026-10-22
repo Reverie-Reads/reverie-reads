@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { setErrorReporter, consoleReporter } from '@reverie/core'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { intakeLookupDiagnostics as diagnostics } from '../lib/intakeLookupDiagnostics'
+import { IntakeLookupDiagnosticsControl } from '../components/IntakeLookupDiagnosticsControl'
 
 // Phase 2 guards for fix/offline-session, driven off a stubbed auth client that can hang, fail
 // retryably, or reject outright — the three things a real refresh does and the app has to tell
@@ -87,6 +89,7 @@ async function rowIds(): Promise<string[]> {
 }
 
 beforeEach(async () => {
+  diagnostics.reset()
   await clearAllOfflineCaches()
   localStorage.clear()
   sessionStorage.clear()
@@ -312,5 +315,40 @@ describe('a null session from an EVENT is not a sign-out', () => {
     await act(async () => emitAuth!('INITIAL_SESSION', null))
 
     await waitFor(() => expect(screen.getByText('signed out')).toBeInTheDocument())
+  })
+})
+
+describe('optional Add diagnostics follow the actual authenticated account', () => {
+  it('discards counts and pending completions before a different account renders, while refresh preserves them', async () => {
+    storeSession(SESSION_A)
+    getSessionImpl = () => new Promise(() => {})
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <AuthProvider>
+          <IntakeLookupDiagnosticsControl />
+        </AuthProvider>
+      </QueryClientProvider>,
+    )
+    await act(async () => {
+      screen.getByRole('button', { name: 'Start diagnostic session' }).click()
+    })
+    let old!: ReturnType<typeof diagnostics.begin>
+    act(() => {
+      old = diagnostics.begin('isbn')
+    })
+    await act(async () => emitAuth!('TOKEN_REFRESHED', SESSION_A))
+    expect(screen.getByRole('status')).toHaveTextContent('1 of 20 attempts; 1 pending.')
+    await act(async () =>
+      emitAuth!('SIGNED_IN', { ...SESSION_A, user: { id: 'another-reader' } } as Session),
+    )
+    expect(screen.getByRole('status')).toHaveTextContent('Diagnostics are off. 0 of 20 attempts')
+    act(() => {
+      diagnostics.start()
+      old({ result: 'candidates', edition: 'exact', candidatesWithoutAuthor: false })
+    })
+    expect(diagnostics.getSnapshot().attempted).toBe(0)
+    await act(async () => emitAuth!('SIGNED_OUT', null))
+    expect(screen.getByRole('status')).toHaveTextContent('Diagnostics are off. 0 of 20 attempts')
+    expect(JSON.stringify(diagnostics.export())).not.toContain('another-reader')
   })
 })

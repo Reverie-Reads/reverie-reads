@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  type ReactNode,
+} from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
@@ -6,6 +14,7 @@ import { clearAllOfflineCaches, evictOtherReaders } from '../lib/offlineCache'
 import { storedSession } from '../lib/storedSession'
 import { signOutLocally } from '../lib/offlineSignOut'
 import { readableAuthError } from './errors'
+import { intakeLookupDiagnostics } from '../lib/intakeLookupDiagnostics'
 
 /** A refresh that failed because the network did, not because the credential is bad. auth-js
  *  preserves the stored session in this case and clears it in the other, so this is the signal
@@ -59,6 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // refresh land later; with none, getSession() answers without touching the network anyway.
   const [session, setSession] = useState<Session | null>(() => storedSession())
   const [loading, setLoading] = useState(() => storedSession() === null)
+  const diagnosticReader = useRef(session?.user.id)
+  const applySession = useCallback((next: Session | null) => {
+    if (diagnosticReader.current !== next?.user.id) {
+      // Clear counts and invalidate in-flight completions before another account can render.
+      intakeLookupDiagnostics.reset()
+      diagnosticReader.current = next?.user.id
+    }
+    setSession(next)
+  }, [])
   // Available because AuthProvider sits INSIDE PersistQueryClientProvider, which renders the
   // QueryClientProvider. No re-ordering needed to reach it.
   const queryClient = useQueryClient()
@@ -72,8 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // after ~25s of bounded retries — auth-js having deliberately KEPT the session in storage.
         // Taking that null at face value replaced the reader's library with the signed-out
         // marketing page, which then crashed on a lazy chunk it could not fetch.
-        if (data.session) setSession(data.session)
-        else if (!isNetworkAuthFailure(error)) setSession(null)
+        if (data.session) applySession(data.session)
+        else if (!isNetworkAuthFailure(error)) applySession(null)
         // else: keep the session seeded from storage. A genuinely rejected refresh token is NOT
         // retryable, and auth-js has already wiped storage and emitted SIGNED_OUT by that point,
         // so this branch cannot strand a signed-out reader in a stale library.
@@ -90,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Storage is the source of truth for "is there a session at all": a null from an event only
       // means signed out when the stored session is gone too. SIGNED_OUT below is the explicit
       // signal, and auth-js removes storage before it fires.
-      setSession(next ?? storedSession())
+      applySession(next ?? storedSession())
       // The event used to be ignored entirely (`_event`). It is the hook that makes sign-out
       // actually forget: nothing else cleared either cache, so the reader's library outlived their
       // session in BOTH places.
@@ -106,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // and by then auth-js has already removed the stored session, so the scoped persister has no
       // id and writes nothing. The table clear that follows would sweep such a row regardless.
       if (event === 'SIGNED_OUT') {
-        setSession(null)
+        applySession(null)
         queryClient.clear()
         void clearAllOfflineCaches()
       }
@@ -114,8 +132,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // clears the table, but the previous reader may simply have closed the tab.
       if (event === 'SIGNED_IN' && next?.user?.id) void evictOtherReaders(next.user.id)
     })
-    return () => sub.subscription.unsubscribe()
-  }, [queryClient])
+    return () => {
+      intakeLookupDiagnostics.reset()
+      sub.subscription.unsubscribe()
+    }
+  }, [queryClient, applySession])
 
   const value: AuthValue = {
     session,
@@ -133,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signOutLocally(accessToken)
       queryClient.clear()
       await clearAllOfflineCaches()
-      setSession(null)
+      applySession(null)
     },
     signInWithPassword: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
