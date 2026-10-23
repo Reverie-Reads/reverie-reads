@@ -4,28 +4,36 @@ import { describe, expect, it } from 'vitest'
 
 const workflow = readFileSync(join(__dirname, '../../../.github/workflows/ci.yml'), 'utf8')
 const jobs = workflow.slice(workflow.indexOf('\njobs:\n') + '\njobs:\n'.length)
+function job(name: string): string {
+  const start = jobs.indexOf(`  ${name}:\n`)
+  expect(start).toBeGreaterThanOrEqual(0)
+  const next = jobs.slice(start + 1).search(/^ {2}[a-z][a-z-]*:$/m)
+  return jobs.slice(start, next === -1 ? undefined : start + 1 + next)
+}
 
 describe('CI workflow topology', () => {
-  it('has three job definitions and preserves the three browser check names in one matrix', () => {
+  it('preserves the three required browser checks while sharing images and offering an explicit full run', () => {
     const jobKeys = [...jobs.matchAll(/^ {2}([a-z][a-z-]*):$/gm)].map((match) => match[1])
     const matrixNames = [...workflow.matchAll(/^ {10}- name: (e2e(?:-a11y|-mobile)?)$/gm)].map(
       (match) => match[1],
     )
 
-    expect(jobKeys).toEqual(['changes', 'gate', 'browser'])
+    expect(jobKeys).toEqual(['changes', 'gate', 'supabase-images', 'browser', 'full-browser'])
     expect(matrixNames).toEqual(['e2e', 'e2e-a11y', 'e2e-mobile'])
     expect(workflow).toContain('name: ${{ matrix.name }}')
     expect(workflow).toContain('fail-fast: false')
     expect(workflow).toMatch(/- name: e2e\n\s+project: rest\n(?:\s+#.*\n)+\s+timeout: 50/)
-    expect(workflow).toContain("if: github.event_name == 'pull_request'")
-    expect(workflow).not.toContain(
+    const browser = job('browser')
+    expect(browser).toContain("if: ${{ !cancelled() && github.event_name == 'pull_request' }}")
+    expect(browser).not.toContain(
       "if: github.event_name == 'pull_request' && needs.changes.outputs.docs_only != 'true'",
     )
-    expect(workflow.match(/if: needs\.changes\.outputs\.docs_only != 'true'/g)).toHaveLength(8)
+    expect(browser).toContain('needs: [changes, supabase-images]')
+    expect(browser.match(/if: needs\.changes\.outputs\.docs_only != 'true'/g)).toHaveLength(8)
   })
 
   it('keeps secrets in gate and pgTAP on the already-migrated rest database', () => {
-    const gate = jobs.slice(jobs.indexOf('  gate:'), jobs.indexOf('  browser:'))
+    const gate = job('gate')
     const prettier = gate.indexOf('      - name: Prettier')
     const secretScan = gate.indexOf('      - name: Full-history secret scan')
     const start = jobs.indexOf('      - name: Start Supabase')
@@ -50,7 +58,7 @@ describe('CI workflow topology', () => {
     )
     expect(jobs).toContain('run: supabase test db')
     expect(jobs).toContain(
-      "if: always() && needs.changes.outputs.docs_only != 'true' && steps.supabase.outcome == 'success'",
+      "if: ${{ !cancelled() && needs.changes.outputs.docs_only != 'true' && steps.supabase.outcome == 'success' }}",
     )
   })
 
@@ -58,5 +66,48 @@ describe('CI workflow topology', () => {
     expect(workflow).toContain('Warm Playwright browser cache after merge')
     expect(workflow).toContain("if: github.event_name == 'push' && github.ref == 'refs/heads/main'")
     expect(workflow).toContain('name: ${{ matrix.artifact }}')
+  })
+
+  it('acquires public images once with an exact cache key and validates the bundle before stack startup', () => {
+    const acquisition = job('supabase-images'),
+      browser = job('browser')
+    expect(acquisition).toContain("if: needs.changes.outputs.docs_only != 'true'")
+    expect(acquisition).toContain(
+      "hashFiles('.github/supabase-images.json', 'scripts/ci-supabase-images.mjs', 'supabase/config.toml')",
+    )
+    expect(acquisition).not.toContain('restore-keys:')
+    expect(acquisition).not.toContain('packages: write')
+    expect(acquisition).toContain('Verify the warm-bundle path after cold acquisition')
+    expect(acquisition).toContain('retention-days: 1')
+    expect(browser.indexOf('uses: ./.github/actions/load-supabase-images')).toBeLessThan(
+      browser.indexOf('- name: Start Supabase'),
+    )
+    expect(browser).toContain('node scripts/ci-supabase-images.mjs verify-running')
+    expect(browser).toContain('env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start')
+    expect(browser).not.toContain('GHCR_TOKEN:')
+    const loader = readFileSync(
+      join(__dirname, '../../../.github/actions/load-supabase-images/action.yml'),
+      'utf8',
+    )
+    expect(loader).toContain('name: supabase-images')
+    expect(loader).toContain('node scripts/ci-supabase-images.mjs load .ci-supabase-images')
+    expect(loader).not.toContain('run-id:')
+  })
+
+  it('keeps the complete dedicated-runner gate opt-in, fresh, one-worker and zero-retry', () => {
+    const full = job('full-browser')
+    expect(full).toContain(
+      "contains(github.event.pull_request.labels.*.name, 'verify-full-browser')",
+    )
+    expect(full).toContain("needs.changes.outputs.docs_only != 'true'")
+    expect(full).toContain('!cancelled()')
+    expect(full).toContain('E2E_WORKERS: 1')
+    expect(full).toContain('pnpm e2e --retries=0')
+    expect(full).toContain('supabase start -x studio,vector,edge-runtime,imgproxy')
+    expect(full).toContain('env -u SUPABASE_INTERNAL_IMAGE_REGISTRY supabase start')
+    expect(full).toContain('node scripts/ci-supabase-images.mjs verify-running')
+    expect(full).toContain('run: supabase test db')
+    expect(full).not.toContain('db:seed')
+    expect(full).not.toContain('actions/cache')
   })
 })

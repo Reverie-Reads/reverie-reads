@@ -1122,7 +1122,7 @@ function` + fresh `create` resets it to the PUBLIC-execute default — verified 
 
 ## Testing & verification discipline
 
-Nineteen rules, each earned by a real failure — counted from the list below, not carried forward. A rule without its reason gets dropped by whoever
+Twenty-three rules, each earned by a real failure — counted from the list below, not carried forward. A rule without its reason gets dropped by whoever
 inherits it, so the reason stays attached.
 
 - **When a test needs a step a user would not take, that step is a FINDING until proven otherwise.**
@@ -1269,6 +1269,19 @@ test` outright and only fail `tsc`. This has bitten twice, by two different tool
   appearance entry exists only in that test build; do not import `/src/` from browser tests or
   expose it in an ordinary build. Workflow remains separately tested; monitoring upload is off
   for the browser-test build. Startup and assertion deadlines are unchanged.
+- **Production documents need the production build.** `pnpm build` checks Nitro's rendered HTML,
+  its referenced client assets and root-file collisions. CI builds the Vercel preset and checks
+  the compiled app/API routing without network access. Keep ordinary client entries under `assets/`;
+  an explicit undefined Rollup filename overrides Vite's default and can emit a root `index.js`
+  that shadows HTML. The isolated browser-test build cannot establish production CDN routing.
+- **Browser jobs share images, never a database.** `.github/supabase-images.json` pins the native
+  Linux amd64 manifests and image IDs for the CI Supabase CLI. One acquisition job validates and
+  shares only public Docker images; each consumer rechecks the archive and image content before
+  starting its own fresh stack. Cache corruption or identity drift fails visibly. Keep GitHub's
+  cache branch isolation and exact keys. When local capacity refuses, apply `verify-full-browser`
+  to the PR before pushing its candidate to request the complete dedicated-runner suite with one
+  worker and zero retries. That is hosted evidence; it never waives local capacity admission or
+  changes the ordinary matrix's retry policy. Update the CLI and reviewed image plan together.
 - **Pin the Docker engine for the entire local browser lifecycle.** Inside the existing stack
   lock, run reset/test/restore through `scripts/stack-engine.mjs`. It resolves the selected local
   Docker socket once, checks healthy database/API containers and their configured ports, and
