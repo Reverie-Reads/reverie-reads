@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'node:crypto'
 import { expect, test, type Page } from './support/fixtures'
 import { keepOfflineCacheEmpty } from './support/offlineCache'
+import { APP_NAME } from '@reverie/core'
 
 const SUPABASE_URL = 'http://127.0.0.1:55321'
 const LOCAL_ANON =
@@ -52,7 +53,9 @@ test('an arrangement follows the account into navigation and Home', async ({ pag
     await page.goto('/settings')
     await page.getByRole('button', { name: /Remember my reading/ }).click()
     await page.getByRole('button', { name: 'Save arrangement' }).click()
-    await expect(page.getByRole('status')).toContainText('Arrangement saved')
+    await expect(
+      page.getByRole('region', { name: `Arrange ${APP_NAME}`, exact: true }).getByRole('status'),
+    ).toContainText('Arrangement saved')
 
     await expect
       .poll(async () => {

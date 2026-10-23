@@ -181,6 +181,18 @@ for (const touch of [false, true]) {
     }) => {
       const account = await firstReader(page)
       const settings = async () => {
+        const guide = page.getByRole('complementary', { name: 'Live walkthrough' })
+        await expect(guide).toBeVisible()
+        if (!touch) {
+          // Both active and paused coaching must leave the entire desktop rail reachable.
+          await expect
+            .poll(async () => {
+              const rail = await page.locator('[data-book-tour-navigation]').boundingBox()
+              const panel = await guide.boundingBox()
+              return !!rail && !!panel && panel.x >= rail.x + rail.width
+            })
+            .toBe(true)
+        }
         if (touch)
           await page
             .getByRole('navigation', { name: 'Primary', exact: true })

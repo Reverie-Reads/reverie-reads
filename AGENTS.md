@@ -177,6 +177,8 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Automatic practice playback requires isolated data
   adapters; query-cache seeding over live Supabase hooks is not a practice library. See
   `docs/tasks/reader-guidance.md`.
+  Floating coaching stays outside the visible desktop navigation rail, including collapsed and
+  Bearded presentations, so Settings and account controls remain reachable without ending the tour.
 - **Next read guidance follows actual choices.** Preserve scope, unsent mood, quiz and shortlist on
   entry/replay. Demonstrations never submit a mood query, choose a result or save. A chosen book's
   loaded personal record hands off to the reading chapter; Start waits for the successful promise,

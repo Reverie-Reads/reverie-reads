@@ -132,6 +132,7 @@ function Sidebar({
   return (
     <div
       data-collapsed={collapsed ? 'true' : 'false'}
+      data-book-tour-navigation
       className="rv-nav-surface rv-sidebar sticky top-0 hidden h-dvh shrink-0 flex-col px-3.5 py-4 backdrop-blur-lg transition-[width] duration-200 ease-out motion-reduce:transition-none lg:flex"
       style={{
         width: collapsed ? 76 : 232,

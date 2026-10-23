@@ -375,6 +375,7 @@ export function BookTour() {
           bottom: inset('--safe-bottom'),
           left: inset('--safe-left'),
         },
+        document.querySelector('[data-book-tour-navigation]')?.getBoundingClientRect(),
       )
       // A body portal sits outside root padding. Bound it before measuring, including the
       // short landscape/keyboard view; overflow keeps every action reachable without resetting it.
@@ -429,6 +430,7 @@ export function BookTour() {
     const cleanup = target ? autoUpdate(target, floating, update) : undefined
     const resize = new ResizeObserver(update)
     resize.observe(floating)
+    document.querySelectorAll('[data-book-tour-navigation]').forEach((rail) => resize.observe(rail))
     window.visualViewport?.addEventListener('resize', update)
     window.visualViewport?.addEventListener('scroll', update)
     window.addEventListener('resize', update)
