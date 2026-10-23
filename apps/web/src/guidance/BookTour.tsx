@@ -327,12 +327,15 @@ export function BookTour() {
   const modalOutlet = modal?.querySelector<HTMLElement>('[data-book-tour-outlet]') ?? null
   const stepOutlet = document.querySelector<HTMLElement>(`[data-book-tour-inline="${step.target}"]`)
   const pageOutlet =
-    ['first-book', 'next-read', 'planner'].includes(state.journey) &&
     (narrow || stepOutlet?.hasAttribute('data-book-tour-inline-desktop')) &&
     isBookTourLocation(state, location.pathname)
       ? stepOutlet
       : null
-  const inlineOutlet = modalOutlet ?? pageOutlet
+  const pausedOutlet =
+    state.status === 'paused'
+      ? document.querySelector<HTMLElement>('[data-book-tour-paused-outlet]')
+      : null
+  const inlineOutlet = modalOutlet ?? pageOutlet ?? pausedOutlet
   // Only an explicit chapter-navigation button requests scrolling. Saves and observations never
   // move the page. Phone coaching moves in the document, so its next stop must stay findable.
   useEffect(() => {

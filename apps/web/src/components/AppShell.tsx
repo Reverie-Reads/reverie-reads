@@ -513,6 +513,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="relative z-[1] flex flex-1 flex-col pb-[calc(72px+var(--safe-bottom))] outline-none lg:pb-0"
           >
             {!bearded && <GuidanceTrail />}
+            <div
+              className="mx-auto w-full max-w-3xl px-4 pt-4 empty:hidden"
+              data-book-tour-paused-outlet
+            />
             {children}
           </main>
         </div>

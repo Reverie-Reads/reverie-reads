@@ -1965,7 +1965,11 @@ function AddScreen() {
           </button>
         </div>
       </details>
-      <div className="mt-3 empty:hidden" data-book-tour-inline="book-search" />
+      <div
+        className="mt-3 empty:hidden"
+        data-book-tour-inline="book-search"
+        data-book-tour-inline-desktop
+      />
 
       {(import.meta.env.DEV || import.meta.env.MODE === 'browser-test') &&
         import.meta.env.VITE_PHOTO_INTAKE_PILOT === 'true' &&
@@ -2038,7 +2042,11 @@ function AddScreen() {
 
       {results && !picked && (
         <div className="mt-4 flex flex-col gap-2">
-          <div className="empty:hidden" data-book-tour-inline="book-results" />
+          <div
+            className="empty:hidden"
+            data-book-tour-inline="book-results"
+            data-book-tour-inline-desktop
+          />
           {results.length ? (
             <div
               className="space-y-6"

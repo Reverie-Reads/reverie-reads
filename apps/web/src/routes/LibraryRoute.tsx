@@ -217,6 +217,11 @@ function PersonalLibraryScreen() {
     return (
       <div className="flex min-h-full flex-col px-4 py-6 sm:px-6">
         <LibraryHeader scope="personal" readout="0 books · 0 faves" />
+        <div
+          className="empty:hidden"
+          data-book-tour-inline="reading-library"
+          data-book-tour-inline-desktop
+        />
         <div data-book-tour="reading-library">
           <EmptyState />
         </div>
@@ -250,6 +255,12 @@ function PersonalLibraryScreen() {
       />
 
       <Toolbar />
+
+      <div
+        className="mt-4 empty:hidden"
+        data-book-tour-inline="reading-library"
+        data-book-tour-inline-desktop
+      />
 
       {tourBook && !visible.some((book) => book.id === tourBook.id) && (
         <section className="my-5 border-b border-line pb-5" aria-label="Your added book">

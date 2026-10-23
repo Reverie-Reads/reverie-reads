@@ -179,6 +179,9 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   `docs/tasks/reader-guidance.md`.
   Floating coaching stays outside the visible desktop navigation rail, including collapsed and
   Bearded presentations, so Settings and account controls remain reachable without ending the tour.
+  Add search/results and the Library reading chooser use in-page coaching on desktop too; paused
+  coaching uses a shell slot when its task is elsewhere. Keep working controls clear without
+  dismissing the guide or remounting a reader's draft.
 - **Next read guidance follows actual choices.** Preserve scope, unsent mood, quiz and shortlist on
   entry/replay. Demonstrations never submit a mood query, choose a result or save. A chosen book's
   loaded personal record hands off to the reading chapter; Start waits for the successful promise,
