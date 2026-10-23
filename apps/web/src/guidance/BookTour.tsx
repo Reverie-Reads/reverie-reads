@@ -442,7 +442,7 @@ export function BookTour() {
       window.visualViewport?.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
     }
-  }, [target, running, state.status, blockedByModal, inlineOutlet, touch])
+  }, [target, running, state.status, blockedByModal, inlineOutlet, touch, mode])
 
   useEffect(
     () => () => {
