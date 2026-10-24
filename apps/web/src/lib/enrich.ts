@@ -120,7 +120,7 @@ export type EnrichOutcome =
   | { status: 'ok'; data: EnrichResult; trace?: ServerTrace }
   | { status: 'empty'; trace?: ServerTrace }
   | { status: 'rate_limited' }
-  | { status: 'failed'; reason: string }
+  | { status: 'failed'; reason: string; kind?: 'identity_hold' | 'service_mismatch' }
 
 /**
  * Ask the enrichment Edge Function for a record, surfacing whether the upstream sources were
@@ -165,15 +165,20 @@ export async function enrichBookOutcome(
     if (flags.rateLimited) return { status: 'rate_limited' }
     // Every source we asked threw. An outage is not a miss.
     if (flags.sourcesFailed)
-      return { status: 'failed', reason: `all ${flags.sourcesAttempted ?? 0} sources failed` }
+      return {
+        status: 'failed',
+        reason: `all ${flags.sourcesAttempted ?? 0} sources failed`,
+        ...(flags.identityUnresolved ? { kind: 'identity_hold' as const } : {}),
+      }
     if (flags.admissionVersion !== 2)
       return {
         status: 'failed',
         reason: 'catalog identity checks need the updated enrichment service',
+        kind: 'service_mismatch',
       }
     if (flags.confidence !== 'high')
       return flags.identityUnresolved
-        ? { status: 'failed', reason: 'catalog identity is unresolved' }
+        ? { status: 'failed', reason: 'catalog identity is unresolved', kind: 'identity_hold' }
         : { status: 'empty', trace }
     return { status: 'ok', data: durableEnrichment(data as EnrichResult, input.isbn), trace }
   } catch (e) {

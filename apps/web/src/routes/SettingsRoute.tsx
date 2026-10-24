@@ -65,6 +65,7 @@ import { ReadingModeChoice } from '../components/ReadingModeChoice'
 import { InstallHelp } from '../components/InstallHelp'
 import { ReadingSection } from '../components/ReadingSection'
 import { UtilityGlyph } from '../components/UtilityGlyph'
+import { IntakeLookupDiagnosticsControl } from '../components/IntakeLookupDiagnosticsControl'
 
 const YEAR = new Date().getFullYear()
 
@@ -1264,6 +1265,10 @@ function SettingsScreen() {
             server and cached globally by work — never tied to you. Export or delete everything
             below.
           </p>
+        </Section>
+
+        <Section title="Add lookup diagnostics">
+          <IntakeLookupDiagnosticsControl />
         </Section>
 
         <Section title="Delete account" keepOpen={deleting || deleteText.length > 0}>

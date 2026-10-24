@@ -12,19 +12,37 @@ interface Viewport {
 }
 
 /** Intersect the visual viewport (including zoom/keyboard offsets) with the device safe area.
+ * A visible desktop navigation rail stays outside floating coaching.
  * Insets belong to the layout viewport: a keyboard already inside it must not subtract them twice. */
 export function tourSafeRectangle(
   viewport: Viewport,
   layout: { width: number; height: number },
   insets: { top: number; right: number; bottom: number; left: number },
+  navigation?: TourRectangle,
 ): TourRectangle {
-  const left = Math.max(viewport.left, insets.left)
   const top = Math.max(viewport.top, insets.top)
+  const bottom = Math.max(
+    top,
+    Math.min(viewport.top + viewport.height, layout.height - insets.bottom),
+  )
+  const right = Math.max(
+    viewport.left,
+    Math.min(viewport.left + viewport.width, layout.width - insets.right),
+  )
+  let left = Math.max(viewport.left, insets.left)
+  if (
+    navigation &&
+    navigation.right > navigation.left &&
+    navigation.bottom > top &&
+    navigation.top < bottom &&
+    navigation.left <= left
+  )
+    left = Math.min(right, Math.max(left, navigation.right))
   return {
     left,
     top,
-    right: Math.max(left, Math.min(viewport.left + viewport.width, layout.width - insets.right)),
-    bottom: Math.max(top, Math.min(viewport.top + viewport.height, layout.height - insets.bottom)),
+    right: Math.max(left, right),
+    bottom,
   }
 }
 

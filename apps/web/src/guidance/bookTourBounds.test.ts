@@ -2,6 +2,30 @@ import { describe, expect, it } from 'vitest'
 import { constrainTourPosition, fallbackTourPosition, tourSafeRectangle } from './bookTourBounds'
 
 describe('body-portaled walkthrough bounds', () => {
+  it('keeps active and fallback coaching outside a visible desktop navigation rail', () => {
+    for (const width of [76, 232]) {
+      const area = tourSafeRectangle(
+        { left: 0, top: 0, width: 1100, height: 900 },
+        { width: 1100, height: 900 },
+        { left: 0, top: 0, right: 0, bottom: 0 },
+        { left: 0, top: 0, right: width, bottom: 900 },
+      )
+      const panel = { width: 320, height: 300 }
+      expect(constrainTourPosition({ x: 10, y: 200 }, area, panel).x).toBe(width + 12)
+      expect(fallbackTourPosition(area, panel).x).toBe(width + 12)
+    }
+  })
+
+  it('does not reserve space for a hidden desktop rail on phones', () => {
+    const area = tourSafeRectangle(
+      { left: 0, top: 0, width: 390, height: 844 },
+      { width: 390, height: 844 },
+      { left: 0, top: 0, right: 0, bottom: 0 },
+      { left: 0, top: 0, right: 0, bottom: 0 },
+    )
+    expect(area).toEqual({ left: 0, top: 0, right: 390, bottom: 844 })
+  })
+
   it('keeps portrait coaching above the home indicator and below the notch', () => {
     const area = tourSafeRectangle(
       { left: 0, top: 0, width: 390, height: 844 },

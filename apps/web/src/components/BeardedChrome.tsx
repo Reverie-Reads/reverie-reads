@@ -108,7 +108,7 @@ export function BeardedChrome({
           </nav>
         </div>
       ) : (
-        <aside className="bearded-sidebar hidden lg:flex">
+        <aside className="bearded-sidebar hidden lg:flex" data-book-tour-navigation>
           <div className="bearded-brand">
             <BeardChooser className="h-24 w-20" />
             <Link to="/" aria-label={`${APP_NAME} home`}>

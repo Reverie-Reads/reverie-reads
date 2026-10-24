@@ -177,6 +177,11 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
   Automatic practice playback requires isolated data
   adapters; query-cache seeding over live Supabase hooks is not a practice library. See
   `docs/tasks/reader-guidance.md`.
+  Floating coaching stays outside the visible desktop navigation rail, including collapsed and
+  Bearded presentations, so Settings and account controls remain reachable without ending the tour.
+  Add search/results and the Library reading chooser use in-page coaching on desktop too; paused
+  coaching uses a shell slot when its task is elsewhere. Keep working controls clear without
+  dismissing the guide or remounting a reader's draft.
 - **Next read guidance follows actual choices.** Preserve scope, unsent mood, quiz and shortlist on
   entry/replay. Demonstrations never submit a mood query, choose a result or save. A chosen book's
   loaded personal record hands off to the reading chapter; Start waits for the successful promise,
@@ -754,7 +759,7 @@ wishlist` was the pre-#68 model and is long wrong. Format flags **suppress, neve
 
 ## Book-data admission
 
-Intake outcome diagnostics stay offline and aggregate-only on explicit export. `intake:replay --aggregate-only` distinguishes successful empty lookups from source failures, identity/role holds, selected-edition gaps and task-specific missing fields. A hold or unselected result is never a deliberate refusal; require explicit reviewer context. Empty lookup counts never prove catalog absence. Real reader coverage and save metrics remain unobserved without a bounded actual observation window. No default reader collection or intake cutover is enabled. See `docs/tasks/intake-outcome-diagnostics.md`.
+Offline intake outcome diagnostics remain aggregate-only on explicit export. `intake:replay --aggregate-only` distinguishes successful empty lookups from source failures, identity/role holds, selected-edition gaps and task-specific missing fields. A hold or unselected result is never a deliberate refusal; require explicit reviewer context. Empty lookup counts never prove catalog absence. Real reader coverage and save metrics remain unobserved without a bounded actual observation window. No default reader collection or intake cutover is enabled. See `docs/tasks/intake-outcome-diagnostics.md`.
 
 Shared-catalog completion planning is read-only. `corpus:completion:plan` consumes the private
 inventory projection in `scripts/corpus-completion-inventory.sql`; work-level blanks never select
@@ -798,6 +803,15 @@ freshness and cannot append edition ISBNs from title/author cache rows. Publicat
 one valid tuple, preserving precision. Weak or competing personal duplicate matches never auto-merge; Add/import retain their review flow and explicit single-add may keep a separate copy;
 persisted reader verdict keys remain unchanged. Historical repair remains separate and owner-run.
 See `docs/tasks/book-data-correction-sequence.md` and `docs/tasks/book-source-admission.md`.
+
+Settings may explicitly start one local Add lookup diagnostic session of at most 20 attempts.
+Keep only fixed counters and latency buckets, never queries, ISBNs, identities, error text or account
+IDs. No default collection, persistence, upload or reporter path. Same-account auth refresh preserves
+counts; account change, sign-out and provider teardown discard them before late replies can land.
+Stop retains completed counts and labels pending work unfinished. Cap admission without losing
+pending outcomes. Lookup candidates/emptiness never establish correctness or catalog absence; save,
+review-refusal and spreadsheet metrics remain unobserved. Reuse the existing Add/pasted-list lookup
+path without changing admission, source qualification or writers. See `docs/tasks/intake-outcome-diagnostics.md`.
 
 ## Saved metadata continuity
 
