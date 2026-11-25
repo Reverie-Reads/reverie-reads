@@ -1,7 +1,101 @@
 import { useState } from 'react'
+import { useWorksLookup } from '../data/works'
+import { useCorpusSeriesCatalog } from '../data/corpusSeriesCatalog'
 import { Button } from '../components/Button'
 import { releaseDateLabel } from '../data/releases'
 import { usePlannerEntries, useSavePlannerEntry, type PlannerEntry } from '../data/plannerEntries'
+
+type CatalogChoice = Pick<PlannerEntry, 'title' | 'author' | 'series'>
+function CatalogPicker({ choose }: { choose: (choice: CatalogChoice) => void }) {
+  const [term, setTerm] = useState('')
+  const [query, setQuery] = useState('')
+  const books = useWorksLookup(query)
+  const series = useCorpusSeriesCatalog(query.length >= 3)
+  const needle = query.toLowerCase()
+  const titles = (books.data ?? []).map((row) => ({
+    key: row.id,
+    title: row.title,
+    author: row.contributors.map((c) => c.name).join(', '),
+    series: row.series ?? '',
+  }))
+  const members = (series.data ?? [])
+    .filter((row) => [row.name, ...row.aliases].some((name) => name.toLowerCase().includes(needle)))
+    .flatMap((row) =>
+      row.entries.map((entry) => ({
+        key: row.id + '/' + entry.id,
+        title: entry.work?.title || entry.title,
+        author: entry.work?.author || entry.author,
+        series: row.name,
+      })),
+    )
+  const matches = [...titles, ...members]
+  return (
+    <details className="mt-3">
+      <summary>Find a title or series in the shared catalog</summary>
+      <form
+        className="flex gap-2 py-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          setQuery(term.trim())
+        }}
+      >
+        <input
+          className="skin-field min-h-11 min-w-0"
+          aria-label="Catalog title, author or series"
+          value={term}
+          onChange={(e) => {
+            setTerm(e.target.value)
+            setQuery('')
+          }}
+        />
+        <button type="submit" disabled={term.trim().length < 3}>
+          Search catalog
+        </button>
+      </form>
+      {query && (
+        <>
+          {(books.isFetching || series.isFetching) && <p role="status">Searching the catalog…</p>}
+          {(books.error || series.isError) && (
+            <p role="alert">
+              Some catalog results could not load.{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  void books.refetch()
+                  void series.refetch()
+                }}
+              >
+                Retry
+              </button>
+            </p>
+          )}
+          {!books.isFetching &&
+            !series.isFetching &&
+            !books.error &&
+            !series.isError &&
+            !matches.length && <p>No catalog matches. You can still enter the title yourself.</p>}
+          <ul>
+            {matches.map((item) => (
+              <li key={item.key}>
+                <button
+                  type="button"
+                  className="min-h-11 text-left"
+                  onClick={() => {
+                    choose({ title: item.title, author: item.author, series: item.series })
+                    setQuery('')
+                    setTerm('')
+                  }}
+                >
+                  {[item.title, item.author, item.series].filter(Boolean).join(' · ')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </details>
+  )
+}
 
 export function IndependentPlans({ kind }: { kind: PlannerEntry['kind'] }) {
   const entries = usePlannerEntries()
@@ -33,6 +127,15 @@ export function IndependentPlans({ kind }: { kind: PlannerEntry['kind'] }) {
       >
         Add {label.toLowerCase()}
       </Button>
+      {!draft && (
+        <CatalogPicker
+          choose={(choice) => {
+            save.reset()
+            setNotice('')
+            setDraft({ id: crypto.randomUUID(), kind, timing: '', ...choice })
+          }}
+        />
+      )}
       {draft && (
         <form
           className="my-3 grid gap-3"

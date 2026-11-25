@@ -176,9 +176,10 @@ export function SeriesCard({
             className="break-words text-[19px] italic leading-tight text-ink"
             style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
           >
-            {row.series.name}
+            {row.series.displayName || row.series.name}
           </h3>
           <p className="mt-1 text-[12px] leading-relaxed text-muted">
+            {row.series.displayName && <>{row.series.name} · </>}
             {management.possessedBooks} in hand · {progress.read} read · {knownLength} known
             {seriesLength ? ` · ${seriesLength} in series` : ''}
             {progress.toGet ? ` · ${progress.toGet} to get` : ''}
@@ -220,6 +221,7 @@ export function SeriesCard({
         <Link
           to="/series/$seriesName"
           params={{ seriesName: encodeURIComponent(row.series.name) }}
+          search={row.series.displayName ? { sid: row.series.id } : {}}
           className="skin-control skin-btn-primary inline-flex h-10 w-full items-center justify-center px-4 text-[12px] sm:w-auto"
           aria-label={`Open the ${row.series.name} series page`}
         >
@@ -517,6 +519,7 @@ export function SeriesIndexScreen() {
                     key={row.series.id}
                     to="/series/$seriesName"
                     params={{ seriesName: encodeURIComponent(row.series.name) }}
+                    search={row.series.displayName ? { sid: row.series.id } : {}}
                     className="skin-control min-h-11 border border-line px-3 py-2 text-[12px] font-semibold text-ink"
                   >
                     Review {row.series.name} · {row.unreviewed}
@@ -584,7 +587,13 @@ export function SeriesIndexScreen() {
         </>
       )}
 
-      {renaming ? <RenameSeriesDialog row={renaming} onClose={() => setRenaming(null)} /> : null}
+      {renaming ? (
+        <RenameSeriesDialog
+          row={renaming}
+          peers={managementRows}
+          onClose={() => setRenaming(null)}
+        />
+      ) : null}
       {deleting ? <DeleteSeriesDialog row={deleting} onClose={() => setDeleting(null)} /> : null}
       {merging ? (
         <MergeSeriesDialog rows={managementRows} onClose={() => setMerging(false)} />

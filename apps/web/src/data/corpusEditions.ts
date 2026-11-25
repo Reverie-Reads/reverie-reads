@@ -43,6 +43,7 @@ export interface CorpusRecord {
   darkness: number | null
   guidanceSource: { sourceRef?: string; observedAt?: string } | null
   isbns: string[]
+  personalSeriesTitles?: Record<string,string>
   fingerprint: string
   series?: { confirmed?: boolean; name: string | null; position: number | null; count: number | null; status: string | null }
   editions: CorpusEdition[]

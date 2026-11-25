@@ -54,6 +54,7 @@ export const suggestionsKey = (bookId: string) => ['trope-suggestions', bookId] 
 export function useTropes() {
   return useQuery({
     queryKey: tropesKey,
+    staleTime: 5 * 60_000,
     queryFn: async (): Promise<UiTrope[]> => {
       const data = await pageAll<TropeRowT>('tropes', (from, to) =>
         // `name` is not unique across canonical and personal rows — `id` makes the pages disjoint.
@@ -74,6 +75,7 @@ export interface BookTropeRow {
 export function useAllBookTropes() {
   return useQuery({
     queryKey: bookTropesKey,
+    staleTime: 5 * 60_000,
     queryFn: async (): Promise<BookTropeRow[]> => {
       // A JOIN table: several rows per book, so it crosses the cap well before `books` does.
       return await pageAll<BookTropeRow>('book_tropes', (from, to) =>

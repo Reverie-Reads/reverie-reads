@@ -33,28 +33,57 @@ const messageOf = (error: unknown): string =>
 
 export function RenameSeriesDialog({
   row,
+  peers = [],
   onClose,
   onRenamed,
 }: {
   row: SeriesManagementRow
+  peers?: readonly SeriesManagementRow[]
   onClose: () => void
   onRenamed?: (name: string) => void
 }) {
   const [name, setName] = useState(row.name)
   const update = useUpdateSeries(row.name)
   const nextName = name.trim()
+  const collision = peers.find(
+    (other) =>
+      other.id !== row.id &&
+      (other.series.displayName || other.name).toLowerCase() === nextName.toLowerCase(),
+  )
+  const [merging, setMerging] = useState(false)
+  const [qualifier, setQualifier] = useState('')
+  if (merging && collision)
+    return (
+      <MergeSeriesDialog
+        rows={[row, collision]}
+        initialIds={[row.id, collision.id]}
+        onClose={onClose}
+      />
+    )
 
   return (
     <Modal title={`Rename ${row.name}`} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault()
-          if (!nextName || nextName === row.name || update.isPending) return
+          if (
+            !nextName ||
+            nextName === row.name ||
+            (collision && !qualifier.trim()) ||
+            update.isPending
+          )
+            return
           update.mutate(
-            { id: row.id, name: nextName },
+            {
+              id: row.id,
+              name: nextName,
+              ...(collision
+                ? { distinction: { otherId: collision.id, qualifier: qualifier.trim() } }
+                : {}),
+            },
             {
               onSuccess: () => {
-                onRenamed?.(nextName)
+                onRenamed?.(collision ? nextName + ' · ' + qualifier.trim() : nextName)
                 onClose()
               },
             },
@@ -75,6 +104,29 @@ export function RenameSeriesDialog({
         <p className="mt-2 text-[12.5px] leading-relaxed text-muted">
           Every confirmed membership and linked book will follow the new name.
         </p>
+        {collision && (
+          <div className="my-3">
+            <p>
+              A series with this title already exists. Merge the two records or keep separate
+              memberships under the same display title.
+            </p>
+            <Button
+              onClick={() => setMerging(true)}
+              disabled={!isSeriesMergeEligible(row) || !isSeriesMergeEligible(collision)}
+            >
+              Review a merge
+            </Button>
+            <label className="block">
+              Label for this separate series (author or other distinction)
+              <input
+                className="skin-field block w-full"
+                maxLength={150}
+                value={qualifier}
+                onChange={(e) => setQualifier(e.target.value)}
+              />
+            </label>
+          </div>
+        )}
         {update.isError ? (
           <p role="alert" className="mt-3 text-[12.5px] text-primary">
             {messageOf(update.error)}
@@ -85,7 +137,11 @@ export function RenameSeriesDialog({
             Cancel
           </Button>
           <Button type="submit" disabled={!nextName || nextName === row.name || update.isPending}>
-            {update.isPending ? 'Renaming…' : 'Rename series'}
+            {update.isPending
+              ? 'Renaming…'
+              : collision
+                ? 'Keep as separate series'
+                : 'Rename series'}
           </Button>
         </div>
       </form>
@@ -101,16 +157,18 @@ const asConsolidationRow = (row: SeriesManagementRow): ConsolidationSeries => ({
 })
 
 export function MergeSeriesDialog({
+  initialIds,
   rows,
   onClose,
 }: {
+  initialIds?: readonly [string, string]
   rows: readonly SeriesManagementRow[]
   onClose: () => void
 }) {
   const eligibleRows = useMemo(() => rows.filter(isSeriesMergeEligible), [rows])
   const excludedCount = rows.length - eligibleRows.length
-  const [firstId, setFirstId] = useState('')
-  const [secondId, setSecondId] = useState('')
+  const [firstId, setFirstId] = useState(initialIds?.[0] ?? '')
+  const [secondId, setSecondId] = useState(initialIds?.[1] ?? '')
   const [keepId, setKeepId] = useState('')
   const merge = useMergeSeries()
   const first = eligibleRows.find((row) => row.id === firstId)

@@ -299,6 +299,7 @@ export interface BackupTombstone {
 }
 
 export interface BackupSeriesRow {
+  display_name?: string | null
   id: string
   name: string
   status: string | null
@@ -715,7 +716,7 @@ export async function buildBackup(): Promise<string> {
       pageAll<BackupSeriesRow>('series', (from, to) =>
         supabase
           .from('series')
-          .select('id, name, status, source, source_ref, refreshed_at, length', { count: 'exact' })
+          .select('id, name, display_name, status, source, source_ref, refreshed_at, length', { count: 'exact' })
           .order('id')
           .range(from, to),
       ),
@@ -1155,6 +1156,7 @@ async function restoreStructuredSeries(
         .insert({
           owner_id: ownerId,
           name: row.name,
+          display_name: row.display_name ?? null,
           status: row.status,
           source: row.source === 'hardcover' ? 'hardcover' : 'manual',
           source_ref: row.source_ref,
@@ -1170,6 +1172,7 @@ async function restoreStructuredSeries(
       const { error } = await supabase
         .from('series')
         .update({
+          ...(row.display_name !== undefined ? {display_name:row.display_name} : {}),
           status: row.status,
           source: row.source === 'hardcover' ? 'hardcover' : 'manual',
           source_ref: row.source_ref,

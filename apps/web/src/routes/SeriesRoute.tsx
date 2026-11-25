@@ -43,6 +43,7 @@ import {
   useReviewSeriesClaims,
   useSetPrimarySeriesMembership,
   useSeriesDetail,
+  useSeriesList,
   useUpdateEntry,
   useUpdateSeries,
 } from '../data/series'
@@ -117,12 +118,14 @@ function SeriesLengthEditor({
 
 function SeriesScreen() {
   const { seriesName } = seriesRoute.useParams()
-  const name = decodeURIComponent(seriesName)
+  const routeName = decodeURIComponent(seriesName)
+  const { sid } = seriesRoute.useSearch()
   const navigate = useNavigate()
   const { data: books } = useBooks()
   const { data: lists } = useLists()
   const { data: items } = useAllListItems()
-  const { data: detail, isLoading, isError, refetch } = useSeriesDetail(name)
+  const { data: detail, isLoading, isError, refetch } = useSeriesDetail(routeName, sid)
+  const name = detail?.series.name ?? routeName
   const reviewClaims = useReviewSeriesClaims(name)
   const setPrimary = useSetPrimarySeriesMembership(name)
   const updateSeries = useUpdateSeries(name)
@@ -142,6 +145,7 @@ function SeriesScreen() {
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [sourceNote, setSourceNote] = useState<string | null>(null)
   const [renaming, setRenaming] = useState(false)
+  const { data: renameCandidates } = useSeriesList(renaming)
   const [deleting, setDeleting] = useState(false)
   const [acknowledgedReview, setAcknowledgedReview] = useState('')
   const [editingEntry, setEditingEntry] = useState<SeriesEntry | null>(null)
@@ -399,7 +403,7 @@ function SeriesScreen() {
             className="min-w-0 text-[26px] italic leading-tight text-ink"
             style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
           >
-            {detail.series.name}
+            {detail.series.displayName || detail.series.name}
             <button
               type="button"
               onClick={() => setRenaming(true)}
@@ -884,11 +888,32 @@ function SeriesScreen() {
       {renaming ? (
         <RenameSeriesDialog
           row={managementRow}
+          peers={[...(renameCandidates?.values() ?? [])].map((candidate) => ({
+            series: candidate.series,
+            id: candidate.series.id,
+            name: candidate.series.name,
+            entries: candidate.entries,
+            liveEntries: candidate.total,
+            memberBooks: new Set(
+              candidate.entries.flatMap((entry) => (entry.bookId ? [entry.bookId] : [])),
+            ).size,
+            ghostEntries: candidate.ghosts,
+            unreviewedEntries: candidate.unreviewed,
+            removedEntries: candidate.removed,
+            possessedBooks: new Set(
+              candidate.entries.flatMap((entry) =>
+                entry.bookId && byId.get(entry.bookId) && isPossessed(byId.get(entry.bookId)!)
+                  ? [entry.bookId]
+                  : [],
+              ),
+            ).size,
+          }))}
           onClose={() => setRenaming(false)}
           onRenamed={(newName) => {
             void navigate({
               to: '/series/$seriesName',
               params: { seriesName: encodeURIComponent(newName) },
+              search: { sid: detail.series.id },
               replace: true,
             })
           }}
@@ -992,5 +1017,8 @@ function SeriesScreen() {
 export const seriesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'series/$seriesName',
+  validateSearch: (s: Record<string, unknown>): { sid?: string } => ({
+    sid: typeof s.sid === 'string' && /^[0-9a-f-]{36}$/i.test(s.sid) ? s.sid : undefined,
+  }),
   component: SeriesScreen,
 })

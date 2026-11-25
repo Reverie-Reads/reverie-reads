@@ -29,6 +29,7 @@ import { allListItemsKey, nextItemPositionFor } from './listItems'
  */
 
 export interface UiSeries {
+  displayName?: string | null
   id: string
   name: string
   status: SeriesStatus | null
@@ -40,6 +41,7 @@ export interface UiSeries {
 }
 
 interface SeriesRowT {
+  display_name?: string | null
   id: string
   owner_id: string
   name: string
@@ -81,6 +83,7 @@ export interface SeriesDetail {
 const toUiSeries = (row: SeriesRowT): UiSeries => ({
   id: row.id,
   name: row.name,
+  displayName: row.display_name,
   status: (row.status as SeriesStatus) ?? null,
   length: row.length,
   source: row.source === 'hardcover' ? 'hardcover' : 'manual',
@@ -147,9 +150,10 @@ export interface SeriesListRow {
   entries: SeriesEntry[]
 }
 
-export function useSeriesList() {
+export function useSeriesList(enabled = true) {
   return useQuery({
     queryKey: seriesListKey,
+    enabled,
     queryFn: async (): Promise<Map<string, SeriesListRow>> => {
       // series_entries carries a row per slot — including the ghost slots a series implies — so it
       // crosses the cap ahead of `series`, and a short read here silently shortens series.
@@ -186,12 +190,8 @@ export function useSeriesList() {
         if (!e.book_id) s.ghosts++
         s.entries.push(toEntry(e))
       }
-      const byName = new Map<string, SeriesListRow>()
-      for (const v of byId.values()) {
-        v.entries = sortEntries(v.entries)
-        byName.set(v.series.name.toLowerCase(), v)
-      }
-      return byName
+      for (const row of byId.values()) row.entries = sortEntries(row.entries)
+      return byId
     },
   })
 }
@@ -300,11 +300,11 @@ export function useRestoreSeries() {
  * tombstone, assign an order, or seed status. Explicit review and trusted mutation paths own those
  * transitions.
  */
-export async function fetchSeriesDetail(name: string): Promise<SeriesDetail | null> {
+export async function fetchSeriesDetail(name: string, id?: string): Promise<SeriesDetail | null> {
   const { data: rows, error } = await supabase
     .from('series')
     .select('*')
-    .eq('name', name)
+    .eq(id ? 'id' : 'name', id ?? name)
     .limit(1)
   if (error) throw error
   const seriesRow = (rows as SeriesRowT[])[0]
@@ -331,8 +331,8 @@ export async function fetchSeriesDetail(name: string): Promise<SeriesDetail | nu
     removed: allRows.filter((row) => row.removed_at).map(toEntry),
   }
 }
-export function useSeriesDetail(name: string) {
-  return useQuery({ queryKey: seriesKey(name), enabled: !!name.trim(), queryFn: () => fetchSeriesDetail(name) })
+export function useSeriesDetail(name: string, id?: string) {
+  return useQuery({ queryKey: id ? [...seriesKey(name), id] : seriesKey(name), enabled: !!name.trim(), queryFn: () => fetchSeriesDetail(name,id) })
 }
 
 export function useReviewSeriesClaims(name: string) {
@@ -433,8 +433,11 @@ export function useUpdateSeries(name: string) {
   const qc = useQueryClient()
   return useMutation({
     meta: { action: 'The series' },
-    mutationFn: async (input: { id: string; name?: string; status?: SeriesStatus | null; lengthChange?: { expected: number | null; value: number | null } }) => {
-      if (input.name !== undefined && input.name !== name) {
+    mutationFn: async (input: { id: string; name?: string; distinction?: {otherId:string; qualifier:string}; status?: SeriesStatus | null; lengthChange?: { expected: number | null; value: number | null } }) => {
+      if (input.name && input.distinction) {
+        const {error}=await supabase.rpc('name_distinct_personal_series',{p_series:input.id,p_other:input.distinction.otherId,p_title:input.name,p_qualifier:input.distinction.qualifier,p_expected:name})
+        if(error) throw error
+      } else if (input.name !== undefined && input.name !== name) {
         const { error } = await supabase.rpc('rename_personal_series', {
           p_series: input.id,
           p_name: input.name,

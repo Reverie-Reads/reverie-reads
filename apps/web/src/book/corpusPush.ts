@@ -211,7 +211,7 @@ export function bookCorpusOptions(
     book.series.trim() && record.series
       ? {
           bookId: book.id,
-          name: book.series,
+          name: record.personalSeriesTitles?.[book.id] || book.series,
           position: book.position === '' ? null : book.position,
           count: book.seriesCount,
           status: book.status,

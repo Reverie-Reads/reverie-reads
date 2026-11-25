@@ -23,8 +23,8 @@ select is(
     join pg_namespace namespace on namespace.oid = function.pronamespace
     where namespace.nspname in ('public','corpus_admin_private') and function.prosrc like '%PT409%'
   ),
-  33,
-  'all thirty-three conflict-bearing functions return a bounded HTTP conflict'
+  35,
+  'all thirty-five conflict-bearing functions return a bounded HTTP conflict'
 );
 
 select is(
@@ -37,8 +37,9 @@ select is(
   -- Edition credit prepare/apply add four draft/selection/fingerprint conflicts;
   -- reviewed prepare adds the immutable source-use receipt conflict.
   -- Catalog evidence apply adds immutable retry identity and stale-target conflicts.
-  48,
-  'all forty-eight remaining stale-context paths use the non-retryable conflict code'
+  -- Reviewed series publication and disambiguating personal series add three conflicts.
+  51,
+  'all fifty-one remaining stale-context paths use the non-retryable conflict code'
 );
 
 select * from finish();
