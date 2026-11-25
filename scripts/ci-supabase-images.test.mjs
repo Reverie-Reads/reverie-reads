@@ -115,3 +115,17 @@ test('cache corruption and a different plan are rejected before loading any imag
   assert.throws(() => validateBundle(`${text} `, receipt, 'reviewed-archive'), /plan changed/)
   assert.throws(() => validateBundle(text, receipt, 'tampered-archive'), /archive is corrupt/)
 })
+
+test('accepts the pinned manifest identity on containerd with independent descriptor evidence', () => {
+  const actual = {
+    ...image,
+    Id: expected.manifestDigest,
+    Descriptor: { digest: expected.manifestDigest },
+  }
+  assert.doesNotThrow(() => assertImage(actual, expected))
+  assert.throws(
+    () => assertImage({ ...actual, Descriptor: undefined }, expected),
+    /Unexpected content/,
+  )
+  assert.throws(() => assertImage({ ...actual, Architecture: 'arm64' }, expected))
+})
