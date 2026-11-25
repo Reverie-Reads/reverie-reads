@@ -288,7 +288,8 @@ function PersonalLibraryScreen() {
           data-testid="search-hidden-notice"
           className="mb-3 text-[12.5px] text-muted"
         >
-          {hiddenCount} {hiddenCount === 1 ? 'match' : 'matches'} hidden by filters —{' '}
+          {hiddenCount} more {hiddenCount === 1 ? 'book matches' : 'books match'} your search
+          outside your current shelf.{' '}
           <button
             type="button"
             data-testid="search-hidden-reveal"
@@ -329,11 +330,11 @@ function PersonalLibraryScreen() {
              */
             onMouseDown={(e) => e.preventDefault()}
             onClick={toggleWishlist}
-            aria-label="Show matches hidden by filters"
+            aria-label="Include matching books outside this shelf"
             className="underline underline-offset-2"
             style={{ color: 'var(--accent-ink)' }}
           >
-            show
+            Include these books
           </button>
         </p>
       )}

@@ -11,6 +11,7 @@ import {
   sortBooks,
   type LibraryFilters,
 } from './filters'
+import { newCopy, newEdition, inventoryPossession } from './copyInventory'
 import { makeBook } from './book.fixture'
 
 describe('matchesFilters', () => {
@@ -24,6 +25,34 @@ describe('matchesFilters', () => {
     status: 'ongoing',
     readStatus: 'Read',
     fave: true,
+  })
+
+  it('finds the reported title and a special edition after its copy was given away', () => {
+    const edition = { ...newEdition('hardcover'), label: 'Bookish Box', special: true }
+    const inventory = {
+      version: 1 as const,
+      editions: [edition],
+      copies: [newCopy(edition.id, 'given-away')],
+    }
+    const book = makeBook({
+      id: 'former',
+      title: 'Blood & Roses',
+      ...inventoryPossession(inventory),
+      copyInventory: inventory,
+    })
+    expect(book.ownership).toBe('unowned')
+    expect(book.wishlist).toBe(false)
+    for (const q of ['Blood and Roses', 'bookish', 'special edition']) {
+      expect(
+        matchesFilters(book, {
+          ...defaultFilters(),
+          q,
+          specialEdition: true,
+          previouslyOwned: true,
+        }),
+      ).toBe(true)
+    }
+    expect(matchesFilters(book, { ...defaultFilters(), shelf: 'owned' })).toBe(false)
   })
 
   // The genre facet is genres[]-aware via bookGenres, which is what makes a multi-genre book

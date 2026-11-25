@@ -91,7 +91,24 @@ export function TropePicker({ book, onClose }: { book: Book; onClose: () => void
     .map((id) => byId.get(id))
     .filter((t): t is NonNullable<typeof t> => !!t && !onBook.has(t.id))
 
-  const matching = useMemo(() => (tropes ?? []).filter((t) => tropeMatches(q, t)), [tropes, q])
+  const matching = useMemo(() => {
+    const choices = new Map<string, NonNullable<typeof tropes>[number]>()
+    for (const tag of tropes ?? []) {
+      if (!tropeMatches(q, tag)) continue
+      const key = tag.name.trim().toLowerCase()
+      const current = choices.get(key)
+      // Prefer the assigned identity, then the reader's spelling. Both assigned IDs
+      // remain individually removable in the On this book list above.
+      if (
+        !current ||
+        (onBook.has(tag.id) && !onBook.has(current.id)) ||
+        (onBook.has(tag.id) === onBook.has(current.id) && tag.personal && !current.personal)
+      ) {
+        choices.set(key, tag)
+      }
+    }
+    return [...choices.values()]
+  }, [tropes, q, onBook])
   const exactExists = (tropes ?? []).some((t) => t.name.toLowerCase() === q.trim().toLowerCase())
 
   const createDraft = () => {

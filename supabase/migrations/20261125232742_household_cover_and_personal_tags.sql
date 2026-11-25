@@ -37,11 +37,27 @@ grant execute on function public.set_household_cover(uuid,uuid,uuid,text,text) t
 create or replace function public.household_library_works_v2()
 returns setof jsonb language sql stable security definer set search_path='' as $$
   select to_jsonb(row) || coalesce(enrichment.bibliography,'{}') ||
-    jsonb_build_object('designated_cover',hw.designated_cover,'corpus_bibliography',to_jsonb(row))
+    jsonb_build_object('designated_cover', hw.designated_cover, 'corpus_bibliography', to_jsonb(row),
+      'household_tropes', public.corpus_and_household_tropes(hw.work_id, labels.items))
   from public.household_library_works() row
   join public.household_members mine on mine.user_id=auth.uid()
   join public.household_works hw on hw.household_id=mine.household_id and hw.work_id=row.work_id and hw.removed_at is null
-  left join public.household_work_enrichment enrichment on enrichment.household_id=mine.household_id and enrichment.work_id=row.work_id;
+  left join public.household_work_enrichment enrichment on enrichment.household_id=mine.household_id and enrichment.work_id=row.work_id
+  -- Refresh the spelling only for an existing shared assignment from a current member.
+  -- Reading the label avoids promoting unrelated tags or rewriting a historical snapshot.
+  left join lateral (
+    select jsonb_agg(case when current_tag.name is null then item
+      else jsonb_set(item,'{name}',to_jsonb(current_tag.name)) end order by ordinal) items
+    from jsonb_array_elements(enrichment.tropes) with ordinality snapshot(item,ordinal)
+    left join public.tropes current_tag on current_tag.id::text=item->>'id' and exists (
+      select 1 from public.household_members member
+      join public.books b on b.owner_id=member.user_id and b.corpus_work_id=hw.work_id and b.removed_at is null
+      join public.book_tropes bt on bt.book_id=b.id and bt.owner_id=b.owner_id and bt.trope_id=current_tag.id
+      where member.household_id=mine.household_id and member.user_id=current_tag.owner_id
+      and (b.ownership='owned' or exists (select 1 from public.household_book_shares sh
+        where sh.household_id=member.household_id and sh.work_id=hw.work_id and sh.book_id=b.id and sh.removed_at is null))
+    )
+  ) labels on true;
 $$;
 
 create function public.publish_personal_book_tag(p_book uuid,p_work uuid,p_tag uuid,p_name text)
