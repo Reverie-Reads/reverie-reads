@@ -37,7 +37,8 @@ import { useLabels } from '../skin/labels'
  */
 export function TropePicker({ book, onClose }: { book: Book; onClose: () => void }) {
   const labels = useLabels()
-  const { data: tropes } = useTropes()
+  const vocabulary = useTropes()
+  const tropes = vocabulary.data
   const { data: allAssignments } = useAllBookTropes()
   const { data: suggestions } = useSuggestions(book.id)
   const assign = useAssignTrope()
@@ -95,8 +96,8 @@ export function TropePicker({ book, onClose }: { book: Book; onClose: () => void
 
   const createDraft = () => {
     const raw = q.trim()
-    if (!raw) return
-    const hit = resolveTrope(raw, tropes ?? [])
+    if (!raw || !tropes || vocabulary.isError || createPersonal.isPending) return
+    const hit = resolveTrope(raw, tropes)
     if (hit) {
       // near-match: offer the canonical instead of duplicating
       setNote(`Filed under ${hit.name} — the shelf already knows this one.`)
@@ -210,9 +211,20 @@ export function TropePicker({ book, onClose }: { book: Book; onClose: () => void
           {note}
         </p>
       )}
-      {q.trim() && !exactExists && (
+      {vocabulary.isError ? (
+        <p role="alert">
+          Could not load the tag list.{' '}
+          <button type="button" onClick={() => void vocabulary.refetch()}>
+            Retry tags
+          </button>
+        </p>
+      ) : (
+        !tropes && <p role="status">Loading tags…</p>
+      )}
+      {tropes && !vocabulary.isError && q.trim() && !exactExists && (
         <button
           type="button"
+          disabled={createPersonal.isPending}
           onClick={createDraft}
           className="skin-control-quiet mb-3 border border-dashed border-line px-3.5 py-1.5 text-[12.5px] font-semibold text-ink"
           style={{ background: 'var(--chip)' }}

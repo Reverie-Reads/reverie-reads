@@ -921,7 +921,7 @@ test('persistent Add creates a household-only work and explicit adoption updates
     await page.getByRole('button', { name: 'View household library', exact: true }).click()
     await expect(page).toHaveURL(/\/library\?scope=household$/)
     const householdOnlyCard = page.getByRole('button', {
-      name: `View ${title} in the household library`,
+      name: `Preview ${title} in the household library`,
     })
     await expect(householdOnlyCard).toBeVisible()
 
@@ -1090,9 +1090,8 @@ test('household details open a full page with only the current reader personal-b
   await page.goto('/library?scope=household')
   const title = `Household Duplicate ${projectName}`
   await page
-    .getByRole('button', { name: `View ${title} in the household library`, exact: true })
+    .getByRole('link', { name: `Open ${title} in the household library`, exact: true })
     .click()
-  await page.getByRole('link', { name: 'Open full details', exact: true }).click()
   await expect(page).toHaveURL(/scope=household.*work=/)
   await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Open my book', exact: true })).toHaveAttribute(

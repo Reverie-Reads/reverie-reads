@@ -29,10 +29,12 @@ export function Stars({
   onChange,
   size = 20,
   step = 1,
+  labelText = 'Your rating',
 }: {
   value: number
   onChange?: (v: number) => void
   size?: number
+  labelText?: string
   step?: 1 | 0.5
 }) {
   const rootRef = useRef<HTMLDivElement>(null)
@@ -308,7 +310,7 @@ export function Stars({
       ref={rootRef}
       role="slider"
       tabIndex={0}
-      aria-label="Your rating"
+      aria-label={labelText}
       aria-valuemin={0}
       aria-valuemax={5}
       aria-valuenow={shown}

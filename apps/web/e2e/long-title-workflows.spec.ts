@@ -213,7 +213,10 @@ for (const width of [320, 390, 1440]) {
       }
       await page.goto('/library?scope=household')
       await page
-        .getByRole('button', { name: `View ${book.title} in the household library`, exact: true })
+        .getByRole('button', {
+          name: `Preview ${book.title} in the household library`,
+          exact: true,
+        })
         .click()
       await fits(page.getByRole('heading', { name: book.title, exact: true }))
       await nameplateKeepsAuthor(page.getByRole('heading', { name: book.title, exact: true }))

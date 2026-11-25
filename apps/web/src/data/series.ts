@@ -433,12 +433,19 @@ export function useUpdateSeries(name: string) {
   const qc = useQueryClient()
   return useMutation({
     meta: { action: 'The series' },
-    mutationFn: async (input: { id: string; name?: string; status?: SeriesStatus | null }) => {
+    mutationFn: async (input: { id: string; name?: string; status?: SeriesStatus | null; lengthChange?: { expected: number | null; value: number | null } }) => {
       if (input.name !== undefined && input.name !== name) {
         const { error } = await supabase.rpc('rename_personal_series', {
           p_series: input.id,
           p_name: input.name,
         })
+        if (error) throw error
+      }
+      if (input.lengthChange) {
+        const { expected, value } = input.lengthChange
+        const update = supabase.from('series').update({ length: value }).eq('id', input.id)
+        const matching = expected === null ? update.is('length', null) : update.eq('length', expected)
+        const { error } = await matching.select('id').single()
         if (error) throw error
       }
       if (input.status !== undefined) {

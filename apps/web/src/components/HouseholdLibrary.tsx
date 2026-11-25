@@ -1,7 +1,8 @@
+import { isStoredCoverUrl } from '@reverie/core'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
-  CORE_GENRES,
+  LIBRARY_GENRES,
   PUB_DAY,
   PUB_MONTH,
   PUB_YEAR,
@@ -145,57 +146,69 @@ export function HouseholdBookCard({
   const possession = [...new Set(book.owners.flatMap((owner) => householdPossessionLabels(owner)))]
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={`View ${book.title} in the household library`}
-      aria-current={selected ? 'true' : undefined}
-      data-testid="household-book-card"
-      data-owners={book.owners.map((owner) => owner.userId).join(' ')}
-      className="group block w-full text-left"
-    >
-      <div
-        className="skin-card relative aspect-[2/3] overflow-hidden border border-line transition-shadow motion-reduce:transition-none"
-        style={{
-          background: `linear-gradient(150deg, ${g0}, ${g1})`,
-          ...(selected ? { boxShadow: '0 0 0 2.5px var(--primary), var(--shadow)' } : {}),
-        }}
+    <div className="min-w-0">
+      <Link
+        to="/library"
+        search={{ scope: 'household', work: book.id }}
+        aria-label={`Open ${book.title} in the household library`}
+        aria-current={selected ? 'true' : undefined}
+        data-testid="household-book-card"
+        data-owners={book.owners.map((owner) => owner.userId).join(' ')}
+        className="group block w-full text-left"
       >
-        <HouseholdCover book={book} thumb />
-        <span
-          className="absolute left-1.5 top-1.5 max-w-[calc(100%-12px)] break-words px-2 py-1 text-center text-[10px] font-semibold leading-tight"
+        <div
+          className="skin-card relative aspect-[2/3] overflow-hidden border border-line transition-shadow motion-reduce:transition-none"
           style={{
-            background: 'var(--card-solid)',
-            color: 'var(--ink)',
-            borderRadius: 'var(--mark-radius)',
-            boxShadow: 'var(--shadow)',
+            background: `linear-gradient(150deg, ${g0}, ${g1})`,
+            ...(selected ? { boxShadow: '0 0 0 2.5px var(--primary), var(--shadow)' } : {}),
           }}
         >
-          {members}
-        </span>
-        {possession.length > 0 && (
+          <HouseholdCover book={book} thumb />
           <span
-            className="absolute bottom-1.5 right-1.5 max-w-[calc(100%-12px)] break-words px-2 py-1 text-center text-[10px] font-semibold leading-tight"
+            className="absolute left-1.5 top-1.5 max-w-[calc(100%-12px)] break-words px-2 py-1 text-center text-[10px] font-semibold leading-tight"
             style={{
               background: 'var(--card-solid)',
               color: 'var(--ink)',
               borderRadius: 'var(--mark-radius)',
+              boxShadow: 'var(--shadow)',
             }}
           >
-            {possession.join(' · ')}
+            {members}
           </span>
-        )}
-      </div>
-      <span className="mt-2.5 block break-words text-[12.5px] font-semibold leading-5 text-ink">
-        {book.title}
-      </span>
-      {book.author ? (
-        <span className="block break-words text-[11.5px] leading-5 text-muted">{book.author}</span>
-      ) : null}
-      <span className="block break-words text-[11px] font-semibold leading-5 text-muted">
-        {book.owners.length ? members : 'Kept in the household'}
-      </span>
-    </button>
+          {possession.length > 0 && (
+            <span
+              className="absolute bottom-1.5 right-1.5 max-w-[calc(100%-12px)] break-words px-2 py-1 text-center text-[10px] font-semibold leading-tight"
+              style={{
+                background: 'var(--card-solid)',
+                color: 'var(--ink)',
+                borderRadius: 'var(--mark-radius)',
+              }}
+            >
+              {possession.join(' · ')}
+            </span>
+          )}
+        </div>
+        <span className="mt-2.5 block break-words text-[12.5px] font-semibold leading-5 text-ink">
+          {book.title}
+        </span>
+        {book.author ? (
+          <span className="block break-words text-[11.5px] leading-5 text-muted">
+            {book.author}
+          </span>
+        ) : null}
+        <span className="block break-words text-[11px] font-semibold leading-5 text-muted">
+          {book.owners.length ? members : 'Kept in the household'}
+        </span>
+      </Link>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="min-h-11 text-sm underline"
+        aria-label={`Preview ${book.title} in the household library`}
+      >
+        Quick preview
+      </button>
+    </div>
   )
 }
 
@@ -409,7 +422,7 @@ function CorpusEditForm({
                     className={fieldClass}
                   >
                     <option value="">No primary genre</option>
-                    {CORE_GENRES.map((value) => (
+                    {LIBRARY_GENRES.map((value) => (
                       <option key={value} value={value.toLowerCase()}>
                         {value}
                       </option>
@@ -551,6 +564,8 @@ export function HouseholdBookDetail({
   onReviewCover,
   reviewingCoverBookId = null,
   fullPage = false,
+  onDesignateCover,
+  designatingCover = false,
 }: {
   book: HouseholdBook | null
   currentReaderId: string
@@ -562,6 +577,8 @@ export function HouseholdBookDetail({
   editingCorpus?: boolean
   onReviewCover?: (owner: HouseholdBookOwner) => Promise<void>
   reviewingCoverBookId?: string | null
+  onDesignateCover?: (owner: HouseholdBookOwner | null) => void
+  designatingCover?: boolean
   fullPage?: boolean
 }) {
   const [corpusTropeName, setCorpusTropeName] = useState('')
@@ -617,6 +634,16 @@ export function HouseholdBookDetail({
           : 'Kept here independently of any personal copy'}
       </p>
 
+      {book.designatedCover && onDesignateCover && (
+        <button
+          type="button"
+          disabled={designatingCover}
+          onClick={() => onDesignateCover(null)}
+          className="skin-control min-h-11"
+        >
+          Clear household cover
+        </button>
+      )}
       {book.owners.length > 0 && (
         <div className="mt-4">
           <div className="mb-1.5 text-[11px] uppercase tracking-[0.2em] text-muted">Copies</div>
@@ -661,6 +688,20 @@ export function HouseholdBookDetail({
                       Open my book
                     </Link>
                   )}
+                  {owner.userId === currentReaderId &&
+                    onDesignateCover &&
+                    isStoredCoverUrl(owner.cover) && (
+                      <button
+                        type="button"
+                        className="skin-control min-h-11 px-3"
+                        disabled={designatingCover || book.designatedCover === owner.cover}
+                        onClick={() => onDesignateCover(owner)}
+                      >
+                        {book.designatedCover === owner.cover
+                          ? 'Selected household cover'
+                          : 'Use this cover for the household'}
+                      </button>
+                    )}
                   {onReviewCover && owner.cover ? (
                     <CorpusCoverReviewToggle
                       scope="household"

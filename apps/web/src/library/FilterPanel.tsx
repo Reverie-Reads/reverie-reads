@@ -3,7 +3,8 @@ import type { Book, LibraryShelfLink, SeriesLenBucket } from '@reverie/core'
 import {
   bookGenres,
   bookSubgenres,
-  CORE_GENRES,
+  LIBRARY_GENRES,
+  subgenreLabel,
   bookTropeNames,
   SERIES_STATUS_LABELS,
   SERIES_STATUS_VALUES,
@@ -63,6 +64,17 @@ export function FilterPanel({ books, bare = false }: { books: Book[]; bare?: boo
     () => ['All', ...[...new Set(books.flatMap((b) => bookGenres(b)))].sort()],
     [books],
   )
+  const editions = useMemo(
+    () =>
+      [
+        ...new Set(
+          books.flatMap(
+            (book) => book.copyInventory?.editions.map((e) => e.label.trim()).filter(Boolean) ?? [],
+          ),
+        ),
+      ].sort(),
+    [books],
+  )
   const tags = useMemo(() => {
     const counts = new Map<string, number>()
     for (const b of books)
@@ -79,10 +91,36 @@ export function FilterPanel({ books, bare = false }: { books: Book[]; bare?: boo
       border={!bare}
       className={bare ? '' : 'mb-4 backdrop-blur'}
     >
+      <Group label="Copies">
+        <Chip active={!!filters.specialEdition} onClick={() => s.toggleCopyFacet('specialEdition')}>
+          Special edition
+        </Chip>
+        <Chip
+          active={!!filters.previouslyOwned}
+          onClick={() => s.toggleCopyFacet('previouslyOwned')}
+        >
+          Previously owned
+        </Chip>
+      </Group>
+      {editions.length > 0 && (
+        <Group label="Edition">
+          <select
+            className="skin-field min-h-11 max-w-full"
+            aria-label="Edition name"
+            value={filters.editionLabel ?? ''}
+            onChange={(event) => s.setEditionLabel(event.target.value)}
+          >
+            <option value="">All editions</option>
+            {editions.map((edition) => (
+              <option key={edition}>{edition}</option>
+            ))}
+          </select>
+        </Group>
+      )}
       <Group label="Genre">
         {genres.map((g) => (
           <Chip key={g} active={filters.genre === g} onClick={() => s.setGenre(g)}>
-            {g === 'All' ? g : (CORE_GENRES.find((cg) => cg.toLowerCase() === g) ?? g)}
+            {g === 'All' ? g : (LIBRARY_GENRES.find((cg) => cg.toLowerCase() === g) ?? g)}
           </Chip>
         ))}
       </Group>
@@ -90,7 +128,7 @@ export function FilterPanel({ books, bare = false }: { books: Book[]; bare?: boo
       <Group label="Subgenre">
         {subs.map((sub) => (
           <Chip key={sub} active={filters.sub === sub} onClick={() => s.setSub(sub)}>
-            {sub}
+            {subgenreLabel(sub)}
           </Chip>
         ))}
       </Group>

@@ -69,3 +69,14 @@ body::before {
   pointer-events: none;
   z-index: 1000;
 }
+
+.library-filter-drawer {
+  top: var(--safe-top);
+  bottom: var(--safe-bottom);
+  left: var(--safe-left);
+  max-width: calc(100vw - var(--safe-left) - var(--safe-right));
+}
+
+html {
+  scroll-padding-top: var(--safe-top);
+}

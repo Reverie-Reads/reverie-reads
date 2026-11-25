@@ -12,6 +12,7 @@ import {
   type AuthorRelease,
   type ReleaseSource,
 } from '../data/releases'
+import { useSavePlannerEntry } from '../data/plannerEntries'
 import { CoverImage } from '../components/CoverImage'
 import { Chip } from '../components/Chip'
 import { Surface } from '../components/Surface'
@@ -29,6 +30,8 @@ function checkedLabel(value: string): string {
 
 function ReleaseCard({ release: r }: { release: AuthorRelease }) {
   const navigate = useNavigate()
+  const watch = useSavePlannerEntry()
+  const [id] = useState(() => crypto.randomUUID())
   const { first, last } = splitName(r.author)
   const release = r.release
   const format = release?.formats?.slice(0, 2).join(' · ')
@@ -65,8 +68,25 @@ function ReleaseCard({ release: r }: { release: AuthorRelease }) {
           <strong>{r.title}</strong>
           <span className="release-author">{r.author}</span>
           {detail && <span className="release-detail">{detail}</span>}
-          <span className="release-card-action">Keep on my horizon →</span>
+          <span className="release-card-action">Review in Add →</span>
         </span>
+      </button>
+      <button
+        type="button"
+        className="skin-control min-h-11 px-3"
+        disabled={watch.isPending || watch.isSuccess}
+        onClick={() =>
+          watch.mutate({
+            id,
+            title: r.title,
+            author: r.author,
+            series: '',
+            kind: 'watch',
+            timing: r.pub,
+          })
+        }
+      >
+        {watch.isSuccess ? 'Added to release watch' : 'Watch on my calendar'}
       </button>
       {release && (
         <p className="release-provenance">
@@ -119,7 +139,8 @@ function ReleaseSection({
 type ReleasePrecision = 'year' | 'month' | 'day'
 
 function TrackRelease({ suggestedAuthor }: { suggestedAuthor?: string }) {
-  const navigate = useNavigate()
+  const watch = useSavePlannerEntry()
+  const [draftId, setDraftId] = useState(() => crypto.randomUUID())
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState(suggestedAuthor ?? '')
@@ -152,10 +173,24 @@ function TrackRelease({ suggestedAuthor }: { suggestedAuthor?: string }) {
       )
       return
     }
-    void navigate({
-      to: '/add',
-      search: { title: title.trim(), author: author.trim(), pub, want: true },
-    })
+    watch.mutate(
+      {
+        id: draftId,
+        kind: 'watch',
+        title: title.trim(),
+        author: author.trim(),
+        series: '',
+        timing: pub,
+      },
+      {
+        onSuccess: () => {
+          setOpen(false)
+          setTitle('')
+          setDraftId(crypto.randomUUID())
+        },
+        onError: () => setError('Could not save this release. Your entry is still here.'),
+      },
+    )
   }
 
   return (
@@ -264,9 +299,10 @@ function TrackRelease({ suggestedAuthor }: { suggestedAuthor?: string }) {
             )}
             <button
               type="submit"
+              disabled={watch.isPending}
               className="skin-control skin-btn-primary min-h-11 px-4 text-[13px] font-semibold"
             >
-              Continue to Add
+              Save release watch
             </button>
           </form>
         </Surface>

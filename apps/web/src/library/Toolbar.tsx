@@ -1,6 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { activeFilterCount, formatAuthors, type Book, type LibrarySort } from '@reverie/core'
+import {
+  activeFilterCount,
+  matchesLibraryQuery,
+  formatAuthors,
+  type Book,
+  type LibrarySort,
+} from '@reverie/core'
 import { useBooks } from '../data/books'
 import { useFilters } from './filterStore'
 import { SORTS } from './constants'
@@ -15,18 +21,7 @@ function SearchResultsPanel({ q, onPick }: { q: string; onPick: (b: Book) => voi
   const matches = useMemo(() => {
     const needle = q.trim().toLowerCase()
     if (!needle || !books) return []
-    return books
-      .filter((b) =>
-        [
-          b.title,
-          formatAuthors(b.contributors),
-          [b.first, b.last].filter(Boolean).join(' '),
-          b.series,
-        ]
-          .filter(Boolean)
-          .some((f) => String(f).toLowerCase().includes(needle)),
-      )
-      .slice(0, 6)
+    return books.filter((book) => matchesLibraryQuery(book, needle))
   }, [books, q])
   if (!q.trim()) return null
   return (
@@ -53,20 +48,28 @@ function SearchResultsPanel({ q, onPick }: { q: string; onPick: (b: Book) => voi
       style={{ boxShadow: 'var(--shadow)' }}
     >
       <ul className="flex flex-col">
-        {matches.map((b) => (
+        {matches.slice(0, 6).map((b) => (
           <li key={b.id}>
             <button
               type="button"
               // mousedown so the pick lands before the input's blur closes the panel
-              onMouseDown={(e) => {
-                e.preventDefault()
-                onPick(b)
-              }}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => onPick(b)}
               className="flex w-full items-baseline justify-between gap-3 px-2 py-1.5 text-left hover:bg-[var(--chip)]"
               style={{ borderRadius: 'calc(var(--radius-control) / 3)' }}
             >
               <span className="min-w-0 flex-1 break-words text-[13.5px] font-semibold text-ink">
                 {b.title}
+                {b.copyInventory?.editions
+                  .filter(
+                    (edition) =>
+                      edition.label && edition.label.toLowerCase().includes(q.trim().toLowerCase()),
+                  )
+                  .map((edition) => (
+                    <span key={edition.id} className="block text-xs text-muted">
+                      {edition.label}
+                    </span>
+                  ))}
               </span>
               <span className="skin-label min-w-0 max-w-[45%] break-words text-right text-[11px] text-muted">
                 {formatAuthors(b.contributors) || [b.first, b.last].filter(Boolean).join(' ')}
@@ -102,17 +105,24 @@ export function Toolbar({ filterToggleClass = '' }: { filterToggleClass?: string
   return (
     <div className="mb-3 flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[200px] flex-1">
+        <div
+          className="relative min-w-[200px] flex-1"
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setSearchFocused(false)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setSearchFocused(false)
+          }}
+        >
           <input
             type="search"
             value={filters.q}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') (e.target as HTMLInputElement).blur()
             }}
-            placeholder="Search title, author, series, trope…"
+            placeholder="Search title, author, edition, series, tag…"
             aria-label="Search your library"
             className="skin-field h-10 w-full border border-line px-4 text-[14px] text-ink outline-none"
             style={{ background: 'var(--field)' }}

@@ -17,8 +17,10 @@ interface FilterState {
   setStatus: (s: LibraryFilters['status']) => void
   setLen: (s: SeriesLenBucket) => void
   setRead: (s: LibraryFilters['read']) => void
+  setEditionLabel: (s: string) => void
   setFormat: (s: string) => void
   setAuthor: (a: string) => void
+  toggleCopyFacet: (key: 'specialEdition' | 'previouslyOwned') => void
   toggleFave: () => void
   toggleWishlist: () => void
   /** `null` toggles the NOT-ASSESSED selection — never folded into 0 (assessed as none) */
@@ -49,8 +51,10 @@ export const useFilters = create<FilterState>((set) => ({
   setStatus: (status) => set((s) => ({ filters: { ...s.filters, status } })),
   setLen: (len) => set((s) => ({ filters: { ...s.filters, len } })),
   setRead: (read) => set((s) => ({ filters: { ...s.filters, read } })),
+  setEditionLabel: (editionLabel) => set((s) => ({ filters: { ...s.filters, editionLabel } })),
   setFormat: (format) => set((s) => ({ filters: { ...s.filters, format } })),
   setAuthor: (author) => set((s) => ({ filters: { ...s.filters, author } })),
+  toggleCopyFacet: (key) => set((s) => ({ filters: { ...s.filters, [key]: !s.filters[key] } })),
   toggleFave: () => set((s) => ({ filters: { ...s.filters, fave: !s.filters.fave } })),
   toggleWishlist: () => set((s) => ({ filters: { ...s.filters, wishlist: !s.filters.wishlist } })),
   toggleIntensity: (level) =>

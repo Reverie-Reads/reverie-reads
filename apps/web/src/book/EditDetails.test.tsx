@@ -14,7 +14,7 @@ vi.mock('../data/series', () => ({
   useSyncBookSeries: () => ({ mutateAsync: state.series }),
   useSeriesList: () => ({ data: new Map([['saga', { series: { name: 'Existing saga' } }]]) }),
 }))
-vi.mock('../data/reads', () => ({ useAddRead: vi.fn() }))
+vi.mock('../data/reads', () => ({ useSaveReadEntry: vi.fn() }))
 vi.mock('../data/mergeBooks', () => ({ usePerformMerge: vi.fn() }))
 vi.mock('../skin/labels', () => ({ useLabels: () => ({}) }))
 vi.mock('../components/CoverSheet', () => ({ CoverSheet: () => null }))

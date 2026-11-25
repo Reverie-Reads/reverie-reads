@@ -34,6 +34,7 @@ export interface BookRow {
   cover_user_chosen: boolean
   cover_color: string | null
   isbn: string | null
+  special_edition?: boolean
   fave: boolean
   ownership: string
   /** null only from a row cached before the stage-A migration — mappers fall back to the old enum */
@@ -103,6 +104,9 @@ export interface ReadRow {
   id: string
   book_id: string
   owner_id: string
+  started_on?: string | null
+  physical_rating?: number | null
+  audio_rating?: number | null
   read_on: string | null
   format: string | null
   rating: number | null

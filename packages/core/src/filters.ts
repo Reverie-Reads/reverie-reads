@@ -3,7 +3,7 @@ import type { Book, ReadStatus, SeriesStatus } from './types'
 import { bookGenres, bookSubgenres } from './genreNormalize'
 import { bookTropeNames } from './tropes'
 import { authorOf } from './normalize'
-import { normalizeName } from './contributors'
+import { formatAuthors, normalizeName, splitName } from './contributors'
 import { isOwnedBook, isPossessed, isWanted } from './ownership'
 
 export type LibrarySort =
@@ -25,6 +25,9 @@ export type LibraryShelfLink = 'All' | 'owned' | 'borrowed' | 'read' | 'wishlist
 
 export interface LibraryFilters {
   q: string
+  editionLabel?: string
+  specialEdition?: boolean
+  previouslyOwned?: boolean
   /** primary-or-additional genre facet ('All' = off). A book matches if ANY of its genres does —
    *  read through bookGenres, so a multi-genre romantasy book is reachable from either shelf's
    *  facet, and a pre-multi-genre book still matches on its single `genre`. */
@@ -109,7 +112,8 @@ export const hasReadingHistory = (b: Book): boolean => isBookRead(b) || b.readSt
  *  borrowed) OR have any reading history with, DNF included. Reading history is never hidden by
  *  possession — a book you read from the library stays in your library. Books you neither had nor
  *  opened fall outside; the wishlist chip lets them back in. */
-export const inDefaultLibrary = (b: Book): boolean => isPossessed(b) || hasReadingHistory(b)
+export const inDefaultLibrary = (b: Book): boolean =>
+  isPossessed(b) || hasReadingHistory(b) || previouslyOwned(b)
 
 const positionOf = (b: Book, fallback = 0): number =>
   typeof b.position === 'number' ? b.position : Number(b.position) || fallback
@@ -122,7 +126,38 @@ export function seriesLenBucket(b: Book): SeriesLenBucket {
   return String(c) as SeriesLenBucket
 }
 
-/** The prototype's library predicate, ported verbatim. */
+export const previouslyOwned = (book: Book) =>
+  !!book.copyInventory?.copies.some(
+    (copy) => copy.state === 'donated' || copy.state === 'given-away',
+  )
+export const hasSpecialEdition = (book: Book) =>
+  !!book.specialEdition || !!book.copyInventory?.editions.some((edition) => edition.special)
+
+export function titleMatchesQuery(title: string, query: string): boolean {
+  const fold = (value: string) =>
+    value.toLowerCase().replace(/&/g, ' and ').replace(/\s+/g, ' ').trim()
+  return fold(title).includes(fold(query))
+}
+
+export function matchesLibraryQuery(book: Book, query: string): boolean {
+  const needle = query.trim().toLowerCase()
+  if (
+    titleMatchesQuery(book.title, needle) ||
+    (hasSpecialEdition(book) && 'special edition'.includes(needle))
+  )
+    return true
+  return [
+    authorOf(book),
+    formatAuthors(book.contributors),
+    book.series,
+    book.genre,
+    ...book.tags,
+    ...book.tropes.map((t) => t.name),
+    ...book.genres,
+    ...(book.copyInventory?.editions.map((e) => e.label) ?? []),
+  ].some((value) => value?.toLowerCase().includes(needle))
+}
+
 export function matchesFilters(b: Book, f: LibraryFilters): boolean {
   // A shelf link replaces collection scoping rather than adding to it — it must show exactly the
   // set /shelves showed (deriveShelfSections filters the WHOLE library, not the default-scoped
@@ -134,6 +169,14 @@ export function matchesFilters(b: Book, f: LibraryFilters): boolean {
     if (f.shelf === 'read' && !hasReadingHistory(b)) return false
     if (f.shelf === 'wishlist' && !isWanted(b)) return false
   } else if (!f.wishlist && !inDefaultLibrary(b)) return false
+  if (f.specialEdition && !hasSpecialEdition(b)) return false
+  if (f.previouslyOwned && !previouslyOwned(b)) return false
+  const editionLabel = normalizeName(f.editionLabel ?? '')
+  if (
+    editionLabel &&
+    !b.copyInventory?.editions.some((e) => normalizeName(e.label) === editionLabel)
+  )
+    return false
   if (f.genre !== 'All' && !bookGenres(b).includes(f.genre)) return false
   if (f.sub !== 'All' && !bookSubgenres(b).includes(f.sub)) return false
   if (f.tags.length) {
@@ -159,19 +202,7 @@ export function matchesFilters(b: Book, f: LibraryFilters): boolean {
   // Same `?? null` rule as intensity directly above — see the comment there.
   if (f.darkness.length && !f.darkness.includes(bookGuidance(b).darkness ?? null)) return false
   if (f.author && !bookHasAuthor(b, f.author)) return false
-  if (f.q) {
-    const hay = [
-      b.title,
-      authorOf(b),
-      b.series,
-      ...b.tags,
-      ...b.tropes.map((t) => t.name),
-      ...b.genres,
-    ]
-      .join(' ')
-      .toLowerCase()
-    if (!hay.includes(f.q.toLowerCase())) return false
-  }
+  if (f.q && !matchesLibraryQuery(b, f.q)) return false
   return true
 }
 
@@ -206,16 +237,17 @@ export function hiddenMatchCount(books: readonly Book[], f: LibraryFilters): num
 
 /** Ported verbatim from the prototype's libSort. */
 export function sortBooks(books: readonly Book[], sort: LibrarySort): Book[] {
+  const familyName = (b: Book) =>
+    /(?:^|\s)st\.?$/i.test(b.first) && b.last && !b.last.includes(' ')
+      ? splitName(authorOf(b)).last
+      : b.last || b.title
   const c = [...books]
   switch (sort) {
     case 'az':
       c.sort((a, b) => a.title.localeCompare(b.title))
       break
     case 'author':
-      c.sort(
-        (a, b) =>
-          (a.last || a.title).localeCompare(b.last || b.title) || positionOf(a) - positionOf(b),
-      )
+      c.sort((a, b) => familyName(a).localeCompare(familyName(b)) || positionOf(a) - positionOf(b))
       break
     case 'rating':
       c.sort((a, b) => b.rating - a.rating)
@@ -277,6 +309,9 @@ export function activeFilterCount(f: LibraryFilters): number {
   if (f.fave) n++
   if (f.intensity.length) n++
   if (f.darkness.length) n++
+  if (f.editionLabel) n++
+  if (f.specialEdition) n++
+  if (f.previouslyOwned) n++
   if (f.author) n++
   if (f.wishlist) n++
   if (f.shelf !== 'All') n++

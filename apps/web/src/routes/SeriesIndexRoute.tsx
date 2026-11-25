@@ -15,7 +15,7 @@ import { rootRoute } from './RootRoute'
 import { Button } from '../components/Button'
 import { CoverImage } from '../components/CoverImage'
 import { Surface } from '../components/Surface'
-import { useBooks } from '../data/books'
+import { useReaderBooks } from '../data/readerBooks'
 import { useLists } from '../data/lists'
 import { useAllListItems } from '../data/listItems'
 import { useSeriesList, type SeriesListRow } from '../data/series'
@@ -264,7 +264,9 @@ export function SeriesIndexScreen() {
   const { scope: selectedScope, q = '' } = seriesIndexRoute.useSearch()
   const scope = selectedScope ?? 'personal'
   const navigate = seriesIndexRoute.useNavigate()
-  const { data: books } = useBooks()
+  const reader = useReaderBooks()
+  const books = reader.data
+  const [unfinished, setUnfinished] = useState(false)
   const { data: seriesList, isLoading, isError, refetch } = useSeriesList()
   const { data: lists } = useLists()
   const { data: items } = useAllListItems()
@@ -317,10 +319,22 @@ export function SeriesIndexScreen() {
       ),
     [seriesList, byId, bookSearchBySeries, q],
   )
-  const sections = useMemo(
-    () => buildStructuredSeriesSections(matchingSeries, byId),
-    [matchingSeries, byId],
-  )
+  const sections = useMemo(() => {
+    if (!unfinished) return buildStructuredSeriesSections(matchingSeries, byId)
+    const filtered = new Map(
+      [...matchingSeries].filter(([, row]) => {
+        const members = uniqueLinkedBooks(row, byId)
+        const progress = seriesProgress(row.entries, byId)
+        const started = progress.read > 0 || members.some((book) => book.readStatus === 'Reading')
+        const total = Math.max(
+          row.entries.length,
+          row.series.length ?? claimedSeriesLength(members) ?? 0,
+        )
+        return started && progress.read < total
+      }),
+    )
+    return buildStructuredSeriesSections(filtered, byId)
+  }, [matchingSeries, byId, unfinished])
 
   const managementRows = useMemo<SeriesManagementRow[]>(() => {
     if (!seriesList) return []
@@ -453,10 +467,26 @@ export function SeriesIndexScreen() {
               className="skin-input mt-1 min-h-11 w-full px-3 py-2 text-sm"
             />
           </label>
+          <label className="mt-3 flex min-h-11 items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={unfinished}
+              onChange={(event) => setUnfinished(event.target.checked)}
+            />
+            Started with books left to read
+          </label>
+          {reader.isError && (
+            <p role="alert">
+              Could not load reading progress.{' '}
+              <button type="button" onClick={() => void reader.refetch()}>
+                Retry reading history
+              </button>
+            </p>
+          )}
           <p role="status" className="mt-2 text-sm text-muted">
-            {isLoading
+            {isLoading || reader.isPending
               ? 'Loading your series…'
-              : isError
+              : isError || reader.isError
                 ? 'Series unavailable'
                 : `${sections.reduce((sum, section) => sum + section.rows.length, 0)} confirmed series${q.trim() ? ' found' : ''}${unreviewedSeries.length ? ` · ${unreviewedSeries.length} awaiting review` : ''}`}
           </p>
@@ -496,7 +526,7 @@ export function SeriesIndexScreen() {
             </section>
           )}
 
-          {!isLoading && !isError && !sections.length ? (
+          {!isLoading && !isError && !reader.isError && !reader.isPending && !sections.length ? (
             <p className="mt-8 text-[13.5px] text-muted">
               {q.trim()
                 ? unreviewedSeries.length

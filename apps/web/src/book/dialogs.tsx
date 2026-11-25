@@ -30,7 +30,7 @@ import { FORMATS, OWNERSHIP_LABELS } from '../library/constants'
 import { useBooks, useUpdateBook } from '../data/books'
 import { useSetContributors } from '../data/contributors'
 import { useSyncBookSeries } from '../data/series'
-import { useAddRead } from '../data/reads'
+import { useSaveReadEntry } from '../data/reads'
 import { usePerformMerge } from '../data/mergeBooks'
 import { maybeChainPrompt } from '../lib/chainPrompt'
 import {
@@ -82,35 +82,52 @@ export function LogReadForm({
   book,
   onClose,
   mode = 'finish',
+  entry,
   onSaved,
 }: {
   book: Book
   onClose: () => void
+  entry?: import('../data/mappers').ReadRecord
   mode?: 'finish' | 'past'
   onSaved?: () => void
 }) {
-  const addRead = useAddRead(book.id)
+  const addRead = useSaveReadEntry(book.id, entry?.id)
   const { data: books } = useBooks()
   const updateBook = useUpdateBook(book.id)
   // Local, not UTC — see localDate.ts. West of UTC in the evening, toISOString() already reports
   // tomorrow, and this default is what a reread finished tonight silently landed on.
-  const [date, setDate] = useState(() => todayLocalDate())
-  const [format, setFormat] = useState(book.format)
-  const [rating, setRating] = useState(0)
-  const [notes, setNotes] = useState('')
+  const [date, setDate] = useState(() => entry?.date ?? todayLocalDate())
+  const [format, setFormat] = useState(entry?.format ?? book.format)
+  const [rating, setRating] = useState(entry?.rating ?? 0)
+  const [startedOn, setStartedOn] = useState(entry?.startedOn ?? '')
+  const [physicalRating, setPhysicalRating] = useState(entry?.physicalRating ?? 0)
+  const [audioRating, setAudioRating] = useState(entry?.audioRating ?? 0)
+  const [notes, setNotes] = useState(entry?.notes ?? '')
   const [savedRead, setSavedRead] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
 
   async function save() {
     if (saving) return
+    if (date && startedOn > date) {
+      setSaveError('Choose a finish date on or after the start date.')
+      return
+    }
     setSaving(true)
     setSaveError('')
     let readSaved = savedRead
     try {
       // The completion and its rating belong to this read. A status retry must not append it twice.
       if (!readSaved) {
-        await addRead.mutateAsync({ date, format, rating, notes: notes.trim() })
+        await addRead.mutateAsync({
+          date,
+          format,
+          rating,
+          notes: notes.trim(),
+          startedOn,
+          physicalRating,
+          audioRating,
+        })
         readSaved = true
         setSavedRead(true)
       }
@@ -133,18 +150,31 @@ export function LogReadForm({
 
   return (
     <Modal
-      title={mode === 'past' ? 'Log a past read' : 'Finish this read'}
+      title={
+        entry ? 'Edit read log entry' : mode === 'past' ? 'Log a past read' : 'Finish this read'
+      }
       onClose={() => {
         if (!saving) onClose()
       }}
     >
       <p className="-mt-2 mb-4 text-[13px] text-muted">
-        {mode === 'past'
-          ? `Record an earlier read of ${book.title}. Your current reading status and progress stay as they are.`
-          : `${book.title} — save this finish to your reading journal.`}
+        {entry
+          ? `Update this reading of ${book.title}.`
+          : mode === 'past'
+            ? `Record an earlier read of ${book.title}. Your current reading status and progress stay as they are.`
+            : `${book.title} — save this finish to your reading journal.`}
       </p>
       <div data-reading-tour-book={book.id} className="flex flex-col gap-3">
         <fieldset disabled={saving || savedRead} className="flex min-w-0 flex-col gap-3">
+          <Field label="Date started">
+            <input
+              type="date"
+              className={fieldClass}
+              style={fieldStyle}
+              value={startedOn}
+              onChange={(e) => setStartedOn(e.target.value)}
+            />
+          </Field>
           <Field label="Date finished">
             <input
               type="date"
@@ -154,7 +184,7 @@ export function LogReadForm({
               style={fieldStyle}
             />
           </Field>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Format">
               <select
                 value={format}
@@ -168,10 +198,28 @@ export function LogReadForm({
                 ))}
               </select>
             </Field>
-            <Field label="Rating">
+            <Field label="Overall rating">
               <div className="flex h-10 items-center">
-                <Stars value={rating} step={0.5} onChange={setRating} />
+                <Stars labelText="Overall rating" value={rating} step={0.5} onChange={setRating} />
               </div>
+            </Field>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <Field label="Physical rating">
+              <Stars
+                labelText="Physical rating"
+                value={physicalRating}
+                step={0.5}
+                onChange={setPhysicalRating}
+              />
+            </Field>
+            <Field label="Audio rating">
+              <Stars
+                labelText="Audio rating"
+                value={audioRating}
+                step={0.5}
+                onChange={setAudioRating}
+              />
             </Field>
           </div>
           <Field label="Your thoughts on this read">
@@ -203,7 +251,9 @@ export function LogReadForm({
               ? 'Retry status update'
               : mode === 'finish'
                 ? 'Save finished read'
-                : 'Save to read log'}
+                : entry
+                  ? 'Save entry changes'
+                  : 'Save to read log'}
         </button>
       </div>
     </Modal>

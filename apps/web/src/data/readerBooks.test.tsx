@@ -46,7 +46,7 @@ vi.mock('../lib/supabase', () => ({
 }))
 
 const { useReaderBooks } = await import('./readerBooks')
-const { useAddRead, useDeleteRead } = await import('./reads')
+const { useSaveReadEntry, useDeleteRead } = await import('./reads')
 function harness() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
@@ -107,7 +107,7 @@ describe('reading history used by next-read decisions', () => {
     const { wrapper } = harness()
     const { result } = renderHook(() => ({
       library: useReaderBooks(),
-      add: useAddRead('book'),
+      add: useSaveReadEntry('book'),
       remove: useDeleteRead('book'),
     }), { wrapper })
     await waitFor(() => expect(result.current.library.isSuccess).toBe(true))

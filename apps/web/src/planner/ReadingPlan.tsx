@@ -21,6 +21,8 @@ import { Button } from '../components/Button'
 import { CoverImage } from '../components/CoverImage'
 import { Modal } from '../components/Modal'
 import { Surface } from '../components/Surface'
+import type { PlannerEntry } from '../data/plannerEntries'
+import { parseReleasePub } from '../data/releases'
 import { useUpdateBook } from '../data/books'
 import { MONTHS } from '../library/constants'
 import { ReadingProgressDialog } from '../components/ReadingProgress'
@@ -69,10 +71,12 @@ export function ReadingPlan({
   view,
   openBook,
   history,
+  outside,
 }: {
   books: Book[]
   view: PlanView
   openBook: (id: string) => void
+  outside?: PlannerEntry[]
   history?: ReadingHistory
 }) {
   const plans = useMemo(() => sortReadingPlans(books), [books])
@@ -171,6 +175,7 @@ export function ReadingPlan({
         <PlanCalendar
           plans={plans}
           history={history}
+          outside={outside}
           openBook={openBook}
           edit={edit}
           add={(date) => setPickerDate(date)}
@@ -414,6 +419,7 @@ function PlanRow({
 }
 
 function PlanCalendar({
+  outside,
   plans,
   history,
   openBook,
@@ -421,6 +427,7 @@ function PlanCalendar({
   add,
 }: {
   plans: Book[]
+  outside?: PlannerEntry[]
   history?: ReadingHistory
   openBook: (id: string) => void
   edit: (book: Book, initialDate?: PlanDate) => void
@@ -432,6 +439,17 @@ function PlanCalendar({
     return { y: today.getFullYear(), m: today.getMonth() }
   })
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const external = useMemo(() => {
+    const byDay = new Map<number, PlannerEntry[]>()
+    const loose: PlannerEntry[] = []
+    for (const entry of outside ?? []) {
+      const date = parseReleasePub(entry.timing)
+      if (date && (date.y !== month.y || (date.m !== null && date.m !== month.m + 1))) continue
+      if (date?.d == null) loose.push(entry)
+      else byDay.set(date.d, [...(byDay.get(date.d) ?? []), entry])
+    }
+    return { byDay, loose }
+  }, [outside, month.y, month.m])
   const first = new Date(month.y, month.m, 1).getDay()
   const days = new Date(month.y, month.m + 1, 0).getDate()
   const { exactByDay, finishedByDay, loose } = useMemo(() => {
@@ -638,7 +656,8 @@ function PlanCalendar({
               const day = index + 1
               const entries = exactByDay.get(day) ?? []
               const finished = finishedByDay.get(day) ?? []
-              const total = entries.length + finished.length
+              const independent = external.byDay.get(day) ?? []
+              const total = entries.length + finished.length + independent.length
               const isToday = viewingCurrentMonth && day === today.d
               return (
                 <button
@@ -646,7 +665,7 @@ function PlanCalendar({
                   type="button"
                   className={`${total ? 'has-entry' : ''} ${isToday ? 'is-today' : ''}`.trim()}
                   aria-current={isToday ? 'date' : undefined}
-                  aria-label={`${MONTHS[month.m]} ${day}, ${month.y}: ${entries.length} planned, ${finished.length} finished${total ? ` — ${[...entries.map((book) => book.title), ...finished.map((read) => read.book.title)].join(', ')}` : ''}`}
+                  aria-label={`${MONTHS[month.m]} ${day}, ${month.y}: ${entries.length} planned, ${finished.length} finished${total ? ` — ${[...entries.map((book) => book.title), ...finished.map((read) => read.book.title), ...independent.map((row) => row.kind + ': ' + row.title)].join(', ')}` : ''}`}
                   onClick={() =>
                     total ? setSelectedDay(day) : add({ y: month.y, m: month.m + 1, d: day })
                   }
@@ -657,6 +676,7 @@ function PlanCalendar({
                       {[
                         ...entries.map((book) => book.title),
                         ...finished.map((read) => read.book.title),
+                        ...independent.map((row) => row.title),
                       ]
                         .slice(0, 2)
                         .map((title, i) => (
@@ -678,6 +698,19 @@ function PlanCalendar({
         </Surface>
       </div>
 
+      {external.loose.length > 0 && (
+        <section className="mt-4">
+          <h3>Watches and plans without a specific day</h3>
+          <ul>
+            {external.loose.map((row) => (
+              <li key={row.id}>
+                {row.kind === 'watch' ? 'Release watch' : 'Reading plan'} · {row.title} ·{' '}
+                {row.timing || 'Date unknown'}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="plan-loose">
         <div className="plan-loose-heading">
           <p className="plan-eyebrow">Plans with room to move</p>
@@ -719,6 +752,11 @@ function PlanCalendar({
           onClose={() => setSelectedDay(null)}
         >
           <div className="grid gap-2">
+            {(external.byDay.get(selectedDay) ?? []).map((row) => (
+              <p key={row.id}>
+                {row.kind === 'watch' ? 'Release watch' : 'Reading plan'} · {row.title}
+              </p>
+            ))}
             {(exactByDay.get(selectedDay) ?? []).length > 0 && (
               <p className="plan-eyebrow mb-0">Planned</p>
             )}
