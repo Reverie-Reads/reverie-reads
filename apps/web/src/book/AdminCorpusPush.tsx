@@ -168,7 +168,17 @@ function PushReview({
       })
       onSaved()
     } catch (e) {
-      setError(catalogError(e))
+      const message = catalogError(e)
+      if (message.includes('corpus_series_entries_position_check')) {
+        setError(
+          'The catalog rejected the series position. Clear the series selection to save other fields, or edit the position in your personal book and reopen this review.',
+        )
+        setAttempted(false)
+      } else {
+        setError(message)
+        const code = (e as { code?: string } | null)?.code ?? ''
+        if (/^(22|23)/.test(code)) setAttempted(false)
+      }
     } finally {
       inflight.current = false
     }
@@ -296,6 +306,13 @@ function PushReview({
                     ? 'Published edition details'
                     : 'Genres & content guidance'}
               </legend>
+              {group === 'series' && options.invalidPosition && (
+                <p className="text-sm text-muted">
+                  Series position {book.position} cannot be shared. Edit the position in your
+                  personal book to a positive number, such as 0.5 for a prequel, then reopen this
+                  review. You can save the other fields now.
+                </p>
+              )}
               {group === 'edition' &&
                 (options.edition ? (
                   <p className="text-sm text-muted">
@@ -338,7 +355,8 @@ function PushReview({
                   </label>
                 ))}
               {!options.rows.some((row) => row.key.startsWith(group + '.')) &&
-                (group !== 'edition' || !options.editionError) && (
+                (group !== 'edition' || !options.editionError) &&
+                (group !== 'series' || !options.invalidPosition) && (
                   <p className="text-sm text-muted">No different saved values to share.</p>
                 )}
             </fieldset>

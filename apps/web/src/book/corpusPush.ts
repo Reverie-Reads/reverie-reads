@@ -217,8 +217,11 @@ export function bookCorpusOptions(
           status: book.status,
         }
       : null
+  const invalidPosition =
+    series?.position != null && (!Number.isFinite(series.position) || series.position <= 0)
   if (
     series &&
+    !invalidPosition &&
     (!record.series?.confirmed ||
       series.name !== record.series?.name ||
       series.position !== record.series?.position ||
@@ -251,7 +254,14 @@ export function bookCorpusOptions(
       after: describe(series.name, series.position, series.count, series.status),
     })
   }
-  return { rows, edition, guidance, editionError, series }
+  return {
+    rows,
+    edition,
+    guidance,
+    editionError,
+    series: invalidPosition ? null : series,
+    invalidPosition,
+  }
 }
 
 /** Build only the selected differences; everything else comes from the opened shared snapshot. */

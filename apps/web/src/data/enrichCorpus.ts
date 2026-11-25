@@ -512,7 +512,9 @@ export function usePersonalCoverCorpusReview({
 export function useAdminReviewPersonalCoverForCorpus() {
   const queryClient = useQueryClient()
   return useMutation({
-    meta: { action: 'Reviewing a personal cover for the corpus' },
+    meta: { action: 'Reviewing a personal cover for the corpus', errorPresentation: 'inline' },
+    networkMode: 'always',
+    retry: false,
     mutationFn: async ({
       bookId,
       workId,

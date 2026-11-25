@@ -1,4 +1,5 @@
-import { bookGuidance } from '@reverie/core'
+import { readableWriteError } from '../lib/writeErrors'
+import { bookGuidance, isStoredCoverUrl } from '@reverie/core'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, createRoute, useNavigate } from '@tanstack/react-router'
 import { StartReadingTour } from '../guidance/BookTour'
@@ -1083,6 +1084,20 @@ export function BookDetailScreen() {
             loading={coverReview.isFetching}
             unavailable={coverReviewUnavailable}
             saving={reviewPersonalCover.isPending}
+            onChooseImage={
+              !isStoredCoverUrl(book.cover) && book.coverSource !== 'google'
+                ? () => setDialog('cover')
+                : undefined
+            }
+            reviewError={
+              reviewPersonalCover.isError &&
+              reviewPersonalCover.variables?.bookId === book.id &&
+              reviewPersonalCover.variables?.coverUrl === book.cover &&
+              reviewPersonalCover.variables?.workId === corpusWorkId
+                ? readableWriteError(reviewPersonalCover.error)
+                : undefined
+            }
+            retryStatus={() => void coverReview.refetch()}
             onReview={() =>
               reviewPersonalCover.mutate({
                 bookId: book.id,

@@ -125,3 +125,23 @@ describe('CorpusCoverReviewToggle', () => {
     expect(review).not.toHaveBeenCalled()
   })
 })
+
+it('opens the cover picker for a saved display-only image without submitting a corpus review', () => {
+  const review = vi.fn()
+  const choose = vi.fn()
+  render(
+    <CorpusCoverReviewToggle
+      reviewed={false}
+      loading={false}
+      saving={false}
+      unavailable={false}
+      onReview={review}
+      onChooseImage={choose}
+    />,
+  )
+  expect(screen.getByText(/This cover is saved in your library/)).toBeVisible()
+  expect(screen.getByRole('switch')).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: 'Open cover picker' }))
+  expect(choose).toHaveBeenCalledOnce()
+  expect(review).not.toHaveBeenCalled()
+})

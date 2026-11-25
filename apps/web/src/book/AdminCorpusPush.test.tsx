@@ -276,3 +276,36 @@ it('keeps uncertain new-edition retry identities separate when the saved invento
   expect(secondAttempt.isbn).toBe(second.isbn)
   expect(secondAttempt.id).not.toBe(firstAttempt.id)
 })
+
+it('keeps a legacy zero position out of a catalog push and allows the remaining changes', async () => {
+  state.record = {
+    ...record,
+    series: { name: null, position: null, count: null, status: null, confirmed: false },
+  }
+  open({ ...book, series: 'Quiet Islands', position: 0 })
+  expect(screen.getByText(/Series position 0 cannot be shared/)).toBeVisible()
+  fireEvent.click(screen.getByRole('button', { name: 'Save selected changes' }))
+  await screen.findByRole('status')
+  expect(
+    state.save.mock.calls[0]![0].changes.map((change: { action: string }) => change.action),
+  ).toEqual(['edition'])
+})
+
+it.each([0.5, ''] as const)(
+  'publishes a valid or unknown position without inventing an ordinal: %s',
+  async (position) => {
+    state.record = {
+      ...record,
+      series: { name: null, position: null, count: null, status: null, confirmed: false },
+    }
+    open({ ...book, series: 'Quiet Islands', position })
+    fireEvent.click(screen.getByRole('button', { name: 'Save selected changes' }))
+    await screen.findByRole('status')
+    expect(state.save.mock.calls[0]![0].changes).toContainEqual(
+      expect.objectContaining({
+        action: 'series',
+        value: expect.objectContaining({ position: position === '' ? null : position }),
+      }),
+    )
+  },
+)

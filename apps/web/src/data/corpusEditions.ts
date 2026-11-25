@@ -90,7 +90,7 @@ export function usePushCorpusRecord() {
   return useMutation({
     networkMode: 'always',
     retry: false,
-    meta: { action: 'Shared catalog changes' },
+    meta: { action: 'Shared catalog changes', errorPresentation: 'inline' },
     mutationFn: async (input: {
       record: CorpusRecord
       changes: CorpusPushChange[]
