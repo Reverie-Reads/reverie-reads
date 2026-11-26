@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
@@ -166,10 +167,7 @@ test('a donated special edition keeps its cover and stays searchable by title an
   await page.route(cover, (route) =>
     route.fulfill({
       contentType: 'image/png',
-      body: Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/aWQAAAAASUVORK5CYII=',
-        'base64',
-      ),
+      path: fileURLToPath(new URL('./fixtures/covers/real-z1-scan-128x188.png', import.meta.url)),
     }),
   )
   await stub(page)
@@ -188,7 +186,7 @@ test('a donated special edition keeps its cover and stays searchable by title an
   await expect(edition).toContainText('Previously owned · Donated')
   const image = edition.locator('img')
   await image.scrollIntoViewIfNeeded()
-  await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1)
+  await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(128)
   // Put one family name on each side of St. Crow, including the legacy split in this book.
   await ok(
     c.sb.from('books').update({ author_first: 'Nikki St.', author_last: 'Crow' }).eq('id', id),
