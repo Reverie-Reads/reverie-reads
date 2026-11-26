@@ -510,10 +510,22 @@ test('household search finds a book beyond the first thousand results', async ({
     const rows = Array.from({ length: to - from }, (_, i) => {
       const n = from + i
       const id = String(n).padStart(8, '0') + '-0000-4000-8000-000000000001'
-      return { work_id: id, book: { work_id: id, title: n === 1000 ? title : 'Library book ' + n,
-        author: 'A. Reader', owners: [], added_at: '2026-01-01T00:00:00Z' } }
+      return {
+        work_id: id,
+        book: {
+          work_id: id,
+          title: n === 1000 ? title : 'Library book ' + n,
+          author: 'A. Reader',
+          owners: [],
+          added_at: '2026-01-01T00:00:00Z',
+        },
+      }
     })
-    await route.fulfill({ status: 206, headers: { 'content-range': from + '-' + (to - 1) + '/1001' }, json: rows })
+    await route.fulfill({
+      status: 206,
+      headers: { 'content-range': from + '-' + (to - 1) + '/1001' },
+      json: rows,
+    })
   })
   await page.goto('/library?scope=household')
   await page.getByRole('searchbox', { name: 'Search household library' }).fill(title)
