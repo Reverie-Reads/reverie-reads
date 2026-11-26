@@ -496,13 +496,64 @@ test('two linked personal libraries appear together without exposing personal co
   await expect(page).toHaveURL(/\/library\?scope=household$/)
 })
 
+test('household search finds a book beyond the first thousand results', async ({ page }) => {
+  await signIn(page, owner.session)
+  const title = 'Beyond the first thousand'
+  await page.route('**/rest/v1/rpc/household_roster', (route) =>
+    route.fulfill({
+      json: [
+        {
+          household_id: '015ec871-885e-4000-8000-000000000001',
+          household_name: 'Large household',
+          user_id: owner.uid,
+          display_name: owner.displayName,
+          member_role: 'owner',
+        },
+      ],
+    }),
+  )
+  const offsets: number[] = []
+  await page.route('**/rest/v1/rpc/household_library_book_rows*', async (route) => {
+    const url = new URL(route.request().url())
+    expect(url.searchParams.get('order')).toBe('work_id.asc')
+    const from = Number(url.searchParams.get('offset'))
+    const limit = Number(url.searchParams.get('limit'))
+    offsets.push(from)
+    const to = Math.min(from + limit, 1001)
+    const rows = Array.from({ length: to - from }, (_, i) => {
+      const n = from + i
+      const id = String(n).padStart(8, '0') + '-0000-4000-8000-000000000001'
+      return {
+        work_id: id,
+        book: {
+          work_id: id,
+          title: n === 1000 ? title : 'Library book ' + n,
+          author: 'A. Reader',
+          owners: [],
+          added_at: '2026-01-01T00:00:00Z',
+        },
+      }
+    })
+    await route.fulfill({
+      status: 206,
+      headers: { 'content-range': from + '-' + (to - 1) + '/1001' },
+      json: rows,
+    })
+  })
+  await page.goto('/library?scope=household')
+  await page.getByRole('searchbox', { name: 'Search household library' }).fill(title)
+  await expect(page.getByTestId('household-book-card')).toHaveCount(1)
+  await expect(page.getByTestId('household-book-card')).toContainText(title)
+  expect(offsets).toContain(1000)
+})
+
 test('retrying household books revalidates unchanged membership and restores the shared view', async ({
   page,
 }) => {
   test.setTimeout(60_000)
   if (!seeded) throw new Error('household-library seed missing')
   await signIn(page, owner.session)
-  const pattern = '**/rest/v1/rpc/household_library_works_v2'
+  const pattern = '**/rest/v1/rpc/household_library_book_rows*'
   await page.route(pattern, (route) =>
     route.fulfill({
       status: 503,
@@ -778,7 +829,7 @@ test('Add entry stays stable while membership loads and destinations change only
     await rosterGate
     await route.continue()
   })
-  await page.route('**/rest/v1/rpc/household_library_works_v2', async (route) => {
+  await page.route('**/rest/v1/rpc/household_library_book_rows*', async (route) => {
     bookRequests++
     await route.abort()
   })
@@ -1242,7 +1293,7 @@ test('an already-open tab never repaints a revoked household while a replacement
     markBooksRequested = resolve
   })
   const rosterPattern = '**/rest/v1/rpc/household_roster'
-  const booksPattern = '**/rest/v1/rpc/household_library_works_v2'
+  const booksPattern = '**/rest/v1/rpc/household_library_book_rows*'
   await page.route(rosterPattern, async (route) => {
     await rosterGate
     await route.continue()

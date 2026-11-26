@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { configureReturningReader } from './support/readerGuidance'
 import { expect, test, type Page } from './support/fixtures'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
@@ -148,6 +149,71 @@ test('two hardbacks, paperback and wanted edition persist under one reading hist
   expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width + 1)
   await page.screenshot({ path: 'test-results/copy-inventory-editor.png', fullPage: true })
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await reset(c)
+})
+
+test('a donated special edition keeps its cover and stays searchable by title and edition', async ({
+  page,
+}) => {
+  const c = await client()
+  await reset(c)
+  const title = 'Blood & Roses'
+  const id = await makeBook(c, title)
+  await ok(
+    c.sb.from('books').update({ read_status: 'Unread', progress: 0 }).eq('id', id),
+    'clear reading history',
+  )
+  const cover = 'https://covers.example.test/bookish.png'
+  await page.route(cover, (route) =>
+    route.fulfill({
+      contentType: 'image/png',
+      path: fileURLToPath(new URL('./fixtures/covers/real-z1-scan-128x188.png', import.meta.url)),
+    }),
+  )
+  await stub(page)
+  await signIn(page, c.session)
+  await page.goto(`/book/${id}`)
+  await page.getByRole('button', { name: 'Set up editions & copies' }).click()
+  const editor = page.getByRole('dialog', { name: 'Editions & copies' })
+  await editor.getByLabel('Edition name').fill('Bookish anniversary')
+  await editor.getByLabel('Special edition').check()
+  await editor.getByLabel('Cover image link (HTTPS)').fill(cover)
+  await editor.getByLabel('Possession').selectOption('donated')
+  await editor.getByRole('button', { name: 'Save editions & copies' }).click()
+  await expect(editor).toBeHidden()
+  await page.reload()
+  const edition = page.getByRole('region', { name: 'Bookish anniversary' })
+  await expect(edition).toContainText('Previously owned · Donated')
+  const image = edition.locator('img')
+  await image.scrollIntoViewIfNeeded()
+  await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(128)
+  // Put one family name on each side of St. Crow, including the legacy split in this book.
+  await ok(
+    c.sb.from('books').update({ author_first: 'Nikki St.', author_last: 'Crow' }).eq('id', id),
+    'compound surname',
+  )
+  for (const [title, last] of [
+    ['Before in author order', 'Ryder'],
+    ['After in author order', 'Turner'],
+  ]) {
+    const other = await makeBook(c, title)
+    await ok(c.sb.from('books').update({ author_last: last }).eq('id', other), 'comparison author')
+  }
+  await page.goto('/library')
+  await page.getByLabel('Sort', { exact: true }).selectOption('author')
+  const titles = page.getByRole('button', {
+    name: /^Open (Blood & Roses|Before in author order|After in author order)$/,
+  })
+  await expect(titles).toHaveCount(3)
+  await expect(titles.nth(0)).toHaveAccessibleName('Open Before in author order')
+  await expect(titles.nth(1)).toHaveAccessibleName('Open Blood & Roses')
+  const search = page.getByLabel('Search your library')
+  for (const term of ['an unrelated edition', 'Blood and Roses', 'bookish', 'special edition']) {
+    await search.fill(term)
+    const book = page.getByRole('button', { name: 'Open ' + title, exact: true })
+    if (term === 'an unrelated edition') await expect(book).toBeHidden()
+    else await expect(book).toBeVisible()
+  }
   await reset(c)
 })
 

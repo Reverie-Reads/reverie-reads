@@ -121,6 +121,7 @@ export function RenameSeriesDialog({
               <input
                 className="skin-field block w-full"
                 maxLength={150}
+                required
                 value={qualifier}
                 onChange={(e) => setQualifier(e.target.value)}
               />
@@ -136,7 +137,15 @@ export function RenameSeriesDialog({
           <Button variant="secondary" onClick={onClose} disabled={update.isPending}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!nextName || nextName === row.name || update.isPending}>
+          <Button
+            type="submit"
+            disabled={
+              !nextName ||
+              nextName === row.name ||
+              (!!collision && !qualifier.trim()) ||
+              update.isPending
+            }
+          >
             {update.isPending
               ? 'Renaming…'
               : collision
