@@ -566,6 +566,7 @@ test('series length reaches member books and a rename collision offers a distinc
     const rename = page.getByRole('dialog')
     await rename.getByLabel('Series name').fill(ALPHA)
     await expect(rename.getByRole('button', { name: 'Review a merge' })).toBeEnabled()
+    await expect(rename.getByRole('button', { name: 'Keep as separate series' })).toBeDisabled()
     await rename.getByLabel('Label for this separate series').fill('Other author')
     await rename.getByRole('button', { name: 'Keep as separate series' }).click()
     await expect(rename).toBeHidden()
