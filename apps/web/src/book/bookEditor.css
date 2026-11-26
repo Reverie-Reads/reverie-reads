@@ -186,6 +186,23 @@
   font-size: 1rem;
 }
 
+/* Use the available safe width on a rotated phone. Leave more height for the
+   scrolling fields while keeping the section controls, Close and Save in reach. */
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) {
+  .rv-modal.book-editor-dialog {
+    max-width: 100%;
+    padding-block: 0.5rem;
+  }
+  .book-editor-dialog > :first-child,
+  .book-editor-dialog .book-editor-nav {
+    margin-bottom: 0.25rem;
+  }
+  .book-editor-dialog .book-editor-actions {
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+  }
+}
+
 /* Quick series editing retains the full mounted draft for the optional full editor. */
 .book-editor-series-only [data-book-editor-section]:not([data-book-editor-section='series']),
 .book-editor-nav[hidden] {

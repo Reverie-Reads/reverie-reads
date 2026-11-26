@@ -94,6 +94,7 @@ test.describe('signed-out landing', () => {
     expect(identityAssets.manifest).toMatchObject({
       name: 'Midniht',
       short_name: 'Midniht',
+      orientation: 'any',
       background_color: '#10121c',
       theme_color: '#10121c',
     })
