@@ -499,6 +499,19 @@ test('two linked personal libraries appear together without exposing personal co
 test('household search finds a book beyond the first thousand results', async ({ page }) => {
   await signIn(page, owner.session)
   const title = 'Beyond the first thousand'
+  await page.route('**/rest/v1/rpc/household_roster', (route) =>
+    route.fulfill({
+      json: [
+        {
+          household_id: '015ec871-885e-4000-8000-000000000001',
+          household_name: 'Large household',
+          user_id: owner.uid,
+          display_name: owner.displayName,
+          member_role: 'owner',
+        },
+      ],
+    }),
+  )
   const offsets: number[] = []
   await page.route('**/rest/v1/rpc/household_library_book_rows*', async (route) => {
     const url = new URL(route.request().url())
