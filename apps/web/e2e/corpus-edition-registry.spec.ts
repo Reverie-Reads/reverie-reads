@@ -109,6 +109,7 @@ async function fixture(page: Page) {
       )
       await ok(admin.from('work_metadata_edits').delete().eq('work_id', work), 'audit cleanup')
       await ok(admin.from('books').delete().eq('id', book), 'book cleanup')
+      await ok(admin.from('work_tropes').delete().eq('work_id', work), 'fixture work tags cleanup')
       await ok(admin.from('works').delete().eq('id', work), 'work cleanup')
       const r = await admin.auth.admin.deleteUser(user.id)
       if (r.error) throw r.error
@@ -915,7 +916,7 @@ test('book details warm the picker, rename a personal tag once and publish its s
       'assigned tag',
     )
     const vocabulary = page.waitForResponse(
-      (r) => new URL(r.url()).pathname === '/rest/v1/tropes' && r.ok(),
+      (r) => r.url().split('?')[0].endsWith('/rest/v1/tropes') && r.ok(),
     )
     await page.goto(`/book/${c.book}`)
     await vocabulary
