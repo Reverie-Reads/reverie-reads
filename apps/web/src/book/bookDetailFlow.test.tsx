@@ -66,6 +66,7 @@ vi.mock('../data/lists', () => ({
   useLists: () => ({ data: [] }),
   useCreateList: () => ({ mutate: vi.fn() }),
 }))
+vi.mock('../data/tropes', () => ({ useTropes: () => ({ data: [] }) }))
 vi.mock('../data/profile', () => ({ useProfile: () => ({ data: null }) }))
 vi.mock('../data/coverBackfill', () => ({ useCoverBackfill: () => {} }))
 vi.mock('../data/enrichCorpus', () => ({
