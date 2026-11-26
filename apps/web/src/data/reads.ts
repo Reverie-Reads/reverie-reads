@@ -73,9 +73,11 @@ export function useSaveReadEntry(bookId: string, readId?: string) {
       const ownerId = auth.user?.id
       if (!ownerId) throw new Error('Not signed in')
       const values = {
-        started_on: entry.startedOn || null,
-        physical_rating: entry.physicalRating || null,
-        audio_rating: entry.audioRating || null,
+        // Existing log fields remain writable while the web and database releases roll out.
+        // An editor must still be able to clear previously saved optional values.
+        ...(readId || entry.startedOn ? { started_on: entry.startedOn || null } : {}),
+        ...(readId || entry.physicalRating ? { physical_rating: entry.physicalRating || null } : {}),
+        ...(readId || entry.audioRating ? { audio_rating: entry.audioRating || null } : {}),
         read_on: entry.date || null,
         format: entry.format || null,
         rating: entry.rating || null,
