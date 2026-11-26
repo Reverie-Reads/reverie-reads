@@ -400,7 +400,7 @@ test('a rating in the reading log leaves the book’s own rating untouched', asy
     // Give THIS read 2 stars — pre-fix that overwrote the book's 5. The control is the
     // WAI-ARIA slider now (half stars); drive it by keyboard, which doubles as e2e proof of
     // the a11y contract: four ArrowRights at step 0.5 = 2 stars, no pointer needed.
-    const stars = dlg.getByRole('slider', { name: /Your rating/i })
+    const stars = dlg.getByRole('slider', { name: 'Overall rating', exact: true })
     await stars.focus()
     for (let i = 0; i < 4; i++) await stars.press('ArrowRight')
     await expect(stars).toHaveAttribute('aria-valuenow', '2')

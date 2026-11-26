@@ -11,6 +11,8 @@ import { personalReleaseWindow } from '../data/releases'
 import { FromYourAuthors } from '../planner/FromYourAuthors'
 import { StartPlannerTour } from '../guidance/BookTour'
 import { usePlannerTourContext } from '../guidance/usePlannerTourContext'
+import { IndependentPlans } from '../planner/IndependentPlans'
+import { usePlannerEntries } from '../data/plannerEntries'
 import { ReadingPlan, type PlanView } from '../planner/ReadingPlan'
 import '../planner/release-horizon.css'
 
@@ -35,6 +37,7 @@ function PlannerCalendarExperience({
   openBook: (id: string) => void
 }) {
   const history = useReadingHistory()
+  const outside = usePlannerEntries()
   return (
     <>
       {!history.data && (
@@ -57,7 +60,21 @@ function PlannerCalendarExperience({
           </button>
         </p>
       )}
-      <ReadingPlan books={books} view="calendar" openBook={openBook} history={history.data} />
+      {outside.isError && (
+        <p role="alert">
+          Could not load release watches and outside plans.{' '}
+          <button type="button" onClick={() => void outside.refetch()}>
+            Retry entries
+          </button>
+        </p>
+      )}
+      <ReadingPlan
+        books={books}
+        view="calendar"
+        openBook={openBook}
+        history={history.data}
+        outside={outside.data}
+      />
     </>
   )
 }
@@ -127,6 +144,7 @@ function Releases({ books, openBook }: { books: Book[]; openBook: (id: string) =
         </p>
       </Surface>
 
+      <IndependentPlans kind="watch" />
       <FromYourAuthors books={books} />
 
       <section className="release-personal" aria-labelledby="release-personal-heading">
@@ -242,7 +260,10 @@ function PlannerScreen() {
       ) : tab === 'calendar' ? (
         <PlannerCalendarExperience books={books} openBook={openBook} />
       ) : (
-        <ReadingPlan books={books} view={tab} openBook={openBook} />
+        <>
+          <ReadingPlan books={books} view={tab} openBook={openBook} />
+          <IndependentPlans kind="plan" />
+        </>
       )}
     </section>
   )

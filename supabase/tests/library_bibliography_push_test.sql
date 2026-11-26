@@ -52,5 +52,29 @@ select is((select count(*)::int from public.household_library_works_v2()),0,'out
 reset role;
 select ok(not has_function_privilege('authenticated','public.sync_personal_household_bibliography(uuid,jsonb)','execute'),'internal synchronizer cannot be called directly');
 select ok(not has_function_privilege('anon','public.household_library_works_v2()','execute'),'anonymous household read denied');
+
+-- Review a same-title series by its own ID. Its private filing qualifier must never reach the catalog.
+select set_config('request.jwt.claim.sub','da111111-1111-4111-8111-111111111111',true);
+select set_config('request.jwt.claims','{"sub":"da111111-1111-4111-8111-111111111111","role":"authenticated","iss":"http://127.0.0.1:55321/auth/v1"}',true);
+set local role authenticated;
+insert into public.series(owner_id,name) values(auth.uid(),'Northern Saga');
+select public.name_distinct_personal_series((select id from public.series where name='Fixture Saga'),(select id from public.series where name='Northern Saga'),'Northern Saga','Ada Writer','Fixture Saga');
+select is((select count(*)::int from public.review_personal_series_publication((select id from public.series where display_name='Northern Saga')) r where r->>'eligible'='true'),1,'same-title series can review its own saved entry');
+select is(public.publish_reviewed_personal_series((select id from public.series where display_name='Northern Saga'),
+  (select jsonb_agg(r) from public.review_personal_series_publication((select id from public.series where display_name='Northern Saga')) r where r->>'eligible'='true')),1,'review publishes the selected saved relationship');
+select is((select series from public.works where id=pg_temp.bib_work()),'Northern Saga','shared series title excludes the private filing label');
+
+reset role;
+insert into storage.objects(bucket_id,name,owner) values ('covers','u/da111111-1111-4111-8111-111111111111/da000000-0000-4000-8000-000000000002/selected.webp','da111111-1111-4111-8111-111111111111');
+set local role authenticated;
+update public.books set cover_url='http://127.0.0.1:55321/storage/v1/object/public/covers/u/da111111-1111-4111-8111-111111111111/da000000-0000-4000-8000-000000000002/selected.webp' where id='da000000-0000-4000-8000-000000000002';
+select lives_ok($$select public.set_household_cover('da000000-0000-4000-8000-000000000001',pg_temp.bib_work(),'da000000-0000-4000-8000-000000000002',(select cover_url from public.books where id='da000000-0000-4000-8000-000000000002'),null)$$,'member designates an eligible saved cover');
+insert into public.tropes(id,owner_id,name,facet) values('da000000-0000-4000-8000-000000000003',auth.uid(),'Lgbtq fixture','vibe');
+insert into public.book_tropes(book_id,trope_id,owner_id,emphasis) values('da000000-0000-4000-8000-000000000002','da000000-0000-4000-8000-000000000003',auth.uid(),'present');
+update public.tropes set name='LGBTQ fixture' where id='da000000-0000-4000-8000-000000000003';
+select lives_ok($$select public.publish_personal_book_tag('da000000-0000-4000-8000-000000000002',pg_temp.bib_work(),'da000000-0000-4000-8000-000000000003','LGBTQ fixture')$$,'administrator can publish the saved personal tag');
+select set_config('request.jwt.claim.sub','da222222-2222-4222-8222-222222222222',true);
+select is((select row->>'designated_cover' from public.household_library_works_v2() row where row->>'work_id'=pg_temp.bib_work()::text),'http://127.0.0.1:55321/storage/v1/object/public/covers/u/da111111-1111-4111-8111-111111111111/da000000-0000-4000-8000-000000000002/selected.webp','peer sees the designated cover');
+select is((select array_agg(t->>'name') from public.household_library_works_v2() row cross join lateral jsonb_array_elements(row->'household_tropes') t where lower(t->>'name')='lgbtq fixture'),array['LGBTQ fixture'],'peer sees the corrected capitalization once');
 select * from finish();
 rollback;

@@ -23,7 +23,21 @@ export const CORE_GENRES = [
 export type CoreGenre = (typeof CORE_GENRES)[number]
 
 // token (lowercased, trimmed) -> CoreGenre. Includes the confirmed typos/aliases from the exports.
-const GENRE_ALIASES: Record<string, CoreGenre> = {
+export const LIBRARY_GENRES = [
+  ...CORE_GENRES,
+  'Children’s',
+  'Classic',
+  'Fiction',
+  'Historical Fiction',
+] as const
+const GENRE_ALIASES: Record<string, (typeof LIBRARY_GENRES)[number]> = {
+  "children's": 'Children’s',
+  'children’s': 'Children’s',
+  childrens: 'Children’s',
+  classic: 'Classic',
+  classics: 'Classic',
+  fiction: 'Fiction',
+  'historical fiction': 'Historical Fiction',
   romance: 'Romance',
   romace: 'Romance', // typo in the real export
   fantasy: 'Fantasy',
@@ -107,7 +121,7 @@ function splitTokens(field: string): string[] {
  * Blank inputs yield genre null / empty arrays / intensity null.
  */
 export function normalizeImportGenres(genreField: string, tagsField = ''): NormalizedGenres {
-  const cores: CoreGenre[] = []
+  const cores: (typeof LIBRARY_GENRES)[number][] = []
   const tags: string[] = []
   const subgenres: string[] = []
   let intensity: number | null = null
@@ -128,6 +142,7 @@ export function normalizeImportGenres(genreField: string, tagsField = ''): Norma
     }
     const core = GENRE_ALIASES[key]
     if (core) {
+      if (LITERARY_DESCRIPTIVE[key]) addTag(key)
       if (!cores.includes(core)) cores.push(core)
       continue
     }
@@ -309,6 +324,10 @@ export function inferGenreFromSubgenre(subgenre: string): string | null {
 
 /** Every subgenre a book carries. New records store subgenres[]; pre-migration singles ride in
  *  `subgenre`. Read subgenres through this everywhere a book is filtered, tallied, or displayed. */
+export function subgenreLabel(value: string): string {
+  return value.toLowerCase() === 'sports' ? 'Sports Romance' : value
+}
+
 export function bookSubgenres(b: Pick<Book, 'subgenre' | 'subgenres'>): string[] {
   return b.subgenres.length ? b.subgenres : b.subgenre ? [b.subgenre] : []
 }
@@ -326,7 +345,9 @@ export function normalizeBookGenres(values: readonly string[]): string[] {
   for (const raw of values) {
     const trimmed = raw.trim()
     if (!trimmed) continue
-    const core = CORE_GENRES.find((genre) => genre.toLowerCase() === trimmed.toLowerCase())
+    const core = LIBRARY_GENRES.find(
+      (genre) => genre.toLowerCase() === trimmed.toLowerCase().replaceAll("'", '’'),
+    )
     const value = core ? core.toLowerCase() : trimmed
     const key = value.toLowerCase()
     if (seen.has(key)) continue

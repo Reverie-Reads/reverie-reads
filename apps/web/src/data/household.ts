@@ -18,6 +18,7 @@ export interface HouseholdMember {
 
 export interface HouseholdBook {
   /** Original catalog snapshot for explicit corpus edits, never household overlay values. */
+  designatedCover?: string
   corpusBibliography?: HouseholdBook
   id: string
   title: string
@@ -87,6 +88,7 @@ interface HouseholdRosterRow {
 }
 
 interface HouseholdBookRow {
+  designated_cover?: string | null
   corpus_bibliography?: HouseholdBookRow
   work_id: string
   title: string
@@ -169,7 +171,8 @@ export const toHouseholdBook = (row: HouseholdBookRow): HouseholdBook => ({
   id: row.work_id,
   title: row.title,
   author: row.author?.trim() ?? '',
-  cover: row.cover_url ?? '',
+  cover: row.designated_cover || row.cover_url || '',
+  designatedCover: row.designated_cover || '',
   coverColor: row.cover_color ?? '',
   corpusCover: row.cover_url ?? '',
   corpusCoverColor: row.cover_color ?? '',
@@ -278,7 +281,7 @@ export function labelHouseholdData(
         owners.find((owner) => owner.cover)
       return {
         ...book,
-        cover: book.corpusCover || personalCover?.cover || '',
+        cover: book.designatedCover || book.corpusCover || personalCover?.cover || '',
         coverColor: book.corpusCover ? book.corpusCoverColor : (personalCover?.coverColor ?? ''),
         owners,
       }
@@ -754,5 +757,20 @@ export function useAdoptCorpusWorkMetadata() {
       return data as string
     },
     onSuccess: () => invalidateLibraryMembership(queryClient),
+  })
+}
+
+export function useSetHouseholdCover() {
+  const qc = useQueryClient()
+  return useMutation({
+    meta: { action: 'The household cover' },
+    mutationFn: async (input: { householdId: string; workId: string; bookId: string | null; cover: string | null; previous: string | null }) => {
+      const { error } = await supabase.rpc('set_household_cover', {
+        p_household: input.householdId, p_work: input.workId, p_book: input.bookId,
+        p_cover: input.cover, p_previous: input.previous,
+      })
+      if (error) throw error
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['household'] }),
   })
 }

@@ -37,7 +37,13 @@ export function validatePlan(plan) {
 const canonical = (image) => `public.ecr.aws/supabase/${image.name}:${image.tag}`
 export function assertImage(actual, expected) {
   assert.ok(actual, `Missing acquired image: ${expected.name}`)
-  assert.equal(actual.Id, expected.imageId, `Unexpected content: ${expected.name}`)
+  // Containerd-backed engines return a manifest digest as Id. The immutable reviewed
+  // manifest binds its config and layers. A registry tag alone proves neither.
+  const manifestId =
+    actual.Id === expected.manifestDigest &&
+    (actual.Descriptor?.digest === expected.manifestDigest ||
+      actual.RepoDigests?.some((ref) => ref.endsWith('@' + expected.manifestDigest)))
+  assert.ok(actual.Id === expected.imageId || manifestId, `Unexpected content: ${expected.name}`)
   assert.equal(actual.Os, 'linux')
   assert.equal(actual.Architecture, 'amd64')
 }
@@ -126,7 +132,7 @@ async function main() {
       .split('\n')
       .filter((name) => name.startsWith('supabase_') && name.endsWith(`_${project}`))
     assert.ok(ids.length, 'No running project containers')
-    const allowed = new Set(plan.images.map((image) => image.imageId))
+    const allowed = new Set(plan.images.flatMap((image) => [image.imageId, image.manifestDigest]))
     for (const container of JSON.parse(docker(['inspect', ...ids]))) {
       assert.ok(allowed.has(container.Image), `Unplanned running image: ${container.Name}`)
     }

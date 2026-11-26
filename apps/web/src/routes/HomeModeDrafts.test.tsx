@@ -27,7 +27,7 @@ vi.mock('../data/books', () => ({
 }))
 vi.mock('../data/reads', () => ({
   useAllReads: () => ({ data: [] }),
-  useAddRead: () => ({ mutateAsync: state.addRead }),
+  useSaveReadEntry: () => ({ mutateAsync: state.addRead }),
 }))
 vi.mock('../data/lists', () => ({ useLists: () => ({ data: [] }) }))
 vi.mock('../data/listItems', () => ({

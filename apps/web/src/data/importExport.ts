@@ -1,3 +1,4 @@
+import { plannerBackupProvider } from './plannerBackup'
 import { parseCopyInventory, readProductPreferences } from '@reverie/core'
 import { APP_NAME, parseDiscoverySession, DISCOVERY_SAVED_LIMIT } from '@reverie/core'
 import { nextListSortOrderFor, ORDER_STEP as LIST_ORDER_STEP } from './lists'
@@ -27,7 +28,7 @@ import { fetchProductPreferences, saveProductPreferences } from './productPrefer
 // Restore is already a staged, multi-request operation, so run these sequentially and fail at the
 // first rejected batch instead of creating a burst of ownership-trigger work.
 const RESTORE_OWNERSHIP_BATCH_SIZE = 100
-const CURRENT_BACKUP_VERSION = 12
+const CURRENT_BACKUP_VERSION = 13
 
 // Explicit portable fields: never export/restore profile IDs, concurrency tokens or service grants.
 // select('*') tolerates staged schemas; only these fields leave buildBackup.
@@ -76,7 +77,7 @@ export interface BackupExtensionProvider {
   ): Promise<Record<string, number>>
 }
 
-const backupExtensionProviders = new Map<string, BackupExtensionProvider>()
+const backupExtensionProviders = new Map<string, BackupExtensionProvider>([[plannerBackupProvider.id, plannerBackupProvider]])
 
 export function registerBackupExtensionProvider(provider: BackupExtensionProvider): () => void {
   if (!provider.id.trim()) throw new Error('A backup extension needs an id')
@@ -298,6 +299,7 @@ export interface BackupTombstone {
 }
 
 export interface BackupSeriesRow {
+  display_name?: string | null
   id: string
   name: string
   status: string | null
@@ -714,7 +716,7 @@ export async function buildBackup(): Promise<string> {
       pageAll<BackupSeriesRow>('series', (from, to) =>
         supabase
           .from('series')
-          .select('id, name, status, source, source_ref, refreshed_at, length', { count: 'exact' })
+          .select('id, name, display_name, status, source, source_ref, refreshed_at, length', { count: 'exact' })
           .order('id')
           .range(from, to),
       ),
@@ -892,7 +894,7 @@ interface BackupShape {
   /** v5+; absent in a v4 file, which simply restores without them. */
   tropes?: Record<string, BackupTrope[]>
   moods?: Record<string, BackupMood[]>
-  reads?: { book_id: string; read_on: string | null; format: string | null; rating: number | null; notes: string | null }[]
+  reads?: { started_on?: string | null; physical_rating?: number | null; audio_rating?: number | null; book_id: string; read_on: string | null; format: string | null; rating: number | null; notes: string | null }[]
   lists?: { id: string; name: string; kind: string; is_priority: boolean; sort_order?: number | null }[]
   list_items?: { list_id: string; book_id: string; position: number | null }[]
   reviews?: { work_key: string; reviewer_name: string | null; rating: number | null; body: string }[]
@@ -1002,8 +1004,23 @@ function parseBackupFile(json: string): BackupShape {
   }
 
   for (const book of data.books) {
+    if (book.special_edition !== undefined && typeof book.special_edition !== 'boolean')
+      throw new Error('That backup has an unreadable special edition flag. Nothing was restored.')
     if (book.copy_inventory != null && !parseCopyInventory(book.copy_inventory))
       throw new Error('That backup contains unreadable editions or copies. Nothing was restored.')
+  }
+
+  for (const read of data.reads ?? []) {
+    if (!isRecord(read) || [read.physical_rating, read.audio_rating].some(rating =>
+      rating != null && (typeof rating !== 'number' || rating < 0.5 || rating > 5 || !Number.isInteger(rating * 2))))
+      throw new Error('That backup has an unreadable format rating. Nothing was restored.')
+    if (read.started_on != null) {
+      const day = read.started_on
+      const parsedDay = new Date(day + 'T00:00:00Z')
+      if (typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(parsedDay.getTime()) ||
+        parsedDay.toISOString().slice(0, 10) !== day || (read.read_on && day > read.read_on))
+        throw new Error('That backup has invalid read dates. Nothing was restored.')
+    }
   }
 
   if (data.extensions !== undefined && !isRecord(data.extensions))
@@ -1139,6 +1156,7 @@ async function restoreStructuredSeries(
         .insert({
           owner_id: ownerId,
           name: row.name,
+          display_name: row.display_name ?? null,
           status: row.status,
           source: row.source === 'hardcover' ? 'hardcover' : 'manual',
           source_ref: row.source_ref,
@@ -1154,6 +1172,7 @@ async function restoreStructuredSeries(
       const { error } = await supabase
         .from('series')
         .update({
+          ...(row.display_name !== undefined ? {display_name:row.display_name} : {}),
           status: row.status,
           source: row.source === 'hardcover' ? 'hardcover' : 'manual',
           source_ref: row.source_ref,
@@ -1637,7 +1656,7 @@ export async function restoreBackup(
     .map((r) => {
       const bookId = bookIdMap.get(r.book_id)
       return bookId
-        ? { book_id: bookId, owner_id: ownerId, read_on: r.read_on, format: r.format, rating: r.rating, notes: r.notes }
+        ? { book_id: bookId, owner_id: ownerId, started_on: r.started_on ?? null, physical_rating: r.physical_rating ?? null, audio_rating: r.audio_rating ?? null, read_on: r.read_on, format: r.format, rating: r.rating, notes: r.notes }
         : null
     })
     .filter((r): r is NonNullable<typeof r> => r !== null)

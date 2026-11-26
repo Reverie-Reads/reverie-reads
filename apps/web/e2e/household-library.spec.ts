@@ -28,6 +28,13 @@ let member: Account
 let replacement: Account | undefined
 let householdId = ''
 let projectName = ''
+
+function duplicatePreview(page: Page) {
+  return page.getByRole('button', {
+    name: `Preview Household Duplicate ${projectName} in the household library`,
+    exact: true,
+  })
+}
 let replacementBookId = ''
 let seeded:
   | {
@@ -372,6 +379,8 @@ test('two linked personal libraries appear together without exposing personal co
 
   const ownerCard = page.locator(`[data-owners~="${owner.uid}"]`)
   const memberCard = page.locator(`[data-owners~="${member.uid}"]`)
+  const preview = duplicatePreview(page)
+  await expect(memberCard).toHaveAttribute('href', /work=/)
   await expect(ownerCard).toContainText(`${owner.displayName} (you)`)
   await expect(memberCard).toContainText(member.displayName)
   await expect(ownerCard).toContainText(`Household Duplicate ${projectName}`)
@@ -389,10 +398,10 @@ test('two linked personal libraries appear together without exposing personal co
 
     // A reader scrolls this now-lower card into view before activating it. Without this explicit
     // user step Playwright performs the same scroll inside click(), after the baseline is recorded.
-    await memberCard.evaluate((element) => element.scrollIntoView({ block: 'center' }))
-    await memberCard.focus()
+    await preview.evaluate((element) => element.scrollIntoView({ block: 'center' }))
+    await preview.focus()
     const initialScrollY = await page.evaluate(() => window.scrollY)
-    await memberCard.click()
+    await preview.click()
     const detail = page.getByRole('dialog', { name: /household details/i })
     const close = detail.getByRole('button', { name: 'Close household details' })
     await expect(detail).toHaveJSProperty('open', true)
@@ -445,18 +454,18 @@ test('two linked personal libraries appear together without exposing personal co
     ).toBe(true)
     await page.keyboard.press('Escape')
     await expect(detail).toHaveCount(0)
-    await expect(memberCard).toBeFocused()
+    await expect(preview).toBeFocused()
     expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe('')
     expect(await page.evaluate(() => window.scrollY)).toBe(initialScrollY)
 
     // Backdrop dismissal and repeated cycles must not leave listeners, focus, or scroll locks behind.
-    await memberCard.click()
+    await preview.click()
     await page.mouse.click(4, Math.floor((page.viewportSize()?.height ?? 844) / 2))
     await expect(detail).toHaveCount(0)
-    await expect(memberCard).toBeFocused()
+    await expect(preview).toBeFocused()
 
     // Repeated open/close cycles must not accumulate Escape listeners or retain the scroll lock.
-    await memberCard.click()
+    await preview.click()
     await expect(detail).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(detail).toHaveCount(0)
@@ -467,7 +476,7 @@ test('two linked personal libraries appear together without exposing personal co
     )
     const rail = page.locator('aside[aria-label="Household book details"]')
     await expect(rail).toBeVisible()
-    await memberCard.click()
+    await preview.click()
     await expect(rail).toContainText(
       `Active copies: ${owner.displayName} (you), ${member.displayName}`,
     )
@@ -650,7 +659,7 @@ test('an administrator explicitly reviews a cover from the same household librar
 
     await signIn(page, owner.session)
     await page.goto('/library?scope=household')
-    await page.locator(`[data-owners~="${member.uid}"]`).click()
+    await duplicatePreview(page).click()
     const detail =
       testInfo.project.name === 'mobile'
         ? page.getByRole('dialog', { name: /household details/i })
@@ -921,7 +930,7 @@ test('persistent Add creates a household-only work and explicit adoption updates
     await page.getByRole('button', { name: 'View household library', exact: true }).click()
     await expect(page).toHaveURL(/\/library\?scope=household$/)
     const householdOnlyCard = page.getByRole('button', {
-      name: `View ${title} in the household library`,
+      name: `Preview ${title} in the household library`,
     })
     await expect(householdOnlyCard).toBeVisible()
 
@@ -1090,9 +1099,8 @@ test('household details open a full page with only the current reader personal-b
   await page.goto('/library?scope=household')
   const title = `Household Duplicate ${projectName}`
   await page
-    .getByRole('button', { name: `View ${title} in the household library`, exact: true })
+    .getByRole('link', { name: `Open ${title} in the household library`, exact: true })
     .click()
-  await page.getByRole('link', { name: 'Open full details', exact: true }).click()
   await expect(page).toHaveURL(/scope=household.*work=/)
   await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Open my book', exact: true })).toHaveAttribute(
@@ -1115,7 +1123,7 @@ test('the second reader gets the same household view with their own identity mar
     `${member.displayName} (you)`,
   )
   await expect(page.locator(`[data-owners~="${owner.uid}"]`)).toContainText(owner.displayName)
-  await page.locator(`[data-owners~="${member.uid}"]`).click()
+  await duplicatePreview(page).click()
   const detail =
     testInfo.project.name === 'mobile'
       ? page.getByRole('dialog', { name: /household details/i })

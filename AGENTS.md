@@ -97,6 +97,8 @@ prototype/ data/ design/ docs/ backend/   ← reference material, not shipped
 
 ## Conventions
 
+- Donated and given-away copies preserve private ownership history. A selected household cover belongs to the household work. Personal read entries keep independent start and finish dates and optional overall, physical and audio ratings. See the reader editions and read dates section in the data model.
+
 - **Bearded mode is an optional presentation, not access or an account type.** Its first slice is
   versioned browser-local state separated by authenticated account. Full interface remains the
   default. Offer the choice on the first new-reader welcome screen, before pace and room setup.

@@ -15,7 +15,7 @@ import { rootRoute } from './RootRoute'
 import { Button } from '../components/Button'
 import { CoverImage } from '../components/CoverImage'
 import { Surface } from '../components/Surface'
-import { useBooks } from '../data/books'
+import { useReaderBooks } from '../data/readerBooks'
 import { useLists } from '../data/lists'
 import { useAllListItems } from '../data/listItems'
 import { useSeriesList, type SeriesListRow } from '../data/series'
@@ -176,9 +176,10 @@ export function SeriesCard({
             className="break-words text-[19px] italic leading-tight text-ink"
             style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
           >
-            {row.series.name}
+            {row.series.displayName || row.series.name}
           </h3>
           <p className="mt-1 text-[12px] leading-relaxed text-muted">
+            {row.series.displayName && <>{row.series.name} · </>}
             {management.possessedBooks} in hand · {progress.read} read · {knownLength} known
             {seriesLength ? ` · ${seriesLength} in series` : ''}
             {progress.toGet ? ` · ${progress.toGet} to get` : ''}
@@ -220,6 +221,7 @@ export function SeriesCard({
         <Link
           to="/series/$seriesName"
           params={{ seriesName: encodeURIComponent(row.series.name) }}
+          search={row.series.displayName ? { sid: row.series.id } : {}}
           className="skin-control skin-btn-primary inline-flex h-10 w-full items-center justify-center px-4 text-[12px] sm:w-auto"
           aria-label={`Open the ${row.series.name} series page`}
         >
@@ -264,7 +266,9 @@ export function SeriesIndexScreen() {
   const { scope: selectedScope, q = '' } = seriesIndexRoute.useSearch()
   const scope = selectedScope ?? 'personal'
   const navigate = seriesIndexRoute.useNavigate()
-  const { data: books } = useBooks()
+  const reader = useReaderBooks()
+  const books = reader.data
+  const [unfinished, setUnfinished] = useState(false)
   const { data: seriesList, isLoading, isError, refetch } = useSeriesList()
   const { data: lists } = useLists()
   const { data: items } = useAllListItems()
@@ -317,10 +321,22 @@ export function SeriesIndexScreen() {
       ),
     [seriesList, byId, bookSearchBySeries, q],
   )
-  const sections = useMemo(
-    () => buildStructuredSeriesSections(matchingSeries, byId),
-    [matchingSeries, byId],
-  )
+  const sections = useMemo(() => {
+    if (!unfinished) return buildStructuredSeriesSections(matchingSeries, byId)
+    const filtered = new Map(
+      [...matchingSeries].filter(([, row]) => {
+        const members = uniqueLinkedBooks(row, byId)
+        const progress = seriesProgress(row.entries, byId)
+        const started = progress.read > 0 || members.some((book) => book.readStatus === 'Reading')
+        const total = Math.max(
+          row.entries.length,
+          row.series.length ?? claimedSeriesLength(members) ?? 0,
+        )
+        return started && progress.read < total
+      }),
+    )
+    return buildStructuredSeriesSections(filtered, byId)
+  }, [matchingSeries, byId, unfinished])
 
   const managementRows = useMemo<SeriesManagementRow[]>(() => {
     if (!seriesList) return []
@@ -453,10 +469,26 @@ export function SeriesIndexScreen() {
               className="skin-input mt-1 min-h-11 w-full px-3 py-2 text-sm"
             />
           </label>
+          <label className="mt-3 flex min-h-11 items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={unfinished}
+              onChange={(event) => setUnfinished(event.target.checked)}
+            />
+            Started with books left to read
+          </label>
+          {reader.isError && (
+            <p role="alert">
+              Could not load reading progress.{' '}
+              <button type="button" onClick={() => void reader.refetch()}>
+                Retry reading history
+              </button>
+            </p>
+          )}
           <p role="status" className="mt-2 text-sm text-muted">
-            {isLoading
+            {isLoading || reader.isPending
               ? 'Loading your series…'
-              : isError
+              : isError || reader.isError
                 ? 'Series unavailable'
                 : `${sections.reduce((sum, section) => sum + section.rows.length, 0)} confirmed series${q.trim() ? ' found' : ''}${unreviewedSeries.length ? ` · ${unreviewedSeries.length} awaiting review` : ''}`}
           </p>
@@ -487,6 +519,7 @@ export function SeriesIndexScreen() {
                     key={row.series.id}
                     to="/series/$seriesName"
                     params={{ seriesName: encodeURIComponent(row.series.name) }}
+                    search={row.series.displayName ? { sid: row.series.id } : {}}
                     className="skin-control min-h-11 border border-line px-3 py-2 text-[12px] font-semibold text-ink"
                   >
                     Review {row.series.name} · {row.unreviewed}
@@ -496,7 +529,7 @@ export function SeriesIndexScreen() {
             </section>
           )}
 
-          {!isLoading && !isError && !sections.length ? (
+          {!isLoading && !isError && !reader.isError && !reader.isPending && !sections.length ? (
             <p className="mt-8 text-[13.5px] text-muted">
               {q.trim()
                 ? unreviewedSeries.length
@@ -554,7 +587,13 @@ export function SeriesIndexScreen() {
         </>
       )}
 
-      {renaming ? <RenameSeriesDialog row={renaming} onClose={() => setRenaming(null)} /> : null}
+      {renaming ? (
+        <RenameSeriesDialog
+          row={renaming}
+          peers={managementRows}
+          onClose={() => setRenaming(null)}
+        />
+      ) : null}
       {deleting ? <DeleteSeriesDialog row={deleting} onClose={() => setDeleting(null)} /> : null}
       {merging ? (
         <MergeSeriesDialog rows={managementRows} onClose={() => setMerging(false)} />

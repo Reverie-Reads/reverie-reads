@@ -11,11 +11,19 @@ export const EDITION_FORMATS = [
   'unknown',
 ] as const
 export type EditionFormat = (typeof EDITION_FORMATS)[number]
-export const COPY_STATES = ['owned', 'borrowed', 'wishlist', 'unset'] as const
+export const COPY_STATES = [
+  'owned',
+  'borrowed',
+  'wishlist',
+  'unset',
+  'donated',
+  'given-away',
+] as const
 export type CopyState = (typeof COPY_STATES)[number]
 export interface LibraryEdition {
   id: string
   label: string
+  special?: boolean
   format: EditionFormat
   isbn: string
   publisher: string
@@ -119,6 +127,7 @@ export function parseCopyInventory(value: unknown): CopyInventory | null {
       editions.has(e.id) ||
       !EDITION_FORMATS.includes(e.format as EditionFormat) ||
       !text(e.label, 160) ||
+      (e.special !== undefined && typeof e.special !== 'boolean') ||
       !text(e.isbn, 32) ||
       (e.isbn !== '' && (!/^[0-9Xx -]+$/.test(e.isbn) || !normalizeIsbn(e.isbn))) ||
       !text(e.publisher, 160) ||
@@ -147,6 +156,7 @@ export function parseCopyInventory(value: unknown): CopyInventory | null {
             'pages',
             'cover',
             'sourceUrl',
+            'special',
           ].includes(k),
       )
     )
@@ -265,6 +275,7 @@ function unidentifiedEdition(edition: LibraryEdition): boolean {
   return (
     edition.format === 'unknown' &&
     !edition.label &&
+    !edition.special &&
     !edition.isbn &&
     !edition.publisher &&
     !edition.published &&

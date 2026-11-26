@@ -19,6 +19,7 @@ export interface RecordedRead extends ReadingLog {
 }
 
 export interface ReadingHistory {
+  books: Book[]
   records: RecordedRead[]
   years: number[]
   markedRead: Book[]
@@ -70,6 +71,7 @@ export function buildReadingHistory(
   const loggedIds = new Set(records.map((read) => read.bookId))
   return {
     records,
+    books: [...byBook.values()],
     years: [
       ...new Set(records.flatMap((read) => (read.finished.y === null ? [] : [read.finished.y]))),
     ].sort((a, b) => b - a),

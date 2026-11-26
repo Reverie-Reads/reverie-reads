@@ -54,6 +54,7 @@ export const suggestionsKey = (bookId: string) => ['trope-suggestions', bookId] 
 export function useTropes() {
   return useQuery({
     queryKey: tropesKey,
+    staleTime: 5 * 60_000,
     queryFn: async (): Promise<UiTrope[]> => {
       const data = await pageAll<TropeRowT>('tropes', (from, to) =>
         // `name` is not unique across canonical and personal rows — `id` makes the pages disjoint.
@@ -74,6 +75,7 @@ export interface BookTropeRow {
 export function useAllBookTropes() {
   return useQuery({
     queryKey: bookTropesKey,
+    staleTime: 5 * 60_000,
     queryFn: async (): Promise<BookTropeRow[]> => {
       // A JOIN table: several rows per book, so it crosses the cap well before `books` does.
       return await pageAll<BookTropeRow>('book_tropes', (from, to) =>
@@ -93,6 +95,7 @@ function useInvalidateTropes(includeVocabulary = false) {
   return () => {
     void qc.invalidateQueries({ queryKey: booksKey })
     void qc.invalidateQueries({ queryKey: bookTropesKey })
+    void qc.invalidateQueries({ queryKey: ['household'] })
     if (includeVocabulary) void qc.invalidateQueries({ queryKey: tropesKey })
   }
 }
@@ -291,7 +294,9 @@ export function useRenamePersonalTrope() {
         .from('tropes')
         .update({ name })
         .eq('id', input.id)
-        .not('owner_id', 'is', null) // personal rows only — canonical vocabulary is shared
+        .not('owner_id', 'is', null)
+        .select('id')
+        .single()
       if (error) throw error
     },
     onSuccess: () => invalidate(),
@@ -326,5 +331,19 @@ export function useDeletePersonalTrope() {
     // useInvalidateTropes already clears booksKey alongside bookTropesKey, which is what the books
     // that carried this trope need — no separate books invalidation.
     onSuccess: () => invalidate(),
+  })
+}
+
+export function usePublishPersonalBookTag() {
+  const qc = useQueryClient()
+  return useMutation({
+    meta: { action: 'Publishing the saved tag' },
+    mutationFn: async (input: { bookId: string; workId: string; id: string; name: string }) => {
+      const { error } = await supabase.rpc('publish_personal_book_tag', {
+        p_book: input.bookId, p_work: input.workId, p_tag: input.id, p_name: input.name,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ['household'] }), qc.invalidateQueries({ queryKey: tropesKey })]),
   })
 }

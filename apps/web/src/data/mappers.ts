@@ -87,6 +87,7 @@ export function toBook(row: BookRow): Book {
     coverUserChosen: row.cover_user_chosen || undefined,
     coverColor: row.cover_color ?? undefined,
     isbn: row.isbn ?? '',
+    specialEdition: row.special_edition ?? false,
     fave: row.fave,
     // Two-state ownership + independent flags (docs/archive/task-shelf-model.md). A row written before the
     // stage-A migration can still carry a four-state word; read it through the same mapping the
@@ -172,6 +173,7 @@ export function toBookRow(patch: Partial<Book>): Partial<BookRow> {
   if (patch.coverUserChosen !== undefined) row.cover_user_chosen = patch.coverUserChosen
   if ('coverColor' in patch) row.cover_color = patch.coverColor || null
   if (patch.isbn !== undefined) row.isbn = patch.isbn || null
+  if (patch.specialEdition !== undefined) row.special_edition = patch.specialEdition
   if (patch.fave !== undefined) row.fave = patch.fave
   if (patch.ownership !== undefined) row.ownership = patch.ownership
   if (patch.borrowed !== undefined) row.borrowed = patch.borrowed
@@ -210,6 +212,9 @@ export function toBookRow(patch: Partial<Book>): Partial<BookRow> {
 
 export function toReadEntry(row: ReadRow): ReadEntry {
   return {
+    ...(row.started_on ? { startedOn: row.started_on } : {}),
+    ...(row.physical_rating ? { physicalRating: row.physical_rating } : {}),
+    ...(row.audio_rating ? { audioRating: row.audio_rating } : {}),
     date: row.read_on ?? '',
     format: row.format ?? '',
     rating: row.rating ?? 0,

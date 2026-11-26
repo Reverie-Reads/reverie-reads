@@ -149,6 +149,9 @@ export function SpineShelf({
     onReorder(ids)
   }
 
+  const geometry = useRef<{ slot: HTMLElement; centre: number; width: number; height: number }[]>(
+    [],
+  )
   const waveCenterRef = useRef<number | null>(null)
   const pointerWaveFrameRef = useRef(0)
   const animateReturnRef = useRef(false)
@@ -190,7 +193,7 @@ export function SpineShelf({
   const renderWave = (cxRaw: number): void => {
     const el = ref.current
     if (!el) return
-    const slots = el.querySelectorAll<HTMLElement>('[data-spine]')
+    const slots = geometry.current
     const n = slots.length
     if (n === 0) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -205,10 +208,7 @@ export function SpineShelf({
     const widths = new Array<number>(n)
     let total = 0
     for (let i = 0; i < n; i++) {
-      const s = slots[i]!
-      const w = s.offsetWidth
-      const h = s.offsetHeight
-      const centre = s.offsetLeft + w / 2
+      const { slot: s, width: w, height: h, centre } = slots[i]!
       widths[i] = w
       const d = centre - cx
       let ti = Math.exp(-(d * d) / (2 * SIGMA * SIGMA))
@@ -225,7 +225,7 @@ export function SpineShelf({
     // halves at the ends; nothing is ever pushed past it.
     let cum = 0
     for (let i = 0; i < n; i++) {
-      const s = slots[i]!
+      const s = slots[i]!.slot
       const nodes = nodesFor(s)
       const dx = cum + added[i]! / 2 - total / 2
       cum += added[i]!
@@ -389,8 +389,8 @@ export function SpineShelf({
       const cx = el.scrollLeft + windowW(el)
       let best: string | null = null
       let bd = Infinity
-      el.querySelectorAll<HTMLElement>('[data-spine]').forEach((s) => {
-        const d = Math.abs(s.offsetLeft + s.offsetWidth / 2 - cx)
+      geometry.current.forEach(({ slot: s, centre }) => {
+        const d = Math.abs(centre - cx)
         if (d < bd) {
           bd = d
           best = s.dataset.spine ?? null
@@ -469,6 +469,12 @@ export function SpineShelf({
     if (!el) return
     const measure = () => {
       const slots = el.querySelectorAll<HTMLElement>('[data-spine]')
+      geometry.current = Array.from(slots, (slot) => ({
+        slot,
+        centre: slot.offsetLeft + slot.offsetWidth / 2,
+        width: slot.offsetWidth,
+        height: slot.offsetHeight,
+      }))
       const spacer = el.querySelector<HTMLElement>('[data-trail-slack]')
       if (slots.length === 0 || !spacer) return
       const last = slots[slots.length - 1]!
@@ -496,6 +502,7 @@ export function SpineShelf({
     if (typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(measure)
     ro.observe(el)
+    for (const { slot } of geometry.current) ro.observe(slot)
     return () => ro.disconnect()
   }, [books])
 
@@ -642,9 +649,6 @@ export function SpineShelf({
 
       <div className="flex items-end justify-between gap-4 px-4 pb-1 pt-4 sm:px-5">
         <div>
-          <span className="skin-label text-[12px]" style={{ color: 'var(--accent-ink)' }}>
-            Browse the shelf
-          </span>
           <p className="mt-1 text-[12.5px] leading-[1.45] text-muted">
             Drag, swipe, or use the arrows
           </p>

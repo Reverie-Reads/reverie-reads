@@ -1050,3 +1050,13 @@ work facts through a separate exact title/full-author lookup. Add and saved-book
 bounded edition candidates; no candidate is automatically selected, registered as shared bibliography
 or added to private inventory. Existing personal corrections and explicit save/review remain required.
 See `../tasks/scanner-metadata-completeness.md`.
+
+### Reader editions and read dates
+
+A reader can mark a personal book or an individual edition as a special edition. A donated or given-away copy remains in the private inventory with its disposition. Neither state counts as a copy in hand. Each read can have its own start date and separate overall, physical and audio ratings. Older completions retain their original finish date, format and rating. Backup v13 includes these fields.
+
+A household member can explicitly designate a saved image from their own admitted copy as the household display cover. The stored choice belongs to the household work and members can clear it. Catalog artwork and other readers' personal covers are separate. Administrators can publish a saved personal tag after reviewing the book and tag. The server checks the assignment and catalog identity again before recording the shared tag.
+
+Private planner entries contain a title, optional author and series, and a date at the reader's chosen precision. Each row is either a release watch or a reading plan. Neither creates a library book, copy or completion. Personal backups carry these entries under the reader-planner extension and restore them by account and entry ID.
+
+Personal series have stable IDs. The optional display name lets two series show the same title. Their unique filing names distinguish them in imports, book editors and older clients. Keeping both after a rename requires the reader to enter a distinction. An administrator's catalog review uses the series display title and rechecks its saved membership.

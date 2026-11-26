@@ -49,7 +49,11 @@ export function splitName(name: string): { first: string; last: string } {
   const parts = (name ?? '').trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return { first: '', last: '' }
   if (parts.length === 1) return { first: '', last: parts[0]! }
-  return { first: parts.slice(0, -1).join(' '), last: parts[parts.length - 1]! }
+  const familyStart =
+    parts.length >= 3 && /^st[.]?$/i.test(parts[parts.length - 2]!)
+      ? parts.length - 2
+      : parts.length - 1
+  return { first: parts.slice(0, familyStart).join(' '), last: parts.slice(familyStart).join(' ') }
 }
 
 /** Join first/last back into a display name. */

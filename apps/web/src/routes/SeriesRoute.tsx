@@ -1,3 +1,4 @@
+import { SeriesPublication } from '../series/SeriesPublication'
 import { useMemo, useState } from 'react'
 import { createRoute, useNavigate } from '@tanstack/react-router'
 import {
@@ -42,6 +43,7 @@ import {
   useReviewSeriesClaims,
   useSetPrimarySeriesMembership,
   useSeriesDetail,
+  useSeriesList,
   useUpdateEntry,
   useUpdateSeries,
 } from '../data/series'
@@ -63,14 +65,67 @@ const ordinal = (value: number): string => {
  * own state woven inline, Next Up elevated as the page's emotional center. Drag (or ▲▼) writes a
  * private sort key; the canonical volume number remains independent and editable in half steps.
  */
+function SeriesLengthEditor({
+  id,
+  name,
+  length,
+}: {
+  id: string
+  name: string
+  length: number | null
+}) {
+  const update = useUpdateSeries(name)
+  const [value, setValue] = useState(length?.toString() ?? '')
+  return (
+    <form
+      className="mt-3 flex flex-wrap items-end gap-2"
+      onSubmit={(event) => {
+        event.preventDefault()
+        update.mutate({
+          id,
+          lengthChange: { expected: length, value: value === '' ? null : Number(value) },
+        })
+      }}
+    >
+      <label className="text-sm text-ink">
+        Books in series
+        <input
+          type="number"
+          min="1"
+          max="32767"
+          step="1"
+          placeholder="Unknown"
+          className="skin-field ml-2 w-28 border border-line px-2 py-2"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={update.isPending || value === (length?.toString() ?? '')}
+        className="skin-control min-h-11 px-3"
+      >
+        Save series length
+      </button>
+      {update.isError && (
+        <p role="alert">
+          The length could not be saved. Reload the series to check its current length.
+        </p>
+      )}
+    </form>
+  )
+}
+
 function SeriesScreen() {
   const { seriesName } = seriesRoute.useParams()
-  const name = decodeURIComponent(seriesName)
+  const routeName = decodeURIComponent(seriesName)
+  const { sid } = seriesRoute.useSearch()
   const navigate = useNavigate()
   const { data: books } = useBooks()
   const { data: lists } = useLists()
   const { data: items } = useAllListItems()
-  const { data: detail, isLoading, isError, refetch } = useSeriesDetail(name)
+  const { data: detail, isLoading, isError, refetch } = useSeriesDetail(routeName, sid)
+  const name = detail?.series.name ?? routeName
   const reviewClaims = useReviewSeriesClaims(name)
   const setPrimary = useSetPrimarySeriesMembership(name)
   const updateSeries = useUpdateSeries(name)
@@ -90,6 +145,7 @@ function SeriesScreen() {
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [sourceNote, setSourceNote] = useState<string | null>(null)
   const [renaming, setRenaming] = useState(false)
+  const { data: renameCandidates } = useSeriesList(renaming)
   const [deleting, setDeleting] = useState(false)
   const [acknowledgedReview, setAcknowledgedReview] = useState('')
   const [editingEntry, setEditingEntry] = useState<SeriesEntry | null>(null)
@@ -347,7 +403,7 @@ function SeriesScreen() {
             className="min-w-0 text-[26px] italic leading-tight text-ink"
             style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}
           >
-            {detail.series.name}
+            {detail.series.displayName || detail.series.name}
             <button
               type="button"
               onClick={() => setRenaming(true)}
@@ -386,6 +442,13 @@ function SeriesScreen() {
         >
           Not a series? Remove this category
         </button>
+        <SeriesPublication key={detail.series.id} id={detail.series.id} />
+        <SeriesLengthEditor
+          key={detail.series.id + '/' + detail.series.length}
+          id={detail.series.id}
+          name={detail.series.name}
+          length={detail.series.length ?? null}
+        />
         {/* progress lockup: "Read 3 of 7 · 2 to get" + a subtle rule */}
         <p className="mt-2 text-[14px] text-ink">
           {progressLine(progress)}
@@ -825,11 +888,32 @@ function SeriesScreen() {
       {renaming ? (
         <RenameSeriesDialog
           row={managementRow}
+          peers={[...(renameCandidates?.values() ?? [])].map((candidate) => ({
+            series: candidate.series,
+            id: candidate.series.id,
+            name: candidate.series.name,
+            entries: candidate.entries,
+            liveEntries: candidate.total,
+            memberBooks: new Set(
+              candidate.entries.flatMap((entry) => (entry.bookId ? [entry.bookId] : [])),
+            ).size,
+            ghostEntries: candidate.ghosts,
+            unreviewedEntries: candidate.unreviewed,
+            removedEntries: candidate.removed,
+            possessedBooks: new Set(
+              candidate.entries.flatMap((entry) =>
+                entry.bookId && byId.get(entry.bookId) && isPossessed(byId.get(entry.bookId)!)
+                  ? [entry.bookId]
+                  : [],
+              ),
+            ).size,
+          }))}
           onClose={() => setRenaming(false)}
           onRenamed={(newName) => {
             void navigate({
               to: '/series/$seriesName',
               params: { seriesName: encodeURIComponent(newName) },
+              search: { sid: detail.series.id },
               replace: true,
             })
           }}
@@ -933,5 +1017,8 @@ function SeriesScreen() {
 export const seriesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: 'series/$seriesName',
+  validateSearch: (s: Record<string, unknown>): { sid?: string } => ({
+    sid: typeof s.sid === 'string' && /^[0-9a-f-]{36}$/i.test(s.sid) ? s.sid : undefined,
+  }),
   component: SeriesScreen,
 })

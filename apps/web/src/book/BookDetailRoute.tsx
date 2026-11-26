@@ -1,4 +1,5 @@
-import { bookGuidance } from '@reverie/core'
+import { readableWriteError } from '../lib/writeErrors'
+import { bookGuidance, isStoredCoverUrl } from '@reverie/core'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, createRoute, useNavigate } from '@tanstack/react-router'
 import { StartReadingTour } from '../guidance/BookTour'
@@ -10,7 +11,8 @@ import {
   isBookRead,
   bookGenres,
   bookSubgenres,
-  CORE_GENRES,
+  LIBRARY_GENRES,
+  subgenreLabel,
   buildBuyLinks,
   buyDisclosure,
   isAuthorRole,
@@ -50,6 +52,7 @@ import { maybeChainPrompt } from '../lib/chainPrompt'
 import { EditDetails, LogReadForm, MergeDialog } from './dialogs'
 import type { BookEditorSectionId } from './BookMetadataFields'
 import { PlanEditor } from './PlanEditor'
+import { PublishBookTag } from './PublishBookTag'
 import { TropePicker } from '../components/TropePicker'
 import { TropeChip } from '../components/TropeChip'
 import { MoodChip } from '../components/MoodChip'
@@ -279,6 +282,10 @@ export function BookDetailScreen() {
   const { data: reads, isError: readsError, refetch: retryReads } = useReads(bookId)
   /** Which level axis is currently explaining itself, if any. One at a time: two open cards on a
    *  metadata row would push the page around and neither would be the answer to a single tap. */
+  const [editRead, setEditRead] = useState<{
+    bookId: string
+    read: import('../data/mappers').ReadRecord
+  } | null>(null)
   const [openLevel, setOpenLevel] = useState<'intensity' | 'darkness' | null>(null)
   const formatRatings = useMemo(() => latestRatingByFormat(reads ?? []), [reads])
   const { data: listIds } = useBookListIds(bookId)
@@ -524,10 +531,10 @@ export function BookDetailScreen() {
           </button>
           <div className="mt-4 flex flex-wrap gap-1.5">
             {bookGenres(book).map((g) => (
-              <Pill key={g}>{CORE_GENRES.find((cg) => cg.toLowerCase() === g) ?? g}</Pill>
+              <Pill key={g}>{LIBRARY_GENRES.find((cg) => cg.toLowerCase() === g) ?? g}</Pill>
             ))}
             {bookSubgenres(book).map((s) => (
-              <Pill key={s}>{s}</Pill>
+              <Pill key={s}>{subgenreLabel(s)}</Pill>
             ))}
             <Pill>{seriesBadge}</Pill>
             {/*
@@ -679,6 +686,19 @@ export function BookDetailScreen() {
             />
           )}
           <div className="mt-3">
+            <label className="flex min-h-11 items-center gap-2">
+              <input
+                type="checkbox"
+                checked={book.specialEdition ?? false}
+                onChange={(event) =>
+                  updateBook.mutate({
+                    id: book.id,
+                    patch: { specialEdition: event.target.checked },
+                  })
+                }
+              />
+              Special edition
+            </label>
             <EditionCopies book={book} />
             <SharedCatalogDetails book={book} />
           </div>
@@ -865,7 +885,18 @@ export function BookDetailScreen() {
             {(reads ?? []).map((r) => (
               <Surface key={r.id} tone="field" radius="card" pad={2}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[13.5px] font-semibold text-ink">{fmtDate(r.date)}</span>
+                  <span className="text-[13.5px] font-semibold text-ink">
+                    {r.startedOn ? `${fmtDate(r.startedOn)} – ` : ''}
+                    {fmtDate(r.date)}
+                  </span>
+                  <button
+                    type="button"
+                    className="min-h-11 text-sm underline"
+                    disabled={r.id.startsWith('temp-')}
+                    onClick={() => setEditRead({ bookId, read: r })}
+                  >
+                    Edit entry
+                  </button>
                   <button
                     type="button"
                     onClick={() => deleteRead.mutate(r.id)}
@@ -878,6 +909,16 @@ export function BookDetailScreen() {
                   {r.format}
                   {r.rating ? <Stars value={r.rating} size={12} /> : null}
                 </div>
+                {r.physicalRating || r.audioRating ? (
+                  <p className="text-sm text-muted">
+                    {[
+                      r.physicalRating && `Physical ${r.physicalRating}/5`,
+                      r.audioRating && `Audio ${r.audioRating}/5`,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                ) : null}
                 {r.notes && <div className="mt-1 text-[13px] text-ink">{r.notes}</div>}
               </Surface>
             ))}
@@ -1046,6 +1087,10 @@ export function BookDetailScreen() {
           )}
         </div>
 
+        {isCorpusAdmin && corpusWorkId && book.tropes.length > 0 && (
+          <PublishBookTag key={book.id + corpusWorkId} book={book} workId={corpusWorkId} />
+        )}
+
         {/* Mood — the reader's OWN impression (how it landed), its own area, apart from the descriptive
           tropes above. Never derived: empty is a valid, quiet state (docs/archive/task-mood.md). */}
         <Label
@@ -1083,6 +1128,20 @@ export function BookDetailScreen() {
             loading={coverReview.isFetching}
             unavailable={coverReviewUnavailable}
             saving={reviewPersonalCover.isPending}
+            onChooseImage={
+              !isStoredCoverUrl(book.cover) && book.coverSource !== 'google'
+                ? () => setDialog('cover')
+                : undefined
+            }
+            reviewError={
+              reviewPersonalCover.isError &&
+              reviewPersonalCover.variables?.bookId === book.id &&
+              reviewPersonalCover.variables?.coverUrl === book.cover &&
+              reviewPersonalCover.variables?.workId === corpusWorkId
+                ? readableWriteError(reviewPersonalCover.error)
+                : undefined
+            }
+            retryStatus={() => void coverReview.refetch()}
             onReview={() =>
               reviewPersonalCover.mutate({
                 bookId: book.id,
@@ -1136,6 +1195,15 @@ export function BookDetailScreen() {
           </p>
           <MoodPicker book={book} />
         </Modal>
+      )}
+      {editRead?.bookId === book.id && (
+        <LogReadForm
+          key={editRead.read.id}
+          book={book}
+          entry={editRead.read}
+          mode="past"
+          onClose={() => setEditRead(null)}
+        />
       )}
       {(dialog === 'log' || dialog === 'finish') && (
         <LogReadForm

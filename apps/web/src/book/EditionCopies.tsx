@@ -20,7 +20,14 @@ const control =
   'skin-control min-h-11 bg-[var(--card-solid)] border border-line px-3 py-2 text-[14px] font-semibold text-ink'
 const field =
   'w-full min-w-0 min-h-11 skin-field border border-line bg-[var(--card-solid)] px-3 py-2 text-[16px] leading-normal text-ink'
-const stateLabel = { owned: 'Owned', borrowed: 'Borrowed', wishlist: 'Wishlist', unset: 'Not set' }
+const stateLabel = {
+  owned: 'Owned',
+  borrowed: 'Borrowed',
+  wishlist: 'Wishlist',
+  unset: 'Not set',
+  donated: 'Previously owned · Donated',
+  'given-away': 'Previously owned · Gave away',
+}
 function Field({ label, children }: { label: string; children: ReactElement<{ id?: string }> }) {
   const id = useId()
   return (
@@ -84,6 +91,7 @@ export function EditionCopies({ book }: { book: Book }) {
                 <h4 className="break-words text-[15px] font-semibold leading-snug text-ink">
                   {edition.label || EDITION_FORMAT_LABELS[edition.format]}
                 </h4>
+                {edition.special && <p className="text-sm">Special edition</p>}
                 {edition.label && (
                   <p className="text-[13px] text-muted">{EDITION_FORMAT_LABELS[edition.format]}</p>
                 )}
@@ -236,6 +244,14 @@ export function CopyEditor({
                 </button>
               </div>
               <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                <label className="flex min-h-11 items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={edition.special ?? false}
+                    onChange={(e) => editionChange(edition.id, { special: e.target.checked })}
+                  />
+                  Special edition
+                </label>
                 <Field label="Edition name">
                   <input
                     className={field}
@@ -262,6 +278,59 @@ export function CopyEditor({
                     ))}
                   </select>
                 </Field>
+              </div>
+              <div className="sm:col-span-2 space-y-3">
+                <EditionArtwork key={`${edition.id}:${edition.cover}`} edition={edition} />
+                <Field label="Upload an edition cover">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={!!uploading}
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0]
+                      event.target.value = ''
+                      if (!file || uploadPending.current) return
+                      uploadPending.current = true
+                      setUploading(edition.id)
+                      setError('')
+                      try {
+                        const result = await ingestCover({
+                          bookId: book.id,
+                          source: 'upload',
+                          file,
+                        })
+                        if (result.status !== 'ok') throw new Error('Upload failed')
+                        editionChange(edition.id, { cover: result.data.cover })
+                      } catch {
+                        setError(
+                          'The cover could not be uploaded. Your edition information is still here. Try another image.',
+                        )
+                      } finally {
+                        uploadPending.current = false
+                        setUploading(null)
+                      }
+                    }}
+                    className="block min-h-11 w-full min-w-0 text-sm text-ink"
+                  />
+                </Field>
+                {uploading === edition.id && (
+                  <p role="status" className="text-sm text-muted">
+                    Uploading cover…
+                  </p>
+                )}
+                <Field label="Cover image link (HTTPS)">
+                  <input
+                    className={field}
+                    type="url"
+                    maxLength={2048}
+                    value={edition.cover}
+                    onChange={(e) => editionChange(edition.id, { cover: e.target.value })}
+                  />
+                </Field>
+                <p className="text-xs text-muted">
+                  Paste a direct image link, not a book page. If a site blocks linked images, upload
+                  the image instead. Save editions &amp; copies to keep this cover.
+                </p>
               </div>
               <details>
                 <summary className="min-h-11 cursor-pointer py-3 text-[14px] font-semibold text-ink">
@@ -321,59 +390,6 @@ export function CopyEditor({
                     <p className="mt-1 text-[12px] text-muted">
                       Hardcover or Penguin Random House book page. A reference link, not
                       verification of edited details.
-                    </p>
-                  </div>
-                  <div className="sm:col-span-2 space-y-3">
-                    <EditionArtwork key={`${edition.id}:${edition.cover}`} edition={edition} />
-                    <Field label="Upload an edition cover">
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        disabled={!!uploading}
-                        onChange={async (event) => {
-                          const file = event.target.files?.[0]
-                          event.target.value = ''
-                          if (!file || uploadPending.current) return
-                          uploadPending.current = true
-                          setUploading(edition.id)
-                          setError('')
-                          try {
-                            const result = await ingestCover({
-                              bookId: book.id,
-                              source: 'upload',
-                              file,
-                            })
-                            if (result.status !== 'ok') throw new Error('Upload failed')
-                            editionChange(edition.id, { cover: result.data.cover })
-                          } catch {
-                            setError(
-                              'The cover could not be uploaded. Your edition information is still here. Try another image.',
-                            )
-                          } finally {
-                            uploadPending.current = false
-                            setUploading(null)
-                          }
-                        }}
-                        className="block min-h-11 w-full min-w-0 text-sm text-ink"
-                      />
-                    </Field>
-                    {uploading === edition.id && (
-                      <p role="status" className="text-sm text-muted">
-                        Uploading cover…
-                      </p>
-                    )}
-                    <Field label="Cover image link (HTTPS)">
-                      <input
-                        className={field}
-                        type="url"
-                        maxLength={2048}
-                        value={edition.cover}
-                        onChange={(e) => editionChange(edition.id, { cover: e.target.value })}
-                      />
-                    </Field>
-                    <p className="text-xs text-muted">
-                      Paste a direct image link, not a book page. If a site blocks linked images,
-                      upload the image instead. Save editions &amp; copies to keep this cover.
                     </p>
                   </div>
                 </div>

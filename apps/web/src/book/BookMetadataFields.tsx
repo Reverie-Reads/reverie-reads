@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import {
-  CORE_GENRES,
+  LIBRARY_GENRES,
+  subgenreLabel,
   SERIES_STATUS_LABELS,
   SERIES_STATUS_VALUES,
   type Contributor,
@@ -310,10 +311,10 @@ export function BookMetadataFields({
               className={bookFieldClass}
             >
               <option value="">Genre — not set</option>
-              {f.genre && !CORE_GENRES.some((g) => g.toLowerCase() === f.genre) && (
+              {f.genre && !LIBRARY_GENRES.some((g) => g.toLowerCase() === f.genre) && (
                 <option value={f.genre}>{f.genre}</option>
               )}
-              {CORE_GENRES.map((g) => (
+              {LIBRARY_GENRES.map((g) => (
                 <option key={g} value={g.toLowerCase()}>
                   {g}
                 </option>
@@ -326,7 +327,7 @@ export function BookMetadataFields({
               <div className="flex flex-wrap gap-2">
                 {options.map((s) => (
                   <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
-                    {s}
+                    {subgenreLabel(s)}
                   </Chip>
                 ))}
               </div>
@@ -349,7 +350,7 @@ export function BookMetadataFields({
                   .filter((s) => !options.includes(s))
                   .map((s) => (
                     <Chip key={s} active={subs.includes(s)} onClick={() => toggleSub(s)}>
-                      {s}
+                      {subgenreLabel(s)}
                     </Chip>
                   ))}
               </div>
@@ -366,7 +367,7 @@ export function BookMetadataFields({
             </button>
             {(showOtherGenres || extraGenres.length > 0) && (
               <div className="flex flex-wrap gap-2">
-                {CORE_GENRES.filter(
+                {LIBRARY_GENRES.filter(
                   (g) =>
                     g.toLowerCase() !== f.genre &&
                     (showOtherGenres || extraGenres.includes(g.toLowerCase())),

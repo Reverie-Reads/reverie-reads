@@ -7,7 +7,7 @@ const { addRead, updateBook, chainPrompt } = vi.hoisted(() => ({
   updateBook: vi.fn(),
   chainPrompt: vi.fn(),
 }))
-vi.mock('../data/reads', () => ({ useAddRead: () => ({ mutateAsync: addRead }) }))
+vi.mock('../data/reads', () => ({ useSaveReadEntry: () => ({ mutateAsync: addRead }) }))
 vi.mock('../data/books', () => ({
   useBooks: () => ({ data: [] }),
   useUpdateBook: () => ({ mutateAsync: updateBook }),
@@ -35,10 +35,50 @@ describe('logging past and current reads', () => {
       date: '2025-01-01',
       format: 'Paperback',
       rating: 0,
+      startedOn: '',
+      physicalRating: 0,
+      audioRating: 0,
       notes: '',
     })
     expect(updateBook).not.toHaveBeenCalled()
     expect(chainPrompt).not.toHaveBeenCalled()
+  })
+
+  it('edits an existing read with independent ratings and rejects reversed dates', async () => {
+    const close = vi.fn()
+    render(
+      <LogReadForm
+        book={readingBook()}
+        mode="past"
+        entry={{
+          id: 'old-read',
+          date: '2025-01-03',
+          format: 'Audio',
+          rating: 3,
+          notes: 'Earlier',
+          startedOn: '2025-01-01',
+          physicalRating: 4,
+          audioRating: 5,
+        }}
+        onClose={close}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Date started'), { target: { value: '2025-01-04' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save entry changes' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('finish date on or after')
+    expect(addRead).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('Date started'), { target: { value: '2025-01-02' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save entry changes' }))
+    await waitFor(() => expect(close).toHaveBeenCalledOnce())
+    expect(addRead).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startedOn: '2025-01-02',
+        physicalRating: 4,
+        audioRating: 5,
+        rating: 3,
+      }),
+    )
+    expect(updateBook).not.toHaveBeenCalled()
   })
 
   it('keeps an unknown format unrecorded instead of inventing Paperback', async () => {

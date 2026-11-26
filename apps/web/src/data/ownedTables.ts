@@ -47,6 +47,7 @@ export const USER_OWNED_TABLES: OwnedTable[] = [
   { table: 'corpus_edition_credit_reviews', owner: 'reviewer_id', collective: true, plan: { backup: false, why: 'Frozen edition-credit evidence and save receipts belong to the shared catalog. Account deletion anonymizes reviewer attribution; personal restore must never replay approvals or catalog writes.' } },
   { table: 'corpus_edition_credit_source_use_receipts', owner: 'review_id', ownerRelation: { table: 'corpus_edition_credit_reviews', key: 'id', owner: 'reviewer_id' }, collective: true, plan: { backup: false, why: 'Source-use attestations belong to the frozen shared-catalog review. Reviewer deletion anonymizes the parent attribution and preserves this evidence; personal backup and restore must never export permissions or replay catalog approvals.' } },
   // ── the library itself ──
+  { table: 'reader_planner_entries', owner: 'owner_id', plan: { backup: true } },
   { table: 'discovery_sessions', owner: 'owner_id', plan: { backup: true } },
   { table: 'books', owner: 'owner_id', plan: { backup: true } },
   { table: 'reads', owner: 'owner_id', plan: { backup: true } },

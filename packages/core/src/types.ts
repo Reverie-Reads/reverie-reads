@@ -41,6 +41,9 @@ export type PlanDate = PartialDate
 
 /** One entry in a book's reread log. */
 export interface ReadEntry {
+  startedOn?: string
+  physicalRating?: number
+  audioRating?: number
   date: string
   format: string
   rating: number
@@ -185,6 +188,7 @@ export interface Book {
   isbn: string
   /** Page count for the edition in hand. null = UNKNOWN — renders blank, never a fabricated 0. */
   pages: number | null
+  specialEdition?: boolean
   fave: boolean
   ownership: BookOwnership // owns a copy? presence in the library never implies possession
   owned: Owned // per-format detail for a book in hand (which formats)

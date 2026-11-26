@@ -1,4 +1,5 @@
 import type { HouseholdBook, HouseholdBookOwner } from '../data/household'
+import { titleMatchesQuery } from '@reverie/core'
 import type { SeriesLenBucket, SeriesStatus } from '@reverie/core'
 
 /** Only the household's shared projection is searchable; never query personal book records. */
@@ -67,6 +68,7 @@ export function matchesHouseholdQuery(book: HouseholdBook, query: string): boole
     .join(' ')
     .toLocaleLowerCase()
   return (
+    titleMatchesQuery(book.title, needle) ||
     text.includes(needle) ||
     (/^[\dXx\s-]+$/.test(needle) &&
       book.isbns.some((isbn) =>

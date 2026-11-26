@@ -63,7 +63,7 @@ export function useReads(bookId: string) {
 }
 
 /** Optimistically append a reread-log entry. */
-export function useAddRead(bookId: string) {
+export function useSaveReadEntry(bookId: string, readId?: string) {
   const qc = useQueryClient()
   const key = readsKey(bookId)
   return useMutation({
@@ -72,20 +72,26 @@ export function useAddRead(bookId: string) {
       const { data: auth } = await supabase.auth.getUser()
       const ownerId = auth.user?.id
       if (!ownerId) throw new Error('Not signed in')
-      const { error } = await supabase.from('reads').insert({
-        book_id: bookId,
-        owner_id: ownerId,
+      const values = {
+        // Existing log fields remain writable while the web and database releases roll out.
+        // An editor must still be able to clear previously saved optional values.
+        ...(readId || entry.startedOn ? { started_on: entry.startedOn || null } : {}),
+        ...(readId || entry.physicalRating ? { physical_rating: entry.physicalRating || null } : {}),
+        ...(readId || entry.audioRating ? { audio_rating: entry.audioRating || null } : {}),
         read_on: entry.date || null,
         format: entry.format || null,
         rating: entry.rating || null,
         notes: entry.notes || null,
-      })
+      }
+      const { error } = readId
+        ? await supabase.from('reads').update(values).eq('id', readId).eq('book_id', bookId).eq('owner_id', ownerId).select('id').single()
+        : await supabase.from('reads').insert({ ...values, book_id: bookId, owner_id: ownerId })
       if (error) throw error
     },
     onMutate: async (entry) => {
       await qc.cancelQueries({ queryKey: key })
       const previous = qc.getQueryData<ReadRecord[]>(key)
-      qc.setQueryData<ReadRecord[]>(key, (old) => [{ id: `temp-${entry.date}`, ...entry }, ...(old ?? [])])
+      qc.setQueryData<ReadRecord[]>(key, (old) => readId ? old?.map((read) => read.id === readId ? { ...read, ...entry } : read) : [{ id: `temp-${entry.date}`, ...entry }, ...(old ?? [])])
       return { previous }
     },
     onError: (_err, _entry, ctx) => {

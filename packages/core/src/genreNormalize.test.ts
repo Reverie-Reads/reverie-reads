@@ -71,13 +71,13 @@ describe('normalizeImportGenres — primary genre + cores', () => {
   })
   it('maps Fiction/Poetry/Historical (Fiction) → Literary + a descriptive tag', () => {
     expect(g('Fiction')).toMatchObject({
-      genre: 'Literary',
-      genres: ['Literary'],
+      genre: 'Fiction',
+      genres: ['Fiction'],
       tags: ['fiction'],
     })
     expect(g('Poetry')).toMatchObject({ genre: 'Literary', tags: ['poetry'] })
     expect(g('Historical Fiction')).toMatchObject({
-      genre: 'Literary',
+      genre: 'Historical Fiction',
       tags: ['historical fiction'],
     })
     expect(g('Historical')).toMatchObject({ genre: 'Literary', tags: ['historical'] })
@@ -121,6 +121,8 @@ describe('normalizeImportGenres — the confirmed Chism tally', () => {
     for (const v of CHISM_GENRE_VOCAB) for (const c of normalizeImportGenres(v).genres) cores.add(c)
     expect([...cores].sort()).toEqual([
       'Fantasy',
+      'Fiction',
+      'Historical Fiction',
       'Horror',
       'Literary',
       'Mystery',
@@ -190,7 +192,7 @@ describe('genreKey — the one lookup key for every genre spelling', () => {
     expect(genreKey('Thriller')).toBe('mystery')
     expect(genreKey('crime')).toBe('mystery')
     expect(genreKey('historical')).toBe('literary')
-    expect(genreKey('Historical Fiction')).toBe('literary')
+    expect(genreKey('Historical Fiction')).toBe('historical fiction')
     expect(genreKey('cosy')).toBe('cozy')
   })
 

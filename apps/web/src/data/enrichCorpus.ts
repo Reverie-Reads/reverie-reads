@@ -46,7 +46,7 @@ const CORPUS_PIPELINE_BATCH_LIMIT = Math.ceil(
 const FAILURE_STREAK_LIMIT = 5
 
 export async function fetchCorpusAdminStatus(): Promise<boolean> {
-  const { data, error } = await supabase.rpc('is_corpus_admin')
+  const { data, error } = await supabase.rpc('is_corpus_admin', {}, { get: true })
   if (error) throw error
   return data === true
 }
@@ -512,7 +512,9 @@ export function usePersonalCoverCorpusReview({
 export function useAdminReviewPersonalCoverForCorpus() {
   const queryClient = useQueryClient()
   return useMutation({
-    meta: { action: 'Reviewing a personal cover for the corpus' },
+    meta: { action: 'Reviewing a personal cover for the corpus', errorPresentation: 'inline' },
+    networkMode: 'always',
+    retry: false,
     mutationFn: async ({
       bookId,
       workId,

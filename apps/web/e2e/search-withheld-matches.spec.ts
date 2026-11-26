@@ -210,9 +210,12 @@ test('an exact-title query on a withheld book says so, with a real count, and re
   // useInnerText, not textContent: the count is what a reader reads off the screen, and a skin is
   // free to set a text-transform that never touches the DOM node's text.
   await expect(notice(page)).toBeVisible()
-  await expect(notice(page)).toHaveText(/^1 match hidden by filters\s*—\s*show$/, {
-    useInnerText: true,
-  })
+  await expect(notice(page)).toHaveText(
+    /^1 more book matches your search outside your current shelf\.\s*Include these books$/,
+    {
+      useInnerText: true,
+    },
+  )
   await expect(cardFor(page, WISHED_TITLE)).toHaveCount(0)
 
   // "— show" reveals them.

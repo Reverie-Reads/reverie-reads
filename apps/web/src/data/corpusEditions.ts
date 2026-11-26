@@ -43,6 +43,7 @@ export interface CorpusRecord {
   darkness: number | null
   guidanceSource: { sourceRef?: string; observedAt?: string } | null
   isbns: string[]
+  personalSeriesTitles?: Record<string,string>
   fingerprint: string
   series?: { confirmed?: boolean; name: string | null; position: number | null; count: number | null; status: string | null }
   editions: CorpusEdition[]
@@ -90,7 +91,7 @@ export function usePushCorpusRecord() {
   return useMutation({
     networkMode: 'always',
     retry: false,
-    meta: { action: 'Shared catalog changes' },
+    meta: { action: 'Shared catalog changes', errorPresentation: 'inline' },
     mutationFn: async (input: {
       record: CorpusRecord
       changes: CorpusPushChange[]

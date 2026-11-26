@@ -50,7 +50,7 @@ vi.mock('../data/books', () => ({
 vi.mock('../data/reads', () => ({
   useReads: () => ({ data: state.reads, isError: state.readsError, refetch: state.retryReads }),
   useDeleteRead: () => ({ mutate: vi.fn() }),
-  useAddRead: () => ({ mutateAsync: state.addRead }),
+  useSaveReadEntry: () => ({ mutateAsync: state.addRead }),
 }))
 vi.mock('../data/household', () => ({
   useHouseholdLibraryAuthorization: () => ({ books: [], members: [], authorized: false }),

@@ -15,6 +15,7 @@ interface Row {
 /** The tables importExport.ts touches. A literal union (not an index signature) so the strict
  *  `noUncheckedIndexedAccess` build still sees every table as present. */
 type Table =
+  | 'reader_planner_entries'
   | 'discovery_sessions'
   | 'books'
   | 'tropes'
@@ -37,7 +38,7 @@ type Table =
 type Db = Record<Table, Row[]>
 
 const TABLES: Table[] = [
-  'discovery_sessions',
+  'reader_planner_entries', 'discovery_sessions',
   'books', 'tropes', 'moods', 'book_tropes', 'book_moods', 'author_follows', 'reads', 'lists',
   'list_items', 'reviews', 'reading_orders', 'reading_order_items', 'merge_verdicts', 'series',
   'series_entries', 'trope_suggestions', 'series_merge_decisions', 'profiles',
@@ -403,6 +404,7 @@ function seedOldAccount() {
       // surviving_series_id can't be remapped onto the new account's regenerated series ids).
       { id: 'smd-same', owner_id: OWNER, name_key_a: 'acotar', name_key_b: 'a court of thorns and roses', ruling: 'same', surviving_series_id: 'ser1', alias_name: 'ACOTAR' },
     ],
+    reader_planner_entries: [{ id: 'f9100000-0000-4000-8000-000000000002', owner_id: OWNER, kind: 'watch', title: 'Future title', author: '', series: '', timing: '2027-05' }],
     discovery_sessions: [{ owner_id: OWNER, id: 'f9100000-0000-4000-8000-000000000001', document: { version: 1, id: 'f9100000-0000-4000-8000-000000000001', createdAt: '2026-09-06T00:00:00.000Z', intent: { kind: 'mood', moods: ['Hopeful'] }, picks: [{ book: { title: 'A welcome', authors: ['Nell Stone'], cover: '', isbn: '', pub: '' }, reason: 'A hopeful description.', basis: 'description' }], dismissed: [] } }],
     profiles: [
       {
@@ -834,7 +836,7 @@ describe('backup round trip — the data v4 dropped on the floor', () => {
       profile: Record<string, unknown>
     }
     expect(parsed.profile.guidance).toEqual({ version: 1, mode: 'gentle', setupComplete: true, milestones: ['books'], revealed: ['share'], tour: 'plan' })
-    expect(parsed.v).toBe(12)
+    expect(parsed.v).toBe(13)
     expect((parsed.tropes['book-a'] ?? []).map((t) => t.name).sort()).toEqual(['Dragons With Opinions', 'Enemies to Lovers'])
     expect(parsed.moods['book-a']).toEqual([{ name: 'Devastating' }])
     expect(parsed.author_follows).toHaveLength(2)
@@ -1275,9 +1277,9 @@ describe('a backup cannot silently lose rows — paging, and the file’s own co
     // Keyed to the payload itself rather than to a hand-kept list: add a section to buildBackup
     // without counting it and this fails, which is the only way the manifest stays honest.
     const parsed = JSON.parse(await buildBackup()) as Record<string, unknown>
-    const bookkeeping = new Set(['v', 'app', 'exportedAt', 'counts', 'profile'])
+    const bookkeeping = new Set(['v', 'app', 'exportedAt', 'counts', 'profile', 'extensions'])
     const sections = Object.keys(parsed).filter((k) => !bookkeeping.has(k))
-    expect(Object.keys(parsed.counts as object).sort()).toEqual([...sections, 'editions', 'copies'].sort())
+    expect(Object.keys(parsed.counts as object).sort()).toEqual([...sections, 'editions', 'copies', 'reader_planner_entries'].sort())
   })
 
   it('counts what the FILE carries, not what the query returned — they are not the same number', async () => {
@@ -1299,7 +1301,7 @@ describe('a backup cannot silently lose rows — paging, and the file’s own co
     for (const [section, declared] of Object.entries(counts))
       expect(section === 'editions' || section === 'copies'
         ? (parsed.books as { copy_inventory?: { editions: unknown[]; copies: unknown[] } }[]).reduce((n, b) => n + (b.copy_inventory?.[section].length ?? 0), 0)
-        : size(parsed[section]), `counts.${section} must describe the payload`).toBe(declared)
+        : size(section === 'reader_planner_entries' ? (parsed.extensions as Record<string,unknown>)['reader-planner'] : parsed[section]), `counts.${section} must describe the payload`).toBe(declared)
   })
 
   it('refuses a file whose payload lost rows, and writes NOTHING before refusing', async () => {
@@ -1432,7 +1434,7 @@ describe('restore preflight', () => {
     const preview = inspectBackup(json)
 
     expect(preview).toMatchObject({
-      version: 12,
+      version: 13,
       isNewerVersion: false,
       integrity: 'verified',
       restoresProfile: true,
@@ -1490,7 +1492,7 @@ describe('restore preflight', () => {
 
   it('identifies sections from a newer backup so the UI can block a lossy restore', async () => {
     const parsed = JSON.parse(await buildBackup()) as Record<string, unknown>
-    parsed.v = 13
+    parsed.v = 14
     ;(parsed.counts as Record<string, number>).reading_quotes = 1
     parsed.reading_quotes = [{ text: 'A future section' }]
 
@@ -1759,7 +1761,7 @@ describe('portable backup extension stages', () => {
     expect(inspectBackup(json).unknownSections).toEqual([])
     expect(JSON.parse(json).counts.copy_notes).toBe(1)
     wipeToFreshAccount()
-    expect((await restoreBackup(json)).extensions).toEqual({ 'test.copy-notes.v1': { copy_notes: 1 } })
+    expect((await restoreBackup(json)).extensions).toEqual({ 'reader-planner': { reader_planner_entries: 1 }, 'test.copy-notes.v1': { copy_notes: 1 } })
     expect(restore).toHaveBeenCalledOnce()
   })
 

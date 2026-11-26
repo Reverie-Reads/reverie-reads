@@ -43,6 +43,7 @@ import {
   useHouseholdBookSelection,
   useHouseholdLibraryAuthorization,
   useRemoveHouseholdWork,
+  useSetHouseholdCover,
   useSetHouseholdMemberLibraryAdds,
   useUpdateCorpusWorkMetadata,
   type HouseholdBook,
@@ -287,7 +288,8 @@ function PersonalLibraryScreen() {
           data-testid="search-hidden-notice"
           className="mb-3 text-[12.5px] text-muted"
         >
-          {hiddenCount} {hiddenCount === 1 ? 'match' : 'matches'} hidden by filters —{' '}
+          {hiddenCount} more {hiddenCount === 1 ? 'book matches' : 'books match'} your search
+          outside your current shelf.{' '}
           <button
             type="button"
             data-testid="search-hidden-reveal"
@@ -328,11 +330,11 @@ function PersonalLibraryScreen() {
              */
             onMouseDown={(e) => e.preventDefault()}
             onClick={toggleWishlist}
-            aria-label="Show matches hidden by filters"
+            aria-label="Include matching books outside this shelf"
             className="underline underline-offset-2"
             style={{ color: 'var(--accent-ink)' }}
           >
-            show
+            Include these books
           </button>
         </p>
       )}
@@ -388,7 +390,7 @@ function PersonalLibraryScreen() {
             style={{ background: 'color-mix(in srgb, var(--bg0) 58%, transparent)' }}
           />
           <aside
-            className="pointer-events-auto absolute bottom-0 left-0 top-0 w-[min(390px,94vw)] overflow-y-auto border-r border-line p-5 pb-24 sm:pb-5"
+            className="library-filter-drawer pointer-events-auto absolute w-[min(390px,94vw)] overflow-y-auto border-r border-line p-5 pb-24 sm:pb-5"
             style={{ background: 'var(--bg1)', boxShadow: 'var(--shadow)' }}
           >
             <div
@@ -552,6 +554,7 @@ function HouseholdLibraryScreen() {
   const setMemberLibraryAdds = useSetHouseholdMemberLibraryAdds()
   const removeWork = useRemoveHouseholdWork()
   const updateCorpus = useUpdateCorpusWorkMetadata()
+  const setCover = useSetHouseholdCover()
   const reviewHouseholdCover = useAdminReviewHouseholdCoverForCorpus()
   const { data: isCorpusAdmin = false } = useCorpusAdminStatus()
   const addCorpusTrope = useAdminAddCorpusWorkTrope()
@@ -794,6 +797,23 @@ function HouseholdLibraryScreen() {
             book={fullBook}
             currentReaderId={currentReaderId}
             fullPage
+            onDesignateCover={
+              household.householdId
+                ? (owner) =>
+                    setCover.mutate({
+                      householdId: household.householdId!,
+                      workId: fullBook.id,
+                      bookId: owner?.bookId ?? null,
+                      cover: owner?.cover ?? null,
+                      previous: fullBook.designatedCover || null,
+                    })
+                : undefined
+            }
+            designatingCover={setCover.isPending}
+            onReviewCover={isCorpusAdmin ? (owner) => reviewCover(fullBook, owner) : undefined}
+            reviewingCoverBookId={
+              reviewHouseholdCover.isPending ? reviewHouseholdCover.variables?.bookId : null
+            }
             onEditCorpus={canEditCorpus ? (patch) => editCorpus(fullBook, patch) : undefined}
             editingCorpus={updateCorpus.isPending}
             onAddCorpusTrope={

@@ -152,6 +152,7 @@ describe('ReadingPlan', () => {
       years: [now.getFullYear()],
       markedRead: [],
       stopped: [],
+      books: [book],
       knownReadBooks: [book],
     }
     const openBook = vi.fn()
@@ -217,6 +218,7 @@ describe('ReadingPlan', () => {
       years: [year],
       markedRead: [],
       stopped: [],
+      books: [finished, yearOnly],
       knownReadBooks: [finished, yearOnly],
     }
     const books = [
