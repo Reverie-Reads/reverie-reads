@@ -189,7 +189,26 @@ test('a donated special edition keeps its cover and stays searchable by title an
   const image = edition.locator('img')
   await image.scrollIntoViewIfNeeded()
   await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1)
+  // Put one family name on each side of St. Crow, including the legacy split in this book.
+  await ok(
+    c.sb.from('books').update({ author_first: 'Nikki St.', author_last: 'Crow' }).eq('id', id),
+    'compound surname',
+  )
+  for (const [title, last] of [
+    ['Before in author order', 'Ryder'],
+    ['After in author order', 'Turner'],
+  ]) {
+    const other = await makeBook(c, title)
+    await ok(c.sb.from('books').update({ author_last: last }).eq('id', other), 'comparison author')
+  }
   await page.goto('/library')
+  await page.getByLabel('Sort', { exact: true }).selectOption('author')
+  const titles = page.getByRole('button', {
+    name: /^Open (Blood & Roses|Before in author order|After in author order)$/,
+  })
+  await expect(titles).toHaveCount(3)
+  await expect(titles.nth(0)).toHaveAccessibleName('Open Before in author order')
+  await expect(titles.nth(1)).toHaveAccessibleName('Open Blood & Roses')
   const search = page.getByLabel('Search your library')
   for (const term of ['an unrelated edition', 'Blood and Roses', 'bookish', 'special edition']) {
     await search.fill(term)

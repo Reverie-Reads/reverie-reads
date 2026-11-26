@@ -521,3 +521,59 @@ test('an incorrect category can be permanently deleted from its series page whil
     await reset(c)
   }
 })
+
+test('series length reaches member books and a rename collision offers a distinct series or merge', async ({
+  page,
+}) => {
+  const c = await client()
+  await reset(c)
+  try {
+    const members = await seed(c, ALPHA, ['First member', 'Second member'])
+    await seed(c, BETA, ['Other series'])
+    await ok(
+      c.sb.from('books').update({ read_status: 'Reading' }).eq('id', members[0]),
+      'start first member',
+    )
+    await stubBackends(page)
+    await signIn(page, c.session)
+    await openIndex(page)
+    const unfinished = page.getByLabel('Started with books left to read')
+    await unfinished.check()
+    const cards = page.getByTestId('series-browser-card')
+    await expect(cards).toHaveCount(1)
+    await expect(cards).toContainText(ALPHA)
+    await unfinished.uncheck()
+    await cards
+      .filter({ hasText: ALPHA })
+      .getByRole('link', { name: /Open the/ })
+      .click()
+    await page.getByLabel('Books in series').fill('7')
+    await page.getByRole('button', { name: 'Save series length' }).click()
+    await expect
+      .poll(async () => {
+        const result = await c.sb.from('books').select('series_count').in('id', members)
+        if (result.error) throw result.error
+        return result.data.map((b) => b.series_count)
+      })
+      .toEqual([7, 7])
+    await page.reload()
+    await expect(page.getByLabel('Books in series')).toHaveValue('7')
+    await openIndex(page)
+    await cards
+      .filter({ hasText: BETA })
+      .getByRole('button', { name: 'Rename', exact: true })
+      .click()
+    const rename = page.getByRole('dialog')
+    await rename.getByLabel('Series name').fill(ALPHA)
+    await expect(rename.getByRole('button', { name: 'Review a merge' })).toBeEnabled()
+    await rename.getByLabel('Label for this separate series').fill('Other author')
+    await rename.getByRole('button', { name: 'Keep as separate series' }).click()
+    await expect(rename).toBeHidden()
+    await page.reload()
+    await expect(cards.getByRole('heading', { name: ALPHA, exact: true })).toHaveCount(2)
+    expect(await dbOrder(c, ALPHA)).toEqual(['First member', 'Second member'])
+    expect(await dbOrder(c, ALPHA + ' · Other author')).toEqual(['Other series'])
+  } finally {
+    await reset(c)
+  }
+})

@@ -895,3 +895,76 @@ test('Push to corpus publishes the saved series relationship and My series searc
     await c.cleanup()
   }
 })
+
+test('book details warm the picker, rename a personal tag once and publish its saved spelling', async ({
+  page,
+}) => {
+  const c = await fixture(page)
+  try {
+    const id = randomUUID()
+    await ok(
+      c.client
+        .from('tropes')
+        .insert({ id, owner_id: c.user.id, name: 'Lgbtq fixture', facet: 'vibe' }),
+      'personal tag',
+    )
+    await ok(
+      c.client
+        .from('book_tropes')
+        .insert({ owner_id: c.user.id, book_id: c.book, trope_id: id, emphasis: 'present' }),
+      'assigned tag',
+    )
+    const vocabulary = page.waitForResponse(
+      (r) => new URL(r.url()).pathname === '/rest/v1/tropes' && r.ok(),
+    )
+    await page.goto(`/book/${c.book}`)
+    await vocabulary
+    await page.getByRole('button', { name: '+ tag', exact: true }).click()
+    const picker = page.getByRole('dialog')
+    await picker.getByLabel(/^Search /).fill('lgbtq fixture')
+    page.once('dialog', (d) => void d.accept('LGBTQ fixture'))
+    await picker.getByRole('button', { name: 'Rename Lgbtq fixture', exact: true }).click()
+    await expect(
+      picker.getByRole('button', { name: 'Rename LGBTQ fixture', exact: true }),
+    ).toHaveCount(1)
+    await expect(
+      picker.getByRole('button', { name: 'Rename Lgbtq fixture', exact: true }),
+    ).toHaveCount(0)
+    await picker.getByRole('button', { name: 'Close', exact: true }).click()
+    await page.getByText('Publish a saved tag to the shared catalog', { exact: true }).click()
+    await page.getByLabel('Tag for ' + c.title).selectOption(id)
+    await page.getByRole('button', { name: 'Publish “LGBTQ fixture” to the catalog' }).click()
+    await expect(page.getByText('The tag is in the shared catalog.')).toBeVisible()
+  } finally {
+    await c.cleanup()
+  }
+})
+
+test('a legacy zero position explains the correction and permits a separate catalog update', async ({
+  page,
+}) => {
+  const c = await fixture(page)
+  try {
+    await ok(
+      c.client
+        .from('books')
+        .update({ series: 'Legacy Series', position: 0, intensity: 3 })
+        .eq('id', c.book),
+      'legacy series',
+    )
+    await page.goto(`/book/${c.book}`)
+    await page.getByRole('button', { name: 'Push to corpus', exact: true }).click()
+    const review = page.getByRole('dialog', { name: 'Push to corpus' })
+    await expect(review.getByText(/Series position 0 cannot be shared/)).toBeVisible()
+    await review.getByRole('button', { name: 'Save selected changes' }).click()
+    await expect(review).toBeHidden()
+    const record = await ok(c.client.rpc('get_corpus_record', { p_work: c.work }), 'shared record')
+    expect(record.series?.position ?? null).toBeNull()
+    expect(
+      (await c.client.from('works').select('shared_spice').eq('id', c.work).single()).data
+        ?.shared_spice,
+    ).toBe(3)
+  } finally {
+    await c.cleanup()
+  }
+})

@@ -54,6 +54,7 @@ import type { BookEditorSectionId } from './BookMetadataFields'
 import { PlanEditor } from './PlanEditor'
 import { PublishBookTag } from './PublishBookTag'
 import { TropePicker } from '../components/TropePicker'
+import { useTropes } from '../data/tropes'
 import { TropeChip } from '../components/TropeChip'
 import { MoodChip } from '../components/MoodChip'
 import { MoodPicker } from '../components/MoodPicker'
@@ -279,6 +280,8 @@ export function BookDetailScreen() {
   const { bookId } = bookRoute.useParams()
   const navigate = useNavigate()
   const { data: books, isLoading } = useBooks()
+  // Start the reusable vocabulary read while the book opens, ahead of the first tag click.
+  useTropes()
   const { data: reads, isError: readsError, refetch: retryReads } = useReads(bookId)
   /** Which level axis is currently explaining itself, if any. One at a time: two open cards on a
    *  metadata row would push the page around and neither would be the answer to a single tap. */
