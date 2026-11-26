@@ -523,7 +523,8 @@ admits the same work cannot reveal it. The legacy `household_library_books()` co
 those same sources and returns its retained `wishlist` field as false.
 
 `household_library_works_v2()` overlays the allowlisted household bibliography on that authorized
-response. New owned intake, explicit personal-to-household Add and subsequent saved bibliography
+response. The reader loads that projection through `household_library_book_rows(p_household)`,
+ordered by work ID and paged against an exact count. New owned intake, explicit personal-to-household Add and subsequent saved bibliography
 edits synchronize title/contributor display, series tuple, genres/subgenres, ISBN and publication
 date. Initial unknowns preserve shared values; later deliberate changes/clears travel field-by-field,
 with series/date as complete groups. The overlay remains household-local and never certifies the

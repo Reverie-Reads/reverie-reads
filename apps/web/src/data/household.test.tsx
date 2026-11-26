@@ -16,7 +16,14 @@ vi.mock('../auth/AuthProvider', () => ({
 }))
 
 vi.mock('../lib/supabase', () => ({
-  supabase: { rpc: mocked.rpc },
+  supabase: { rpc: (name: string, ...args: unknown[]) => {
+    if (name !== 'household_library_book_rows') return mocked.rpc(name, ...args)
+    return { order: (column: string) => ({ range: async (from: number, to: number) => {
+      const result = await mocked.rpc(name, ...args, column, from, to)
+      return { ...result, count: result.data?.length ?? null,
+        data: result.data?.slice(from, to + 1).map((book: unknown) => ({ book })) ?? null }
+    } }) }
+  } },
 }))
 
 vi.mock('../lib/covers', () => ({
@@ -246,7 +253,7 @@ describe('household query identity and RPC boundary', () => {
     const { result } = renderHook(() => useHouseholdBooks('house-1'), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-    expect(mocked.rpc).toHaveBeenCalledWith('household_library_works_v2')
+    expect(mocked.rpc).toHaveBeenCalledWith('household_library_book_rows', { p_household: 'house-1' }, { count: 'exact' }, 'work_id', 0, 999)
     expect(result.current.data?.[0]).toMatchObject({
       id: 'work-1',
       position: 2.5,
@@ -462,7 +469,7 @@ describe('household query identity and RPC boundary', () => {
     let failing = true
     let householdId = 'house-before-retry'
     mocked.rpc.mockImplementation(async (name: string) => {
-      if (failing && name === (failure === 'roster' ? 'household_roster' : 'household_library_works_v2'))
+      if (failing && name === (failure === 'roster' ? 'household_roster' : 'household_library_book_rows'))
         return { data: null, error: new Error('temporarily unavailable') }
       if (name === 'household_roster') return {
         data: [{ household_id: householdId, household_name: 'Readers', user_id: 'reader-a', display_name: 'Avery', member_role: 'owner', allow_member_library_adds: false }], error: null,

@@ -151,6 +151,43 @@ test('two hardbacks, paperback and wanted edition persist under one reading hist
   await reset(c)
 })
 
+test('a donated special edition keeps its cover and stays searchable by title and edition', async ({ page }) => {
+  const c = await client()
+  await reset(c)
+  const title = 'Blood & Roses'
+  const id = await makeBook(c, title)
+  await ok(c.sb.from('books').update({ read_status: 'Unread', progress: 0 }).eq('id', id), 'clear reading history')
+  const cover = 'https://covers.example.test/bookish.png'
+  await page.route(cover, route => route.fulfill({ contentType: 'image/png',
+    body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/aWQAAAAASUVORK5CYII=', 'base64') }))
+  await stub(page)
+  await signIn(page, c.session)
+  await page.goto(`/book/${id}`)
+  await page.getByRole('button', { name: 'Set up editions & copies' }).click()
+  const editor = page.getByRole('dialog', { name: 'Editions & copies' })
+  await editor.getByLabel('Edition name').fill('Bookish anniversary')
+  await editor.getByLabel('Special edition').check()
+  await editor.getByLabel('Cover image link (HTTPS)').fill(cover)
+  await editor.getByLabel('Possession').selectOption('donated')
+  await editor.getByRole('button', { name: 'Save editions & copies' }).click()
+  await expect(editor).toBeHidden()
+  await page.reload()
+  const edition = page.getByRole('region', { name: 'Bookish anniversary' })
+  await expect(edition).toContainText('Previously owned · Donated')
+  const image = edition.locator('img')
+  await image.scrollIntoViewIfNeeded()
+  await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1)
+  await page.goto('/library')
+  const search = page.getByLabel('Search your library')
+  for (const term of ['an unrelated edition', 'Blood and Roses', 'bookish', 'special edition']) {
+    await search.fill(term)
+    const book = page.getByRole('button', { name: 'Open ' + title, exact: true })
+    if (term === 'an unrelated edition') await expect(book).toBeHidden()
+    else await expect(book).toBeVisible()
+  }
+  await reset(c)
+})
+
 test('failed saves retain the draft and stale edits cannot overwrite another tab', async ({
   page,
 }) => {

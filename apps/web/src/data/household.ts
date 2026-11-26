@@ -4,6 +4,7 @@ import { normalizeSeriesStatus, type SeriesStatus } from '@reverie/core'
 import { useAuth } from '../auth/AuthProvider'
 import { ingestCorpusCover } from '../lib/covers'
 import { supabase } from '../lib/supabase'
+import { pageAll } from './paging'
 
 export type HouseholdMemberRole = 'owner' | 'member'
 
@@ -426,9 +427,11 @@ export function useHouseholdBooks(householdId: string | null) {
     enabled: !!readerId && !!householdId,
     ...authorizationSensitiveQueryOptions,
     queryFn: async (): Promise<HouseholdBook[]> => {
-      const { data, error } = await supabase.rpc('household_library_works_v2')
-      if (error) throw error
-      return ((data ?? []) as HouseholdBookRow[]).map(toHouseholdBook)
+      const rows = await pageAll<{ book: HouseholdBookRow }>('household books', (from, to) =>
+        supabase.rpc('household_library_book_rows', { p_household: householdId }, { count: 'exact' })
+          .order('work_id').range(from, to),
+      )
+      return rows.map(({ book }) => toHouseholdBook(book))
     },
   })
 }
